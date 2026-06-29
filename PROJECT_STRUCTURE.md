@@ -218,10 +218,6 @@ artifacts\publish\MyGesture
 
 `artifacts/` 已被 Git 忽略。
 
-已知警告：
-
-- .NET 10 下，WebView2 包会触发 `WindowsBase` 版本冲突警告。当前构建和测试仍然通过。
-
 ## 何时更新此文件
 
 在修改以下内容时，请更新此文件：
