@@ -44,4 +44,17 @@ public sealed class GestureConfigMapperTests
         Assert.Equal([GestureDirection.Down, GestureDirection.Right], rules[0].Pattern);
         Assert.Equal([Keys.ControlKey, Keys.W], rules[0].Action.Keys);
     }
+
+    [Fact]
+    public void FromRules_KeepsScopeValues()
+    {
+        var config = GestureConfigMapper.FromRules(
+        [
+            new([GestureDirection.Left], "app:msedge", "Back", new HotkeyAction([Keys.Menu, Keys.Left])),
+            new([GestureDirection.Right], "category:Browser", "Forward", new HotkeyAction([Keys.Menu, Keys.Right]))
+        ]);
+
+        Assert.Equal("app:msedge", config.Rules[0].Scope);
+        Assert.Equal("category:Browser", config.Rules[1].Scope);
+    }
 }

@@ -19,7 +19,7 @@ public static class GestureConfigMapper
         {
             Rules = rules.Select(rule => new GestureRuleConfig
             {
-                Scope = rule.Scope,
+                Scope = NormalizeScope(rule.Scope),
                 ActionName = rule.ActionName,
                 Pattern = rule.Pattern.Select(direction => direction.ToString()).ToList(),
                 Action = new GestureActionConfig
@@ -67,9 +67,14 @@ public static class GestureConfigMapper
 
         return new GestureRule(
             pattern,
-            string.IsNullOrWhiteSpace(config.Scope) ? "global" : config.Scope,
+            NormalizeScope(config.Scope),
             string.IsNullOrWhiteSpace(config.ActionName) ? string.Join(" + ", config.Action.Keys) : config.ActionName,
             new HotkeyAction(keys));
+    }
+
+    private static string NormalizeScope(string scope)
+    {
+        return string.IsNullOrWhiteSpace(scope) ? "global" : scope.Trim();
     }
 
     private static bool TryParseKey(string value, out Keys key)

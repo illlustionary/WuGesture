@@ -12,7 +12,7 @@
 - WebView2 前端负责配置界面。
 - 手势使用 8 个方向。
 - 动作当前只支持通过 `SendInput` 发送热键。
-- 规则当前只支持 `global` 作用域。未来计划支持 `category` 和 `app`。
+- 规则当前支持 `global`、`category` 和 `app` 作用域，并按 `app > category > global` 优先级匹配。
 
 ## 根目录
 
@@ -76,7 +76,9 @@ src\MyGesture.App\GestureEngine
 - `MouseHook.cs`：低级全局鼠标钩子。
 - `GestureService.cs`：跟踪右键手势生命周期，调用识别器、匹配器和执行器，并向 UI 发送事件。
 - `GestureRecognizer.cs`：把鼠标轨迹转换为稳定的 8 方向模式。
-- `GestureMatcher.cs`：将识别出的方向模式与已加载规则进行匹配。
+- `GestureMatcher.cs`：将识别出的方向模式与已加载规则进行匹配，并按作用域优先级选择命中项。
+- `GestureScopeContext.cs`：当前前台窗口的 app/category 上下文模型。
+- `ForegroundWindowScopeContextProvider.cs`：读取前台窗口进程名和窗口类名，供作用域匹配使用。
 - `ActionExecutor.cs`：通过 Win32 `SendInput` 执行热键。
 - `MouseInput.cs`：当移动距离太小，不足以构成手势时，重放一次普通右键。
 - `GestureDirection.cs`：8 方向枚举。
@@ -153,7 +155,7 @@ src\MyGesture.App\Web
 - 显示应用状态。
 - 显示配置文件路径。
 - 列出当前规则。
-- 允许编辑现有规则的动作名称和热键字符串。
+- 允许编辑现有规则的作用域、动作名称和热键字符串。
 - 允许保存、重新加载和恢复默认规则。
 - 移动过程中命中规则后，在全局提示窗中立即显示规则名称。
 - 热键输入在获得焦点时会监听按键：
@@ -185,7 +187,8 @@ tests\MyGesture.App.Tests
 当前测试覆盖：
 
 - `GestureRecognizerTests.cs`：抖动过滤、噪声转向、短回拉、对角线识别。
-- `GestureConfigMapperTests.cs`：默认配置映射和按键别名。
+- `GestureConfigMapperTests.cs`：默认配置映射、按键别名和作用域保留。
+- `GestureMatcherTests.cs`：作用域优先级。
 
 运行：
 

@@ -134,7 +134,8 @@ document.addEventListener("keyup", (event) => {
 function createRuleCard(rule, index) {
   const article = document.createElement("article");
   const title = document.createElement("strong");
-  const scope = document.createElement("span");
+  const scopeLabel = document.createElement("label");
+  const scopeInput = document.createElement("input");
   const actionNameLabel = document.createElement("label");
   const actionNameInput = document.createElement("input");
   const keysLabel = document.createElement("label");
@@ -142,7 +143,10 @@ function createRuleCard(rule, index) {
 
   article.dataset.index = index.toString();
   title.textContent = rule.pattern.join(", ");
-  scope.textContent = rule.scope;
+  scopeLabel.textContent = "作用域";
+  scopeInput.name = "scope";
+  scopeInput.value = rule.scope;
+  scopeInput.placeholder = "global / app:xxx / category:xxx";
   actionNameLabel.textContent = "动作名称";
   keysLabel.textContent = "快捷键";
   actionNameInput.name = "actionName";
@@ -152,9 +156,10 @@ function createRuleCard(rule, index) {
   keysInput.addEventListener("focus", () => startRecording(keysInput));
   keysInput.addEventListener("blur", () => stopRecording());
 
+  scopeLabel.append(scopeInput);
   actionNameLabel.append(actionNameInput);
   keysLabel.append(keysInput);
-  article.append(title, scope, actionNameLabel, keysLabel);
+  article.append(title, scopeLabel, actionNameLabel, keysLabel);
   return article;
 }
 
@@ -162,6 +167,7 @@ function collectRules() {
   return [...rulesEl.querySelectorAll("article")].map((article) => {
     const index = Number(article.dataset.index);
     const source = currentRules[index];
+    const scope = article.querySelector('input[name="scope"]').value.trim();
     const actionName = article.querySelector('input[name="actionName"]').value.trim();
     const keys = article.querySelector('input[name="keys"]').value
       .split("+")
@@ -169,7 +175,7 @@ function collectRules() {
       .filter(Boolean);
 
     return {
-      scope: source.scope,
+      scope: scope || source.scope || "global",
       pattern: source.pattern,
       actionName,
       action: {

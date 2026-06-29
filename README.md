@@ -53,11 +53,10 @@ MouseHook -> GestureService -> GestureRecognizer -> GestureMatcher -> Action exe
 ```
 
 原生侧负责全局鼠标钩子、手势识别和动作执行。
-WebView 界面当前显示应用状态和已加载规则，后续会演变为规则编辑器。
+WebView 界面当前显示应用状态和已加载规则，已支持编辑规则作用域、动作名称和热键字符串。
 命中手势后会立即弹出独立的全局提示窗，只显示规则名称。
 
 ## 下一步
 
-1. 添加应用检测和作用域优先级：`app > category > global`。
-2. 将 AutoHotkey 作为可选动作类型。
-3. 等规则编辑器稳定后，添加配置导入/导出。
+1. 将 AutoHotkey 作为可选动作类型。
+2. 等规则编辑器稳定后，添加配置导入/导出。

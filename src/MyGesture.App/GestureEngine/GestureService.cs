@@ -10,11 +10,13 @@ public sealed class GestureService : IDisposable
     private readonly MouseHook mouseHook = new();
     private readonly GestureRecognizer recognizer = new();
     private GestureMatcher matcher;
+    private readonly IGestureScopeContextProvider scopeContextProvider;
     private readonly ActionExecutor actionExecutor = new();
     private readonly List<Point> points = [];
     private IReadOnlyList<GestureDirection> lastProgressPattern = [];
     private IReadOnlyList<Point> lastProgressPath = [];
     private string? lastPreviewActionName;
+    private GestureScopeContext currentScopeContext = GestureScopeContext.Empty;
     private SynchronizationContext? synchronizationContext;
     private bool isTracking;
     private bool started;
@@ -30,9 +32,10 @@ public sealed class GestureService : IDisposable
 
     public event EventHandler<GestureActionFailedEventArgs>? GestureActionFailed;
 
-    public GestureService(GestureMatcher matcher)
+    public GestureService(GestureMatcher matcher, IGestureScopeContextProvider? scopeContextProvider = null)
     {
         this.matcher = matcher;
+        this.scopeContextProvider = scopeContextProvider ?? new ForegroundWindowScopeContextProvider();
     }
 
     public void UpdateMatcher(GestureMatcher newMatcher)
@@ -92,6 +95,7 @@ public sealed class GestureService : IDisposable
         points.Clear();
         points.Add(e.Location);
         isTracking = true;
+        currentScopeContext = scopeContextProvider.GetCurrentContext();
         lastProgressPattern = [];
         lastProgressPath = [];
         lastPreviewActionName = null;
@@ -135,7 +139,7 @@ public sealed class GestureService : IDisposable
         }
 
         var pattern = recognizer.Recognize(points);
-        var rule = matcher.Match(pattern);
+        var rule = matcher.Match(pattern, currentScopeContext);
         if (rule is null)
         {
             RaiseProgress(path, pattern, false, force: true);
@@ -167,12 +171,15 @@ public sealed class GestureService : IDisposable
         var pattern = recognizer.Recognize(points);
         var path = points.ToArray();
         RaiseProgress(path, pattern, true);
-        RaisePreviewMatch(path, pattern);
+        RaisePreviewMatch(path, pattern, currentScopeContext);
     }
 
-    private void RaisePreviewMatch(IReadOnlyList<Point> path, IReadOnlyList<GestureDirection> pattern)
+    private void RaisePreviewMatch(
+        IReadOnlyList<Point> path,
+        IReadOnlyList<GestureDirection> pattern,
+        GestureScopeContext context)
     {
-        var rule = matcher.Match(pattern);
+        var rule = matcher.Match(pattern, context);
         if (rule is null)
         {
             ClearPreviewMatch();
