@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My Gesture</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <section class="toolbar">
+      <div>
+        <h1>My Gesture</h1>
+        <p>全局鼠标手势引擎原型</p>
+      </div>
+      <span id="status" class="status">启动中</span>
+    </section>
+
+    <section class="panel">
+      <h2>当前内置规则</h2>
+      <div class="rules">
+        <article>
+          <strong>Left</strong>
+          <span>Alt + Left</span>
+        </article>
+        <article>
+          <strong>Right</strong>
+          <span>Alt + Right</span>
+        </article>
+        <article>
+          <strong>Down, Right</strong>
+          <span>Ctrl + W</span>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>最近识别</h2>
+      <div id="lastGesture" class="last-gesture">暂无</div>
+    </section>
+
+    <div id="gestureDock" class="gesture-dock">等待手势</div>
+  </main>
+
+  <script src="./app.js"></script>
+</body>
+</html>
