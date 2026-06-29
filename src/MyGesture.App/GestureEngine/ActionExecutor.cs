@@ -32,7 +32,8 @@ public sealed class ActionExecutor
             inputs.Add(CreateKeyboardInput(action.Keys[i], keyUp: true));
         }
 
-        var sent = SendInput((uint)inputs.Count, inputs.ToArray(), Marshal.SizeOf<Input>());
+        var inputArray = inputs.ToArray();
+        var sent = SendInput((uint)inputArray.Length, inputArray, Marshal.SizeOf<Input>());
         if (sent != inputs.Count)
         {
             throw new Win32Exception(Marshal.GetLastWin32Error(), "Failed to send keyboard input.");
@@ -97,7 +98,24 @@ public sealed class ActionExecutor
     private struct InputUnion
     {
         [FieldOffset(0)]
+        public MouseInput MouseInput;
+
+        [FieldOffset(0)]
         public KeyboardInput KeyboardInput;
+
+        [FieldOffset(0)]
+        public HardwareInput HardwareInput;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MouseInput
+    {
+        public int X;
+        public int Y;
+        public uint MouseData;
+        public uint Flags;
+        public uint Time;
+        public IntPtr ExtraInfo;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -108,5 +126,13 @@ public sealed class ActionExecutor
         public uint Flags;
         public uint Time;
         public IntPtr ExtraInfo;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct HardwareInput
+    {
+        public uint Message;
+        public ushort ParamLow;
+        public ushort ParamHigh;
     }
 }

@@ -17,21 +17,15 @@
     </section>
 
     <section class="panel">
-      <h2>当前内置规则</h2>
-      <div class="rules">
-        <article>
-          <strong>Left</strong>
-          <span>Alt + Left</span>
-        </article>
-        <article>
-          <strong>Right</strong>
-          <span>Alt + Right</span>
-        </article>
-        <article>
-          <strong>Down, Right</strong>
-          <span>Ctrl + W</span>
-        </article>
+      <h2>当前规则</h2>
+      <div id="configPath" class="config-path">读取中</div>
+      <div class="rule-actions">
+        <button id="saveRules" type="button">保存</button>
+        <button id="reloadRules" type="button">重新加载</button>
+        <button id="resetRules" type="button">恢复默认</button>
+        <span id="configMessage"></span>
       </div>
+      <div id="rules" class="rules"></div>
     </section>
 
     <section class="panel">

@@ -7,9 +7,16 @@ namespace MyGesture.App;
 public sealed class MainForm : Form
 {
     private readonly WebView2 webView = new();
-    private readonly GestureService gestureService = new();
     private readonly GestureHintForm gestureHintForm = new();
+    private readonly GestureConfigStore configStore = new();
+    private LoadedGestureConfig? loadedConfig;
+    private GestureService? gestureService;
     private bool isClosing;
+
+    private static readonly JsonSerializerOptions WebMessageJsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
 
     public MainForm()
     {
@@ -25,7 +32,7 @@ public sealed class MainForm : Form
         FormClosing += (_, _) =>
         {
             isClosing = true;
-            gestureService.Dispose();
+            gestureService?.Dispose();
             gestureHintForm.Hide();
         };
         FormClosed += (_, _) =>
@@ -36,25 +43,23 @@ public sealed class MainForm : Form
 
     private async void OnLoad(object? sender, EventArgs e)
     {
+        loadedConfig = configStore.LoadOrCreate();
+        gestureService = new GestureService(new GestureMatcher(loadedConfig.Rules));
+
         await webView.EnsureCoreWebView2Async();
         if (!CanUseUi())
         {
             return;
         }
 
-        webView.CoreWebView2.WebMessageReceived += (_, args) =>
-        {
-            if (args.TryGetWebMessageAsString() == "get-status")
-            {
-                PostStatus("running");
-            }
-        };
+        webView.CoreWebView2.WebMessageReceived += (_, args) => HandleWebMessage(args.WebMessageAsJson);
 
         var webRoot = Path.Combine(AppContext.BaseDirectory, "Web", "index.html");
         webView.Source = new Uri(webRoot);
 
         gestureService.GestureRecognized += OnGestureRecognized;
         gestureService.GestureProgressChanged += OnGestureProgressChanged;
+        gestureService.GestureActionFailed += OnGestureActionFailed;
         gestureService.Start();
     }
 
@@ -80,6 +85,32 @@ public sealed class MainForm : Form
 
         webView.CoreWebView2?.PostWebMessageAsJson(payload);
         gestureHintForm.Complete(e.Pattern, e.ActionName);
+    }
+
+    private void OnGestureActionFailed(object? sender, GestureActionFailedEventArgs e)
+    {
+        if (!CanUseUi())
+        {
+            return;
+        }
+
+        if (InvokeRequired)
+        {
+            BeginInvokeSafe(() => OnGestureActionFailed(sender, e));
+            return;
+        }
+
+        var message = e.Exception.Message;
+        var payload = JsonSerializer.Serialize(new
+        {
+            type = "gesture-action-failed",
+            pattern = e.Pattern.Select(x => x.ToString()).ToArray(),
+            action = e.ActionName,
+            error = message
+        });
+
+        webView.CoreWebView2?.PostWebMessageAsJson(payload);
+        gestureHintForm.Complete(e.Pattern, $"{e.ActionName} 执行失败");
     }
 
     private void OnGestureProgressChanged(object? sender, GestureProgressEventArgs e)
@@ -125,6 +156,134 @@ public sealed class MainForm : Form
         webView.CoreWebView2?.PostWebMessageAsJson(payload);
     }
 
+    private void PostRules()
+    {
+        if (loadedConfig is null)
+        {
+            return;
+        }
+
+        var payload = JsonSerializer.Serialize(new
+        {
+            type = "rules",
+            configPath = loadedConfig.FilePath,
+            rules = loadedConfig.Config.Rules.Select(rule => new
+            {
+                scope = rule.Scope,
+                pattern = rule.Pattern,
+                actionName = rule.ActionName,
+                actionType = rule.Action.Type,
+                keys = rule.Action.Keys
+            }).ToArray()
+        });
+
+        webView.CoreWebView2?.PostWebMessageAsJson(payload);
+    }
+
+    private void HandleWebMessage(string json)
+    {
+        if (!CanUseUi())
+        {
+            return;
+        }
+
+        using var document = JsonDocument.Parse(json);
+        var root = document.RootElement;
+
+        if (root.ValueKind == JsonValueKind.String &&
+            root.GetString() == "get-status")
+        {
+            PostStatus("running");
+            PostRules();
+            return;
+        }
+
+        if (root.ValueKind != JsonValueKind.Object ||
+            !root.TryGetProperty("type", out var typeElement))
+        {
+            return;
+        }
+
+        switch (typeElement.GetString())
+        {
+            case "save-rules":
+                SaveRules(json);
+                break;
+            case "reload-rules":
+                ReloadRules();
+                break;
+            case "reset-rules":
+                ResetRules();
+                break;
+        }
+    }
+
+    private void SaveRules(string json)
+    {
+        try
+        {
+            var message = JsonSerializer.Deserialize<RulesWebMessage>(json, WebMessageJsonOptions);
+            var config = new GestureConfig
+            {
+                Rules = message?.Rules ?? []
+            };
+
+            loadedConfig = configStore.SaveAndLoad(config);
+            gestureService?.UpdateMatcher(new GestureMatcher(loadedConfig.Rules));
+
+            PostRules();
+            PostConfigResult(true, "已保存");
+        }
+        catch (Exception exception)
+        {
+            PostConfigResult(false, exception.Message);
+        }
+    }
+
+    private void ReloadRules()
+    {
+        try
+        {
+            loadedConfig = configStore.LoadOrCreate();
+            gestureService?.UpdateMatcher(new GestureMatcher(loadedConfig.Rules));
+
+            PostRules();
+            PostConfigResult(true, "已重新加载");
+        }
+        catch (Exception exception)
+        {
+            PostConfigResult(false, exception.Message);
+        }
+    }
+
+    private void ResetRules()
+    {
+        try
+        {
+            loadedConfig = configStore.ResetToDefaults();
+            gestureService?.UpdateMatcher(new GestureMatcher(loadedConfig.Rules));
+
+            PostRules();
+            PostConfigResult(true, "已恢复默认");
+        }
+        catch (Exception exception)
+        {
+            PostConfigResult(false, exception.Message);
+        }
+    }
+
+    private void PostConfigResult(bool success, string message)
+    {
+        var payload = JsonSerializer.Serialize(new
+        {
+            type = "config-result",
+            success,
+            message
+        });
+
+        webView.CoreWebView2?.PostWebMessageAsJson(payload);
+    }
+
     private void BeginInvokeSafe(Action action)
     {
         if (!CanUseUi())
@@ -144,5 +303,12 @@ public sealed class MainForm : Form
     private bool CanUseUi()
     {
         return !isClosing && !IsDisposed && !Disposing && IsHandleCreated;
+    }
+
+    private sealed class RulesWebMessage
+    {
+        public string Type { get; set; } = "";
+
+        public List<GestureRuleConfig> Rules { get; set; } = [];
     }
 }
