@@ -57,10 +57,43 @@ public sealed class MainForm : Form
         var webRoot = Path.Combine(AppContext.BaseDirectory, "Web", "index.html");
         webView.Source = new Uri(webRoot);
 
+        gestureService.GesturePreviewMatched += OnGesturePreviewMatched;
+        gestureService.GesturePreviewCleared += OnGesturePreviewCleared;
         gestureService.GestureRecognized += OnGestureRecognized;
-        gestureService.GestureProgressChanged += OnGestureProgressChanged;
         gestureService.GestureActionFailed += OnGestureActionFailed;
         gestureService.Start();
+    }
+
+    private void OnGesturePreviewMatched(object? sender, GestureRecognizedEventArgs e)
+    {
+        if (!CanUseUi())
+        {
+            return;
+        }
+
+        if (InvokeRequired)
+        {
+            BeginInvokeSafe(() => OnGesturePreviewMatched(sender, e));
+            return;
+        }
+
+        gestureHintForm.ShowResult(e.ActionName);
+    }
+
+    private void OnGesturePreviewCleared(object? sender, EventArgs e)
+    {
+        if (!CanUseUi())
+        {
+            return;
+        }
+
+        if (InvokeRequired)
+        {
+            BeginInvokeSafe(() => OnGesturePreviewCleared(sender, e));
+            return;
+        }
+
+        gestureHintForm.ClearResult();
     }
 
     private void OnGestureRecognized(object? sender, GestureRecognizedEventArgs e)
@@ -84,7 +117,6 @@ public sealed class MainForm : Form
         });
 
         webView.CoreWebView2?.PostWebMessageAsJson(payload);
-        gestureHintForm.Complete(e.Pattern, e.ActionName);
     }
 
     private void OnGestureActionFailed(object? sender, GestureActionFailedEventArgs e)
@@ -107,39 +139,6 @@ public sealed class MainForm : Form
             pattern = e.Pattern.Select(x => x.ToString()).ToArray(),
             action = e.ActionName,
             error = message
-        });
-
-        webView.CoreWebView2?.PostWebMessageAsJson(payload);
-        gestureHintForm.Complete(e.Pattern, $"{e.ActionName} 执行失败");
-    }
-
-    private void OnGestureProgressChanged(object? sender, GestureProgressEventArgs e)
-    {
-        if (!CanUseUi())
-        {
-            return;
-        }
-
-        if (InvokeRequired)
-        {
-            BeginInvokeSafe(() => OnGestureProgressChanged(sender, e));
-            return;
-        }
-
-        if (e.IsTracking)
-        {
-            gestureHintForm.ShowProgress(e.Pattern);
-        }
-        else
-        {
-            gestureHintForm.Complete(e.Pattern);
-        }
-
-        var payload = JsonSerializer.Serialize(new
-        {
-            type = "gesture-progress",
-            pattern = e.Pattern.Select(x => x.ToString()).ToArray(),
-            tracking = e.IsTracking
         });
 
         webView.CoreWebView2?.PostWebMessageAsJson(payload);

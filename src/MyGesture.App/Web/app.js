@@ -15,6 +15,29 @@ function setStatus(value) {
   statusEl.textContent = value === "running" ? "运行中" : value;
 }
 
+function formatPattern(pattern) {
+  if (!pattern || pattern.length === 0) {
+    return "正在识别手势";
+  }
+
+  return pattern.map(toDirectionGlyph).join("  ");
+}
+
+function toDirectionGlyph(direction) {
+  const glyphs = {
+    Up: "↑",
+    UpRight: "↗",
+    Right: "→",
+    DownRight: "↘",
+    Down: "↓",
+    DownLeft: "↙",
+    Left: "←",
+    UpLeft: "↖"
+  };
+
+  return glyphs[direction] ?? direction;
+}
+
 if (window.chrome?.webview) {
   window.chrome.webview.addEventListener("message", (event) => {
     const message = event.data;
@@ -23,19 +46,13 @@ if (window.chrome?.webview) {
     }
 
     if (message.type === "gesture") {
-      lastGestureEl.textContent = `${message.pattern.join(", ")} -> ${message.action}`;
-      gestureDockEl.textContent = `${message.pattern.join(" > ")} -> ${message.action}`;
+      lastGestureEl.textContent = message.action;
+      gestureDockEl.textContent = message.action;
     }
 
     if (message.type === "gesture-action-failed") {
-      lastGestureEl.textContent = `${message.pattern.join(", ")} -> ${message.action} 执行失败: ${message.error}`;
+      lastGestureEl.textContent = `${message.action} 执行失败: ${message.error}`;
       gestureDockEl.textContent = `${message.action} 执行失败`;
-    }
-
-    if (message.type === "gesture-progress") {
-      gestureDockEl.textContent = message.pattern.length === 0
-        ? "正在识别手势"
-        : `当前手势: ${message.pattern.join(" > ")}`;
     }
 
     if (message.type === "rules") {
