@@ -53,7 +53,8 @@ MouseHook -> GestureService -> GestureRecognizer -> GestureMatcher -> Action exe
 ```
 
 原生侧负责全局鼠标钩子、手势识别和动作执行。
-WebView 界面当前显示应用状态、已加载规则和图标化的手势摘要，后续会演变为规则编辑器。
+WebView 界面当前显示应用状态和已加载规则，后续会演变为规则编辑器。
+命中手势后会立即弹出独立的全局提示窗，只显示规则名称。
 
 ## 下一步
 

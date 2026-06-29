@@ -81,7 +81,7 @@ src\MyGesture.App\GestureEngine
 - `MouseInput.cs`：当移动距离太小，不足以构成手势时，重放一次普通右键。
 - `GestureDirection.cs`：8 方向枚举。
 - `GestureRule.cs`：运行时规则和热键动作模型。
-- `GestureHintForm.cs`：置顶的底部手势提示覆盖层。
+- `GestureHintForm.cs`：独立的全局命中提示窗，移动过程中匹配到规则时立即显示规则名。
 
 手势流水线：
 
@@ -91,13 +91,16 @@ MouseHook
 -> GestureRecognizer
 -> GestureMatcher
 -> ActionExecutor
--> GestureHintForm / WebView 状态
+-> GestureHintForm
+-> WebView 状态
 ```
 
 重要行为：
 
 - 右键按下/抬起在手势跟踪期间会被吞掉。
 - 如果移动太小，就会重放一次普通右键。
+- 移动过程中会增量识别当前轨迹；一旦匹配规则，全局提示窗会立即显示规则名。
+- 动作仍在右键抬起时执行。
 - 钩子回调必须保持快速；动作会切回 WinForms 消息线程执行。
 - 动作执行失败会被捕获，并通过 `GestureActionFailed` 上报。
 
@@ -152,6 +155,7 @@ src\MyGesture.App\Web
 - 列出当前规则。
 - 允许编辑现有规则的动作名称和热键字符串。
 - 允许保存、重新加载和恢复默认规则。
+- 移动过程中命中规则后，在全局提示窗中立即显示规则名称。
 - 热键输入在获得焦点时会监听按键：
   - 修饰键/特殊键组合会自动记录。
   - 也可以手动输入纯文本。
@@ -167,7 +171,6 @@ WebView 消息流：
   - `{ type: "status", ... }`
   - `{ type: "rules", ... }`
   - `{ type: "gesture", ... }`
-  - `{ type: "gesture-progress", ... }`
   - `{ type: "gesture-action-failed", ... }`
   - `{ type: "config-result", ... }`
 

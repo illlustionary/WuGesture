@@ -1,4 +1,4 @@
-using MyGesture.App.GestureEngine;
+using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
 
 namespace MyGesture.App;
@@ -7,29 +7,34 @@ public sealed class GestureHintForm : Form
 {
     private const int WsExNoActivate = 0x08000000;
     private const int WsExToolWindow = 0x00000080;
+    private const int BottomGap = 140;
 
-    private readonly Label label = new();
     private readonly System.Windows.Forms.Timer hideTimer = new();
+    private readonly Font titleFont = new("Segoe UI Semibold", 22, FontStyle.Bold);
+    private readonly Brush textBrush = new SolidBrush(Color.White);
+    private readonly Brush backgroundBrush = new SolidBrush(Color.FromArgb(226, 18, 24, 31));
+    private readonly Pen borderPen = new(Color.FromArgb(90, 255, 255, 255), 1.1f);
+    private readonly StringFormat centerFormat = new()
+    {
+        Alignment = StringAlignment.Center,
+        LineAlignment = StringAlignment.Center
+    };
 
+    private string title = "";
     public GestureHintForm()
     {
         FormBorderStyle = FormBorderStyle.None;
         ShowInTaskbar = false;
         TopMost = true;
         StartPosition = FormStartPosition.Manual;
-        BackColor = Color.FromArgb(32, 32, 32);
+        BackColor = Color.FromArgb(18, 24, 31);
         ForeColor = Color.White;
-        Opacity = 0.92;
-        Width = 420;
-        Height = 56;
+        Opacity = 0.96;
+        Width = 540;
+        Height = 144;
+        DoubleBuffered = true;
 
-        label.Dock = DockStyle.Fill;
-        label.TextAlign = ContentAlignment.MiddleCenter;
-        label.Font = new Font("Segoe UI", 12, FontStyle.Regular);
-        label.Padding = new Padding(16, 0, 16, 0);
-        Controls.Add(label);
-
-        hideTimer.Interval = 750;
+        hideTimer.Interval = 1100;
         hideTimer.Tick += OnHideTimerTick;
     }
 
@@ -45,7 +50,7 @@ public sealed class GestureHintForm : Form
         }
     }
 
-    public void ShowProgress(IReadOnlyList<GestureDirection> pattern)
+    public void ShowResult(string ruleName)
     {
         if (IsDisposed)
         {
@@ -53,9 +58,23 @@ public sealed class GestureHintForm : Form
         }
 
         hideTimer.Stop();
-        label.Text = pattern.Count == 0
-            ? "正在识别手势"
-            : $"当前手势: {string.Join(" > ", pattern)}";
+        title = string.IsNullOrWhiteSpace(ruleName) ? "已触发" : ruleName;
+        ShowOverlay();
+
+        hideTimer.Start();
+    }
+
+    public void ClearResult()
+    {
+        hideTimer.Stop();
+        if (!IsDisposed)
+        {
+            Hide();
+        }
+    }
+
+    private void ShowOverlay()
+    {
         MoveToBottomCenter();
 
         if (!Visible)
@@ -71,41 +90,36 @@ public sealed class GestureHintForm : Form
             Width,
             Height,
             NativeMethods.SwpNoActivate | NativeMethods.SwpShowWindow);
+
+        Invalidate();
     }
 
-    public void Complete(IReadOnlyList<GestureDirection> pattern, string? actionName = null)
+    protected override void OnPaint(PaintEventArgs e)
     {
-        if (IsDisposed)
-        {
-            return;
-        }
+        base.OnPaint(e);
 
-        label.Text = actionName is null
-            ? PatternText(pattern)
-            : $"{PatternText(pattern)} -> {actionName}";
-        MoveToBottomCenter();
+        var graphics = e.Graphics;
+        graphics.SmoothingMode = SmoothingMode.AntiAlias;
+        graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
 
-        if (!Visible)
-        {
-            Show();
-        }
+        var bounds = ClientRectangle;
+        bounds.Inflate(-1, -1);
 
-        hideTimer.Stop();
-        hideTimer.Start();
-    }
+        using var path = RoundedRect(bounds, 24);
+        graphics.FillPath(backgroundBrush, path);
+        graphics.DrawPath(borderPen, path);
 
-    private static string PatternText(IReadOnlyList<GestureDirection> pattern)
-    {
-        return pattern.Count == 0
-            ? "未识别到手势"
-            : $"当前手势: {string.Join(" > ", pattern)}";
+        var titleRect = new RectangleF(22, 30, Width - 44, 44);
+        graphics.DrawString(title, titleFont, textBrush, titleRect, centerFormat);
+
+        // No subtitle or icon, just the rule name.
     }
 
     private void MoveToBottomCenter()
     {
         var area = Screen.PrimaryScreen?.WorkingArea ?? Screen.FromControl(this).WorkingArea;
         Left = area.Left + (area.Width - Width) / 2;
-        Top = area.Bottom - Height - 28;
+        Top = area.Bottom - Height - BottomGap;
     }
 
     protected override void Dispose(bool disposing)
@@ -115,6 +129,11 @@ public sealed class GestureHintForm : Form
             hideTimer.Stop();
             hideTimer.Tick -= OnHideTimerTick;
             hideTimer.Dispose();
+            titleFont.Dispose();
+            textBrush.Dispose();
+            backgroundBrush.Dispose();
+            borderPen.Dispose();
+            centerFormat.Dispose();
         }
 
         base.Dispose(disposing);
@@ -127,6 +146,23 @@ public sealed class GestureHintForm : Form
         {
             Hide();
         }
+    }
+
+    private static GraphicsPath RoundedRect(Rectangle rect, float radius)
+    {
+        var path = new GraphicsPath();
+        var diameter = radius * 2;
+        var arc = new RectangleF(rect.X, rect.Y, diameter, diameter);
+
+        path.AddArc(arc, 180, 90);
+        arc.X = rect.Right - diameter;
+        path.AddArc(arc, 270, 90);
+        arc.Y = rect.Bottom - diameter;
+        path.AddArc(arc, 0, 90);
+        arc.X = rect.Left;
+        path.AddArc(arc, 90, 90);
+        path.CloseFigure();
+        return path;
     }
 
     private static class NativeMethods

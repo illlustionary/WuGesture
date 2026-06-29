@@ -13,12 +13,18 @@ public sealed class GestureService : IDisposable
     private readonly ActionExecutor actionExecutor = new();
     private readonly List<Point> points = [];
     private IReadOnlyList<GestureDirection> lastProgressPattern = [];
+    private IReadOnlyList<Point> lastProgressPath = [];
+    private string? lastPreviewActionName;
     private SynchronizationContext? synchronizationContext;
     private bool isTracking;
     private bool started;
     private bool disposed;
 
     public event EventHandler<GestureRecognizedEventArgs>? GestureRecognized;
+
+    public event EventHandler<GestureRecognizedEventArgs>? GesturePreviewMatched;
+
+    public event EventHandler? GesturePreviewCleared;
 
     public event EventHandler<GestureProgressEventArgs>? GestureProgressChanged;
 
@@ -87,7 +93,9 @@ public sealed class GestureService : IDisposable
         points.Add(e.Location);
         isTracking = true;
         lastProgressPattern = [];
-        RaiseProgress([], true, force: true);
+        lastProgressPath = [];
+        lastPreviewActionName = null;
+        RaiseProgress(points.ToArray(), [], true, force: true);
     }
 
     private void OnMouseMove(object? sender, MouseHookEventArgs e)
@@ -117,10 +125,11 @@ public sealed class GestureService : IDisposable
         e.Handled = true;
         isTracking = false;
         points.Add(e.Location);
+        var path = points.ToArray();
 
         if (points.Count < 2 || Distance(points[0], points[^1]) < MinimumGestureDistance)
         {
-            RaiseProgress([], false, force: true);
+            RaiseProgress(path, [], false, force: true);
             Post(MouseInput.ReplayRightClick);
             return;
         }
@@ -129,11 +138,11 @@ public sealed class GestureService : IDisposable
         var rule = matcher.Match(pattern);
         if (rule is null)
         {
-            RaiseProgress(pattern, false, force: true);
+            RaiseProgress(path, pattern, false, force: true);
             return;
         }
 
-        RaiseProgress(pattern, false, force: true);
+        RaiseProgress(path, pattern, false, force: true);
         Post(() =>
         {
             if (disposed)
@@ -143,12 +152,12 @@ public sealed class GestureService : IDisposable
 
             try
             {
+                GestureRecognized?.Invoke(this, new GestureRecognizedEventArgs(path, pattern, rule.ActionName));
                 actionExecutor.Execute(rule);
-                GestureRecognized?.Invoke(this, new GestureRecognizedEventArgs(pattern, rule.ActionName));
             }
             catch (Exception exception)
             {
-                GestureActionFailed?.Invoke(this, new GestureActionFailedEventArgs(pattern, rule.ActionName, exception));
+                GestureActionFailed?.Invoke(this, new GestureActionFailedEventArgs(path, pattern, rule.ActionName, exception));
             }
         });
     }
@@ -156,22 +165,74 @@ public sealed class GestureService : IDisposable
     private void PublishProgress()
     {
         var pattern = recognizer.Recognize(points);
-        RaiseProgress(pattern, true);
+        var path = points.ToArray();
+        RaiseProgress(path, pattern, true);
+        RaisePreviewMatch(path, pattern);
     }
 
-    private void RaiseProgress(IReadOnlyList<GestureDirection> pattern, bool isCurrentlyTracking, bool force = false)
+    private void RaisePreviewMatch(IReadOnlyList<Point> path, IReadOnlyList<GestureDirection> pattern)
     {
-        if (!force && lastProgressPattern.SequenceEqual(pattern))
+        var rule = matcher.Match(pattern);
+        if (rule is null)
+        {
+            ClearPreviewMatch();
+            return;
+        }
+
+        if (rule.ActionName == lastPreviewActionName)
+        {
+            return;
+        }
+
+        lastPreviewActionName = rule.ActionName;
+        Post(() =>
+        {
+            if (!disposed)
+            {
+                GesturePreviewMatched?.Invoke(this, new GestureRecognizedEventArgs(path, pattern, rule.ActionName));
+            }
+        });
+    }
+
+    private void ClearPreviewMatch()
+    {
+        if (lastPreviewActionName is null)
+        {
+            return;
+        }
+
+        lastPreviewActionName = null;
+        Post(() =>
+        {
+            if (!disposed)
+            {
+                GesturePreviewCleared?.Invoke(this, EventArgs.Empty);
+            }
+        });
+    }
+
+    private void RaiseProgress(
+        IReadOnlyList<Point> path,
+        IReadOnlyList<GestureDirection> pattern,
+        bool isCurrentlyTracking,
+        bool force = false)
+    {
+        if (!force &&
+            lastProgressPattern.SequenceEqual(pattern) &&
+            lastProgressPath.SequenceEqual(path))
         {
             return;
         }
 
         lastProgressPattern = pattern.ToArray();
+        lastProgressPath = path.ToArray();
         Post(() =>
         {
             if (!disposed)
             {
-                GestureProgressChanged?.Invoke(this, new GestureProgressEventArgs(pattern, isCurrentlyTracking));
+                GestureProgressChanged?.Invoke(
+                    this,
+                    new GestureProgressEventArgs(path, pattern, isCurrentlyTracking));
             }
         });
     }
