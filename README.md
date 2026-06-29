@@ -57,8 +57,7 @@ The WebView UI is currently a static status and rule page. Later it should becom
 
 ## Next Steps
 
-1. Move built-in gesture rules into a JSON config file.
-2. Add a visual gesture trail overlay.
-3. Move gesture rules into a JSON config file.
-4. Add app detection and scope priority: app > category > global.
-5. Add AutoHotkey as an optional action type.
+1. Add a visual gesture trail overlay.
+2. Add app detection and scope priority: app > category > global.
+3. Add AutoHotkey as an optional action type.
+4. Add config import/export once the rule editor stabilizes.
