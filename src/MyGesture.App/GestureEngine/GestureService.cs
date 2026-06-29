@@ -9,7 +9,7 @@ public sealed class GestureService : IDisposable
 
     private readonly MouseHook mouseHook = new();
     private readonly GestureRecognizer recognizer = new();
-    private readonly GestureMatcher matcher = new();
+    private GestureMatcher matcher;
     private readonly ActionExecutor actionExecutor = new();
     private readonly List<Point> points = [];
     private IReadOnlyList<GestureDirection> lastProgressPattern = [];
@@ -21,6 +21,18 @@ public sealed class GestureService : IDisposable
     public event EventHandler<GestureRecognizedEventArgs>? GestureRecognized;
 
     public event EventHandler<GestureProgressEventArgs>? GestureProgressChanged;
+
+    public event EventHandler<GestureActionFailedEventArgs>? GestureActionFailed;
+
+    public GestureService(GestureMatcher matcher)
+    {
+        this.matcher = matcher;
+    }
+
+    public void UpdateMatcher(GestureMatcher newMatcher)
+    {
+        matcher = newMatcher;
+    }
 
     public void Start()
     {
@@ -129,8 +141,15 @@ public sealed class GestureService : IDisposable
                 return;
             }
 
-            actionExecutor.Execute(rule);
-            GestureRecognized?.Invoke(this, new GestureRecognizedEventArgs(pattern, rule.ActionName));
+            try
+            {
+                actionExecutor.Execute(rule);
+                GestureRecognized?.Invoke(this, new GestureRecognizedEventArgs(pattern, rule.ActionName));
+            }
+            catch (Exception exception)
+            {
+                GestureActionFailed?.Invoke(this, new GestureActionFailedEventArgs(pattern, rule.ActionName, exception));
+            }
         });
     }
 

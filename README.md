@@ -7,6 +7,7 @@ Windows mouse gesture prototype using C# WinForms, WebView2, and a native global
 - Desktop shell: `src/MyGesture.App`
 - Frontend shell: `src/MyGesture.App/Web`
 - Existing AutoHotkey experiment: `gesture.ahk`
+- Gesture config: `%AppData%\MyGesture\gestures.json`
 
 The first prototype has three built-in global gestures:
 
