@@ -77,7 +77,7 @@ public sealed class MainForm : Form
             return;
         }
 
-        gestureHintForm.ShowResult(e.ActionName);
+        gestureHintForm.ShowResult(e.ActionName, autoHide: false);
     }
 
     private void OnGesturePreviewCleared(object? sender, EventArgs e)
@@ -117,6 +117,7 @@ public sealed class MainForm : Form
         });
 
         webView.CoreWebView2?.PostWebMessageAsJson(payload);
+        gestureHintForm.ShowResult(e.ActionName, autoHide: true);
     }
 
     private void OnGestureActionFailed(object? sender, GestureActionFailedEventArgs e)
