@@ -57,4 +57,43 @@ public sealed class GestureConfigMapperTests
         Assert.Equal("app:msedge", config.Rules[0].Scope);
         Assert.Equal("category:Browser", config.Rules[1].Scope);
     }
+
+    [Fact]
+    public void ToRules_KeepsScopeValues()
+    {
+        var config = new GestureConfig
+        {
+            Rules =
+            [
+                new GestureRuleConfig
+                {
+                    Scope = " app:msedge ",
+                    Pattern = ["Left"],
+                    ActionName = "Edge Back",
+                    Action = new GestureActionConfig
+                    {
+                        Type = "hotkey",
+                        Keys = ["Alt", "Left"]
+                    }
+                },
+                new GestureRuleConfig
+                {
+                    Scope = "category:Browser",
+                    Pattern = ["Right"],
+                    ActionName = "Browser Forward",
+                    Action = new GestureActionConfig
+                    {
+                        Type = "hotkey",
+                        Keys = ["Alt", "Right"]
+                    }
+                }
+            ]
+        };
+
+        var rules = GestureConfigMapper.ToRules(config);
+
+        Assert.Equal(2, rules.Count);
+        Assert.Equal("app:msedge", rules[0].Scope);
+        Assert.Equal("category:Browser", rules[1].Scope);
+    }
 }

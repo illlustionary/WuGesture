@@ -123,7 +123,7 @@ MouseHook
 
 当前支持的配置：
 
-- `scope`：当前仅支持 `global`。
+- `scope`：支持 `global`、`category:<分类名>`、`app:<进程名>`；运行时按 `app > category > global` 优先级匹配。
 - `pattern`：手势方向列表，例如 `["Down", "Right"]`。
 - `action.type`：当前仅支持 `hotkey`。
 - `action.keys`：按键列表，例如 `["Control", "W"]`。
@@ -151,22 +151,26 @@ src\MyGesture.App\Web
 - `package.json`：前端工程依赖与脚本。
 - `vite.config.js`：Vite 构建配置。
 - `src\main.js`：Vue 入口。
-- `src\App.vue`：规则编辑器主组件。
+- `src\App.vue`：路由壳和顶栏。
+- `src\components\`：页面壳、左侧插槽和规则表等通用组件。
+- `src\composables\gestureEditorStore.js`：共享编辑状态、WebView 消息和快捷键监听。
+- `src\pages\`：`global`、`category`、`app` 三个路由页。
 - `src\styles.css`：编辑器样式。
-- `dist\`：Vite 构建产物目录，由桌面宿主加载。
+- `dist\web\`：Vite 构建产物目录，由桌面宿主加载。
 
 构建方式：
 
-- 前端使用 `pnpm build` 生成 `dist`。
+- 前端使用 `pnpm build` 生成根目录下的 `dist\web`。
 - `MyGesture.App.csproj` 会在 `.NET` 构建前自动执行前端构建。
-- 桌面宿主通过 WebView2 虚拟主机 `https://appassets.local/` 加载 `Web\dist`。
+- `MyGesture.App.csproj` 会在前端构建后把 `dist\web` 复制到宿主输出目录中的 `Web\dist`。
+- 桌面宿主通过 WebView2 虚拟主机 `https://appassets.local/` 加载宿主输出目录中的 `Web\dist`。
 
 当前 UI：
 
 - 3 个规则 tab：`全局`、`分类`、`App`。
-- `全局` 使用单列规则卡片编辑。
-- `分类` 和 `App` 使用左右分栏，左侧选择具体项，右侧编辑对应规则。
-- 可编辑规则方向、动作名称和热键字符串。
+- `全局` 不显示左侧列表，直接编辑整张表。
+- `分类` 和 `App` 使用左右分栏，左侧选择具体项，右侧采用上下布局，顶部显示当前项图标位，底部显示三列表格。
+- 规则表列为 `名称`、`手势`、`命令`，删除按钮在每行右侧。
 - 已移除编辑器内的手势提示区，只保留配置结果提示。
 - 热键输入在获得焦点时会监听按键：
   - 修饰键/特殊键组合会自动记录。

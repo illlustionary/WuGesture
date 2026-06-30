@@ -287,6 +287,12 @@ public sealed class MainForm : Form
     private void ConfigureWebViewHostMapping()
     {
         var webDistPath = Path.Combine(AppContext.BaseDirectory, "Web", "dist");
+        if (!Directory.Exists(webDistPath))
+        {
+            throw new DirectoryNotFoundException(
+                $"Web frontend output was not found at '{webDistPath}'. Run 'dotnet build MyGesture.slnx' from the repository root first.");
+        }
+
         webView.CoreWebView2!.SetVirtualHostNameToFolderMapping(
             "appassets.local",
             webDistPath,
