@@ -31,7 +31,7 @@ const appDraft = ref("");
               @keydown.enter.prevent="editor.createScopeTarget(scopeKind, appDraft); appDraft = ''"
             >
             <button type="button" class="secondary-button" @click="editor.createScopeTarget(scopeKind, appDraft); appDraft = ''">新增 App</button>
-            <button type="button" class="secondary-button" @click="editor.selectApplication()">选择程序...</button>
+            <button type="button" class="secondary-button" @click="editor.openApplicationPicker()">添加程序...</button>
             <button type="button" class="ghost-button" @click="editor.deleteSelectedScope(scopeKind)">删除 App</button>
           </div>
         </template>
@@ -112,9 +112,9 @@ const appDraft = ref("");
               <button
                 type="button"
                 class="secondary-button"
-                @click="editor.selectApplication(editor.getApplication()?.category ?? '')"
+                @click="editor.openApplicationPicker(editor.getApplication()?.category ?? '')"
               >
-                选择程序...
+                添加程序...
               </button>
             </div>
           </section>

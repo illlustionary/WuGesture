@@ -436,6 +436,50 @@ p {
   color: var(--danger);
 }
 
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.18);
+  z-index: 20;
+}
+
+.modal-panel {
+  width: min(480px, 100%);
+  padding: 14px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.16);
+}
+
+.modal-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.picker-options {
+  display: grid;
+  gap: 10px;
+}
+
+.picker-option {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  padding: 14px;
+  text-align: left;
+}
+
+.picker-option span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
 @media (max-width: 1100px) {
   .page-shell__grid--split {
     grid-template-columns: 1fr;

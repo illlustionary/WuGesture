@@ -40,6 +40,8 @@ const state = reactive({
   nextId: 1,
   selectedCategory: "",
   selectedApp: "",
+  applicationPickerOpen: false,
+  applicationPickerCategory: "",
   recordingInput: null
 });
 
@@ -82,7 +84,10 @@ export function useGestureEditorStore() {
     createScopeTarget,
     renameSelectedScope,
     deleteSelectedScope,
+    openApplicationPicker,
+    closeApplicationPicker,
     selectApplication,
+    pickApplicationWindow,
     saveRules,
     reloadRules,
     resetRules,
@@ -335,11 +340,33 @@ function removeAppFromCategory(appName, categoryName = getSelectedName("category
   }
 }
 
+function openApplicationPicker(categoryName = "") {
+  state.applicationPickerCategory = String(categoryName ?? "").trim();
+  state.applicationPickerOpen = true;
+}
+
+function closeApplicationPicker() {
+  state.applicationPickerOpen = false;
+  state.applicationPickerCategory = "";
+}
+
 function selectApplication(categoryName = "") {
+  const category = String(categoryName || state.applicationPickerCategory || "").trim();
+  closeApplicationPicker();
   postWebMessage({
     type: "select-application",
     requestId: createRequestId(),
-    category: String(categoryName ?? "").trim()
+    category
+  });
+}
+
+function pickApplicationWindow(categoryName = "") {
+  const category = String(categoryName || state.applicationPickerCategory || "").trim();
+  closeApplicationPicker();
+  postWebMessage({
+    type: "pick-application-window",
+    requestId: createRequestId(),
+    category
   });
 }
 

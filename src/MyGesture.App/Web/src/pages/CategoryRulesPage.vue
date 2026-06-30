@@ -69,7 +69,7 @@ const categoryDraft = ref("");
                 <h3>应用程序</h3>
               </div>
               <div class="rules-panel__actions">
-                <button type="button" class="secondary-button" @click="editor.selectApplication(editor.getSelectedName(scopeKind))">添加程序...</button>
+                <button type="button" class="secondary-button" @click="editor.openApplicationPicker(editor.getSelectedName(scopeKind))">添加程序...</button>
               </div>
             </div>
 

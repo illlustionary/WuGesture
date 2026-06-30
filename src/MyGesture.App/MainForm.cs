@@ -217,6 +217,9 @@ public sealed class MainForm : Form
             case "select-application":
                 SelectApplication(json);
                 break;
+            case "pick-application-window":
+                PickApplicationWindow(json);
+                break;
             case "save-rules":
                 SaveRules(json);
                 break;
@@ -226,6 +229,36 @@ public sealed class MainForm : Form
             case "reset-rules":
                 ResetRules();
                 break;
+        }
+    }
+
+    private void PickApplicationWindow(string json)
+    {
+        try
+        {
+            var message = JsonSerializer.Deserialize<SelectApplicationWebMessage>(json, WebMessageJsonOptions);
+            using var picker = new ApplicationTargetPickerForm();
+            var result = picker.ShowDialog(this);
+            if (result == DialogResult.Abort)
+            {
+                PostConfigResult(false, picker.ErrorMessage);
+                return;
+            }
+
+            if (result != DialogResult.OK || picker.PickedApplication is null)
+            {
+                return;
+            }
+
+            PostApplicationSelected(
+                message?.RequestId ?? "",
+                picker.PickedApplication.Name,
+                picker.PickedApplication.Path,
+                message?.Category ?? "");
+        }
+        catch (Exception exception)
+        {
+            PostConfigResult(false, exception.Message);
         }
     }
 
@@ -247,21 +280,30 @@ public sealed class MainForm : Form
                 return;
             }
 
-            var payload = JsonSerializer.Serialize(new
-            {
-                type = "application-selected",
-                requestId = message?.RequestId ?? "",
-                name = Path.GetFileNameWithoutExtension(dialog.FileName),
-                path = dialog.FileName,
-                category = message?.Category ?? ""
-            });
-
-            webView.CoreWebView2?.PostWebMessageAsJson(payload);
+            PostApplicationSelected(
+                message?.RequestId ?? "",
+                Path.GetFileNameWithoutExtension(dialog.FileName),
+                dialog.FileName,
+                message?.Category ?? "");
         }
         catch (Exception exception)
         {
             PostConfigResult(false, exception.Message);
         }
+    }
+
+    private void PostApplicationSelected(string requestId, string name, string path, string category)
+    {
+        var payload = JsonSerializer.Serialize(new
+        {
+            type = "application-selected",
+            requestId,
+            name,
+            path,
+            category
+        });
+
+        webView.CoreWebView2?.PostWebMessageAsJson(payload);
     }
 
     private void SaveRules(string json)
