@@ -82,7 +82,10 @@ const categoryDraft = ref("");
                 :key="app.name"
                 class="app-list__item"
               >
-                <span class="app-list__name">{{ app.name }}</span>
+                <span class="app-list__name">
+                  <img v-if="app.icon" class="app-icon app-icon--small" :src="app.icon" alt="">
+                  <span>{{ app.displayName || app.name }}</span>
+                </span>
                 <span class="app-list__path">{{ app.path || "未设置路径" }}</span>
                 <button type="button" class="ghost-button" @click="editor.removeAppFromCategory(app.name)">移除</button>
               </div>
