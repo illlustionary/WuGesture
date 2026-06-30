@@ -173,6 +173,7 @@ src\MyGesture.App\Web
 - `全局` 直接编辑整张表。
 - `分类` 和 `App` 采用三栏骨架：左侧是分类/App 列表，中间是当前项内容区，右侧是参数区占位。
 - `分类` 和 `App` 页的中间内容区保留“应用程序”和“手势列表”两个区块，分类页可管理当前分类下的 App，App 页可设置所属分类。
+- 添加程序时会先显示前端弹窗，用户可按住“拖动准星选择窗口”拖到目标窗口松开，或选择“浏览 exe 文件”作为备用方式。
 - 规则表列为 `名称`、`手势`、`命令`，删除按钮在每行右侧。
 - 已移除编辑器内的手势提示区，只保留配置结果提示。
 - 热键输入在获得焦点时会监听按键：
@@ -184,6 +185,7 @@ WebView 消息流：
 - 前端发送：
   - `"get-status"`
   - `{ type: "select-application", requestId: "...", category: "..." }`
+  - `{ type: "pick-application-window", requestId: "...", category: "..." }`
   - `{ type: "save-rules", rules: [...], applications: [...] }`
   - `{ type: "reload-rules" }`
   - `{ type: "reset-rules" }`
