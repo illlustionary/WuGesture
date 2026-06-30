@@ -1,5 +1,6 @@
 using Microsoft.Web.WebView2.WinForms;
 using MyGesture.App.GestureEngine;
+using System.Drawing.Imaging;
 using System.Text.Json;
 
 namespace MyGesture.App;
@@ -180,8 +181,10 @@ public sealed class MainForm : Form
             applications = loadedConfig.Config.Applications.Select(application => new
             {
                 name = application.Name,
+                displayName = application.DisplayName,
                 path = application.Path,
-                category = application.Category
+                category = application.Category,
+                icon = GetApplicationIconDataUrl(application.Path)
             }).ToArray()
         });
 
@@ -253,6 +256,7 @@ public sealed class MainForm : Form
             PostApplicationSelected(
                 message?.RequestId ?? "",
                 picker.PickedApplication.Name,
+                picker.PickedApplication.Name,
                 picker.PickedApplication.Path,
                 message?.Category ?? "");
         }
@@ -283,6 +287,7 @@ public sealed class MainForm : Form
             PostApplicationSelected(
                 message?.RequestId ?? "",
                 Path.GetFileNameWithoutExtension(dialog.FileName),
+                Path.GetFileNameWithoutExtension(dialog.FileName),
                 dialog.FileName,
                 message?.Category ?? "");
         }
@@ -292,18 +297,46 @@ public sealed class MainForm : Form
         }
     }
 
-    private void PostApplicationSelected(string requestId, string name, string path, string category)
+    private void PostApplicationSelected(string requestId, string name, string displayName, string path, string category)
     {
         var payload = JsonSerializer.Serialize(new
         {
             type = "application-selected",
             requestId,
             name,
+            displayName,
             path,
-            category
+            category,
+            icon = GetApplicationIconDataUrl(path)
         });
 
         webView.CoreWebView2?.PostWebMessageAsJson(payload);
+    }
+
+    private static string GetApplicationIconDataUrl(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+        {
+            return "";
+        }
+
+        try
+        {
+            using var icon = Icon.ExtractAssociatedIcon(path);
+            if (icon is null)
+            {
+                return "";
+            }
+
+            using var bitmap = icon.ToBitmap();
+            using var stream = new MemoryStream();
+            bitmap.Save(stream, ImageFormat.Png);
+            return "data:image/png;base64," + Convert.ToBase64String(stream.ToArray());
+        }
+        catch
+        {
+            return "";
+        }
     }
 
     private void SaveRules(string json)

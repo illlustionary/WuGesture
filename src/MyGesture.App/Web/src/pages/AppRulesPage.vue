@@ -45,7 +45,10 @@ const appDraft = ref("");
             :class="{ active: item.name === editor.getSelectedName(scopeKind) }"
             @click="editor.selectScope(scopeKind, item.name)"
           >
-            <span>{{ item.name }}</span>
+            <span class="scope-item__main">
+              <img v-if="item.icon" class="app-icon app-icon--small" :src="item.icon" alt="">
+              <span>{{ item.displayName || item.name }}</span>
+            </span>
             <small>{{ item.count }} 条</small>
           </button>
         </div>
@@ -56,9 +59,12 @@ const appDraft = ref("");
     <template #right>
       <section class="rules-panel rules-panel--stacked rules-panel--three-col">
         <div class="scope-preview">
-          <div class="scope-preview__icon">A</div>
+          <div class="scope-preview__icon">
+            <img v-if="editor.getApplication()?.icon" class="app-icon" :src="editor.getApplication()?.icon" alt="">
+            <span v-else>A</span>
+          </div>
           <div>
-            <h3>{{ editor.getSelectedName(scopeKind) || "未选择 App" }}</h3>
+            <h3>{{ editor.getApplication()?.displayName || editor.getSelectedName(scopeKind) || "未选择 App" }}</h3>
             <p>左侧是 App 列表，中间编辑当前 App 的规则，右侧保留参数区域。</p>
           </div>
         </div>
@@ -74,6 +80,15 @@ const appDraft = ref("");
             <div class="app-detail">
               <label>
                 <span>程序名称</span>
+                <input
+                  class="scope-input"
+                  :value="editor.getApplication()?.displayName || editor.getSelectedName(scopeKind)"
+                  @input="editor.updateApplicationDisplayName(editor.getSelectedName(scopeKind), $event.target.value)"
+                >
+              </label>
+
+              <label>
+                <span>进程名称</span>
                 <input
                   class="scope-input"
                   :value="editor.getSelectedName(scopeKind)"

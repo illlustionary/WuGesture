@@ -239,6 +239,13 @@ p {
   color: var(--muted);
 }
 
+.scope-item__main {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
 .rules-panel {
   display: flex;
   flex-direction: column;
@@ -271,6 +278,11 @@ p {
   background: linear-gradient(#ffffff, #f2f2f2);
   color: #333;
   font-weight: 700;
+}
+
+.scope-preview__icon .app-icon {
+  width: 24px;
+  height: 24px;
 }
 
 .rules-panel__body {
@@ -371,6 +383,24 @@ p {
   white-space: nowrap;
   text-overflow: ellipsis;
   color: #222;
+}
+
+.app-list__name {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.app-icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.app-icon--small {
+  width: 20px;
+  height: 20px;
 }
 
 .app-detail {

@@ -25,8 +25,8 @@ const DEFAULT_RULES = [
 ];
 
 const DEFAULT_APPLICATIONS = [
-  { name: "msedge", path: "", category: "浏览器" },
-  { name: "chrome", path: "", category: "浏览器" }
+  { name: "msedge", displayName: "Microsoft Edge", path: "", category: "浏览器", icon: "" },
+  { name: "chrome", displayName: "Google Chrome", path: "", category: "浏览器", icon: "" }
 ];
 
 const state = reactive({
@@ -76,6 +76,7 @@ export function useGestureEditorStore() {
     getSelectedName,
     getApplicationsForCategory,
     getApplication,
+    updateApplicationDisplayName,
     updateApplicationCategory,
     assignSelectedAppToCategory,
     removeAppFromCategory,
@@ -300,6 +301,17 @@ function getApplication(appName = getSelectedName("app")) {
   return state.applications.find((application) => application.name === name) ?? null;
 }
 
+function updateApplicationDisplayName(appName = getSelectedName("app"), displayName = "") {
+  const name = String(appName ?? "").trim();
+  if (!name) {
+    setMessage("请先选择一个 App。", "error");
+    return;
+  }
+
+  const application = ensureApplication(name);
+  application.displayName = String(displayName ?? "").trim();
+}
+
 function updateApplicationCategory(appName = getSelectedName("app"), categoryName = "") {
   const name = String(appName ?? "").trim();
   if (!name) {
@@ -377,8 +389,10 @@ function addSelectedApplication(message) {
   }
 
   const application = ensureApplication(name);
+  application.displayName = String(message.displayName ?? application.displayName ?? name).trim();
   application.path = String(message.path ?? "").trim();
   application.category = String(message.category ?? application.category ?? "").trim();
+  application.icon = String(message.icon ?? application.icon ?? "").trim();
   setSelectedName("app", application.name);
   if (application.category) {
     setSelectedName("category", application.category);
@@ -549,8 +563,10 @@ function toViewRule(rule) {
 function toViewApplication(application) {
   return {
     name: String(application.name ?? "").trim(),
+    displayName: String(application.displayName ?? application.name ?? "").trim(),
     path: String(application.path ?? "").trim(),
-    category: String(application.category ?? "").trim()
+    category: String(application.category ?? "").trim(),
+    icon: String(application.icon ?? "").trim()
   };
 }
 
@@ -574,7 +590,7 @@ function ensureApplication(name) {
   const trimmed = String(name ?? "").trim();
   let application = state.applications.find((item) => item.name === trimmed);
   if (!application) {
-    application = { name: trimmed, path: "", category: "" };
+    application = { name: trimmed, displayName: trimmed, path: "", category: "", icon: "" };
     state.applications.push(application);
   }
 
@@ -603,6 +619,7 @@ function toPayloadRule(rule) {
 function toPayloadApplication(application) {
   return {
     name: application.name.trim(),
+    displayName: String(application.displayName || application.name || "").trim(),
     path: application.path.trim(),
     category: application.category.trim()
   };
@@ -624,7 +641,15 @@ function collectCategoryItems() {
   }
 
   return [...counts.entries()]
-    .map(([name, count]) => ({ name, count }))
+    .map(([name, count]) => {
+      const application = state.applications.find((item) => item.name === name);
+      return {
+        name,
+        count,
+        displayName: application?.displayName || name,
+        icon: application?.icon || ""
+      };
+    })
     .sort((left, right) => left.name.localeCompare(right.name, "zh-Hans-CN"));
 }
 

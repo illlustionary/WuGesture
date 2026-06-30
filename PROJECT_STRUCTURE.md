@@ -128,7 +128,7 @@ MouseHook
 - `pattern`：手势方向列表，例如 `["Down", "Right"]`。
 - `action.type`：当前仅支持 `hotkey`。
 - `action.keys`：按键列表，例如 `["Control", "W"]`。
-- `applications`：应用程序归属列表，每项包含 `name`、`path`、`category`，运行时通过前台进程名匹配 `name` 后得到分类。
+- `applications`：应用程序归属列表，每项包含 `name`、`displayName`、`path`、`category`，运行时通过前台进程名匹配 `name` 后得到分类；`displayName` 只用于 UI 展示和编辑。
 
 默认规则：
 
@@ -174,6 +174,8 @@ src\MyGesture.App\Web
 - `分类` 和 `App` 采用三栏骨架：左侧是分类/App 列表，中间是当前项内容区，右侧是参数区占位。
 - `分类` 和 `App` 页的中间内容区保留“应用程序”和“手势列表”两个区块，分类页可管理当前分类下的 App，App 页可设置所属分类。
 - 添加程序时会先显示前端弹窗，用户可按住“拖动准星选择窗口”拖到目标窗口松开，或选择“浏览 exe 文件”作为备用方式。
+- App 列表和详情会展示从 exe 路径动态提取的应用图标；图标通过 WebView 消息传递，不写入配置文件。
+- App 的显示名称可编辑，进程名称保持只读并用于规则匹配。
 - 规则表列为 `名称`、`手势`、`命令`，删除按钮在每行右侧。
 - 已移除编辑器内的手势提示区，只保留配置结果提示。
 - 热键输入在获得焦点时会监听按键：
@@ -191,8 +193,8 @@ WebView 消息流：
   - `{ type: "reset-rules" }`
 - 后端发送：
   - `{ type: "status", ... }`
-  - `{ type: "rules", rules: [...], applications: [...], ... }`
-  - `{ type: "application-selected", requestId: "...", name: "...", path: "...", category: "..." }`
+  - `{ type: "rules", rules: [...], applications: [{ name, displayName, path, category, icon }, ...], ... }`
+  - `{ type: "application-selected", requestId: "...", name: "...", displayName: "...", path: "...", category: "...", icon: "..." }`
   - `{ type: "gesture", ... }`
   - `{ type: "gesture-action-failed", ... }`
   - `{ type: "config-result", ... }`

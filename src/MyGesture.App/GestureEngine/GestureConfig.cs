@@ -11,6 +11,8 @@ public sealed class GestureApplicationConfig
 {
     public string Name { get; set; } = "";
 
+    public string DisplayName { get; set; } = "";
+
     public string Path { get; set; } = "";
 
     public string Category { get; set; } = "";
