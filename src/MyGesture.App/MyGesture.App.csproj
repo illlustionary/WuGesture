@@ -16,13 +16,20 @@
   <ItemGroup>
     <None Include="Web\package.json" />
     <None Include="Web\vite.config.js" />
-    <Content Include="Web\dist\**\*">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
 
   <Target Name="BuildWebFrontend" BeforeTargets="PrepareForBuild">
-    <Exec WorkingDirectory="$(MSBuildProjectDirectory)\Web" Command="npm run build" />
+    <Exec WorkingDirectory="$(MSBuildProjectDirectory)\Web" Command="pnpm build" />
+  </Target>
+
+  <Target Name="CopyWebFrontendOutput" AfterTargets="BuildWebFrontend">
+    <ItemGroup>
+      <WebFrontendFiles Include="..\..\dist\web\**\*" />
+    </ItemGroup>
+
+    <Copy
+      SourceFiles="@(WebFrontendFiles)"
+      DestinationFiles="@(WebFrontendFiles->'$(OutputPath)Web\dist\%(RecursiveDir)%(Filename)%(Extension)')" />
   </Target>
 
 </Project>

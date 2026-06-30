@@ -34,4 +34,50 @@ public sealed class GestureMatcherTests
         Assert.NotNull(rule);
         Assert.Equal("Browser Forward", rule!.ActionName);
     }
+
+    [Fact]
+    public void Match_FallsBackToGlobalWhenAppAndCategoryDoNotMatch()
+    {
+        var matcher = new GestureMatcher(
+        [
+            new([GestureDirection.Down], "global", "Global Close", new HotkeyAction([])),
+            new([GestureDirection.Down], "category:Browser", "Browser Close", new HotkeyAction([])),
+            new([GestureDirection.Down], "app:msedge", "Edge Close", new HotkeyAction([]))
+        ]);
+
+        var rule = matcher.Match([GestureDirection.Down], new GestureScopeContext("notepad", "Edit"));
+
+        Assert.NotNull(rule);
+        Assert.Equal("Global Close", rule!.ActionName);
+    }
+
+    [Fact]
+    public void Match_SupportsCaseInsensitivePrefixedScopes()
+    {
+        var matcher = new GestureMatcher(
+        [
+            new([GestureDirection.Up], " CATEGORY: browser ", "Browser Up", new HotkeyAction([])),
+            new([GestureDirection.Up], " APP: MSEDGE ", "Edge Up", new HotkeyAction([]))
+        ]);
+
+        var rule = matcher.Match([GestureDirection.Up], new GestureScopeContext("msedge", "Browser"));
+
+        Assert.NotNull(rule);
+        Assert.Equal("Edge Up", rule!.ActionName);
+    }
+
+    [Fact]
+    public void Match_SupportsLegacyUnprefixedAppAndCategoryScopes()
+    {
+        var matcher = new GestureMatcher(
+        [
+            new([GestureDirection.UpLeft], "Browser", "Browser Diagonal", new HotkeyAction([])),
+            new([GestureDirection.UpLeft], "msedge", "Edge Diagonal", new HotkeyAction([]))
+        ]);
+
+        var rule = matcher.Match([GestureDirection.UpLeft], new GestureScopeContext("msedge", "Browser"));
+
+        Assert.NotNull(rule);
+        Assert.Equal("Edge Diagonal", rule!.ActionName);
+    }
 }
