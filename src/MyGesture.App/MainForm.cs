@@ -53,9 +53,9 @@ public sealed class MainForm : Form
         }
 
         webView.CoreWebView2.WebMessageReceived += (_, args) => HandleWebMessage(args.WebMessageAsJson);
+        ConfigureWebViewHostMapping();
 
-        var webRoot = Path.Combine(AppContext.BaseDirectory, "Web", "index.html");
-        webView.Source = new Uri(webRoot);
+        webView.Source = new Uri("https://appassets.local/index.html");
 
         gestureService.GesturePreviewMatched += OnGesturePreviewMatched;
         gestureService.GesturePreviewCleared += OnGesturePreviewCleared;
@@ -282,6 +282,15 @@ public sealed class MainForm : Form
         });
 
         webView.CoreWebView2?.PostWebMessageAsJson(payload);
+    }
+
+    private void ConfigureWebViewHostMapping()
+    {
+        var webDistPath = Path.Combine(AppContext.BaseDirectory, "Web", "dist");
+        webView.CoreWebView2!.SetVirtualHostNameToFolderMapping(
+            "appassets.local",
+            webDistPath,
+            Microsoft.Web.WebView2.Core.CoreWebView2HostResourceAccessKind.Allow);
     }
 
     private void BeginInvokeSafe(Action action)

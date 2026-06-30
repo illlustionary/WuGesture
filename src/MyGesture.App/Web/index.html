@@ -4,38 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>My Gesture</title>
-  <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
-  <main class="app-shell">
-    <section class="toolbar">
-      <div>
-        <h1>My Gesture</h1>
-        <p>全局鼠标手势引擎原型</p>
-      </div>
-      <span id="status" class="status">启动中</span>
-    </section>
-
-    <section class="panel">
-      <h2>当前规则</h2>
-      <div id="configPath" class="config-path">读取中</div>
-      <div class="rule-actions">
-        <button id="saveRules" type="button">保存</button>
-        <button id="reloadRules" type="button">重新加载</button>
-        <button id="resetRules" type="button">恢复默认</button>
-        <span id="configMessage"></span>
-      </div>
-      <div id="rules" class="rules"></div>
-    </section>
-
-    <section class="panel">
-      <h2>最近识别</h2>
-      <div id="lastGesture" class="last-gesture">暂无</div>
-    </section>
-
-    <div id="gestureDock" class="gesture-dock">等待手势</div>
-  </main>
-
-  <script src="./app.js"></script>
+  <div id="app"></div>
+  <script type="module" src="/src/main.js"></script>
 </body>
 </html>

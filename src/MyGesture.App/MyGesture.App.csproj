@@ -14,9 +14,15 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Web\**\*">
+    <None Include="Web\package.json" />
+    <None Include="Web\vite.config.js" />
+    <Content Include="Web\dist\**\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
+
+  <Target Name="BuildWebFrontend" BeforeTargets="PrepareForBuild">
+    <Exec WorkingDirectory="$(MSBuildProjectDirectory)\Web" Command="npm run build" />
+  </Target>
 
 </Project>
