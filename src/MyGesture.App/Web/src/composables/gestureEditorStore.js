@@ -24,6 +24,11 @@ const DEFAULT_RULES = [
   }
 ];
 
+const DEFAULT_APPLICATIONS = [
+  { name: "msedge", path: "", category: "浏览器" },
+  { name: "chrome", path: "", category: "浏览器" }
+];
+
 const state = reactive({
   statusText: "启动中",
   statusState: "idle",
@@ -31,6 +36,7 @@ const state = reactive({
   configMessage: "",
   configMessageState: "idle",
   rules: [],
+  applications: [],
   nextId: 1,
   selectedCategory: "",
   selectedApp: "",
@@ -44,8 +50,8 @@ export function useGestureEditorStore() {
   const globalRules = computed(() => getRulesForScope("global"));
   const categoryRules = computed(() => getRulesByKind("category"));
   const appRules = computed(() => getRulesByKind("app"));
-  const categoryItems = computed(() => collectScopeItems(categoryRules.value));
-  const appItems = computed(() => collectScopeItems(appRules.value));
+  const categoryItems = computed(() => collectCategoryItems());
+  const appItems = computed(() => collectAppItems());
 
   const selectedScopeName = computed(() => getSelectedName(activeScope.value));
   const visibleRules = computed(() => getVisibleRules(activeScope.value));
@@ -66,11 +72,17 @@ export function useGestureEditorStore() {
     getRulesForScope,
     getScopeItems,
     getSelectedName,
+    getApplicationsForCategory,
+    getApplication,
+    updateApplicationCategory,
+    assignSelectedAppToCategory,
+    removeAppFromCategory,
     addRule,
     removeRule,
     createScopeTarget,
     renameSelectedScope,
     deleteSelectedScope,
+    selectApplication,
     saveRules,
     reloadRules,
     resetRules,
@@ -91,7 +103,7 @@ function initialize() {
     state.statusText = "浏览器预览";
     state.statusState = "idle";
     state.configPath = "内置默认规则";
-    replaceRules(DEFAULT_RULES);
+    replaceConfig(DEFAULT_RULES, DEFAULT_APPLICATIONS);
     return;
   }
 
@@ -110,17 +122,23 @@ function handleMessage(message) {
 
   if (message.type === "rules") {
     state.configPath = message.configPath;
-    replaceRules(message.rules ?? []);
+    replaceConfig(message.rules ?? [], message.applications ?? []);
     return;
   }
 
   if (message.type === "config-result") {
     setMessage(message.message, message.success ? "success" : "error");
+    return;
+  }
+
+  if (message.type === "application-selected") {
+    addSelectedApplication(message);
   }
 }
 
-function replaceRules(rules) {
+function replaceConfig(rules, applications) {
   state.rules = rules.map((rule) => toViewRule(rule));
+  state.applications = applications.map((application) => toViewApplication(application));
   ensureSelection("category");
   ensureSelection("app");
 }
@@ -161,7 +179,7 @@ function getRulesByKind(kind) {
 }
 
 function getScopeItems(kind) {
-  return kind === "category" ? collectScopeItems(categoryRulesSnapshot()) : collectScopeItems(appRulesSnapshot());
+  return kind === "category" ? collectCategoryItems() : collectAppItems();
 }
 
 function categoryRulesSnapshot() {
@@ -222,6 +240,19 @@ function renameSelectedScope(kind, nextName) {
     }
   }
 
+  if (kind === "category") {
+    for (const application of state.applications) {
+      if (application.category === currentName) {
+        application.category = name;
+      }
+    }
+  } else if (kind === "app") {
+    const application = state.applications.find((item) => item.name === currentName);
+    if (application) {
+      application.name = name;
+    }
+  }
+
   setSelectedName(kind, name);
 }
 
@@ -232,8 +263,101 @@ function deleteSelectedScope(kind = activeScope.value) {
   }
 
   state.rules = state.rules.filter((rule) => !(rule.scopeKind === kind && rule.scopeName === name));
+  if (kind === "category") {
+    for (const application of state.applications) {
+      if (application.category === name) {
+        application.category = "";
+      }
+    }
+  } else if (kind === "app") {
+    state.applications = state.applications.filter((application) => application.name !== name);
+  }
+
   ensureSelection(kind);
   setMessage("已删除当前项。", "success");
+}
+
+function getApplicationsForCategory(categoryName = getSelectedName("category")) {
+  const trimmed = String(categoryName ?? "").trim();
+  if (!trimmed) {
+    return [];
+  }
+
+  return state.applications.filter((application) => application.category === trimmed);
+}
+
+function getApplication(appName = getSelectedName("app")) {
+  const name = String(appName ?? "").trim();
+  if (!name) {
+    return null;
+  }
+
+  return state.applications.find((application) => application.name === name) ?? null;
+}
+
+function updateApplicationCategory(appName = getSelectedName("app"), categoryName = "") {
+  const name = String(appName ?? "").trim();
+  if (!name) {
+    setMessage("请先选择一个 App。", "error");
+    return;
+  }
+
+  const application = ensureApplication(name);
+  application.category = String(categoryName ?? "").trim();
+  setMessage(application.category ? "已设置 App 分类。" : "已清除 App 分类。", "success");
+}
+
+function assignSelectedAppToCategory(categoryName = getSelectedName("category"), appName = getSelectedName("app")) {
+  const category = String(categoryName ?? "").trim();
+  const name = String(appName ?? "").trim();
+  if (!category || !name) {
+    setMessage("请先选择分类和 App。", "error");
+    return;
+  }
+
+  const application = ensureApplication(name);
+  application.category = category;
+  setSelectedName("category", category);
+  setMessage("已关联 App 到分类。", "success");
+}
+
+function removeAppFromCategory(appName, categoryName = getSelectedName("category")) {
+  const category = String(categoryName ?? "").trim();
+  const name = String(appName ?? "").trim();
+  if (!category || !name) {
+    return;
+  }
+
+  const application = state.applications.find((item) => item.name === name && item.category === category);
+  if (application) {
+    application.category = "";
+    setMessage("已移除分类关联。", "success");
+  }
+}
+
+function selectApplication(categoryName = "") {
+  postWebMessage({
+    type: "select-application",
+    requestId: createRequestId(),
+    category: String(categoryName ?? "").trim()
+  });
+}
+
+function addSelectedApplication(message) {
+  const name = String(message.name ?? "").trim();
+  if (!name) {
+    return;
+  }
+
+  const application = ensureApplication(name);
+  application.path = String(message.path ?? "").trim();
+  application.category = String(message.category ?? application.category ?? "").trim();
+  setSelectedName("app", application.name);
+  if (application.category) {
+    setSelectedName("category", application.category);
+  }
+
+  setMessage("已添加程序。", "success");
 }
 
 function saveRules() {
@@ -255,7 +379,8 @@ function saveRules() {
 
   postWebMessage({
     type: "save-rules",
-    rules: payloadRules
+    rules: payloadRules,
+    applications: state.applications.map(toPayloadApplication)
   });
 }
 
@@ -394,7 +519,19 @@ function toViewRule(rule) {
   };
 }
 
+function toViewApplication(application) {
+  return {
+    name: String(application.name ?? "").trim(),
+    path: String(application.path ?? "").trim(),
+    category: String(application.category ?? "").trim()
+  };
+}
+
 function createRule(scopeKind, scopeName) {
+  if (scopeKind === "app") {
+    ensureApplication(scopeName);
+  }
+
   return {
     id: createRuleId(state.nextId++),
     scopeKind,
@@ -404,6 +541,17 @@ function createRule(scopeKind, scopeName) {
     keysText: "Alt + Left",
     actionType: "hotkey"
   };
+}
+
+function ensureApplication(name) {
+  const trimmed = String(name ?? "").trim();
+  let application = state.applications.find((item) => item.name === trimmed);
+  if (!application) {
+    application = { name: trimmed, path: "", category: "" };
+    state.applications.push(application);
+  }
+
+  return application;
 }
 
 function toPayloadRule(rule) {
@@ -425,12 +573,46 @@ function toPayloadRule(rule) {
   };
 }
 
-function collectScopeItems(rules) {
+function toPayloadApplication(application) {
+  return {
+    name: application.name.trim(),
+    path: application.path.trim(),
+    category: application.category.trim()
+  };
+}
+
+function collectCategoryItems() {
   const counts = new Map();
 
-  for (const rule of rules) {
+  for (const rule of categoryRulesSnapshot()) {
     if (rule.scopeName) {
       counts.set(rule.scopeName, (counts.get(rule.scopeName) ?? 0) + 1);
+    }
+  }
+
+  for (const application of state.applications) {
+    if (application.category) {
+      counts.set(application.category, counts.get(application.category) ?? 0);
+    }
+  }
+
+  return [...counts.entries()]
+    .map(([name, count]) => ({ name, count }))
+    .sort((left, right) => left.name.localeCompare(right.name, "zh-Hans-CN"));
+}
+
+function collectAppItems() {
+  const counts = new Map();
+
+  for (const rule of appRulesSnapshot()) {
+    if (rule.scopeName) {
+      counts.set(rule.scopeName, (counts.get(rule.scopeName) ?? 0) + 1);
+    }
+  }
+
+  for (const application of state.applications) {
+    if (application.name) {
+      counts.set(application.name, counts.get(application.name) ?? 0);
     }
   }
 
@@ -562,4 +744,12 @@ function createRuleId(seed) {
   }
 
   return `rule-${seed}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function createRequestId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+
+  return `request-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
