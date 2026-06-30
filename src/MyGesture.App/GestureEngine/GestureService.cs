@@ -4,8 +4,15 @@ namespace MyGesture.App.GestureEngine;
 
 public sealed class GestureService : IDisposable
 {
-    private const int MinimumPointDistance = 8;
+    private const int MinimumPointDistance = 3;
     private const int MinimumGestureDistance = 45;
+
+    private enum ActiveMouseButton
+    {
+        None,
+        Right,
+        Middle
+    }
 
     private readonly MouseHook mouseHook = new();
     private readonly GestureRecognizer recognizer = new();
@@ -19,6 +26,7 @@ public sealed class GestureService : IDisposable
     private GestureScopeContext currentScopeContext = GestureScopeContext.Empty;
     private SynchronizationContext? synchronizationContext;
     private bool isTracking;
+    private ActiveMouseButton activeMouseButton = ActiveMouseButton.None;
     private bool started;
     private bool disposed;
 
@@ -52,8 +60,10 @@ public sealed class GestureService : IDisposable
 
         synchronizationContext = SynchronizationContext.Current;
         mouseHook.RightButtonDown += OnRightButtonDown;
+        mouseHook.MiddleButtonDown += OnMiddleButtonDown;
         mouseHook.MouseMove += OnMouseMove;
         mouseHook.RightButtonUp += OnRightButtonUp;
+        mouseHook.MiddleButtonUp += OnMiddleButtonUp;
         mouseHook.Start();
         started = true;
     }
@@ -66,9 +76,12 @@ public sealed class GestureService : IDisposable
         }
 
         isTracking = false;
+        activeMouseButton = ActiveMouseButton.None;
         mouseHook.RightButtonDown -= OnRightButtonDown;
+        mouseHook.MiddleButtonDown -= OnMiddleButtonDown;
         mouseHook.MouseMove -= OnMouseMove;
         mouseHook.RightButtonUp -= OnRightButtonUp;
+        mouseHook.MiddleButtonUp -= OnMiddleButtonUp;
         mouseHook.Dispose();
         started = false;
     }
@@ -86,12 +99,23 @@ public sealed class GestureService : IDisposable
 
     private void OnRightButtonDown(object? sender, MouseHookEventArgs e)
     {
-        if (disposed)
+        StartTracking(e, ActiveMouseButton.Right, swallowInput: true);
+    }
+
+    private void OnMiddleButtonDown(object? sender, MouseHookEventArgs e)
+    {
+        StartTracking(e, ActiveMouseButton.Middle, swallowInput: false);
+    }
+
+    private void StartTracking(MouseHookEventArgs e, ActiveMouseButton button, bool swallowInput)
+    {
+        if (disposed || isTracking)
         {
             return;
         }
 
-        e.Handled = true;
+        e.Handled = swallowInput;
+        activeMouseButton = button;
         points.Clear();
         points.Add(e.Location);
         isTracking = true;
@@ -99,7 +123,7 @@ public sealed class GestureService : IDisposable
         lastProgressPattern = [];
         lastProgressPath = [];
         lastPreviewActionName = null;
-        RaiseProgress(points.ToArray(), [], true, force: true);
+        RaiseProgress(points.ToArray(), [], true, ToPublicButton(button), force: true);
     }
 
     private void OnMouseMove(object? sender, MouseHookEventArgs e)
@@ -121,56 +145,78 @@ public sealed class GestureService : IDisposable
 
     private void OnRightButtonUp(object? sender, MouseHookEventArgs e)
     {
-        if (disposed || !isTracking)
+        if (disposed || !isTracking || activeMouseButton != ActiveMouseButton.Right)
         {
             return;
         }
 
         e.Handled = true;
+        FinishTracking(e.Location, ActiveMouseButton.Right);
+    }
+
+    private void OnMiddleButtonUp(object? sender, MouseHookEventArgs e)
+    {
+        if (disposed || !isTracking || activeMouseButton != ActiveMouseButton.Middle)
+        {
+            return;
+        }
+
+        FinishTracking(e.Location, ActiveMouseButton.Middle);
+    }
+
+    private void FinishTracking(Point location, ActiveMouseButton button)
+    {
         isTracking = false;
-        points.Add(e.Location);
+        activeMouseButton = ActiveMouseButton.None;
+        points.Add(location);
         var path = points.ToArray();
 
-        if (points.Count < 2 || Distance(points[0], points[^1]) < MinimumGestureDistance)
+        if (button == ActiveMouseButton.Right)
         {
-            RaiseProgress(path, [], false, force: true);
-            Post(MouseInput.ReplayRightClick);
-            return;
-        }
-
-        var pattern = recognizer.Recognize(points);
-        var rule = matcher.Match(pattern, currentScopeContext);
-        if (rule is null)
-        {
-            RaiseProgress(path, pattern, false, force: true);
-            return;
-        }
-
-        RaiseProgress(path, pattern, false, force: true);
-        Post(() =>
-        {
-            if (disposed)
+            if (points.Count < 2 || Distance(points[0], points[^1]) < MinimumGestureDistance)
             {
+                RaiseProgress(path, [], false, ToPublicButton(button), force: true);
+                Post(MouseInput.ReplayRightClick);
                 return;
             }
 
-            try
+            var pattern = recognizer.Recognize(points);
+            var rule = matcher.Match(pattern, currentScopeContext);
+            if (rule is null)
             {
-                GestureRecognized?.Invoke(this, new GestureRecognizedEventArgs(path, pattern, rule.ActionName));
-                actionExecutor.Execute(rule);
+                RaiseProgress(path, pattern, false, ToPublicButton(button), force: true);
+                return;
             }
-            catch (Exception exception)
+
+            RaiseProgress(path, pattern, false, ToPublicButton(button), force: true);
+            Post(() =>
             {
-                GestureActionFailed?.Invoke(this, new GestureActionFailedEventArgs(path, pattern, rule.ActionName, exception));
-            }
-        });
+                if (disposed)
+                {
+                    return;
+                }
+
+                try
+                {
+                    GestureRecognized?.Invoke(this, new GestureRecognizedEventArgs(path, pattern, rule.ActionName));
+                    actionExecutor.Execute(rule);
+                }
+                catch (Exception exception)
+                {
+                    GestureActionFailed?.Invoke(this, new GestureActionFailedEventArgs(path, pattern, rule.ActionName, exception));
+                }
+            });
+            return;
+        }
+
+        RaiseProgress(path, [], false, ToPublicButton(button), force: true);
     }
 
     private void PublishProgress()
     {
         var pattern = recognizer.Recognize(points);
         var path = points.ToArray();
-        RaiseProgress(path, pattern, true);
+        RaiseProgress(path, pattern, true, ToPublicButton(activeMouseButton));
         RaisePreviewMatch(path, pattern, currentScopeContext);
     }
 
@@ -222,6 +268,7 @@ public sealed class GestureService : IDisposable
         IReadOnlyList<Point> path,
         IReadOnlyList<GestureDirection> pattern,
         bool isCurrentlyTracking,
+        GestureMouseButton button,
         bool force = false)
     {
         if (!force &&
@@ -239,7 +286,7 @@ public sealed class GestureService : IDisposable
             {
                 GestureProgressChanged?.Invoke(
                     this,
-                    new GestureProgressEventArgs(path, pattern, isCurrentlyTracking));
+                    new GestureProgressEventArgs(path, pattern, isCurrentlyTracking, button));
             }
         });
     }
@@ -261,5 +308,10 @@ public sealed class GestureService : IDisposable
         var dx = a.X - b.X;
         var dy = a.Y - b.Y;
         return Math.Sqrt(dx * dx + dy * dy);
+    }
+
+    private static GestureMouseButton ToPublicButton(ActiveMouseButton button)
+    {
+        return button == ActiveMouseButton.Middle ? GestureMouseButton.Middle : GestureMouseButton.Right;
     }
 }

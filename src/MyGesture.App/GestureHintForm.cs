@@ -30,6 +30,13 @@ public sealed class GestureHintForm : Form
 
     public GestureHintForm()
     {
+        SetStyle(
+            ControlStyles.UserPaint |
+            ControlStyles.AllPaintingInWmPaint |
+            ControlStyles.OptimizedDoubleBuffer |
+            ControlStyles.ResizeRedraw,
+            true);
+
         FormBorderStyle = FormBorderStyle.None;
         ShowInTaskbar = false;
         TopMost = true;
@@ -76,7 +83,7 @@ public sealed class GestureHintForm : Form
 
         if (autoHide)
         {
-            hideTimer.Start();
+            BeginFadeOut();
         }
     }
 
@@ -86,13 +93,36 @@ public sealed class GestureHintForm : Form
         BeginFadeOut();
     }
 
+    public void Preload()
+    {
+        if (IsDisposed || IsHandleCreated)
+        {
+            return;
+        }
+
+        title = "";
+        Opacity = 0;
+        MoveToBottomCenter();
+        Show();
+        Refresh();
+        Hide();
+        Opacity = VisibleOpacity;
+    }
+
     private void ShowOverlay()
     {
         MoveToBottomCenter();
 
+        var wasHidden = !Visible;
+        if (wasHidden)
+        {
+            Opacity = 0;
+        }
+
         if (!Visible)
         {
             Show();
+            Refresh();
         }
 
         NativeMethods.SetWindowPos(
@@ -105,6 +135,17 @@ public sealed class GestureHintForm : Form
             NativeMethods.SwpNoActivate | NativeMethods.SwpShowWindow);
 
         Invalidate();
+        Update();
+
+        if (wasHidden)
+        {
+            Opacity = VisibleOpacity;
+        }
+    }
+
+    protected override void OnPaintBackground(PaintEventArgs e)
+    {
+        e.Graphics.Clear(BackColor);
     }
 
     protected override void OnPaint(PaintEventArgs e)

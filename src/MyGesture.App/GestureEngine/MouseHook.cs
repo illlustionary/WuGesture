@@ -12,6 +12,8 @@ public sealed class MouseHook : IDisposable
     private const int WmMouseMove = 0x0200;
     private const int WmRButtonDown = 0x0204;
     private const int WmRButtonUp = 0x0205;
+    private const int WmMButtonDown = 0x0207;
+    private const int WmMButtonUp = 0x0208;
 
     private readonly LowLevelMouseProc proc;
     private IntPtr hookId;
@@ -26,6 +28,10 @@ public sealed class MouseHook : IDisposable
     public event EventHandler<MouseHookEventArgs>? MouseMove;
 
     public event EventHandler<MouseHookEventArgs>? RightButtonUp;
+
+    public event EventHandler<MouseHookEventArgs>? MiddleButtonDown;
+
+    public event EventHandler<MouseHookEventArgs>? MiddleButtonUp;
 
     public void Start()
     {
@@ -81,6 +87,12 @@ public sealed class MouseHook : IDisposable
                     break;
                 case WmRButtonUp:
                     RightButtonUp?.Invoke(this, args);
+                    break;
+                case WmMButtonDown:
+                    MiddleButtonDown?.Invoke(this, args);
+                    break;
+                case WmMButtonUp:
+                    MiddleButtonUp?.Invoke(this, args);
                     break;
             }
         }

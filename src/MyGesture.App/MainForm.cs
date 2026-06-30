@@ -13,6 +13,7 @@ public sealed class MainForm : Form
     private ConfiguredScopeContextProvider? scopeContextProvider;
     private LoadedGestureConfig? loadedConfig;
     private GestureService? gestureService;
+    private MouseTrailForm? mouseTrailForm;
     private bool isClosing;
 
     private static readonly JsonSerializerOptions WebMessageJsonOptions = new()
@@ -36,10 +37,12 @@ public sealed class MainForm : Form
             isClosing = true;
             gestureService?.Dispose();
             gestureHintForm.Hide();
+            DisposeMouseTrailForm();
         };
         FormClosed += (_, _) =>
         {
             gestureHintForm.Dispose();
+            DisposeMouseTrailForm();
         };
     }
 
@@ -59,11 +62,13 @@ public sealed class MainForm : Form
         ConfigureWebViewHostMapping();
 
         webView.Source = new Uri("https://appassets.local/index.html");
+        gestureHintForm.Preload();
 
         gestureService.GesturePreviewMatched += OnGesturePreviewMatched;
         gestureService.GesturePreviewCleared += OnGesturePreviewCleared;
         gestureService.GestureRecognized += OnGestureRecognized;
         gestureService.GestureActionFailed += OnGestureActionFailed;
+        gestureService.GestureProgressChanged += OnGestureProgressChanged;
         gestureService.Start();
     }
 
@@ -146,6 +151,28 @@ public sealed class MainForm : Form
         });
 
         webView.CoreWebView2?.PostWebMessageAsJson(payload);
+    }
+
+    private void OnGestureProgressChanged(object? sender, GestureProgressEventArgs e)
+    {
+        if (!CanUseUi())
+        {
+            return;
+        }
+
+        if (InvokeRequired)
+        {
+            BeginInvokeSafe(() => OnGestureProgressChanged(sender, e));
+            return;
+        }
+
+        if (!e.IsTracking || e.Path.Count < 2)
+        {
+            DisposeMouseTrailForm();
+            return;
+        }
+
+        EnsureMouseTrailForm().ShowPath(e.Path, e.Button);
     }
 
     private void PostStatus(string status)
@@ -443,6 +470,34 @@ public sealed class MainForm : Form
     private bool CanUseUi()
     {
         return !isClosing && !IsDisposed && !Disposing && IsHandleCreated;
+    }
+
+    private MouseTrailForm EnsureMouseTrailForm()
+    {
+        if (mouseTrailForm is { IsDisposed: false })
+        {
+            return mouseTrailForm;
+        }
+
+        mouseTrailForm?.Dispose();
+        mouseTrailForm = new MouseTrailForm();
+        return mouseTrailForm;
+    }
+
+    private void DisposeMouseTrailForm()
+    {
+        if (mouseTrailForm is null)
+        {
+            return;
+        }
+
+        if (!mouseTrailForm.IsDisposed)
+        {
+            mouseTrailForm.Close();
+            mouseTrailForm.Dispose();
+        }
+
+        mouseTrailForm = null;
     }
 
     private sealed class RulesWebMessage

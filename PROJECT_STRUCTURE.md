@@ -74,7 +74,7 @@ src\MyGesture.App\GestureEngine
 关键文件：
 
 - `MouseHook.cs`：低级全局鼠标钩子。
-- `GestureService.cs`：跟踪右键手势生命周期，调用识别器、匹配器和执行器，并向 UI 发送事件。
+- `GestureService.cs`：跟踪右键和中键轨迹生命周期，调用识别器、匹配器和执行器，并向 UI 发送事件。
 - `GestureRecognizer.cs`：把鼠标轨迹转换为稳定的 8 方向模式。
 - `GestureMatcher.cs`：将识别出的方向模式与已加载规则进行匹配，并按作用域优先级选择命中项。
 - `GestureScopeContext.cs`：当前前台窗口的 app/category 上下文模型。
@@ -85,6 +85,7 @@ src\MyGesture.App\GestureEngine
 - `GestureDirection.cs`：8 方向枚举。
 - `GestureRule.cs`：运行时规则和热键动作模型。
 - `GestureHintForm.cs`：独立的全局命中提示窗，移动过程中匹配到规则时立即显示规则名。
+- `MouseTrailForm.cs`：独立的全局透明覆盖窗，在按住中键或右键移动时绘制鼠标轨迹，松开后立即销毁。
 
 手势流水线：
 
@@ -101,6 +102,7 @@ MouseHook
 重要行为：
 
 - 右键按下/抬起在手势跟踪期间会被吞掉。
+- 中键按下/抬起不吞掉系统输入，只用于显示轨迹；轨迹窗在松开时立即销毁，不做淡出。
 - 如果移动太小，就会重放一次普通右键。
 - 移动过程中会增量识别当前轨迹；一旦匹配规则，全局提示窗会立即显示规则名。
 - 动作仍在右键抬起时执行。
