@@ -7,11 +7,13 @@ public sealed class GestureProgressEventArgs : EventArgs
     public GestureProgressEventArgs(
         IReadOnlyList<Point> path,
         IReadOnlyList<GestureDirection> pattern,
-        bool isTracking)
+        bool isTracking,
+        GestureMouseButton button)
     {
         Path = path;
         Pattern = pattern;
         IsTracking = isTracking;
+        Button = button;
     }
 
     public IReadOnlyList<Point> Path { get; }
@@ -19,4 +21,6 @@ public sealed class GestureProgressEventArgs : EventArgs
     public IReadOnlyList<GestureDirection> Pattern { get; }
 
     public bool IsTracking { get; }
+
+    public GestureMouseButton Button { get; }
 }
