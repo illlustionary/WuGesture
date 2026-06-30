@@ -78,7 +78,8 @@ src\MyGesture.App\GestureEngine
 - `GestureRecognizer.cs`：把鼠标轨迹转换为稳定的 8 方向模式。
 - `GestureMatcher.cs`：将识别出的方向模式与已加载规则进行匹配，并按作用域优先级选择命中项。
 - `GestureScopeContext.cs`：当前前台窗口的 app/category 上下文模型。
-- `ForegroundWindowScopeContextProvider.cs`：读取前台窗口进程名和窗口类名，供作用域匹配使用。
+- `ForegroundWindowScopeContextProvider.cs`：读取前台窗口进程名。
+- `ConfiguredScopeContextProvider.cs`：用配置里的应用程序列表把前台进程名映射到分类，供作用域匹配使用。
 - `ActionExecutor.cs`：通过 Win32 `SendInput` 执行热键。
 - `MouseInput.cs`：当移动距离太小，不足以构成手势时，重放一次普通右键。
 - `GestureDirection.cs`：8 方向枚举。
@@ -127,6 +128,7 @@ MouseHook
 - `pattern`：手势方向列表，例如 `["Down", "Right"]`。
 - `action.type`：当前仅支持 `hotkey`。
 - `action.keys`：按键列表，例如 `["Control", "W"]`。
+- `applications`：应用程序归属列表，每项包含 `name`、`path`、`category`，运行时通过前台进程名匹配 `name` 后得到分类。
 
 默认规则：
 
@@ -167,9 +169,10 @@ src\MyGesture.App\Web
 
 当前 UI：
 
-- 3 个规则 tab：`全局`、`分类`、`App`。
-- `全局` 不显示左侧列表，直接编辑整张表。
-- `分类` 和 `App` 使用左右分栏，左侧选择具体项，右侧采用上下布局，顶部显示当前项图标位，底部显示三列表格。
+- 3 个规则 tab：`全局`、`分类`、`App`，顶部使用横向标签页切换。
+- `全局` 直接编辑整张表。
+- `分类` 和 `App` 采用三栏骨架：左侧是分类/App 列表，中间是当前项内容区，右侧是参数区占位。
+- `分类` 和 `App` 页的中间内容区保留“应用程序”和“手势列表”两个区块，分类页可管理当前分类下的 App，App 页可设置所属分类。
 - 规则表列为 `名称`、`手势`、`命令`，删除按钮在每行右侧。
 - 已移除编辑器内的手势提示区，只保留配置结果提示。
 - 热键输入在获得焦点时会监听按键：
@@ -180,12 +183,14 @@ WebView 消息流：
 
 - 前端发送：
   - `"get-status"`
-  - `{ type: "save-rules", rules: [...] }`
+  - `{ type: "select-application", requestId: "...", category: "..." }`
+  - `{ type: "save-rules", rules: [...], applications: [...] }`
   - `{ type: "reload-rules" }`
   - `{ type: "reset-rules" }`
 - 后端发送：
   - `{ type: "status", ... }`
-  - `{ type: "rules", ... }`
+  - `{ type: "rules", rules: [...], applications: [...], ... }`
+  - `{ type: "application-selected", requestId: "...", name: "...", path: "...", category: "..." }`
   - `{ type: "gesture", ... }`
   - `{ type: "gesture-action-failed", ... }`
   - `{ type: "config-result", ... }`
@@ -203,6 +208,7 @@ tests\MyGesture.App.Tests
 - `GestureRecognizerTests.cs`：抖动过滤、噪声转向、短回拉、对角线识别。
 - `GestureConfigMapperTests.cs`：默认配置映射、按键别名和作用域保留。
 - `GestureMatcherTests.cs`：作用域优先级。
+- `ConfiguredScopeContextProviderTests.cs`：应用程序到分类的运行时映射。
 
 运行：
 

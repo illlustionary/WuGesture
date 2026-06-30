@@ -3,6 +3,17 @@ namespace MyGesture.App.GestureEngine;
 public sealed class GestureConfig
 {
     public List<GestureRuleConfig> Rules { get; set; } = [];
+
+    public List<GestureApplicationConfig> Applications { get; set; } = [];
+}
+
+public sealed class GestureApplicationConfig
+{
+    public string Name { get; set; } = "";
+
+    public string Path { get; set; } = "";
+
+    public string Category { get; set; } = "";
 }
 
 public sealed class GestureRuleConfig

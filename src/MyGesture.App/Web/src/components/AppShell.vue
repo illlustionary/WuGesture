@@ -1,6 +1,6 @@
 <template>
   <section class="page-shell panel panel--surface">
-    <div class="panel-head">
+    <div class="page-shell__head">
       <div>
         <h2>{{ title }}</h2>
         <p>{{ description }}</p>

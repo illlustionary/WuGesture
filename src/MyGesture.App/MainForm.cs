@@ -9,6 +9,7 @@ public sealed class MainForm : Form
     private readonly WebView2 webView = new();
     private readonly GestureHintForm gestureHintForm = new();
     private readonly GestureConfigStore configStore = new();
+    private ConfiguredScopeContextProvider? scopeContextProvider;
     private LoadedGestureConfig? loadedConfig;
     private GestureService? gestureService;
     private bool isClosing;
@@ -44,7 +45,8 @@ public sealed class MainForm : Form
     private async void OnLoad(object? sender, EventArgs e)
     {
         loadedConfig = configStore.LoadOrCreate();
-        gestureService = new GestureService(new GestureMatcher(loadedConfig.Rules));
+        scopeContextProvider = new ConfiguredScopeContextProvider(loadedConfig.Config.Applications);
+        gestureService = new GestureService(new GestureMatcher(loadedConfig.Rules), scopeContextProvider);
 
         await webView.EnsureCoreWebView2Async();
         if (!CanUseUi())
@@ -174,6 +176,12 @@ public sealed class MainForm : Form
                 actionName = rule.ActionName,
                 actionType = rule.Action.Type,
                 keys = rule.Action.Keys
+            }).ToArray(),
+            applications = loadedConfig.Config.Applications.Select(application => new
+            {
+                name = application.Name,
+                path = application.Path,
+                category = application.Category
             }).ToArray()
         });
 
@@ -206,6 +214,9 @@ public sealed class MainForm : Form
 
         switch (typeElement.GetString())
         {
+            case "select-application":
+                SelectApplication(json);
+                break;
             case "save-rules":
                 SaveRules(json);
                 break;
@@ -218,6 +229,41 @@ public sealed class MainForm : Form
         }
     }
 
+    private void SelectApplication(string json)
+    {
+        try
+        {
+            var message = JsonSerializer.Deserialize<SelectApplicationWebMessage>(json, WebMessageJsonOptions);
+            using var dialog = new OpenFileDialog
+            {
+                Title = "选择应用程序",
+                Filter = "应用程序 (*.exe)|*.exe|所有文件 (*.*)|*.*",
+                CheckFileExists = true,
+                Multiselect = false
+            };
+
+            if (dialog.ShowDialog(this) != DialogResult.OK)
+            {
+                return;
+            }
+
+            var payload = JsonSerializer.Serialize(new
+            {
+                type = "application-selected",
+                requestId = message?.RequestId ?? "",
+                name = Path.GetFileNameWithoutExtension(dialog.FileName),
+                path = dialog.FileName,
+                category = message?.Category ?? ""
+            });
+
+            webView.CoreWebView2?.PostWebMessageAsJson(payload);
+        }
+        catch (Exception exception)
+        {
+            PostConfigResult(false, exception.Message);
+        }
+    }
+
     private void SaveRules(string json)
     {
         try
@@ -225,10 +271,12 @@ public sealed class MainForm : Form
             var message = JsonSerializer.Deserialize<RulesWebMessage>(json, WebMessageJsonOptions);
             var config = new GestureConfig
             {
-                Rules = message?.Rules ?? []
+                Rules = message?.Rules ?? [],
+                Applications = message?.Applications ?? []
             };
 
             loadedConfig = configStore.SaveAndLoad(config);
+            scopeContextProvider?.UpdateApplications(loadedConfig.Config.Applications);
             gestureService?.UpdateMatcher(new GestureMatcher(loadedConfig.Rules));
 
             PostRules();
@@ -245,6 +293,7 @@ public sealed class MainForm : Form
         try
         {
             loadedConfig = configStore.LoadOrCreate();
+            scopeContextProvider?.UpdateApplications(loadedConfig.Config.Applications);
             gestureService?.UpdateMatcher(new GestureMatcher(loadedConfig.Rules));
 
             PostRules();
@@ -261,6 +310,7 @@ public sealed class MainForm : Form
         try
         {
             loadedConfig = configStore.ResetToDefaults();
+            scopeContextProvider?.UpdateApplications(loadedConfig.Config.Applications);
             gestureService?.UpdateMatcher(new GestureMatcher(loadedConfig.Rules));
 
             PostRules();
@@ -325,5 +375,16 @@ public sealed class MainForm : Form
         public string Type { get; set; } = "";
 
         public List<GestureRuleConfig> Rules { get; set; } = [];
+
+        public List<GestureApplicationConfig> Applications { get; set; } = [];
+    }
+
+    private sealed class SelectApplicationWebMessage
+    {
+        public string Type { get; set; } = "";
+
+        public string RequestId { get; set; } = "";
+
+        public string Category { get; set; } = "";
     }
 }

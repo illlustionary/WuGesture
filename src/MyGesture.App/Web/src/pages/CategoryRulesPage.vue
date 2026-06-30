@@ -13,14 +13,14 @@ const categoryDraft = ref("");
 
 <template>
   <AppShell
-    title="分类规则"
-    description="左边选择分类，右边上方显示图标位，下方是规则表。"
+    title="手势分类"
+    description="创建分类来为一组应用程序共享同一套手势设置。"
     layout-class="page-shell__grid--split"
   >
     <template #left>
       <ScopeSidebar
-        title="分类"
-        description="左侧选择一个分类。"
+        title="分类名称"
+        description="选择或新建一个分类。"
       >
         <template #actions>
           <div class="scope-panel__actions scope-panel__actions--stacked">
@@ -30,7 +30,8 @@ const categoryDraft = ref("");
               v-model="categoryDraft"
               @keydown.enter.prevent="editor.createScopeTarget(scopeKind, categoryDraft); categoryDraft = ''"
             >
-            <button type="button" class="secondary-button" @click="editor.createScopeTarget(scopeKind, categoryDraft); categoryDraft = ''">新增</button>
+            <button type="button" class="secondary-button" @click="editor.createScopeTarget(scopeKind, categoryDraft); categoryDraft = ''">新增分类</button>
+            <button type="button" class="ghost-button" @click="editor.deleteSelectedScope(scopeKind)">删除分类</button>
           </div>
         </template>
 
@@ -52,33 +53,66 @@ const categoryDraft = ref("");
     </template>
 
     <template #right>
-      <section class="rules-panel rules-panel--stacked">
+      <section class="rules-panel rules-panel--stacked rules-panel--three-col">
         <div class="scope-preview">
-          <div class="scope-preview__icon">A</div>
+          <div class="scope-preview__icon">类</div>
           <div>
             <h3>{{ editor.getSelectedName(scopeKind) || "未选择分类" }}</h3>
-            <p>上面是当前选中程序图标位，下面是该分类的规则列表。</p>
+            <p>左侧是分类列表，中间编辑当前分类的规则，右侧保留参数区域。</p>
           </div>
         </div>
 
-        <div class="rules-panel__head">
-          <div>
-            <h3>分类规则</h3>
-            <p>每个分类共用同样的表结构。</p>
-          </div>
-          <button type="button" class="primary-button" @click="editor.addRule(scopeKind)">新增规则</button>
-        </div>
+        <div class="rules-panel__body">
+          <section class="rules-panel__section">
+            <div class="rules-panel__head">
+              <div>
+                <h3>应用程序</h3>
+              </div>
+              <div class="rules-panel__actions">
+                <button type="button" class="secondary-button" @click="editor.selectApplication(editor.getSelectedName(scopeKind))">添加程序...</button>
+              </div>
+            </div>
 
-        <div v-if="editor.getRulesForScope(scopeKind).length === 0" class="empty-state empty-state--large">
-          先在左侧选择一个分类。
-        </div>
+            <div v-if="editor.getApplicationsForCategory().length === 0" class="empty-state empty-state--compact">
+              当前分类还没有关联程序。
+            </div>
+            <div v-else class="app-list">
+              <div
+                v-for="app in editor.getApplicationsForCategory()"
+                :key="app.name"
+                class="app-list__item"
+              >
+                <span class="app-list__name">{{ app.name }}</span>
+                <span class="app-list__path">{{ app.path || "未设置路径" }}</span>
+                <button type="button" class="ghost-button" @click="editor.removeAppFromCategory(app.name)">移除</button>
+              </div>
+            </div>
+          </section>
 
-        <GestureRuleList
-          :rules="editor.getRulesForScope(scopeKind)"
-          @remove="editor.removeRule"
-          @record="editor.startRecording"
-          @stop-record="editor.stopRecording"
-        />
+          <section class="rules-panel__section">
+            <div class="rules-panel__head">
+              <div>
+                <h3>手势列表</h3>
+              </div>
+              <div class="rules-panel__actions">
+                <button type="button" class="primary-button" @click="editor.addRule(scopeKind)">添加手势...</button>
+                <button type="button" class="secondary-button">修改手势</button>
+                <button type="button" class="ghost-button">删除手势</button>
+              </div>
+            </div>
+
+            <div v-if="editor.getRulesForScope(scopeKind).length === 0" class="empty-state empty-state--large">
+              先在左侧选择一个分类。
+            </div>
+
+            <GestureRuleList
+              :rules="editor.getRulesForScope(scopeKind)"
+              @remove="editor.removeRule"
+              @record="editor.startRecording"
+              @stop-record="editor.stopRecording"
+            />
+          </section>
+        </div>
       </section>
     </template>
   </AppShell>
