@@ -124,7 +124,7 @@ public sealed class GestureConfigMapperTests
     }
 
     [Fact]
-    public void ToRules_IgnoresMiddleButtonRulesForRuntimeExecution()
+    public void ToRules_PreservesMiddleButtonRulesForRuntimeExecution()
     {
         var config = new GestureConfig
         {
@@ -147,6 +147,8 @@ public sealed class GestureConfigMapperTests
 
         var rules = GestureConfigMapper.ToRules(config);
 
-        Assert.Empty(rules);
+        Assert.Single(rules);
+        Assert.Equal(GestureMouseButton.Middle, rules[0].MouseButton);
+        Assert.Equal([GestureDirection.DownLeft], rules[0].Pattern);
     }
 }

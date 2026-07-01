@@ -35,6 +35,7 @@ editor.setActiveScope(scopeKind);
           @remove="editor.removeRule"
           @edit="editor.openEditRule"
           @record="editor.startRecording"
+          @rename="editor.updateRuleActionName"
         />
       </section>
     </template>

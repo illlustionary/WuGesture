@@ -12,10 +12,15 @@ public sealed class GestureConfigStore
 
     public string ConfigPath { get; }
 
-    public GestureConfigStore()
+    public GestureConfigStore(string? configPath = null)
+    {
+        ConfigPath = configPath ?? GetDefaultConfigPath();
+    }
+
+    private static string GetDefaultConfigPath()
     {
         var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        ConfigPath = Path.Combine(appData, "MyGesture", "gestures.json");
+        return Path.Combine(appData, "MyGesture", "gestures.json");
     }
 
     public LoadedGestureConfig LoadOrCreate()

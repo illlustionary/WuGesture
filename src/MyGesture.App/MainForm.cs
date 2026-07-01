@@ -25,7 +25,7 @@ public sealed class MainForm : Form
     public MainForm()
     {
         Text = "My Gesture";
-        Width = 1080;
+        Width = 1280;
         Height = 720;
         StartPosition = FormStartPosition.CenterScreen;
 

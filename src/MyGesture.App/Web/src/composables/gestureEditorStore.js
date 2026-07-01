@@ -72,6 +72,7 @@ const state = reactive({
 const activeScope = ref("global");
 const initialized = ref(false);
 const pendingGestureRequests = new Map();
+let autoSaveTimer = 0;
 
 export function useGestureEditorStore() {
   const globalRules = computed(() => getRulesForScope("global"));
@@ -107,6 +108,7 @@ export function useGestureEditorStore() {
     removeAppFromCategory,
     addRule,
     removeRule,
+    updateRuleActionName,
     openAddRule,
     openEditRule,
     closeGestureEditor,
@@ -298,6 +300,7 @@ function saveGestureEditor() {
     rule.keysText = keys.join(" + ");
     rule.actionType = draft.actionType || "hotkey";
     closeGestureEditor();
+    scheduleSaveRules();
     return;
   }
 
@@ -312,6 +315,7 @@ function saveGestureEditor() {
       actionType: draft.actionType || "hotkey"
     }));
   closeGestureEditor();
+  scheduleSaveRules();
 }
 
 function recordGesturePoints(recording) {
@@ -347,6 +351,16 @@ function removeRule(id) {
   state.rules = state.rules.filter((rule) => rule.id !== id);
   ensureSelection("category");
   ensureSelection("app");
+  scheduleSaveRules();
+}
+
+function updateRuleActionName(rule, actionName) {
+  if (!rule) {
+    return;
+  }
+
+  rule.actionName = String(actionName ?? "").trim();
+  scheduleSaveRules();
 }
 
 function createScopeTarget(kind, name) {
@@ -362,6 +376,7 @@ function createScopeTarget(kind, name) {
 
   setSelectedName(kind, trimmed);
   setMessage("已新增。", "success");
+  scheduleSaveRules();
 }
 
 function renameSelectedScope(kind, nextName) {
@@ -391,6 +406,7 @@ function renameSelectedScope(kind, nextName) {
   }
 
   setSelectedName(kind, name);
+  scheduleSaveRules();
 }
 
 function deleteSelectedScope(kind = activeScope.value) {
@@ -412,6 +428,7 @@ function deleteSelectedScope(kind = activeScope.value) {
 
   ensureSelection(kind);
   setMessage("已删除当前项。", "success");
+  scheduleSaveRules();
 }
 
 function getApplicationsForCategory(categoryName = getSelectedName("category")) {
@@ -441,6 +458,7 @@ function updateApplicationDisplayName(appName = getSelectedName("app"), displayN
 
   const application = ensureApplication(name);
   application.displayName = String(displayName ?? "").trim();
+  scheduleSaveRules();
 }
 
 function updateApplicationCategory(appName = getSelectedName("app"), categoryName = "") {
@@ -453,6 +471,7 @@ function updateApplicationCategory(appName = getSelectedName("app"), categoryNam
   const application = ensureApplication(name);
   application.category = String(categoryName ?? "").trim();
   setMessage(application.category ? "已设置 App 分类。" : "已清除 App 分类。", "success");
+  scheduleSaveRules();
 }
 
 function assignSelectedAppToCategory(categoryName = getSelectedName("category"), appName = getSelectedName("app")) {
@@ -467,6 +486,7 @@ function assignSelectedAppToCategory(categoryName = getSelectedName("category"),
   application.category = category;
   setSelectedName("category", category);
   setMessage("已关联 App 到分类。", "success");
+  scheduleSaveRules();
 }
 
 function removeAppFromCategory(appName, categoryName = getSelectedName("category")) {
@@ -480,6 +500,7 @@ function removeAppFromCategory(appName, categoryName = getSelectedName("category
   if (application) {
     application.category = "";
     setMessage("已移除分类关联。", "success");
+    scheduleSaveRules();
   }
 }
 
@@ -530,9 +551,15 @@ function addSelectedApplication(message) {
   }
 
   setMessage("已添加程序。", "success");
+  scheduleSaveRules();
 }
 
 function saveRules() {
+  if (autoSaveTimer) {
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = 0;
+  }
+
   const payloadRules = [];
   for (const rule of state.rules) {
     const parsed = toPayloadRule(rule);
@@ -554,6 +581,25 @@ function saveRules() {
     rules: payloadRules,
     applications: state.applications.map(toPayloadApplication)
   });
+}
+
+function scheduleSaveRules() {
+  if (!initialized.value) {
+    return;
+  }
+
+  if (!window.chrome?.webview) {
+    return;
+  }
+
+  if (autoSaveTimer) {
+    clearTimeout(autoSaveTimer);
+  }
+
+  autoSaveTimer = window.setTimeout(() => {
+    autoSaveTimer = 0;
+    saveRules();
+  }, 250);
 }
 
 function reloadRules() {
@@ -886,6 +932,7 @@ function applyRecordedHotkey(message) {
 
   target.keysText = keys.join(" + ");
   setMessage("已录制快捷键。", "success");
+  scheduleSaveRules();
 }
 
 function normalizeGesturePoints(points) {

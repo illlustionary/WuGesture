@@ -13,7 +13,12 @@
       class="gesture-table__row"
       @dblclick="$emit('edit', rule.id)"
     >
-      <input v-model.trim="rule.actionName" class="gesture-table__cell" placeholder="名称">
+      <input
+        :value="rule.actionName"
+        class="gesture-table__cell"
+        placeholder="名称"
+        @input="$emit('rename', rule, $event.target.value)"
+      >
       <button type="button" class="gesture-table__cell gesture-pattern-button" @click="$emit('edit', rule.id)">
         {{ getGestureMnemonic?.(rule) || "未录制" }}
       </button>
@@ -37,5 +42,5 @@ defineProps({
   getGestureMnemonic: { type: Function, default: null }
 });
 
-defineEmits(["remove", "record", "edit"]);
+defineEmits(["remove", "record", "edit", "rename"]);
 </script>

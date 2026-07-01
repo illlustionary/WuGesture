@@ -61,7 +61,7 @@ public static class GestureConfigMapper
             keys.Add(key);
         }
 
-        if (pattern.Count == 0 || keys.Count == 0 || IsMiddleButton(config.MouseButton))
+        if (pattern.Count == 0 || keys.Count == 0)
         {
             return null;
         }
@@ -70,7 +70,8 @@ public static class GestureConfigMapper
             pattern,
             NormalizeScope(config.Scope),
             string.IsNullOrWhiteSpace(config.ActionName) ? string.Join(" + ", config.Action.Keys) : config.ActionName,
-            new HotkeyAction(keys));
+            new HotkeyAction(keys),
+            ParseMouseButton(config.MouseButton));
     }
 
     private static string NormalizeScope(string scope)
@@ -78,9 +79,11 @@ public static class GestureConfigMapper
         return string.IsNullOrWhiteSpace(scope) ? "global" : scope.Trim();
     }
 
-    private static bool IsMiddleButton(string? mouseButton)
+    private static GestureMouseButton ParseMouseButton(string? mouseButton)
     {
-        return string.Equals(mouseButton, "middle", StringComparison.OrdinalIgnoreCase);
+        return string.Equals(mouseButton, "middle", StringComparison.OrdinalIgnoreCase)
+            ? GestureMouseButton.Middle
+            : GestureMouseButton.Right;
     }
 
     private static bool TryParseKey(string value, out Keys key)
