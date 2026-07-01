@@ -11,10 +11,12 @@ public sealed class MainForm : Form
     private readonly GestureHintForm gestureHintForm = new();
     private readonly GestureConfigStore configStore = new();
     private readonly KeyboardShortcutRecorder hotkeyRecorder = new();
+    private readonly string windowStatePath = GetWindowStatePath();
     private ConfiguredScopeContextProvider? scopeContextProvider;
     private LoadedGestureConfig? loadedConfig;
     private GestureService? gestureService;
     private MouseTrailForm? mouseTrailForm;
+    private bool startMaximized;
     private bool isClosing;
 
     private static readonly JsonSerializerOptions WebMessageJsonOptions = new()
@@ -22,12 +24,17 @@ public sealed class MainForm : Form
         PropertyNameCaseInsensitive = true
     };
 
+    private static readonly JsonSerializerOptions WindowStateJsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        WriteIndented = true
+    };
+
     public MainForm()
     {
         Text = "My Gesture";
-        Width = 1280;
-        Height = 720;
-        StartPosition = FormStartPosition.CenterScreen;
+        StartPosition = FormStartPosition.Manual;
+        ApplyInitialWindowState();
 
         webView.Dock = DockStyle.Fill;
         Controls.Add(webView);
@@ -36,6 +43,7 @@ public sealed class MainForm : Form
         FormClosing += (_, _) =>
         {
             isClosing = true;
+            SaveWindowState();
             gestureService?.Dispose();
             hotkeyRecorder.Dispose();
             gestureHintForm.Hide();
@@ -50,6 +58,11 @@ public sealed class MainForm : Form
 
     private async void OnLoad(object? sender, EventArgs e)
     {
+        if (startMaximized)
+        {
+            WindowState = FormWindowState.Maximized;
+        }
+
         loadedConfig = configStore.LoadOrCreate();
         scopeContextProvider = new ConfiguredScopeContextProvider(loadedConfig.Config.Applications);
         gestureService = new GestureService(new GestureMatcher(loadedConfig.Rules), scopeContextProvider);
@@ -570,6 +583,110 @@ public sealed class MainForm : Form
         return !isClosing && !IsDisposed && !Disposing && IsHandleCreated;
     }
 
+    private void ApplyInitialWindowState()
+    {
+        if (TryLoadWindowState(out var windowState))
+        {
+            Bounds = NormalizeBounds(windowState.Bounds);
+            startMaximized = windowState.Maximized;
+            return;
+        }
+
+        Bounds = GetDefaultBounds();
+    }
+
+    private void SaveWindowState()
+    {
+        try
+        {
+            var bounds = WindowState == FormWindowState.Maximized ? RestoreBounds : Bounds;
+            var windowState = new WindowStateData
+            {
+                X = bounds.X,
+                Y = bounds.Y,
+                Width = bounds.Width,
+                Height = bounds.Height,
+                Maximized = WindowState == FormWindowState.Maximized
+            };
+
+            var directory = Path.GetDirectoryName(windowStatePath);
+            if (!string.IsNullOrEmpty(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            File.WriteAllText(windowStatePath, JsonSerializer.Serialize(windowState, WindowStateJsonOptions));
+        }
+        catch
+        {
+        }
+    }
+
+    private bool TryLoadWindowState(out WindowStateData windowState)
+    {
+        windowState = new WindowStateData();
+
+        try
+        {
+            if (!File.Exists(windowStatePath))
+            {
+                return false;
+            }
+
+            var json = File.ReadAllText(windowStatePath);
+            var loadedWindowState = JsonSerializer.Deserialize<WindowStateData>(json, WindowStateJsonOptions);
+            if (loadedWindowState is null || loadedWindowState.Width <= 0 || loadedWindowState.Height <= 0)
+            {
+                return false;
+            }
+
+            windowState = loadedWindowState;
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static Rectangle NormalizeBounds(Rectangle bounds)
+    {
+        var workingArea = Screen.PrimaryScreen?.WorkingArea ?? new Rectangle(0, 0, 1280, 720);
+        var width = Math.Min(Math.Max(1, bounds.Width), workingArea.Width);
+        var height = Math.Min(Math.Max(1, bounds.Height), workingArea.Height);
+
+        var left = bounds.Left;
+        var top = bounds.Top;
+
+        if (left < workingArea.Left || left + width > workingArea.Right)
+        {
+            left = workingArea.Left + Math.Max(0, (workingArea.Width - width) / 2);
+        }
+
+        if (top < workingArea.Top || top + height > workingArea.Bottom)
+        {
+            top = workingArea.Top + Math.Max(0, (workingArea.Height - height) / 2);
+        }
+
+        return new Rectangle(left, top, width, height);
+    }
+
+    private static Rectangle GetDefaultBounds()
+    {
+        var workingArea = Screen.PrimaryScreen?.WorkingArea ?? new Rectangle(0, 0, 1280, 720);
+        var width = Math.Max(1, workingArea.Width / 2);
+        var height = Math.Max(1, workingArea.Height / 2);
+        var left = workingArea.Left + Math.Max(0, (workingArea.Width - width) / 2);
+        var top = workingArea.Top + Math.Max(0, (workingArea.Height - height) / 2);
+        return new Rectangle(left, top, width, height);
+    }
+
+    private static string GetWindowStatePath()
+    {
+        var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        return Path.Combine(appData, "MyGesture", "window-state.json");
+    }
+
     private MouseTrailForm EnsureMouseTrailForm()
     {
         if (mouseTrailForm is { IsDisposed: false })
@@ -644,5 +761,20 @@ public sealed class MainForm : Form
         public int X { get; set; }
 
         public int Y { get; set; }
+    }
+
+    private sealed class WindowStateData
+    {
+        public int X { get; set; }
+
+        public int Y { get; set; }
+
+        public int Width { get; set; }
+
+        public int Height { get; set; }
+
+        public bool Maximized { get; set; }
+
+        public Rectangle Bounds => new(X, Y, Width, Height);
     }
 }

@@ -609,6 +609,11 @@ p {
   z-index: 20;
 }
 
+.modal-backdrop--gesture {
+  padding: 0;
+  background: rgba(10, 16, 22, 0.08);
+}
+
 .modal-panel {
   width: min(480px, 100%);
   padding: 14px;
@@ -626,7 +631,33 @@ p {
 }
 
 .gesture-dialog {
-  width: min(640px, 100%);
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.gesture-dialog__chrome {
+  position: fixed;
+  top: 18px;
+  left: 18px;
+  right: 18px;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.gesture-dialog__panel {
+  width: min(760px, calc(100vw - 36px));
+  pointer-events: auto;
+}
+
+.gesture-recorder__canvas--fullscreen {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  cursor: crosshair;
 }
 
 .scope-create-dialog {
