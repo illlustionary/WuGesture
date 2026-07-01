@@ -17,13 +17,14 @@
       <button type="button" class="gesture-table__cell gesture-pattern-button" @click="$emit('edit', rule.id)">
         {{ rule.patternText || "未录制" }}
       </button>
-      <input
-        v-model.trim="rule.keysText"
-        class="gesture-table__cell"
-        placeholder="Control + W"
-        @focus="$emit('record', $event.target)"
-        @blur="$emit('stop-record')"
+      <button
+        type="button"
+        class="gesture-table__cell hotkey-record-button"
+        :class="{ 'is-recording': isRecording?.(rule) }"
+        @click.stop="$emit('record', rule)"
       >
+        {{ isRecording?.(rule) ? "录制中..." : (rule.keysText || "点击录制") }}
+      </button>
       <button type="button" class="ghost-button" @click="$emit('remove', rule.id)">删除</button>
     </article>
   </div>
@@ -31,8 +32,9 @@
 
 <script setup>
 defineProps({
-  rules: { type: Array, required: true }
+  rules: { type: Array, required: true },
+  isRecording: { type: Function, default: null }
 });
 
-defineEmits(["remove", "record", "stop-record", "edit"]);
+defineEmits(["remove", "record", "edit"]);
 </script>

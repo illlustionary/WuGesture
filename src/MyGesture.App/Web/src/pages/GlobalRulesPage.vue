@@ -30,10 +30,10 @@ editor.setActiveScope(scopeKind);
 
         <GestureRuleList
           :rules="editor.globalRules"
+          :is-recording="editor.isRecordingHotkey"
           @remove="editor.removeRule"
           @edit="editor.openEditRule"
           @record="editor.startRecording"
-          @stop-record="editor.stopRecording"
         />
       </section>
     </template>

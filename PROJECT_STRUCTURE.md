@@ -74,6 +74,7 @@ src\MyGesture.App\GestureEngine
 关键文件：
 
 - `MouseHook.cs`：低级全局鼠标钩子。
+- `KeyboardShortcutRecorder.cs`：低级键盘 hook，用于配置界面录制快捷键并吞掉录制期间的原生键盘事件。
 - `GestureService.cs`：跟踪右键和中键轨迹生命周期，调用识别器、匹配器和执行器，并向 UI 发送事件。
 - `GestureRecognizer.cs`：把鼠标轨迹转换为稳定的 8 方向模式。
 - `GestureMatcher.cs`：将识别出的方向模式与已加载规则进行匹配，并按作用域优先级选择命中项。
@@ -107,6 +108,7 @@ MouseHook
 - 移动过程中会增量识别当前轨迹；一旦匹配规则，全局提示窗会立即显示规则名。
 - 动作仍在右键抬起时执行。
 - `GestureService` 支持暂停；暂停时保留全局 hook，但不识别、不吞掉中/右键输入，并清理当前轨迹与预览提示，供配置界面录制手势使用。
+- 快捷键录制由后端低级键盘 hook 完成；录制期间会阻止 `Win` 等系统级按键继续传递，松开所有按键后回传组合键。
 - 钩子回调必须保持快速；动作会切回 WinForms 消息线程执行。
 - 动作执行失败会被捕获，并通过 `GestureActionFailed` 上报。
 
@@ -183,9 +185,7 @@ src\MyGesture.App\Web
 - 添加/编辑手势通过弹窗完成：名称必填，按住中键或右键在画布中绘制后由后端识别为 8 方向手势，再确认写入规则列表。
 - 添加/编辑手势弹窗打开时会通过 WebView 消息暂停全局手势，避免全局鼠标钩子覆盖画布录制；弹窗关闭后恢复。
 - 已移除编辑器内的手势提示区，只保留配置结果提示。
-- 热键输入在获得焦点时会监听按键：
-  - 修饰键/特殊键组合会自动记录。
-  - 也可以手动输入纯文本。
+- 热键命令不支持手动输入；点击命令按钮后进入录制中，后端拦截并记录系统按键，松开所有按键后显示录制结果。
 
 WebView 消息流：
 
@@ -195,6 +195,8 @@ WebView 消息流：
   - `{ type: "pick-application-window", requestId: "...", category: "..." }`
   - `{ type: "recognize-gesture", requestId: "...", points: [{ x, y }, ...] }`
   - `{ type: "set-gesture-paused", paused: true/false }`
+  - `{ type: "start-hotkey-recording", requestId: "..." }`
+  - `{ type: "stop-hotkey-recording" }`
   - `{ type: "save-rules", rules: [...], applications: [...] }`
   - `{ type: "reload-rules" }`
   - `{ type: "reset-rules" }`
@@ -203,6 +205,7 @@ WebView 消息流：
   - `{ type: "rules", rules: [...], applications: [{ name, displayName, path, category, icon }, ...], ... }`
   - `{ type: "application-selected", requestId: "...", name: "...", displayName: "...", path: "...", category: "...", icon: "..." }`
   - `{ type: "gesture-pattern-recognized", requestId: "...", pattern: ["Down", "Right"] }`
+  - `{ type: "hotkey-recorded", requestId: "...", keys: ["Control", "W"] }`
   - `{ type: "gesture", ... }`
   - `{ type: "gesture-action-failed", ... }`
   - `{ type: "config-result", ... }`

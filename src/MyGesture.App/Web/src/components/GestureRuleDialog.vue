@@ -4,10 +4,11 @@ import { computed, nextTick, ref, watch } from "vue";
 const props = defineProps({
   open: { type: Boolean, required: true },
   draft: { type: Object, required: true },
-  message: { type: String, default: "" }
+  message: { type: String, default: "" },
+  isRecordingHotkey: { type: Function, default: null }
 });
 
-const emit = defineEmits(["close", "confirm", "record"]);
+const emit = defineEmits(["close", "confirm", "record", "record-hotkey"]);
 
 const canvas = ref(null);
 const drawing = ref(false);
@@ -133,7 +134,14 @@ function distance(a, b) {
 
         <label>
           <span>命令</span>
-          <input v-model.trim="draft.keysText" class="scope-input" placeholder="Control + W">
+          <button
+            type="button"
+            class="scope-input hotkey-record-button"
+            :class="{ 'is-recording': isRecordingHotkey?.(draft) }"
+            @click="$emit('record-hotkey', draft)"
+          >
+            {{ isRecordingHotkey?.(draft) ? "录制中..." : (draft.keysText || "点击录制") }}
+          </button>
         </label>
       </div>
 

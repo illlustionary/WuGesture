@@ -42,7 +42,8 @@ const state = reactive({
   selectedApp: "",
   applicationPickerOpen: false,
   applicationPickerCategory: "",
-  recordingInput: null,
+  recordingHotkeyTarget: null,
+  recordingHotkeyRequestId: "",
   gestureEditorOpen: false,
   gestureEditorMode: "add",
   gestureEditorRuleId: "",
@@ -106,7 +107,8 @@ export function useGestureEditorStore() {
     reloadRules,
     resetRules,
     startRecording,
-    stopRecording
+    stopRecording,
+    isRecordingHotkey
   });
 }
 
@@ -116,7 +118,6 @@ function initialize() {
   }
 
   initialized.value = true;
-  installKeyboardRecorder();
 
   if (!window.chrome?.webview) {
     state.statusText = "浏览器预览";
@@ -157,6 +158,11 @@ function handleMessage(message) {
 
   if (message.type === "gesture-pattern-recognized") {
     applyRecognizedPattern(message);
+    return;
+  }
+
+  if (message.type === "hotkey-recorded") {
+    applyRecordedHotkey(message);
   }
 }
 
@@ -244,6 +250,7 @@ function openEditRule(ruleId) {
 }
 
 function closeGestureEditor() {
+  stopRecording();
   state.gestureEditorOpen = false;
   state.gestureRecognitionMessage = "";
   state.gestureDraft = createEmptyGestureDraft();
@@ -547,68 +554,36 @@ function resetRules() {
   postWebMessage({ type: "reset-rules" });
 }
 
-function startRecording(input) {
+function startRecording(target) {
   stopRecording();
-  state.recordingInput = input;
-  state.recordingInput.placeholder = "按组合键或手动输入";
-  state.recordingInput.classList.add("is-recording");
-  setMessage("快捷键输入框已监听组合键，也可手动输入。");
-}
 
-function stopRecording() {
-  if (!state.recordingInput) {
+  if (!window.chrome?.webview) {
+    setMessage("浏览器预览无法拦截系统快捷键，请在桌面应用中录制。", "error");
     return;
   }
 
-  state.recordingInput.placeholder = "";
-  state.recordingInput.classList.remove("is-recording");
-  state.recordingInput = null;
+  const requestId = createRequestId();
+  state.recordingHotkeyTarget = target;
+  state.recordingHotkeyRequestId = requestId;
+  postWebMessageSilently({
+    type: "start-hotkey-recording",
+    requestId
+  });
+  setMessage("正在录制快捷键，松开所有按键后完成。");
 }
 
-function installKeyboardRecorder() {
-  document.addEventListener("keydown", (event) => {
-    const input = state.recordingInput;
-    if (!input || event.target !== input) {
-      return;
-    }
+function stopRecording() {
+  if (!state.recordingHotkeyRequestId) {
+    return;
+  }
 
-    if (event.key === "Escape") {
-      event.preventDefault();
-      event.stopPropagation();
-      stopRecording();
-      return;
-    }
+  postWebMessageSilently({ type: "stop-hotkey-recording" });
+  state.recordingHotkeyTarget = null;
+  state.recordingHotkeyRequestId = "";
+}
 
-    if (isModifierOnly(event.key)) {
-      event.preventDefault();
-      event.stopPropagation();
-      input.value = getModifierKeys(event).join(" + ");
-      input.dispatchEvent(new Event("input", { bubbles: true }));
-      return;
-    }
-
-    if (!shouldRecordKey(event)) {
-      return;
-    }
-
-    event.preventDefault();
-    event.stopPropagation();
-
-    const keys = [...getModifierKeys(event), normalizeKey(event.key)];
-    input.value = [...new Set(keys)].join(" + ");
-    input.dispatchEvent(new Event("input", { bubbles: true }));
-    stopRecording();
-  }, true);
-
-  document.addEventListener("keyup", (event) => {
-    const input = state.recordingInput;
-    if (!input || event.target !== input || !isModifierOnly(event.key)) {
-      return;
-    }
-
-    event.preventDefault();
-    event.stopPropagation();
-  }, true);
+function isRecordingHotkey(target) {
+  return state.recordingHotkeyTarget === target;
 }
 
 function ensureSelection(kind) {
@@ -870,6 +845,29 @@ function applyRecognizedPattern(message) {
   state.gestureRecognitionMessage = pattern.length > 0 ? "已识别手势。" : "未识别到有效手势。";
 }
 
+function applyRecordedHotkey(message) {
+  if (message.requestId !== state.recordingHotkeyRequestId) {
+    return;
+  }
+
+  const target = state.recordingHotkeyTarget;
+  state.recordingHotkeyTarget = null;
+  state.recordingHotkeyRequestId = "";
+
+  if (!target) {
+    return;
+  }
+
+  const keys = Array.isArray(message.keys) ? message.keys.filter(Boolean) : [];
+  if (keys.length === 0) {
+    setMessage("未录制到有效快捷键。", "error");
+    return;
+  }
+
+  target.keysText = keys.join(" + ");
+  setMessage("已录制快捷键。", "success");
+}
+
 function normalizeGesturePoints(points) {
   if (!Array.isArray(points)) {
     return [];
@@ -944,72 +942,6 @@ function toPatternText(pattern) {
   }
 
   return pattern.join(", ");
-}
-
-function getModifierKeys(event) {
-  const keys = [];
-  if (event.ctrlKey) {
-    keys.push("Control");
-  }
-
-  if (event.altKey) {
-    keys.push("Alt");
-  }
-
-  if (event.shiftKey) {
-    keys.push("Shift");
-  }
-
-  if (event.metaKey) {
-    keys.push("Win");
-  }
-
-  return keys;
-}
-
-function isModifierOnly(key) {
-  return ["Control", "Alt", "Shift", "Meta"].includes(key);
-}
-
-function shouldRecordKey(event) {
-  return event.ctrlKey || event.altKey || event.shiftKey || event.metaKey || isSpecialKey(event.key);
-}
-
-function isSpecialKey(key) {
-  return key.length > 1 && !isModifierOnly(key);
-}
-
-function normalizeKey(key) {
-  if (key === " ") {
-    return "Space";
-  }
-
-  const aliases = {
-    ArrowLeft: "Left",
-    ArrowRight: "Right",
-    ArrowUp: "Up",
-    ArrowDown: "Down",
-    Escape: "Esc",
-    Delete: "Delete",
-    Insert: "Insert",
-    Home: "Home",
-    End: "End",
-    PageUp: "PageUp",
-    PageDown: "PageDown",
-    Backspace: "Back",
-    Enter: "Enter",
-    Tab: "Tab"
-  };
-
-  if (aliases[key]) {
-    return aliases[key];
-  }
-
-  if (key.length === 1) {
-    return key.toUpperCase();
-  }
-
-  return key;
 }
 
 function createRuleId(seed) {
