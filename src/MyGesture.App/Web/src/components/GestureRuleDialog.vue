@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 
 const props = defineProps({
   open: { type: Boolean, required: true },
@@ -15,17 +15,25 @@ const canvas = ref(null);
 const drawing = ref(false);
 const points = ref([]);
 const mouseButton = ref("right");
+const canvasSize = ref({ width: 0, height: 0 });
 
 const patternLabel = computed(() => props.getGestureMnemonic?.(props.draft) || "尚未录制");
 
 watch(() => props.open, async (open) => {
   if (!open) {
+    removeViewportListener();
     return;
   }
 
   points.value = [];
   await nextTick();
+  syncCanvasSize();
   clearCanvas();
+  addViewportListener();
+});
+
+onBeforeUnmount(() => {
+  removeViewportListener();
 });
 
 function beginDraw(event) {
@@ -77,6 +85,26 @@ function toPoint(event) {
   };
 }
 
+function syncCanvasSize() {
+  if (!canvas.value) {
+    return;
+  }
+
+  const width = Math.max(1, window.innerWidth);
+  const height = Math.max(1, window.innerHeight);
+  canvasSize.value = { width, height };
+  canvas.value.width = width;
+  canvas.value.height = height;
+}
+
+function addViewportListener() {
+  window.addEventListener("resize", syncCanvasSize);
+}
+
+function removeViewportListener() {
+  window.removeEventListener("resize", syncCanvasSize);
+}
+
 function drawPath() {
   const context = getContext();
   if (!context) {
@@ -125,56 +153,61 @@ function distance(a, b) {
 </script>
 
 <template>
-  <div v-if="open" class="modal-backdrop" @click.self="$emit('close')">
-    <section class="modal-panel gesture-dialog" role="dialog" aria-modal="true" aria-labelledby="gesture-dialog-title">
-      <div class="modal-panel__head">
-        <h3 id="gesture-dialog-title">手势</h3>
-        <button type="button" class="ghost-button" @click="$emit('close')">关闭</button>
-      </div>
+  <div v-if="open" class="modal-backdrop modal-backdrop--gesture" @click.self="$emit('close')">
+    <section class="gesture-dialog" role="dialog" aria-modal="true" aria-labelledby="gesture-dialog-title">
+      <canvas
+        ref="canvas"
+        class="gesture-recorder__canvas gesture-recorder__canvas--fullscreen"
+        :width="canvasSize.width || 1"
+        :height="canvasSize.height || 1"
+        @contextmenu.prevent
+        @mousedown="beginDraw"
+        @mousemove="moveDraw"
+        @mouseup="endDraw"
+        @mouseleave="endDraw"
+      />
 
-      <div class="gesture-dialog__grid">
-        <label>
-          <span>名称</span>
-          <input v-model.trim="draft.actionName" class="scope-input" placeholder="例如：关闭标签">
-        </label>
+      <div class="gesture-dialog__chrome">
+        <div class="modal-panel gesture-dialog__panel">
+          <div class="modal-panel__head">
+            <div>
+              <h3 id="gesture-dialog-title">手势</h3>
+              <p>在整个屏幕上拖动鼠标绘制，右键或中键都可以。</p>
+            </div>
+            <button type="button" class="ghost-button" @click="$emit('close')">关闭</button>
+          </div>
 
-        <label>
-          <span>命令</span>
-          <button
-            type="button"
-            class="scope-input hotkey-record-button"
-            :class="{ 'is-recording': isRecordingHotkey?.(draft) }"
-            @click="$emit('record-hotkey', draft)"
-          >
-            {{ isRecordingHotkey?.(draft) ? "录制中..." : (draft.keysText || "点击录制") }}
-          </button>
-        </label>
-      </div>
+          <div class="gesture-dialog__grid">
+            <label>
+              <span>名称</span>
+              <input v-model.trim="draft.actionName" class="scope-input" placeholder="例如：关闭标签">
+            </label>
 
-      <div class="gesture-recorder">
-        <canvas
-          ref="canvas"
-          class="gesture-recorder__canvas"
-          width="560"
-          height="300"
-          @contextmenu.prevent
-          @mousedown="beginDraw"
-          @mousemove="moveDraw"
-          @mouseup="endDraw"
-          @mouseleave="endDraw"
-        />
-      </div>
+            <label>
+              <span>命令</span>
+              <button
+                type="button"
+                class="scope-input hotkey-record-button"
+                :class="{ 'is-recording': isRecordingHotkey?.(draft) }"
+                @click="$emit('record-hotkey', draft)"
+              >
+                {{ isRecordingHotkey?.(draft) ? "录制中..." : (draft.keysText || "点击录制") }}
+              </button>
+            </label>
+          </div>
 
-      <div class="gesture-dialog__result">
-        <span>识别结果</span>
-        <strong>{{ patternLabel }}</strong>
-      </div>
+          <div class="gesture-dialog__result">
+            <span>识别结果</span>
+            <strong>{{ patternLabel }}</strong>
+          </div>
 
-      <p v-if="message" class="gesture-dialog__message">{{ message }}</p>
+          <p v-if="message" class="gesture-dialog__message">{{ message }}</p>
 
-      <div class="modal-panel__actions">
-        <button type="button" class="ghost-button" @click="$emit('close')">取消</button>
-        <button type="button" class="primary-button" @click="$emit('confirm')">确认</button>
+          <div class="modal-panel__actions">
+            <button type="button" class="ghost-button" @click="$emit('close')">取消</button>
+            <button type="button" class="primary-button" @click="$emit('confirm')">确认</button>
+          </div>
+        </div>
       </div>
     </section>
   </div>
