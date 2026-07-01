@@ -20,6 +20,7 @@ public static class GestureConfigMapper
             Rules = rules.Select(rule => new GestureRuleConfig
             {
                 Scope = NormalizeScope(rule.Scope),
+                MouseButton = "right",
                 ActionName = rule.ActionName,
                 Pattern = rule.Pattern.Select(direction => direction.ToString()).ToList(),
                 Action = new GestureActionConfig
@@ -60,7 +61,7 @@ public static class GestureConfigMapper
             keys.Add(key);
         }
 
-        if (pattern.Count == 0 || keys.Count == 0)
+        if (pattern.Count == 0 || keys.Count == 0 || IsMiddleButton(config.MouseButton))
         {
             return null;
         }
@@ -75,6 +76,11 @@ public static class GestureConfigMapper
     private static string NormalizeScope(string scope)
     {
         return string.IsNullOrWhiteSpace(scope) ? "global" : scope.Trim();
+    }
+
+    private static bool IsMiddleButton(string? mouseButton)
+    {
+        return string.Equals(mouseButton, "middle", StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool TryParseKey(string value, out Keys key)

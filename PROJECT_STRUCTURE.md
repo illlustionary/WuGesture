@@ -130,9 +130,10 @@ MouseHook
 当前支持的配置：
 
 - `scope`：支持 `global`、`category:<分类名>`、`app:<进程名>`；运行时按 `app > category > global` 优先级匹配。
+- `mouseButton`：支持 `right`、`middle`，用于配置界面区分右键/中键手势；当前运行时只执行右键规则。
 - `pattern`：手势方向列表，例如 `["Down", "Right"]`。
 - `action.type`：当前仅支持 `hotkey`。
-- `action.keys`：按键列表，例如 `["Control", "W"]`。
+- `action.keys`：按键列表，例如 `["Control", "W"]`；允许为空，表示先保存手势，之后再补命令，空命令规则不会参与运行时执行。
 - `applications`：应用程序归属列表，每项包含 `name`、`displayName`、`path`、`category`，运行时通过前台进程名匹配 `name` 后得到分类；`displayName` 只用于 UI 展示和编辑。
 
 默认规则：
@@ -181,11 +182,11 @@ src\MyGesture.App\Web
 - 添加程序时会先显示前端弹窗，用户可按住“拖动准星选择窗口”拖到目标窗口松开，或选择“浏览 exe 文件”作为备用方式。
 - App 列表和详情会展示从 exe 路径动态提取的应用图标；图标通过 WebView 消息传递，不写入配置文件。
 - App 的显示名称可编辑，进程名称保持只读并用于规则匹配。
-- 规则表列为 `名称`、`手势`、`命令`，删除按钮在每行右侧；双击规则行会打开手势编辑弹窗。
-- 添加/编辑手势通过弹窗完成：名称必填，按住中键或右键在画布中绘制后由后端识别为 8 方向手势，再确认写入规则列表。
+- 规则表列为 `名称`、`手势`、`命令`，删除按钮在每行右侧；双击规则行会打开手势编辑弹窗，手势列用 `◑` 表示右键、`●` 表示中键，并追加 8 方向箭头。
+- 添加/编辑手势通过弹窗完成：按住中键或右键在画布中绘制后由后端识别为 8 方向手势，再确认写入规则列表；如果名称为空，会使用手势助记符作为默认名称。
 - 添加/编辑手势弹窗打开时会通过 WebView 消息暂停全局手势，避免全局鼠标钩子覆盖画布录制；弹窗关闭后恢复。
 - 已移除编辑器内的手势提示区，只保留配置结果提示。
-- 热键命令不支持手动输入；点击命令按钮后进入录制中，后端拦截并记录系统按键，松开所有按键后显示录制结果。
+- 热键命令不支持手动输入；点击命令按钮后进入录制中，后端拦截并记录系统按键，松开所有按键后显示录制结果；添加手势时命令可以留空，之后再补。
 
 WebView 消息流：
 
@@ -197,7 +198,7 @@ WebView 消息流：
   - `{ type: "set-gesture-paused", paused: true/false }`
   - `{ type: "start-hotkey-recording", requestId: "..." }`
   - `{ type: "stop-hotkey-recording" }`
-  - `{ type: "save-rules", rules: [...], applications: [...] }`
+  - `{ type: "save-rules", rules: [{ scope, mouseButton, pattern, actionName, action }, ...], applications: [...] }`
   - `{ type: "reload-rules" }`
   - `{ type: "reset-rules" }`
 - 后端发送：

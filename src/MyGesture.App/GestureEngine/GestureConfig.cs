@@ -22,6 +22,8 @@ public sealed class GestureRuleConfig
 {
     public string Scope { get; set; } = "global";
 
+    public string MouseButton { get; set; } = "right";
+
     public List<string> Pattern { get; set; } = [];
 
     public string ActionName { get; set; } = "";

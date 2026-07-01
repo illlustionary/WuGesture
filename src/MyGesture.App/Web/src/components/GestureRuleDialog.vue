@@ -5,7 +5,8 @@ const props = defineProps({
   open: { type: Boolean, required: true },
   draft: { type: Object, required: true },
   message: { type: String, default: "" },
-  isRecordingHotkey: { type: Function, default: null }
+  isRecordingHotkey: { type: Function, default: null },
+  getGestureMnemonic: { type: Function, default: null }
 });
 
 const emit = defineEmits(["close", "confirm", "record", "record-hotkey"]);
@@ -13,8 +14,9 @@ const emit = defineEmits(["close", "confirm", "record", "record-hotkey"]);
 const canvas = ref(null);
 const drawing = ref(false);
 const points = ref([]);
+const mouseButton = ref("right");
 
-const patternLabel = computed(() => props.draft.patternText || "尚未录制");
+const patternLabel = computed(() => props.getGestureMnemonic?.(props.draft) || "尚未录制");
 
 watch(() => props.open, async (open) => {
   if (!open) {
@@ -33,6 +35,7 @@ function beginDraw(event) {
 
   event.preventDefault();
   drawing.value = true;
+  mouseButton.value = event.button === 1 ? "middle" : "right";
   points.value = [toPoint(event)];
   drawPath();
 }
@@ -60,7 +63,10 @@ function endDraw(event) {
 
   event.preventDefault();
   drawing.value = false;
-  emit("record", points.value);
+  emit("record", {
+    button: mouseButton.value,
+    points: points.value
+  });
 }
 
 function toPoint(event) {

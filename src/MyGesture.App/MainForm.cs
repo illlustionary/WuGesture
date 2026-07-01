@@ -226,6 +226,7 @@ public sealed class MainForm : Form
             rules = loadedConfig.Config.Rules.Select(rule => new
             {
                 scope = rule.Scope,
+                mouseButton = string.IsNullOrWhiteSpace(rule.MouseButton) ? "right" : rule.MouseButton,
                 pattern = rule.Pattern,
                 actionName = rule.ActionName,
                 actionType = rule.Action.Type,

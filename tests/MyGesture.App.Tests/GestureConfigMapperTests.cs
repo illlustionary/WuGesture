@@ -96,4 +96,57 @@ public sealed class GestureConfigMapperTests
         Assert.Equal("app:msedge", rules[0].Scope);
         Assert.Equal("category:Browser", rules[1].Scope);
     }
+
+    [Fact]
+    public void ToRules_IgnoresRulesWithoutHotkeyKeys()
+    {
+        var config = new GestureConfig
+        {
+            Rules =
+            [
+                new GestureRuleConfig
+                {
+                    Scope = "global",
+                    Pattern = ["Left"],
+                    ActionName = "◑←",
+                    Action = new GestureActionConfig
+                    {
+                        Type = "hotkey",
+                        Keys = []
+                    }
+                }
+            ]
+        };
+
+        var rules = GestureConfigMapper.ToRules(config);
+
+        Assert.Empty(rules);
+    }
+
+    [Fact]
+    public void ToRules_IgnoresMiddleButtonRulesForRuntimeExecution()
+    {
+        var config = new GestureConfig
+        {
+            Rules =
+            [
+                new GestureRuleConfig
+                {
+                    Scope = "global",
+                    MouseButton = "middle",
+                    Pattern = ["DownLeft"],
+                    ActionName = "●↙",
+                    Action = new GestureActionConfig
+                    {
+                        Type = "hotkey",
+                        Keys = ["Win", "D"]
+                    }
+                }
+            ]
+        };
+
+        var rules = GestureConfigMapper.ToRules(config);
+
+        Assert.Empty(rules);
+    }
 }

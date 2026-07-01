@@ -15,7 +15,7 @@
     >
       <input v-model.trim="rule.actionName" class="gesture-table__cell" placeholder="名称">
       <button type="button" class="gesture-table__cell gesture-pattern-button" @click="$emit('edit', rule.id)">
-        {{ rule.patternText || "未录制" }}
+        {{ getGestureMnemonic?.(rule) || "未录制" }}
       </button>
       <button
         type="button"
@@ -33,7 +33,8 @@
 <script setup>
 defineProps({
   rules: { type: Array, required: true },
-  isRecording: { type: Function, default: null }
+  isRecording: { type: Function, default: null },
+  getGestureMnemonic: { type: Function, default: null }
 });
 
 defineEmits(["remove", "record", "edit"]);
