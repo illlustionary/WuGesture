@@ -78,6 +78,7 @@ public sealed class MainForm : Form
 
         webView.Source = new Uri("https://appassets.local/index.html");
         gestureHintForm.Preload();
+        EnsureMouseTrailForm().Preload();
 
         gestureService.GesturePreviewMatched += OnGesturePreviewMatched;
         gestureService.GesturePreviewCleared += OnGesturePreviewCleared;
@@ -209,7 +210,7 @@ public sealed class MainForm : Form
 
         if (!e.IsTracking || e.Path.Count < 2)
         {
-            DisposeMouseTrailForm();
+            mouseTrailForm?.HideTrail();
             return;
         }
 
@@ -364,7 +365,7 @@ public sealed class MainForm : Form
             if (message?.Paused == true)
             {
                 gestureHintForm.ClearResult();
-                DisposeMouseTrailForm();
+                mouseTrailForm?.HideTrail();
             }
         }
         catch (Exception exception)
@@ -391,7 +392,7 @@ public sealed class MainForm : Form
     {
         gestureService?.StopRecording();
         gestureHintForm.ClearResult();
-        DisposeMouseTrailForm();
+        mouseTrailForm?.HideTrail();
     }
 
     private void PickApplicationWindow(string json)

@@ -9,6 +9,7 @@ public sealed class MouseTrailForm : Form
 {
     private const int WsExNoActivate = 0x08000000;
     private const int WsExToolWindow = 0x00000080;
+    private const int WsExTransparent = 0x00000020;
     private const int WsExLayered = 0x00080000;
     private const int UlwAlpha = 0x00000002;
     private const byte WindowOpacity = 180;
@@ -66,12 +67,24 @@ public sealed class MouseTrailForm : Form
         get
         {
             var createParams = base.CreateParams;
-            createParams.ExStyle |= WsExNoActivate | WsExToolWindow | WsExLayered;
+            createParams.ExStyle |= WsExNoActivate | WsExToolWindow | WsExTransparent | WsExLayered;
             return createParams;
         }
     }
 
     protected override bool ShowWithoutActivation => true;
+
+    public void Preload()
+    {
+        if (IsDisposed)
+        {
+            return;
+        }
+
+        _ = Handle;
+        graphics.Clear(Color.Transparent);
+        Present(new Rectangle(Point.Empty, bufferSize), fullWindow: true);
+    }
 
     public void SetHighlighted(bool highlighted)
     {
@@ -99,7 +112,7 @@ public sealed class MouseTrailForm : Form
         {
             hasLastPoint = true;
             lastPoint = current;
-            Present(Rectangle.Empty);
+            Present(new Rectangle((int)current.X, (int)current.Y, 1, 1));
             return;
         }
 
@@ -125,6 +138,7 @@ public sealed class MouseTrailForm : Form
 
         if (Visible)
         {
+            Present(new Rectangle(Point.Empty, bufferSize), fullWindow: true);
             Hide();
         }
     }
@@ -161,7 +175,7 @@ public sealed class MouseTrailForm : Form
         return dirtyRect;
     }
 
-    private void Present(Rectangle dirtyRect)
+    private void Present(Rectangle dirtyRect, bool fullWindow = false)
     {
         if (dirtyRect.Width <= 0 || dirtyRect.Height <= 0)
         {
@@ -179,16 +193,47 @@ public sealed class MouseTrailForm : Form
             AlphaFormat = 1
         };
 
-        UpdateLayeredWindow(
-            Handle,
-            screenDc,
-            ref dstPoint,
-            ref size,
-            memDc,
-            ref srcPoint,
-            0,
-            ref blend,
-            UlwAlpha);
+        if (fullWindow)
+        {
+            UpdateLayeredWindow(
+                Handle,
+                screenDc,
+                ref dstPoint,
+                ref size,
+                memDc,
+                ref srcPoint,
+                0,
+                ref blend,
+                UlwAlpha);
+            return;
+        }
+
+        PresentDirty(dirtyRect, dstPoint, size, srcPoint, blend);
+    }
+
+    private unsafe void PresentDirty(
+        Rectangle dirtyRect,
+        Point destination,
+        Size size,
+        Point source,
+        BlendFunction blend)
+    {
+        var dirty = new NativeRect(dirtyRect.Left, dirtyRect.Top, dirtyRect.Right, dirtyRect.Bottom);
+        var updateInfo = new UpdateLayeredWindowInfo
+        {
+            Size = (uint)Marshal.SizeOf<UpdateLayeredWindowInfo>(),
+            DestinationDc = screenDc,
+            SourceDc = memDc,
+            ColorKey = 0,
+            Flags = UlwAlpha,
+            Dirty = &dirty,
+            DestinationPoint = &destination,
+            WindowSize = &size,
+            SourcePoint = &source,
+            Blend = &blend
+        };
+
+        UpdateLayeredWindowIndirect(Handle, ref updateInfo);
     }
 
     private PointF ToLocalPoint(Point point)
@@ -240,6 +285,30 @@ public sealed class MouseTrailForm : Form
         public byte BlendFlags;
         public byte SourceConstantAlpha;
         public byte AlphaFormat;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private readonly struct NativeRect(int left, int top, int right, int bottom)
+    {
+        public readonly int Left = left;
+        public readonly int Top = top;
+        public readonly int Right = right;
+        public readonly int Bottom = bottom;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private unsafe struct UpdateLayeredWindowInfo
+    {
+        public uint Size;
+        public IntPtr DestinationDc;
+        public Point* DestinationPoint;
+        public Size* WindowSize;
+        public IntPtr SourceDc;
+        public Point* SourcePoint;
+        public int ColorKey;
+        public BlendFunction* Blend;
+        public int Flags;
+        public NativeRect* Dirty;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -303,4 +372,9 @@ public sealed class MouseTrailForm : Form
         int crKey,
         ref BlendFunction pblend,
         int dwFlags);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool UpdateLayeredWindowIndirect(
+        IntPtr hwnd,
+        ref UpdateLayeredWindowInfo updateInfo);
 }
