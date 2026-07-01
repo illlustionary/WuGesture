@@ -103,6 +103,7 @@ public sealed class MainForm : Form
             return;
         }
 
+        mouseTrailForm?.SetHighlighted(true);
         gestureHintForm.ShowResult(e.ActionName, autoHide: false);
     }
 
@@ -119,6 +120,7 @@ public sealed class MainForm : Form
             return;
         }
 
+        mouseTrailForm?.SetHighlighted(false);
         gestureHintForm.ClearResult();
     }
 
