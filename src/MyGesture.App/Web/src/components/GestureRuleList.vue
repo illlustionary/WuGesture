@@ -18,7 +18,7 @@
           :value="rule.actionName"
           class="gesture-table__cell"
           placeholder="名称"
-          @input="$emit('rename', rule, $event.target.value)"
+          @blur="$emit('rename', rule, $event.target.value)"
         >
         <button type="button" class="gesture-table__cell gesture-pattern-button" @click="$emit('edit', rule.id)">
           {{ getGestureMnemonic?.(rule) || "未录制" }}
