@@ -83,7 +83,7 @@ src\MyGesture.App\GestureEngine
 - `ForegroundWindowScopeContextProvider.cs`：读取前台窗口进程名。
 - `ConfiguredScopeContextProvider.cs`：用配置里的应用程序列表把前台进程名映射到分类，供作用域匹配使用。
 - `ActionExecutor.cs`：通过 Win32 `SendInput` 执行热键。
-- `MouseInput.cs`：当移动距离太小，不足以构成手势时，重放一次普通右键。
+- `MouseInput.cs`：当移动距离太小，不足以构成手势时，重放一次普通右键或中键。
 - `GestureDirection.cs`：8 方向枚举。
 - `GestureRule.cs`：运行时规则和热键动作模型。
 - `GestureHintForm.cs`：独立的全局命中提示窗，移动过程中匹配到规则时立即显示规则名。
@@ -105,7 +105,7 @@ MouseHook
 
 - 右键按下/抬起在手势跟踪期间会被吞掉。
 - 中键按下/抬起在手势跟踪期间会被吞掉，避免触发目标程序的原生中键事件；轨迹窗在松开时立即销毁，不做淡出。
-- 如果移动太小，就会重放一次普通右键。
+- 如果移动太小，就会按原触发按钮重放一次普通右键或中键。
 - 移动过程中会增量识别当前轨迹；一旦按当前鼠标键和方向匹配到规则，全局提示窗会立即显示规则名。
 - 动作仍在右键抬起时执行。
 - `GestureService` 支持暂停；暂停时保留全局 hook，但不识别、不吞掉中/右键输入，并清理当前轨迹与预览提示，供配置界面录制手势使用。
