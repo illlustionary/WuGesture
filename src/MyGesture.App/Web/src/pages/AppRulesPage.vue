@@ -3,39 +3,42 @@ import { ref } from "vue";
 import AppShell from "../components/AppShell.vue";
 import GestureRuleList from "../components/GestureRuleList.vue";
 import ScopeSidebar from "../components/ScopeSidebar.vue";
+import ScopeCreateDialog from "../components/ScopeCreateDialog.vue";
 import { useGestureEditorStore } from "../composables/gestureEditorStore";
 
 const editor = useGestureEditorStore();
 const scopeKind = "app";
 editor.setActiveScope(scopeKind);
 const appDraft = ref("");
+const appDialogOpen = ref(false);
+
+function openAppDialog() {
+  appDraft.value = "";
+  appDialogOpen.value = true;
+}
+
+function closeAppDialog() {
+  appDialogOpen.value = false;
+}
+
+function confirmAppDialog() {
+  if (editor.createScopeTarget(scopeKind, appDraft.value)) {
+    closeAppDialog();
+  }
+}
 </script>
 
 <template>
   <AppShell
     title="App 规则"
-    description="左边选择具体 App，右边展示同样的规则表。"
-    layout-class="page-shell__grid--split"
+    description="左边选择具体 App，右边只保留手势列表。"
+    layout-class="page-shell__grid--split page-shell__grid--editor"
   >
     <template #left>
       <ScopeSidebar
         title="App 名称"
-        description="选择或新建一个 App。"
+        description="选择一个 App，或在底部新增。"
       >
-        <template #actions>
-          <div class="scope-panel__actions scope-panel__actions--stacked">
-            <input
-              class="scope-input"
-              placeholder="输入 App 名"
-              v-model="appDraft"
-              @keydown.enter.prevent="editor.createScopeTarget(scopeKind, appDraft); appDraft = ''"
-            >
-            <button type="button" class="secondary-button" @click="editor.createScopeTarget(scopeKind, appDraft); appDraft = ''">新增 App</button>
-            <button type="button" class="secondary-button" @click="editor.openApplicationPicker()">添加程序...</button>
-            <button type="button" class="ghost-button" @click="editor.deleteSelectedScope(scopeKind)">删除 App</button>
-          </div>
-        </template>
-
         <div v-if="editor.appItems.length > 0" class="scope-list">
           <button
             v-for="item in editor.appItems"
@@ -53,113 +56,54 @@ const appDraft = ref("");
           </button>
         </div>
         <div v-else class="empty-state">还没有 App，先新增一个。</div>
+
+        <div class="scope-panel__footer">
+          <button type="button" class="primary-button" @click="openAppDialog">新增 App</button>
+          <button type="button" class="ghost-button" @click="editor.deleteSelectedScope(scopeKind)">删除当前 App</button>
+        </div>
       </ScopeSidebar>
     </template>
 
     <template #right>
-      <section class="rules-panel rules-panel--stacked rules-panel--three-col">
-        <div class="scope-preview">
-          <div class="scope-preview__icon">
-            <img v-if="editor.getApplication()?.icon" class="app-icon" :src="editor.getApplication()?.icon" alt="">
-            <span v-else>A</span>
+      <section class="rules-panel rules-panel--stacked rules-panel--editor rules-panel--app-only">
+        <section class="rules-panel__section rules-panel__section--flex">
+          <div class="rules-panel__head">
+            <div>
+              <h3>手势列表</h3>
+              <p>这里只维护当前 App 的规则。</p>
+            </div>
+            <div class="rules-panel__actions">
+              <button type="button" class="primary-button" @click="editor.openAddRule(scopeKind)">添加手势...</button>
+            </div>
           </div>
-          <div>
-            <h3>{{ editor.getApplication()?.displayName || editor.getSelectedName(scopeKind) || "未选择 App" }}</h3>
-            <p>左侧是 App 列表，中间编辑当前 App 的规则，右侧保留参数区域。</p>
+
+          <div v-if="editor.getRulesForScope(scopeKind).length === 0" class="empty-state empty-state--large">
+            先在左侧选择一个 App。
           </div>
-        </div>
 
-        <div class="rules-panel__body">
-          <section class="rules-panel__section">
-            <div class="rules-panel__head">
-              <div>
-                <h3>应用程序</h3>
-              </div>
-            </div>
-
-            <div class="app-detail">
-              <label>
-                <span>程序名称</span>
-                <input
-                  class="scope-input"
-                  :value="editor.getApplication()?.displayName || editor.getSelectedName(scopeKind)"
-                  @input="editor.updateApplicationDisplayName(editor.getSelectedName(scopeKind), $event.target.value)"
-                >
-              </label>
-
-              <label>
-                <span>进程名称</span>
-                <input
-                  class="scope-input"
-                  :value="editor.getSelectedName(scopeKind)"
-                  readonly
-                >
-              </label>
-
-              <label>
-                <span>所属分类</span>
-                <select
-                  class="scope-input"
-                  :value="editor.getApplication()?.category ?? ''"
-                  @change="editor.updateApplicationCategory(editor.getSelectedName(scopeKind), $event.target.value)"
-                >
-                  <option value="">无分类</option>
-                  <option
-                    v-for="category in editor.categoryItems"
-                    :key="category.name"
-                    :value="category.name"
-                  >
-                    {{ category.name }}
-                  </option>
-                </select>
-              </label>
-
-              <label>
-                <span>路径</span>
-                <input
-                  class="scope-input"
-                  :value="editor.getApplication()?.path || ''"
-                  placeholder="后续接入选择 exe"
-                  readonly
-                >
-              </label>
-
-              <button
-                type="button"
-                class="secondary-button"
-                @click="editor.openApplicationPicker(editor.getApplication()?.category ?? '')"
-              >
-                添加程序...
-              </button>
-            </div>
-          </section>
-
-          <section class="rules-panel__section">
-            <div class="rules-panel__head">
-              <div>
-                <h3>手势列表</h3>
-              </div>
-              <div class="rules-panel__actions">
-                <button type="button" class="primary-button" @click="editor.openAddRule(scopeKind)">添加手势...</button>
-              </div>
-            </div>
-
-            <div v-if="editor.getRulesForScope(scopeKind).length === 0" class="empty-state empty-state--large">
-              先在左侧选择一个 App。
-            </div>
-
-            <GestureRuleList
-              :rules="editor.getRulesForScope(scopeKind)"
-              :is-recording="editor.isRecordingHotkey"
-              :get-gesture-mnemonic="editor.getGestureMnemonic"
-              @remove="editor.removeRule"
-              @edit="editor.openEditRule"
-              @record="editor.startRecording"
-              @rename="editor.updateRuleActionName"
-            />
-          </section>
-        </div>
+          <GestureRuleList
+            :rules="editor.getRulesForScope(scopeKind)"
+            :is-recording="editor.isRecordingHotkey"
+            :get-gesture-mnemonic="editor.getGestureMnemonic"
+            @remove="editor.removeRule"
+            @edit="editor.openEditRule"
+            @record="editor.startRecording"
+            @rename="editor.updateRuleActionName"
+          />
+        </section>
       </section>
     </template>
   </AppShell>
+
+  <ScopeCreateDialog
+    v-model="appDraft"
+    :open="appDialogOpen"
+    title="新增 App"
+    description="输入一个进程名，创建后会出现在左侧列表。"
+    label="App 名称"
+    placeholder="例如：notepad.exe"
+    confirm-text="新增 App"
+    @close="closeAppDialog"
+    @confirm="confirmAppDialog"
+  />
 </template>
