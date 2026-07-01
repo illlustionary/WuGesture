@@ -20,6 +20,7 @@ public sealed class GestureService : IDisposable
     private readonly IGestureScopeContextProvider scopeContextProvider;
     private readonly ActionExecutor actionExecutor = new();
     private readonly List<Point> points = [];
+    private string? recordingRequestId;
     private IReadOnlyList<GestureDirection> lastProgressPattern = [];
     private IReadOnlyList<Point> lastProgressPath = [];
     private string? lastPreviewActionName;
@@ -32,6 +33,8 @@ public sealed class GestureService : IDisposable
     private bool disposed;
 
     public event EventHandler<GestureRecognizedEventArgs>? GestureRecognized;
+
+    public event EventHandler<GestureRecordingCompletedEventArgs>? GestureRecordingCompleted;
 
     public event EventHandler<GestureRecognizedEventArgs>? GesturePreviewMatched;
 
@@ -62,10 +65,46 @@ public sealed class GestureService : IDisposable
         isPaused = paused;
         if (!paused)
         {
+            StopRecording();
             return;
         }
 
         CancelTracking();
+    }
+
+    public void StartRecording(string requestId)
+    {
+        if (disposed)
+        {
+            return;
+        }
+
+        var trimmed = requestId.Trim();
+        if (trimmed.Length == 0)
+        {
+            return;
+        }
+
+        CancelTracking();
+        recordingRequestId = trimmed;
+        ClearPreviewMatch();
+    }
+
+    public void StopRecording()
+    {
+        if (recordingRequestId is null)
+        {
+            return;
+        }
+
+        recordingRequestId = null;
+        if (isTracking)
+        {
+            CancelTracking();
+            return;
+        }
+
+        ClearPreviewMatch();
     }
 
     public void Start()
@@ -126,7 +165,7 @@ public sealed class GestureService : IDisposable
 
     private void StartTracking(MouseHookEventArgs e, ActiveMouseButton button, bool swallowInput)
     {
-        if (disposed || isPaused || isTracking)
+        if (disposed || isTracking || (isPaused && recordingRequestId is null))
         {
             return;
         }
@@ -145,7 +184,7 @@ public sealed class GestureService : IDisposable
 
     private void OnMouseMove(object? sender, MouseHookEventArgs e)
     {
-        if (disposed || isPaused || !isTracking)
+        if (disposed || !isTracking)
         {
             return;
         }
@@ -162,7 +201,7 @@ public sealed class GestureService : IDisposable
 
     private void OnRightButtonUp(object? sender, MouseHookEventArgs e)
     {
-        if (disposed || isPaused || !isTracking || activeMouseButton != ActiveMouseButton.Right)
+        if (disposed || !isTracking || activeMouseButton != ActiveMouseButton.Right)
         {
             return;
         }
@@ -173,7 +212,7 @@ public sealed class GestureService : IDisposable
 
     private void OnMiddleButtonUp(object? sender, MouseHookEventArgs e)
     {
-        if (disposed || isPaused || !isTracking || activeMouseButton != ActiveMouseButton.Middle)
+        if (disposed || !isTracking || activeMouseButton != ActiveMouseButton.Middle)
         {
             return;
         }
@@ -198,10 +237,31 @@ public sealed class GestureService : IDisposable
 
     private void FinishTracking(Point location, ActiveMouseButton button)
     {
+        var recordingId = recordingRequestId;
+        recordingRequestId = null;
         isTracking = false;
         activeMouseButton = ActiveMouseButton.None;
         points.Add(location);
         var path = points.ToArray();
+
+        if (recordingId is not null)
+        {
+            var recordingPattern = recognizer.Recognize(points);
+            RaiseProgress(path, recordingPattern, false, ToPublicButton(button), force: true);
+            ClearPreviewMatch();
+            Post(() =>
+            {
+                if (disposed)
+                {
+                    return;
+                }
+
+                GestureRecordingCompleted?.Invoke(
+                    this,
+                    new GestureRecordingCompletedEventArgs(recordingId, path, recordingPattern, ToPublicButton(button)));
+            });
+            return;
+        }
 
         if (points.Count < 2 || Distance(points[0], points[^1]) < MinimumGestureDistance)
         {
@@ -252,6 +312,11 @@ public sealed class GestureService : IDisposable
         var pattern = recognizer.Recognize(points);
         var path = points.ToArray();
         RaiseProgress(path, pattern, true, ToPublicButton(activeMouseButton));
+        if (recordingRequestId is not null)
+        {
+            return;
+        }
+
         RaisePreviewMatch(path, pattern, currentScopeContext, ToPublicButton(activeMouseButton));
     }
 

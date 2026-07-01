@@ -472,6 +472,39 @@ p {
   background: #fff3df;
 }
 
+.gesture-recorder__trigger {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  min-height: 68px;
+  margin-bottom: 12px;
+  padding: 14px 16px;
+  text-align: left;
+  border-radius: 18px;
+  border: 1px solid rgba(29, 81, 109, 0.18);
+  background: linear-gradient(180deg, #ffffff, #f2f7fb);
+  box-shadow: 0 10px 20px rgba(18, 30, 42, 0.06);
+}
+
+.gesture-recorder__trigger strong {
+  color: var(--accent-strong);
+  font-size: 15px;
+}
+
+.gesture-recorder__trigger span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.gesture-recorder__trigger.is-recording {
+  border-color: rgba(173, 76, 57, 0.28);
+  background: linear-gradient(180deg, #fff8f5, #ffeede);
+}
+
+.gesture-recorder__trigger.is-recording strong {
+  color: #8a441f;
+}
+
 .gesture-table__row .ghost-button {
   border: 0;
   background: transparent;
@@ -652,14 +685,6 @@ p {
   pointer-events: auto;
 }
 
-.gesture-recorder__canvas--fullscreen {
-  position: fixed;
-  inset: 0;
-  width: 100vw;
-  height: 100vh;
-  cursor: crosshair;
-}
-
 .scope-create-dialog {
   width: min(480px, 100%);
 }
@@ -684,24 +709,6 @@ p {
   gap: 4px;
   color: var(--muted);
   font-size: 13px;
-}
-
-.gesture-recorder {
-  overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  background:
-    linear-gradient(90deg, rgba(29, 81, 109, 0.06) 1px, transparent 1px),
-    linear-gradient(0deg, rgba(29, 81, 109, 0.06) 1px, transparent 1px),
-    linear-gradient(180deg, #ffffff, #f4f8fb);
-  background-size: 28px 28px;
-}
-
-.gesture-recorder__canvas {
-  display: block;
-  width: 100%;
-  height: 300px;
-  cursor: crosshair;
 }
 
 .gesture-dialog__result {

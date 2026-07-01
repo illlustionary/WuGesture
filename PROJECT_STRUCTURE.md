@@ -76,7 +76,7 @@ src\MyGesture.App\GestureEngine
 
 - `MouseHook.cs`：低级全局鼠标钩子。
 - `KeyboardShortcutRecorder.cs`：低级键盘 hook，用于配置界面录制快捷键并吞掉录制期间的原生键盘事件。
-- `GestureService.cs`：跟踪右键和中键轨迹生命周期，调用识别器、匹配器和执行器，并向 UI 发送事件。
+- `GestureService.cs`：跟踪右键和中键轨迹生命周期，调用识别器、匹配器和执行器，并向 UI 发送事件；也支持录制会话，把识别结果回传给前端。
 - `GestureRecognizer.cs`：把鼠标轨迹转换为稳定的 8 方向模式。
 - `GestureMatcher.cs`：将识别出的鼠标键和方向模式与已加载规则进行匹配，并按作用域优先级选择命中项。
 - `GestureScopeContext.cs`：当前前台窗口的 app/category 上下文模型。
@@ -186,10 +186,10 @@ src\MyGesture.App\Web
 - 程序列表和详情会展示从 exe 路径动态提取的应用图标；图标通过 WebView 消息传递，不写入配置文件。
 - 程序的显示名称可编辑，进程名称保持只读并用于规则匹配。
 - 规则表列为 `名称`、`手势`、`命令`，删除按钮在每行右侧；双击规则行会打开手势编辑弹窗，手势列用 `◑` 表示右键、`●` 表示中键，并追加 8 方向箭头。
-- 添加/编辑手势通过弹窗完成：按住中键或右键在画布中绘制后由后端识别为 8 方向手势，再确认写入规则列表；如果名称为空，会使用手势助记符作为默认名称。
-- 添加/编辑手势弹窗的绘制区域覆盖整个窗口，控制区以浮层形式显示在画布上方，便于在更大的区域内绘制手势。
+- 添加/编辑手势通过弹窗完成：点击“录制手势”后，由后端直接复用正常鼠标轨迹采集和识别流程，识别出 8 方向手势后回传前端写入规则列表；如果名称为空，会使用手势助记符作为默认名称。
+- 添加/编辑手势弹窗不再包含前端绘制 canvas，控制区只负责编辑名称、命令和触发录制，不会遮挡输入框。
 - 规则编辑、删除、快捷键录制、分类/App 变更会自动发送 `save-rules` 写入配置文件。
-- 添加/编辑手势弹窗打开时会通过 WebView 消息暂停全局手势，避免全局鼠标钩子覆盖画布录制；弹窗关闭后恢复。
+- 添加/编辑手势弹窗打开时会通过 WebView 消息暂停全局手势，避免全局鼠标钩子干扰编辑；手势录制由后端接管，轨迹会通过原生 `MouseTrailForm` 在屏幕上显示，前端只接收最终识别结果。
 - 已移除编辑器内的手势提示区，只保留配置结果提示。
 - 热键命令不支持手动输入；点击命令按钮后进入录制中，后端拦截并记录系统按键，松开所有按键后显示录制结果；添加手势时命令可以留空，之后再补。
 
@@ -199,7 +199,8 @@ WebView 消息流：
   - `"get-status"`
   - `{ type: "select-application", requestId: "...", category: "..." }`
   - `{ type: "pick-application-window", requestId: "...", category: "..." }`
-  - `{ type: "recognize-gesture", requestId: "...", points: [{ x, y }, ...] }`
+  - `{ type: "start-gesture-recording", requestId: "..." }`
+  - `{ type: "stop-gesture-recording" }`
   - `{ type: "set-gesture-paused", paused: true/false }`
   - `{ type: "start-hotkey-recording", requestId: "..." }`
   - `{ type: "stop-hotkey-recording" }`
@@ -210,7 +211,7 @@ WebView 消息流：
   - `{ type: "status", ... }`
   - `{ type: "rules", rules: [...], applications: [{ name, displayName, path, category, icon }, ...], ... }`
   - `{ type: "application-selected", requestId: "...", name: "...", displayName: "...", path: "...", category: "...", icon: "..." }`
-  - `{ type: "gesture-pattern-recognized", requestId: "...", pattern: ["Down", "Right"] }`
+  - `{ type: "gesture-recorded", requestId: "...", button: "right|middle", pattern: ["Down", "Right"] }`
   - `{ type: "hotkey-recorded", requestId: "...", keys: ["Control", "W"] }`
   - `{ type: "gesture", ... }`
   - `{ type: "gesture-action-failed", ... }`

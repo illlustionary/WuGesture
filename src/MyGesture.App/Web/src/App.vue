@@ -74,10 +74,11 @@ editor.initialize();
       :draft="editor.state.gestureDraft"
       :message="editor.state.gestureRecognitionMessage"
       :is-recording-hotkey="editor.isRecordingHotkey"
+      :is-recording-gesture="editor.state.gestureRecordingActive"
       :get-gesture-mnemonic="editor.getGestureMnemonic"
       @close="editor.closeGestureEditor"
       @confirm="editor.saveGestureEditor"
-      @record="editor.recordGesturePoints"
+      @record="editor.startGestureRecording"
       @record-hotkey="editor.startRecording"
     />
   </div>

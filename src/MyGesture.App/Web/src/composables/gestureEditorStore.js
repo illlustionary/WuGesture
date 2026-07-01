@@ -66,12 +66,13 @@ const state = reactive({
   gestureEditorScopeKind: "global",
   gestureEditorScopeName: "",
   gestureDraft: createEmptyGestureDraft(),
-  gestureRecognitionMessage: ""
+  gestureRecognitionMessage: "",
+  gestureRecordingActive: false,
+  gestureRecordingRequestId: ""
 });
 
 const activeScope = ref("global");
 const initialized = ref(false);
-const pendingGestureRequests = new Map();
 let autoSaveTimer = 0;
 
 export function useGestureEditorStore() {
@@ -113,7 +114,6 @@ export function useGestureEditorStore() {
     openEditRule,
     closeGestureEditor,
     saveGestureEditor,
-    recordGesturePoints,
     createScopeTarget,
     renameSelectedScope,
     deleteSelectedScope,
@@ -124,6 +124,8 @@ export function useGestureEditorStore() {
     saveRules,
     reloadRules,
     resetRules,
+    startGestureRecording,
+    stopGestureRecording,
     startRecording,
     stopRecording,
     isRecordingHotkey,
@@ -175,8 +177,8 @@ function handleMessage(message) {
     return;
   }
 
-  if (message.type === "gesture-pattern-recognized") {
-    applyRecognizedPattern(message);
+  if (message.type === "gesture-recorded") {
+    applyRecordedGesture(message);
     return;
   }
 
@@ -269,6 +271,7 @@ function openEditRule(ruleId) {
 }
 
 function closeGestureEditor() {
+  stopGestureRecording();
   stopRecording();
   state.gestureEditorOpen = false;
   state.gestureRecognitionMessage = "";
@@ -283,7 +286,7 @@ function saveGestureEditor() {
   const actionName = String(draft.actionName ?? "").trim() || getGestureMnemonic(draft);
 
   if (pattern.length === 0) {
-    state.gestureRecognitionMessage = "请先在录制区域绘制手势。";
+    state.gestureRecognitionMessage = "请先录制手势。";
     return;
   }
 
@@ -316,35 +319,6 @@ function saveGestureEditor() {
     }));
   closeGestureEditor();
   scheduleSaveRules();
-}
-
-function recordGesturePoints(recording) {
-  const normalizedPoints = normalizeGesturePoints(recording?.points ?? recording);
-  if (normalizedPoints.length < 2) {
-    state.gestureDraft.patternText = "";
-    state.gestureRecognitionMessage = "移动距离太短。";
-    return;
-  }
-
-  state.gestureDraft.mouseButton = normalizeMouseButton(recording?.button);
-  const requestId = createRequestId();
-  pendingGestureRequests.set(requestId, true);
-  state.gestureRecognitionMessage = "正在识别...";
-
-  if (window.chrome?.webview) {
-    window.chrome.webview.postMessage({
-      type: "recognize-gesture",
-      requestId,
-      points: normalizedPoints
-    });
-    return;
-  }
-
-  applyRecognizedPattern({
-    type: "gesture-pattern-recognized",
-    requestId,
-    pattern: recognizeGestureInBrowser(normalizedPoints)
-  });
 }
 
 function removeRule(id) {
@@ -629,6 +603,39 @@ function startRecording(target) {
   setMessage("正在录制快捷键，松开所有按键后完成。");
 }
 
+function startGestureRecording() {
+  if (state.gestureRecordingActive) {
+    stopGestureRecording();
+    state.gestureRecognitionMessage = "已停止录制。";
+    return;
+  }
+
+  if (!window.chrome?.webview) {
+    setMessage("浏览器预览无法录制系统鼠标手势，请在桌面应用中录制。", "error");
+    return;
+  }
+
+  const requestId = createRequestId();
+  state.gestureRecordingActive = true;
+  state.gestureRecordingRequestId = requestId;
+  state.gestureDraft.patternText = "";
+  state.gestureRecognitionMessage = "录制中，再点一次停止。按住右键或中键绘制手势。";
+  window.chrome.webview.postMessage({
+    type: "start-gesture-recording",
+    requestId
+  });
+}
+
+function stopGestureRecording() {
+  if (!state.gestureRecordingActive) {
+    return;
+  }
+
+  state.gestureRecordingActive = false;
+  state.gestureRecordingRequestId = "";
+  postWebMessageSilently({ type: "stop-gesture-recording" });
+}
+
 function stopRecording() {
   if (!state.recordingHotkeyRequestId) {
     return;
@@ -895,6 +902,8 @@ function openGestureEditor(mode, rule, scopeKind, scopeName) {
   state.gestureEditorRuleId = rule?.id ?? "";
   state.gestureEditorScopeKind = scopeKind;
   state.gestureEditorScopeName = scopeName;
+  state.gestureRecordingActive = false;
+  state.gestureRecordingRequestId = "";
   state.gestureDraft = {
     actionName: rule?.actionName ?? "",
     patternText: rule?.patternText ?? "",
@@ -902,22 +911,24 @@ function openGestureEditor(mode, rule, scopeKind, scopeName) {
     keysText: rule?.keysText ?? "",
     actionType: rule?.actionType ?? "hotkey"
   };
-  state.gestureRecognitionMessage = "";
+  state.gestureRecognitionMessage = "点击开始录制。再次点击可停止。";
   state.gestureEditorOpen = true;
 }
 
-function applyRecognizedPattern(message) {
-  if (!pendingGestureRequests.has(message.requestId)) {
+function applyRecordedGesture(message) {
+  if (!state.gestureRecordingActive || message.requestId !== state.gestureRecordingRequestId) {
     return;
   }
 
-  pendingGestureRequests.delete(message.requestId);
   const pattern = Array.isArray(message.pattern) ? message.pattern.filter(Boolean) : [];
   state.gestureDraft.patternText = toPatternText(pattern);
+  state.gestureDraft.mouseButton = normalizeMouseButton(message.button);
   if (!String(state.gestureDraft.actionName ?? "").trim()) {
     state.gestureDraft.actionName = getGestureMnemonic(state.gestureDraft);
   }
   state.gestureRecognitionMessage = pattern.length > 0 ? "已识别手势。" : "未识别到有效手势。";
+  state.gestureRecordingActive = false;
+  state.gestureRecordingRequestId = "";
 }
 
 function applyRecordedHotkey(message) {
@@ -954,19 +965,6 @@ function applyRecordedHotkey(message) {
   scheduleSaveRules();
 }
 
-function normalizeGesturePoints(points) {
-  if (!Array.isArray(points)) {
-    return [];
-  }
-
-  return points
-    .map((point) => ({
-      x: Math.round(Number(point?.x ?? 0)),
-      y: Math.round(Number(point?.y ?? 0))
-    }))
-    .filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y));
-}
-
 function createEmptyGestureDraft() {
   return {
     actionName: "",
@@ -975,52 +973,6 @@ function createEmptyGestureDraft() {
     keysText: "",
     actionType: "hotkey"
   };
-}
-
-function recognizeGestureInBrowser(points) {
-  const cleaned = [];
-  for (const point of points) {
-    const previous = cleaned[cleaned.length - 1];
-    if (!previous || distance(previous, point) >= 8) {
-      cleaned.push(point);
-    }
-  }
-
-  if (cleaned.length < 2) {
-    return [];
-  }
-
-  const result = [];
-  for (let index = 1; index < cleaned.length; index += 1) {
-    const previous = cleaned[index - 1];
-    const current = cleaned[index];
-    if (distance(previous, current) < 18) {
-      continue;
-    }
-
-    const direction = toDirection(current.x - previous.x, current.y - previous.y);
-    if (result[result.length - 1] !== direction) {
-      result.push(direction);
-    }
-  }
-
-  return result.slice(0, 12);
-}
-
-function toDirection(dx, dy) {
-  let angle = Math.atan2(dy, dx) * 180 / Math.PI;
-  if (angle < 0) {
-    angle += 360;
-  }
-
-  const sector = Math.round(angle / 45) % 8;
-  return ["Right", "DownRight", "Down", "DownLeft", "Left", "UpLeft", "Up", "UpRight"][sector];
-}
-
-function distance(a, b) {
-  const dx = a.x - b.x;
-  const dy = a.y - b.y;
-  return Math.sqrt(dx * dx + dy * dy);
 }
 
 function toPatternText(pattern) {
