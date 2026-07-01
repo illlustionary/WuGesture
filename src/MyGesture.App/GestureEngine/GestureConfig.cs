@@ -36,6 +36,8 @@ public sealed class GestureActionConfig
     public string Type { get; set; } = "hotkey";
 
     public List<string> Keys { get; set; } = [];
+
+    public string Operation { get; set; } = "";
 }
 
 public sealed record LoadedGestureConfig(

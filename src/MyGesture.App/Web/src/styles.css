@@ -457,7 +457,8 @@ p {
   background: #fff;
 }
 
-.hotkey-record-button {
+.hotkey-record-button,
+.command-button {
   overflow: hidden;
   text-align: left;
   white-space: nowrap;
@@ -513,7 +514,8 @@ p {
 
 .gesture-table__row .ghost-button:hover,
 .gesture-pattern-button:hover,
-.hotkey-record-button:hover {
+.hotkey-record-button:hover,
+.command-button:hover {
   background: rgba(29, 81, 109, 0.08);
 }
 
@@ -705,6 +707,19 @@ p {
 }
 
 .gesture-dialog__grid label {
+  display: grid;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.gesture-dialog__command {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.gesture-dialog__command label {
   display: grid;
   gap: 4px;
   color: var(--muted);

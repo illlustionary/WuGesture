@@ -25,11 +25,10 @@
         </button>
         <button
           type="button"
-          class="gesture-table__cell hotkey-record-button"
-          :class="{ 'is-recording': isRecording?.(rule) }"
-          @click.stop="$emit('record', rule)"
+          class="gesture-table__cell command-button"
+          @click.stop="$emit('edit', rule.id)"
         >
-          {{ isRecording?.(rule) ? "录制中..." : (rule.keysText || "点击录制") }}
+          {{ getActionLabel?.(rule) || "点击设置" }}
         </button>
         <button type="button" class="ghost-button" @click="$emit('remove', rule.id)">删除</button>
       </article>
@@ -40,9 +39,9 @@
 <script setup>
 defineProps({
   rules: { type: Array, required: true },
-  isRecording: { type: Function, default: null },
-  getGestureMnemonic: { type: Function, default: null }
+  getGestureMnemonic: { type: Function, default: null },
+  getActionLabel: { type: Function, default: null }
 });
 
-defineEmits(["remove", "record", "edit", "rename"]);
+defineEmits(["remove", "edit", "rename"]);
 </script>

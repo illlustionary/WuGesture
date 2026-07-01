@@ -14,7 +14,7 @@ public sealed class GestureConfigMapperTests
 
         Assert.Equal(3, rules.Count);
         Assert.Equal([GestureDirection.Left], rules[0].Pattern);
-        Assert.Equal([Keys.Menu, Keys.Left], rules[0].Action.Keys);
+        Assert.Equal([Keys.Menu, Keys.Left], Assert.IsType<HotkeyAction>(rules[0].Action).Keys);
     }
 
     [Fact]
@@ -42,7 +42,7 @@ public sealed class GestureConfigMapperTests
 
         Assert.Single(rules);
         Assert.Equal([GestureDirection.Down, GestureDirection.Right], rules[0].Pattern);
-        Assert.Equal([Keys.ControlKey, Keys.W], rules[0].Action.Keys);
+        Assert.Equal([Keys.ControlKey, Keys.W], Assert.IsType<HotkeyAction>(rules[0].Action).Keys);
     }
 
     [Fact]
@@ -150,5 +150,45 @@ public sealed class GestureConfigMapperTests
         Assert.Single(rules);
         Assert.Equal(GestureMouseButton.Middle, rules[0].MouseButton);
         Assert.Equal([GestureDirection.DownLeft], rules[0].Pattern);
+    }
+
+    [Fact]
+    public void ToRules_MapsWindowControlAction()
+    {
+        var config = new GestureConfig
+        {
+            Rules =
+            [
+                new GestureRuleConfig
+                {
+                    Scope = "global",
+                    Pattern = ["Up"],
+                    ActionName = "窗口控制",
+                    Action = new GestureActionConfig
+                    {
+                        Type = "window",
+                        Operation = "toggle-topmost"
+                    }
+                }
+            ]
+        };
+
+        var rules = GestureConfigMapper.ToRules(config);
+
+        Assert.Single(rules);
+        Assert.Equal(WindowControlOperation.ToggleTopMost, Assert.IsType<WindowControlAction>(rules[0].Action).Operation);
+    }
+
+    [Fact]
+    public void FromRules_MapsWindowControlAction()
+    {
+        var config = GestureConfigMapper.FromRules(
+        [
+            new([GestureDirection.Up], "global", "最大化", new WindowControlAction(WindowControlOperation.ToggleMaximize))
+        ]);
+
+        Assert.Equal("window", config.Rules[0].Action.Type);
+        Assert.Equal("toggle-maximize", config.Rules[0].Action.Operation);
+        Assert.Empty(config.Rules[0].Action.Keys);
     }
 }

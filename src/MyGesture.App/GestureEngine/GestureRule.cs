@@ -6,13 +6,13 @@ public sealed record GestureRule(
     IReadOnlyList<GestureDirection> Pattern,
     string Scope,
     string ActionName,
-    HotkeyAction Action)
+    GestureAction Action)
 {
     public GestureRule(
         IReadOnlyList<GestureDirection> pattern,
         string scope,
         string actionName,
-        HotkeyAction action,
+        GestureAction action,
         GestureMouseButton mouseButton)
         : this(pattern, scope, actionName, action)
     {
@@ -22,4 +22,16 @@ public sealed record GestureRule(
     public GestureMouseButton MouseButton { get; init; } = GestureMouseButton.Right;
 }
 
-public sealed record HotkeyAction(IReadOnlyList<Keys> Keys);
+public abstract record GestureAction;
+
+public sealed record HotkeyAction(IReadOnlyList<Keys> Keys) : GestureAction;
+
+public sealed record WindowControlAction(WindowControlOperation Operation) : GestureAction;
+
+public enum WindowControlOperation
+{
+    ToggleTopMost,
+    ToggleMaximize,
+    Minimize,
+    Close
+}

@@ -7,7 +7,8 @@ const props = defineProps({
   message: { type: String, default: "" },
   isRecordingHotkey: { type: Function, default: null },
   isRecordingGesture: { type: Boolean, default: false },
-  getGestureMnemonic: { type: Function, default: null }
+  getGestureMnemonic: { type: Function, default: null },
+  windowOperations: { type: Array, default: () => [] }
 });
 
 defineEmits(["close", "confirm", "record", "record-hotkey"]);
@@ -35,14 +36,37 @@ const patternLabel = computed(() => props.getGestureMnemonic?.(props.draft) || "
             </label>
 
             <label>
-              <span>命令</span>
+              <span>命令类型</span>
+              <select v-model="draft.actionType" class="scope-input">
+                <option value="hotkey">快捷键</option>
+                <option value="window">窗口控制</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="gesture-dialog__command">
+            <label v-if="draft.actionType === 'window'">
+              <span>操作</span>
+              <select v-model="draft.windowOperation" class="scope-input">
+                <option
+                  v-for="operation in windowOperations"
+                  :key="operation.value"
+                  :value="operation.value"
+                >
+                  {{ operation.label }}
+                </option>
+              </select>
+            </label>
+
+            <label v-else>
+              <span>操作</span>
               <button
                 type="button"
                 class="scope-input hotkey-record-button"
                 :class="{ 'is-recording': isRecordingHotkey?.(draft) }"
                 @click="$emit('record-hotkey', draft)"
               >
-                {{ isRecordingHotkey?.(draft) ? "录制中..." : (draft.keysText || "点击录制") }}
+                {{ isRecordingHotkey?.(draft) ? "录制中..." : (draft.keysText || "点击录制快捷键") }}
               </button>
             </label>
           </div>

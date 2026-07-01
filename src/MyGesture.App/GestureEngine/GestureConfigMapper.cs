@@ -20,25 +20,16 @@ public static class GestureConfigMapper
             Rules = rules.Select(rule => new GestureRuleConfig
             {
                 Scope = NormalizeScope(rule.Scope),
-                MouseButton = "right",
+                MouseButton = rule.MouseButton == GestureMouseButton.Middle ? "middle" : "right",
                 ActionName = rule.ActionName,
                 Pattern = rule.Pattern.Select(direction => direction.ToString()).ToList(),
-                Action = new GestureActionConfig
-                {
-                    Type = "hotkey",
-                    Keys = rule.Action.Keys.Select(ToConfigKeyName).ToList()
-                }
+                Action = ToConfigAction(rule.Action)
             }).ToList()
         };
     }
 
     private static GestureRule? ToRule(GestureRuleConfig config)
     {
-        if (!string.Equals(config.Action.Type, "hotkey", StringComparison.OrdinalIgnoreCase))
-        {
-            return null;
-        }
-
         var pattern = new List<GestureDirection>();
         foreach (var directionName in config.Pattern)
         {
@@ -50,6 +41,27 @@ public static class GestureConfigMapper
             pattern.Add(direction);
         }
 
+        if (pattern.Count == 0)
+        {
+            return null;
+        }
+
+        var actionType = config.Action.Type.Trim();
+        if (string.Equals(actionType, "hotkey", StringComparison.OrdinalIgnoreCase))
+        {
+            return ToHotkeyRule(config, pattern);
+        }
+
+        if (string.Equals(actionType, "window", StringComparison.OrdinalIgnoreCase))
+        {
+            return ToWindowRule(config, pattern);
+        }
+
+        return null;
+    }
+
+    private static GestureRule? ToHotkeyRule(GestureRuleConfig config, IReadOnlyList<GestureDirection> pattern)
+    {
         var keys = new List<Keys>();
         foreach (var keyName in config.Action.Keys)
         {
@@ -61,7 +73,7 @@ public static class GestureConfigMapper
             keys.Add(key);
         }
 
-        if (pattern.Count == 0 || keys.Count == 0)
+        if (keys.Count == 0)
         {
             return null;
         }
@@ -72,6 +84,39 @@ public static class GestureConfigMapper
             string.IsNullOrWhiteSpace(config.ActionName) ? string.Join(" + ", config.Action.Keys) : config.ActionName,
             new HotkeyAction(keys),
             ParseMouseButton(config.MouseButton));
+    }
+
+    private static GestureRule? ToWindowRule(GestureRuleConfig config, IReadOnlyList<GestureDirection> pattern)
+    {
+        if (!TryParseWindowOperation(config.Action.Operation, out var operation))
+        {
+            return null;
+        }
+
+        return new GestureRule(
+            pattern,
+            NormalizeScope(config.Scope),
+            string.IsNullOrWhiteSpace(config.ActionName) ? ToConfigOperationName(operation) : config.ActionName,
+            new WindowControlAction(operation),
+            ParseMouseButton(config.MouseButton));
+    }
+
+    private static GestureActionConfig ToConfigAction(GestureAction action)
+    {
+        return action switch
+        {
+            HotkeyAction hotkey => new GestureActionConfig
+            {
+                Type = "hotkey",
+                Keys = hotkey.Keys.Select(ToConfigKeyName).ToList()
+            },
+            WindowControlAction window => new GestureActionConfig
+            {
+                Type = "window",
+                Operation = ToConfigOperationName(window.Operation)
+            },
+            _ => new GestureActionConfig()
+        };
     }
 
     private static string NormalizeScope(string scope)
@@ -118,6 +163,52 @@ public static class GestureConfigMapper
         }
 
         return Enum.TryParse(normalized, ignoreCase: true, out key);
+    }
+
+    private static bool TryParseWindowOperation(string value, out WindowControlOperation operation)
+    {
+        operation = WindowControlOperation.ToggleMaximize;
+        var normalized = value.Trim().Replace("-", "", StringComparison.Ordinal).Replace("_", "", StringComparison.Ordinal);
+
+        if (normalized.Equals("toggletopmost", StringComparison.OrdinalIgnoreCase) ||
+            normalized.Equals("topmost", StringComparison.OrdinalIgnoreCase))
+        {
+            operation = WindowControlOperation.ToggleTopMost;
+            return true;
+        }
+
+        if (normalized.Equals("togglemaximize", StringComparison.OrdinalIgnoreCase) ||
+            normalized.Equals("maximize", StringComparison.OrdinalIgnoreCase))
+        {
+            operation = WindowControlOperation.ToggleMaximize;
+            return true;
+        }
+
+        if (normalized.Equals("minimize", StringComparison.OrdinalIgnoreCase))
+        {
+            operation = WindowControlOperation.Minimize;
+            return true;
+        }
+
+        if (normalized.Equals("close", StringComparison.OrdinalIgnoreCase))
+        {
+            operation = WindowControlOperation.Close;
+            return true;
+        }
+
+        return false;
+    }
+
+    private static string ToConfigOperationName(WindowControlOperation operation)
+    {
+        return operation switch
+        {
+            WindowControlOperation.ToggleTopMost => "toggle-topmost",
+            WindowControlOperation.ToggleMaximize => "toggle-maximize",
+            WindowControlOperation.Minimize => "minimize",
+            WindowControlOperation.Close => "close",
+            _ => "toggle-maximize"
+        };
     }
 
     private static string ToConfigKeyName(Keys key)
