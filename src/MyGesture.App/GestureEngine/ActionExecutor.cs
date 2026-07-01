@@ -1,5 +1,7 @@
 using System.ComponentModel;
+using System.Drawing;
 using System.Runtime.InteropServices;
+using System.Windows.Forms;
 
 namespace MyGesture.App.GestureEngine;
 
@@ -17,6 +19,7 @@ public sealed class ActionExecutor
     private const uint SwpNoMove = 0x0002;
     private const uint SwpNoActivate = 0x0010;
     private const int WmClose = 0x0010;
+    private const uint GetAncestorRoot = 2;
     private static readonly IntPtr HwndTopMost = new(-1);
     private static readonly IntPtr HwndNoTopMost = new(-2);
 
@@ -61,6 +64,7 @@ public sealed class ActionExecutor
 
     private static void ExecuteWindowControl(WindowControlAction action, IntPtr targetWindow)
     {
+        targetWindow = ResolveWindowTarget(targetWindow);
         if (targetWindow == IntPtr.Zero || !IsWindow(targetWindow))
         {
             return;
@@ -81,6 +85,23 @@ public sealed class ActionExecutor
                 PostMessage(targetWindow, WmClose, IntPtr.Zero, IntPtr.Zero);
                 break;
         }
+    }
+
+    private static IntPtr ResolveWindowTarget(IntPtr fallbackWindow)
+    {
+        var cursorWindow = WindowFromPoint(Cursor.Position);
+        if (cursorWindow != IntPtr.Zero)
+        {
+            var rootWindow = GetAncestor(cursorWindow, GetAncestorRoot);
+            if (rootWindow != IntPtr.Zero)
+            {
+                return rootWindow;
+            }
+
+            return cursorWindow;
+        }
+
+        return fallbackWindow;
     }
 
     private static void ToggleTopMost(IntPtr targetWindow)
@@ -168,6 +189,12 @@ public sealed class ActionExecutor
         int cx,
         int cy,
         uint flags);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr WindowFromPoint(Point point);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetAncestor(IntPtr hwnd, uint gaFlags);
 
     [StructLayout(LayoutKind.Sequential)]
     private struct Input
