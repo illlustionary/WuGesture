@@ -80,4 +80,35 @@ public sealed class GestureMatcherTests
         Assert.NotNull(rule);
         Assert.Equal("Edge Diagonal", rule!.ActionName);
     }
+
+    [Fact]
+    public void Match_FiltersByMouseButton()
+    {
+        var matcher = new GestureMatcher(
+        [
+            new([GestureDirection.Left], "global", "Right Back", new HotkeyAction([]), GestureMouseButton.Right),
+            new([GestureDirection.Left], "global", "Middle Back", new HotkeyAction([]), GestureMouseButton.Middle)
+        ]);
+
+        var rightRule = matcher.Match([GestureDirection.Left], GestureScopeContext.Empty, GestureMouseButton.Right);
+        var middleRule = matcher.Match([GestureDirection.Left], GestureScopeContext.Empty, GestureMouseButton.Middle);
+
+        Assert.NotNull(rightRule);
+        Assert.NotNull(middleRule);
+        Assert.Equal("Right Back", rightRule!.ActionName);
+        Assert.Equal("Middle Back", middleRule!.ActionName);
+    }
+
+    [Fact]
+    public void Match_DoesNotUseRightButtonRuleForMiddleButton()
+    {
+        var matcher = new GestureMatcher(
+        [
+            new([GestureDirection.Right], "global", "Right Forward", new HotkeyAction([]), GestureMouseButton.Right)
+        ]);
+
+        var rule = matcher.Match([GestureDirection.Right], GestureScopeContext.Empty, GestureMouseButton.Middle);
+
+        Assert.Null(rule);
+    }
 }

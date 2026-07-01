@@ -9,7 +9,10 @@ public sealed class GestureMatcher
         this.rules = rules.ToList();
     }
 
-    public GestureRule? Match(IReadOnlyList<GestureDirection> pattern, GestureScopeContext? context = null)
+    public GestureRule? Match(
+        IReadOnlyList<GestureDirection> pattern,
+        GestureScopeContext? context = null,
+        GestureMouseButton button = GestureMouseButton.Right)
     {
         context ??= GestureScopeContext.Empty;
 
@@ -18,6 +21,11 @@ public sealed class GestureMatcher
 
         foreach (var rule in rules)
         {
+            if (rule.MouseButton != button)
+            {
+                continue;
+            }
+
             if (!rule.Pattern.SequenceEqual(pattern))
             {
                 continue;

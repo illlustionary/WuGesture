@@ -203,45 +203,47 @@ public sealed class GestureService : IDisposable
         points.Add(location);
         var path = points.ToArray();
 
-        if (button == ActiveMouseButton.Right)
+        if (button == ActiveMouseButton.Right &&
+            (points.Count < 2 || Distance(points[0], points[^1]) < MinimumGestureDistance))
         {
-            if (points.Count < 2 || Distance(points[0], points[^1]) < MinimumGestureDistance)
-            {
-                RaiseProgress(path, [], false, ToPublicButton(button), force: true);
-                Post(MouseInput.ReplayRightClick);
-                return;
-            }
-
-            var pattern = recognizer.Recognize(points);
-            var rule = matcher.Match(pattern, currentScopeContext);
-            if (rule is null)
-            {
-                RaiseProgress(path, pattern, false, ToPublicButton(button), force: true);
-                return;
-            }
-
-            RaiseProgress(path, pattern, false, ToPublicButton(button), force: true);
-            Post(() =>
-            {
-                if (disposed)
-                {
-                    return;
-                }
-
-                try
-                {
-                    GestureRecognized?.Invoke(this, new GestureRecognizedEventArgs(path, pattern, rule.ActionName));
-                    actionExecutor.Execute(rule);
-                }
-                catch (Exception exception)
-                {
-                    GestureActionFailed?.Invoke(this, new GestureActionFailedEventArgs(path, pattern, rule.ActionName, exception));
-                }
-            });
+            RaiseProgress(path, [], false, ToPublicButton(button), force: true);
+            Post(MouseInput.ReplayRightClick);
             return;
         }
 
-        RaiseProgress(path, [], false, ToPublicButton(button), force: true);
+        if (points.Count < 2 || Distance(points[0], points[^1]) < MinimumGestureDistance)
+        {
+            RaiseProgress(path, [], false, ToPublicButton(button), force: true);
+            return;
+        }
+
+        var publicButton = ToPublicButton(button);
+        var pattern = recognizer.Recognize(points);
+        var rule = matcher.Match(pattern, currentScopeContext, publicButton);
+        if (rule is null)
+        {
+            RaiseProgress(path, pattern, false, publicButton, force: true);
+            return;
+        }
+
+        RaiseProgress(path, pattern, false, publicButton, force: true);
+        Post(() =>
+        {
+            if (disposed)
+            {
+                return;
+            }
+
+            try
+            {
+                GestureRecognized?.Invoke(this, new GestureRecognizedEventArgs(path, pattern, rule.ActionName));
+                actionExecutor.Execute(rule);
+            }
+            catch (Exception exception)
+            {
+                GestureActionFailed?.Invoke(this, new GestureActionFailedEventArgs(path, pattern, rule.ActionName, exception));
+            }
+        });
     }
 
     private void PublishProgress()
@@ -249,15 +251,16 @@ public sealed class GestureService : IDisposable
         var pattern = recognizer.Recognize(points);
         var path = points.ToArray();
         RaiseProgress(path, pattern, true, ToPublicButton(activeMouseButton));
-        RaisePreviewMatch(path, pattern, currentScopeContext);
+        RaisePreviewMatch(path, pattern, currentScopeContext, ToPublicButton(activeMouseButton));
     }
 
     private void RaisePreviewMatch(
         IReadOnlyList<Point> path,
         IReadOnlyList<GestureDirection> pattern,
-        GestureScopeContext context)
+        GestureScopeContext context,
+        GestureMouseButton button)
     {
-        var rule = matcher.Match(pattern, context);
+        var rule = matcher.Match(pattern, context, button);
         if (rule is null)
         {
             ClearPreviewMatch();
