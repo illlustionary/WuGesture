@@ -367,7 +367,7 @@ function createScopeTarget(kind, name) {
   const trimmed = String(name ?? "").trim();
   if (!trimmed) {
     setMessage("请输入名称后再新增。", "error");
-    return;
+    return false;
   }
 
   if (!getScopeItems(kind).some((item) => item.name === trimmed)) {
@@ -377,6 +377,7 @@ function createScopeTarget(kind, name) {
   setSelectedName(kind, trimmed);
   setMessage("已新增。", "success");
   scheduleSaveRules();
+  return true;
 }
 
 function renameSelectedScope(kind, nextName) {
@@ -833,7 +834,15 @@ function collectAppItems() {
   }
 
   return [...counts.entries()]
-    .map(([name, count]) => ({ name, count }))
+    .map(([name, count]) => {
+      const application = state.applications.find((item) => item.name === name);
+      return {
+        name,
+        count,
+        displayName: application?.displayName || name,
+        icon: application?.icon || ""
+      };
+    })
     .sort((left, right) => left.name.localeCompare(right.name, "zh-Hans-CN"));
 }
 
