@@ -175,7 +175,9 @@ public sealed class GestureService : IDisposable
         points.Clear();
         points.Add(e.Location);
         isTracking = true;
-        currentScopeContext = scopeContextProvider.GetCurrentContext();
+        currentScopeContext = recordingRequestId is null
+            ? scopeContextProvider.GetCurrentContext()
+            : GestureScopeContext.Empty;
         lastProgressPattern = [];
         lastProgressPath = [];
         lastPreviewActionName = null;
@@ -309,13 +311,15 @@ public sealed class GestureService : IDisposable
 
     private void PublishProgress()
     {
+        if (recordingRequestId is not null)
+        {
+            RaiseProgress(points.ToArray(), [], true, ToPublicButton(activeMouseButton));
+            return;
+        }
+
         var pattern = recognizer.Recognize(points);
         var path = points.ToArray();
         RaiseProgress(path, pattern, true, ToPublicButton(activeMouseButton));
-        if (recordingRequestId is not null)
-        {
-            return;
-        }
 
         RaisePreviewMatch(path, pattern, currentScopeContext, ToPublicButton(activeMouseButton));
     }
