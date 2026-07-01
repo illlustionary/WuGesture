@@ -106,6 +106,7 @@ MouseHook
 - 如果移动太小，就会重放一次普通右键。
 - 移动过程中会增量识别当前轨迹；一旦匹配规则，全局提示窗会立即显示规则名。
 - 动作仍在右键抬起时执行。
+- `GestureService` 支持暂停；暂停时保留全局 hook，但不识别、不吞掉中/右键输入，并清理当前轨迹与预览提示，供配置界面录制手势使用。
 - 钩子回调必须保持快速；动作会切回 WinForms 消息线程执行。
 - 动作执行失败会被捕获，并通过 `GestureActionFailed` 上报。
 
@@ -178,7 +179,9 @@ src\MyGesture.App\Web
 - 添加程序时会先显示前端弹窗，用户可按住“拖动准星选择窗口”拖到目标窗口松开，或选择“浏览 exe 文件”作为备用方式。
 - App 列表和详情会展示从 exe 路径动态提取的应用图标；图标通过 WebView 消息传递，不写入配置文件。
 - App 的显示名称可编辑，进程名称保持只读并用于规则匹配。
-- 规则表列为 `名称`、`手势`、`命令`，删除按钮在每行右侧。
+- 规则表列为 `名称`、`手势`、`命令`，删除按钮在每行右侧；双击规则行会打开手势编辑弹窗。
+- 添加/编辑手势通过弹窗完成：名称必填，按住中键或右键在画布中绘制后由后端识别为 8 方向手势，再确认写入规则列表。
+- 添加/编辑手势弹窗打开时会通过 WebView 消息暂停全局手势，避免全局鼠标钩子覆盖画布录制；弹窗关闭后恢复。
 - 已移除编辑器内的手势提示区，只保留配置结果提示。
 - 热键输入在获得焦点时会监听按键：
   - 修饰键/特殊键组合会自动记录。
@@ -190,6 +193,8 @@ WebView 消息流：
   - `"get-status"`
   - `{ type: "select-application", requestId: "...", category: "..." }`
   - `{ type: "pick-application-window", requestId: "...", category: "..." }`
+  - `{ type: "recognize-gesture", requestId: "...", points: [{ x, y }, ...] }`
+  - `{ type: "set-gesture-paused", paused: true/false }`
   - `{ type: "save-rules", rules: [...], applications: [...] }`
   - `{ type: "reload-rules" }`
   - `{ type: "reset-rules" }`
@@ -197,6 +202,7 @@ WebView 消息流：
   - `{ type: "status", ... }`
   - `{ type: "rules", rules: [...], applications: [{ name, displayName, path, category, icon }, ...], ... }`
   - `{ type: "application-selected", requestId: "...", name: "...", displayName: "...", path: "...", category: "...", icon: "..." }`
+  - `{ type: "gesture-pattern-recognized", requestId: "...", pattern: ["Down", "Right"] }`
   - `{ type: "gesture", ... }`
   - `{ type: "gesture-action-failed", ... }`
   - `{ type: "config-result", ... }`

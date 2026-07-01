@@ -1,5 +1,6 @@
 <script setup>
 import { RouterLink, RouterView } from "vue-router";
+import GestureRuleDialog from "./components/GestureRuleDialog.vue";
 import { useGestureEditorStore } from "./composables/gestureEditorStore";
 
 const editor = useGestureEditorStore();
@@ -34,6 +35,15 @@ editor.initialize();
     </header>
 
     <RouterView />
+
+    <GestureRuleDialog
+      :open="editor.state.gestureEditorOpen"
+      :draft="editor.state.gestureDraft"
+      :message="editor.state.gestureRecognitionMessage"
+      @close="editor.closeGestureEditor"
+      @confirm="editor.saveGestureEditor"
+      @record="editor.recordGesturePoints"
+    />
 
     <div v-if="editor.state.applicationPickerOpen" class="modal-backdrop" @click.self="editor.closeApplicationPicker()">
       <section class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="application-picker-title">
