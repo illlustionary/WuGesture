@@ -68,11 +68,11 @@ function confirmCategoryDialog() {
         <section class="rules-panel__section rules-panel__section--compact">
           <div class="rules-panel__head">
             <div>
-              <h3>应用程序</h3>
+              <h3>程序</h3>
               <p>当前分类关联的程序会从这里管理。</p>
             </div>
             <div class="rules-panel__actions">
-              <button type="button" class="secondary-button" @click="editor.openApplicationPicker(editor.getSelectedName(scopeKind))">添加程序...</button>
+              <button type="button" class="secondary-button" @click="editor.openApplicationPicker(editor.getSelectedName(scopeKind))">添加程序</button>
             </div>
           </div>
 

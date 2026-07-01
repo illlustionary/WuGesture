@@ -1,5 +1,4 @@
 <script setup>
-import { ref } from "vue";
 import { RouterLink, RouterView } from "vue-router";
 import GestureRuleDialog from "./components/GestureRuleDialog.vue";
 import { useGestureEditorStore } from "./composables/gestureEditorStore";
@@ -8,7 +7,7 @@ const editor = useGestureEditorStore();
 const tabs = [
   { to: "/global", label: "全局" },
   { to: "/category", label: "分类" },
-  { to: "/app", label: "App" }
+  { to: "/app", label: "程序" }
 ];
 
 editor.initialize();
@@ -40,6 +39,35 @@ editor.initialize();
     </header>
 
     <RouterView />
+
+    <div v-if="editor.state.applicationPickerOpen" class="modal-backdrop" @click.self="editor.closeApplicationPicker()">
+      <section class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="application-picker-title">
+        <div class="modal-panel__head">
+          <div>
+            <h3 id="application-picker-title">添加程序</h3>
+            <p>选择一种方式把程序加入当前分类。</p>
+          </div>
+          <button type="button" class="ghost-button" @click="editor.closeApplicationPicker()">关闭</button>
+        </div>
+
+        <div class="picker-options">
+          <button
+            type="button"
+            class="picker-option"
+            @pointerdown.prevent="editor.pickApplicationWindow()"
+            @click.prevent
+          >
+            <strong>拖动准星选择窗口</strong>
+            <span>从正在打开的目标窗口读取程序名称和路径。</span>
+          </button>
+
+          <button type="button" class="picker-option" @click="editor.selectApplication()">
+            <strong>浏览 exe 文件</strong>
+            <span>从磁盘选择程序文件作为备用添加方式。</span>
+          </button>
+        </div>
+      </section>
+    </div>
 
     <GestureRuleDialog
       :open="editor.state.gestureEditorOpen"

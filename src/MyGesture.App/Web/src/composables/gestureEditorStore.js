@@ -251,7 +251,7 @@ function openAddRule(kind = activeScope.value, name = getSelectedName(kind)) {
 
   const scopeName = String(name || getFirstScopeName(kind)).trim();
   if (!scopeName) {
-    setMessage(kind === "category" ? "先新增或选择一个分类。" : "先新增或选择一个 App。", "error");
+    setMessage(kind === "category" ? "先新增或选择一个分类。" : "先新增或选择一个程序。", "error");
     return;
   }
 
@@ -453,7 +453,7 @@ function getApplication(appName = getSelectedName("app")) {
 function updateApplicationDisplayName(appName = getSelectedName("app"), displayName = "") {
   const name = String(appName ?? "").trim();
   if (!name) {
-    setMessage("请先选择一个 App。", "error");
+    setMessage("请先选择一个程序。", "error");
     return;
   }
 
@@ -465,13 +465,13 @@ function updateApplicationDisplayName(appName = getSelectedName("app"), displayN
 function updateApplicationCategory(appName = getSelectedName("app"), categoryName = "") {
   const name = String(appName ?? "").trim();
   if (!name) {
-    setMessage("请先选择一个 App。", "error");
+    setMessage("请先选择一个程序。", "error");
     return;
   }
 
   const application = ensureApplication(name);
   application.category = String(categoryName ?? "").trim();
-  setMessage(application.category ? "已设置 App 分类。" : "已清除 App 分类。", "success");
+  setMessage(application.category ? "已设置程序分类。" : "已清除程序分类。", "success");
   scheduleSaveRules();
 }
 
@@ -479,14 +479,14 @@ function assignSelectedAppToCategory(categoryName = getSelectedName("category"),
   const category = String(categoryName ?? "").trim();
   const name = String(appName ?? "").trim();
   if (!category || !name) {
-    setMessage("请先选择分类和 App。", "error");
+    setMessage("请先选择分类和程序。", "error");
     return;
   }
 
   const application = ensureApplication(name);
   application.category = category;
   setSelectedName("category", category);
-  setMessage("已关联 App 到分类。", "success");
+  setMessage("已关联程序到分类。", "success");
   scheduleSaveRules();
 }
 
