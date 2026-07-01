@@ -881,12 +881,6 @@ function collectAppItems() {
     }
   }
 
-  for (const application of state.applications) {
-    if (application.name) {
-      counts.set(application.name, counts.get(application.name) ?? 0);
-    }
-  }
-
   return [...counts.entries()]
     .map(([name, count]) => {
       const application = state.applications.find((item) => item.name === name);
