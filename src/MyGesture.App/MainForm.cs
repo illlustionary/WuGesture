@@ -250,6 +250,12 @@ public sealed class MainForm : Form
             case "pick-application-window":
                 PickApplicationWindow(json);
                 break;
+            case "recognize-gesture":
+                RecognizeGesture(json);
+                break;
+            case "set-gesture-paused":
+                SetGesturePaused(json);
+                break;
             case "save-rules":
                 SaveRules(json);
                 break;
@@ -259,6 +265,52 @@ public sealed class MainForm : Form
             case "reset-rules":
                 ResetRules();
                 break;
+        }
+    }
+
+    private void SetGesturePaused(string json)
+    {
+        try
+        {
+            var message = JsonSerializer.Deserialize<SetGesturePausedWebMessage>(json, WebMessageJsonOptions);
+            gestureService?.SetPaused(message?.Paused ?? false);
+            if (message?.Paused == true)
+            {
+                gestureHintForm.ClearResult();
+                DisposeMouseTrailForm();
+            }
+        }
+        catch (Exception exception)
+        {
+            PostConfigResult(false, exception.Message);
+        }
+    }
+
+    private void RecognizeGesture(string json)
+    {
+        try
+        {
+            var message = JsonSerializer.Deserialize<RecognizeGestureWebMessage>(json, WebMessageJsonOptions);
+            var points = message?.Points?
+                .Select(point => new Point(point.X, point.Y))
+                .ToArray() ?? [];
+            var pattern = new GestureRecognizer()
+                .Recognize(points)
+                .Select(direction => direction.ToString())
+                .ToArray();
+
+            var payload = JsonSerializer.Serialize(new
+            {
+                type = "gesture-pattern-recognized",
+                requestId = message?.RequestId ?? "",
+                pattern
+            });
+
+            webView.CoreWebView2?.PostWebMessageAsJson(payload);
+        }
+        catch (Exception exception)
+        {
+            PostConfigResult(false, exception.Message);
         }
     }
 
@@ -516,5 +568,28 @@ public sealed class MainForm : Form
         public string RequestId { get; set; } = "";
 
         public string Category { get; set; } = "";
+    }
+
+    private sealed class RecognizeGestureWebMessage
+    {
+        public string Type { get; set; } = "";
+
+        public string RequestId { get; set; } = "";
+
+        public List<GesturePointWebMessage> Points { get; set; } = [];
+    }
+
+    private sealed class SetGesturePausedWebMessage
+    {
+        public string Type { get; set; } = "";
+
+        public bool Paused { get; set; }
+    }
+
+    private sealed class GesturePointWebMessage
+    {
+        public int X { get; set; }
+
+        public int Y { get; set; }
     }
 }

@@ -26,6 +26,7 @@ public sealed class GestureService : IDisposable
     private GestureScopeContext currentScopeContext = GestureScopeContext.Empty;
     private SynchronizationContext? synchronizationContext;
     private bool isTracking;
+    private bool isPaused;
     private ActiveMouseButton activeMouseButton = ActiveMouseButton.None;
     private bool started;
     private bool disposed;
@@ -49,6 +50,22 @@ public sealed class GestureService : IDisposable
     public void UpdateMatcher(GestureMatcher newMatcher)
     {
         matcher = newMatcher;
+    }
+
+    public void SetPaused(bool paused)
+    {
+        if (disposed || isPaused == paused)
+        {
+            return;
+        }
+
+        isPaused = paused;
+        if (!paused)
+        {
+            return;
+        }
+
+        CancelTracking();
     }
 
     public void Start()
@@ -109,7 +126,7 @@ public sealed class GestureService : IDisposable
 
     private void StartTracking(MouseHookEventArgs e, ActiveMouseButton button, bool swallowInput)
     {
-        if (disposed || isTracking)
+        if (disposed || isPaused || isTracking)
         {
             return;
         }
@@ -128,7 +145,7 @@ public sealed class GestureService : IDisposable
 
     private void OnMouseMove(object? sender, MouseHookEventArgs e)
     {
-        if (disposed || !isTracking)
+        if (disposed || isPaused || !isTracking)
         {
             return;
         }
@@ -145,7 +162,7 @@ public sealed class GestureService : IDisposable
 
     private void OnRightButtonUp(object? sender, MouseHookEventArgs e)
     {
-        if (disposed || !isTracking || activeMouseButton != ActiveMouseButton.Right)
+        if (disposed || isPaused || !isTracking || activeMouseButton != ActiveMouseButton.Right)
         {
             return;
         }
@@ -156,12 +173,26 @@ public sealed class GestureService : IDisposable
 
     private void OnMiddleButtonUp(object? sender, MouseHookEventArgs e)
     {
-        if (disposed || !isTracking || activeMouseButton != ActiveMouseButton.Middle)
+        if (disposed || isPaused || !isTracking || activeMouseButton != ActiveMouseButton.Middle)
         {
             return;
         }
 
         FinishTracking(e.Location, ActiveMouseButton.Middle);
+    }
+
+    private void CancelTracking()
+    {
+        var button = activeMouseButton;
+        var path = points.ToArray();
+
+        isTracking = false;
+        activeMouseButton = ActiveMouseButton.None;
+        points.Clear();
+        lastProgressPattern = [];
+        lastProgressPath = [];
+        ClearPreviewMatch();
+        RaiseProgress(path, [], false, ToPublicButton(button), force: true);
     }
 
     private void FinishTracking(Point location, ActiveMouseButton button)

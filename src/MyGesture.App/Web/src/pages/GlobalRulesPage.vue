@@ -21,7 +21,7 @@ editor.setActiveScope(scopeKind);
             <h3>全局</h3>
             <p>名称、手势、命令三列编辑，删除放在每行右侧。</p>
           </div>
-          <button type="button" class="primary-button" @click="editor.addRule(scopeKind)">新增规则</button>
+          <button type="button" class="primary-button" @click="editor.openAddRule(scopeKind)">新增规则</button>
         </div>
 
         <div v-if="editor.globalRules.length === 0" class="empty-state empty-state--large">
@@ -31,6 +31,7 @@ editor.setActiveScope(scopeKind);
         <GestureRuleList
           :rules="editor.globalRules"
           @remove="editor.removeRule"
+          @edit="editor.openEditRule"
           @record="editor.startRecording"
           @stop-record="editor.stopRecording"
         />

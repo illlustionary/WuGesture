@@ -42,11 +42,19 @@ const state = reactive({
   selectedApp: "",
   applicationPickerOpen: false,
   applicationPickerCategory: "",
-  recordingInput: null
+  recordingInput: null,
+  gestureEditorOpen: false,
+  gestureEditorMode: "add",
+  gestureEditorRuleId: "",
+  gestureEditorScopeKind: "global",
+  gestureEditorScopeName: "",
+  gestureDraft: createEmptyGestureDraft(),
+  gestureRecognitionMessage: ""
 });
 
 const activeScope = ref("global");
 const initialized = ref(false);
+const pendingGestureRequests = new Map();
 
 export function useGestureEditorStore() {
   const globalRules = computed(() => getRulesForScope("global"));
@@ -82,6 +90,11 @@ export function useGestureEditorStore() {
     removeAppFromCategory,
     addRule,
     removeRule,
+    openAddRule,
+    openEditRule,
+    closeGestureEditor,
+    saveGestureEditor,
+    recordGesturePoints,
     createScopeTarget,
     renameSelectedScope,
     deleteSelectedScope,
@@ -139,6 +152,11 @@ function handleMessage(message) {
 
   if (message.type === "application-selected") {
     addSelectedApplication(message);
+    return;
+  }
+
+  if (message.type === "gesture-pattern-recognized") {
+    applyRecognizedPattern(message);
   }
 }
 
@@ -197,8 +215,12 @@ function appRulesSnapshot() {
 }
 
 function addRule(kind = activeScope.value, name = getSelectedName(kind)) {
+  openAddRule(kind, name);
+}
+
+function openAddRule(kind = activeScope.value, name = getSelectedName(kind)) {
   if (kind === "global") {
-    state.rules.push(createRule("global", ""));
+    openGestureEditor("add", null, "global", "");
     return;
   }
 
@@ -208,8 +230,100 @@ function addRule(kind = activeScope.value, name = getSelectedName(kind)) {
     return;
   }
 
-  state.rules.push(createRule(kind, scopeName));
   setSelectedName(kind, scopeName);
+  openGestureEditor("add", null, kind, scopeName);
+}
+
+function openEditRule(ruleId) {
+  const rule = state.rules.find((item) => item.id === ruleId);
+  if (!rule) {
+    return;
+  }
+
+  openGestureEditor("edit", rule, rule.scopeKind, rule.scopeName);
+}
+
+function closeGestureEditor() {
+  state.gestureEditorOpen = false;
+  state.gestureRecognitionMessage = "";
+  state.gestureDraft = createEmptyGestureDraft();
+  setGesturePaused(false);
+}
+
+function saveGestureEditor() {
+  const draft = state.gestureDraft;
+  const actionName = String(draft.actionName ?? "").trim();
+  const pattern = parsePattern(draft.patternText);
+  const keys = parseKeys(draft.keysText);
+
+  if (!actionName) {
+    state.gestureRecognitionMessage = "名称必须填写。";
+    return;
+  }
+
+  if (pattern.length === 0) {
+    state.gestureRecognitionMessage = "请先在录制区域绘制手势。";
+    return;
+  }
+
+  if (keys.length === 0) {
+    state.gestureRecognitionMessage = "请填写命令快捷键。";
+    return;
+  }
+
+  if (state.gestureEditorMode === "edit") {
+    const rule = state.rules.find((item) => item.id === state.gestureEditorRuleId);
+    if (!rule) {
+      closeGestureEditor();
+      return;
+    }
+
+    rule.actionName = actionName;
+    rule.patternText = toPatternText(pattern);
+    rule.keysText = keys.join(" + ");
+    rule.actionType = draft.actionType || "hotkey";
+    closeGestureEditor();
+    return;
+  }
+
+  state.rules.push(createRule(
+    state.gestureEditorScopeKind,
+    state.gestureEditorScopeName,
+    {
+      actionName,
+      patternText: toPatternText(pattern),
+      keysText: keys.join(" + "),
+      actionType: draft.actionType || "hotkey"
+    }));
+  closeGestureEditor();
+}
+
+function recordGesturePoints(points) {
+  const normalizedPoints = normalizeGesturePoints(points);
+  if (normalizedPoints.length < 2) {
+    state.gestureDraft.patternText = "";
+    state.gestureRecognitionMessage = "移动距离太短。";
+    return;
+  }
+
+  const requestId = createRequestId();
+  pendingGestureRequests.set(requestId, true);
+  state.gestureRecognitionMessage = "正在识别...";
+
+  if (window.chrome?.webview) {
+    window.chrome.webview.postMessage({
+      type: "recognize-gesture",
+      requestId,
+      points: normalizedPoints
+    });
+    return;
+  }
+
+  applyRecognizedPattern({
+    type: "gesture-pattern-recognized",
+    requestId,
+    pattern: recognizeGestureInBrowser(normalizedPoints)
+  });
 }
 
 function removeRule(id) {
@@ -547,6 +661,19 @@ function postWebMessage(message) {
   setMessage("浏览器预览中不会写入本机配置。", "idle");
 }
 
+function postWebMessageSilently(message) {
+  if (window.chrome?.webview) {
+    window.chrome.webview.postMessage(message);
+  }
+}
+
+function setGesturePaused(paused) {
+  postWebMessageSilently({
+    type: "set-gesture-paused",
+    paused
+  });
+}
+
 function toViewRule(rule) {
   const scope = parseScope(rule.scope);
   return {
@@ -570,7 +697,7 @@ function toViewApplication(application) {
   };
 }
 
-function createRule(scopeKind, scopeName) {
+function createRule(scopeKind, scopeName, values = {}) {
   if (scopeKind === "app") {
     ensureApplication(scopeName);
   }
@@ -579,10 +706,10 @@ function createRule(scopeKind, scopeName) {
     id: createRuleId(state.nextId++),
     scopeKind,
     scopeName,
-    patternText: "Left",
-    actionName: "Back",
-    keysText: "Alt + Left",
-    actionType: "hotkey"
+    patternText: values.patternText ?? "Left",
+    actionName: values.actionName ?? "Back",
+    keysText: values.keysText ?? "Alt + Left",
+    actionType: values.actionType ?? "hotkey"
   };
 }
 
@@ -714,6 +841,101 @@ function parseKeys(text) {
     .split("+")
     .map((part) => part.trim())
     .filter(Boolean);
+}
+
+function openGestureEditor(mode, rule, scopeKind, scopeName) {
+  setGesturePaused(true);
+  state.gestureEditorMode = mode;
+  state.gestureEditorRuleId = rule?.id ?? "";
+  state.gestureEditorScopeKind = scopeKind;
+  state.gestureEditorScopeName = scopeName;
+  state.gestureDraft = {
+    actionName: rule?.actionName ?? "",
+    patternText: rule?.patternText ?? "",
+    keysText: rule?.keysText ?? "",
+    actionType: rule?.actionType ?? "hotkey"
+  };
+  state.gestureRecognitionMessage = "";
+  state.gestureEditorOpen = true;
+}
+
+function applyRecognizedPattern(message) {
+  if (!pendingGestureRequests.has(message.requestId)) {
+    return;
+  }
+
+  pendingGestureRequests.delete(message.requestId);
+  const pattern = Array.isArray(message.pattern) ? message.pattern.filter(Boolean) : [];
+  state.gestureDraft.patternText = toPatternText(pattern);
+  state.gestureRecognitionMessage = pattern.length > 0 ? "已识别手势。" : "未识别到有效手势。";
+}
+
+function normalizeGesturePoints(points) {
+  if (!Array.isArray(points)) {
+    return [];
+  }
+
+  return points
+    .map((point) => ({
+      x: Math.round(Number(point?.x ?? 0)),
+      y: Math.round(Number(point?.y ?? 0))
+    }))
+    .filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y));
+}
+
+function createEmptyGestureDraft() {
+  return {
+    actionName: "",
+    patternText: "",
+    keysText: "",
+    actionType: "hotkey"
+  };
+}
+
+function recognizeGestureInBrowser(points) {
+  const cleaned = [];
+  for (const point of points) {
+    const previous = cleaned[cleaned.length - 1];
+    if (!previous || distance(previous, point) >= 8) {
+      cleaned.push(point);
+    }
+  }
+
+  if (cleaned.length < 2) {
+    return [];
+  }
+
+  const result = [];
+  for (let index = 1; index < cleaned.length; index += 1) {
+    const previous = cleaned[index - 1];
+    const current = cleaned[index];
+    if (distance(previous, current) < 18) {
+      continue;
+    }
+
+    const direction = toDirection(current.x - previous.x, current.y - previous.y);
+    if (result[result.length - 1] !== direction) {
+      result.push(direction);
+    }
+  }
+
+  return result.slice(0, 12);
+}
+
+function toDirection(dx, dy) {
+  let angle = Math.atan2(dy, dx) * 180 / Math.PI;
+  if (angle < 0) {
+    angle += 360;
+  }
+
+  const sector = Math.round(angle / 45) % 8;
+  return ["Right", "DownRight", "Down", "DownLeft", "Left", "UpLeft", "Up", "UpRight"][sector];
+}
+
+function distance(a, b) {
+  const dx = a.x - b.x;
+  const dy = a.y - b.y;
+  return Math.sqrt(dx * dx + dy * dy);
 }
 
 function toPatternText(pattern) {

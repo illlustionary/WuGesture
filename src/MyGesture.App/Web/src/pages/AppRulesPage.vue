@@ -140,9 +140,7 @@ const appDraft = ref("");
                 <h3>手势列表</h3>
               </div>
               <div class="rules-panel__actions">
-                <button type="button" class="primary-button" @click="editor.addRule(scopeKind)">添加手势...</button>
-                <button type="button" class="secondary-button">修改手势</button>
-                <button type="button" class="ghost-button">删除手势</button>
+                <button type="button" class="primary-button" @click="editor.openAddRule(scopeKind)">添加手势...</button>
               </div>
             </div>
 
@@ -153,6 +151,7 @@ const appDraft = ref("");
             <GestureRuleList
               :rules="editor.getRulesForScope(scopeKind)"
               @remove="editor.removeRule"
+              @edit="editor.openEditRule"
               @record="editor.startRecording"
               @stop-record="editor.stopRecording"
             />
