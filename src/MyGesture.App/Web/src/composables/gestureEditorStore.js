@@ -45,6 +45,13 @@ const DIRECTION_SYMBOLS = {
   DownRight: "↘"
 };
 
+const WINDOW_OPERATIONS = [
+  { value: "toggle-topmost", label: "置顶/取消置顶" },
+  { value: "toggle-maximize", label: "最大化/还原" },
+  { value: "minimize", label: "最小化" },
+  { value: "close", label: "关闭窗口" }
+];
+
 const state = reactive({
   statusText: "启动中",
   statusState: "idle",
@@ -129,7 +136,9 @@ export function useGestureEditorStore() {
     startRecording,
     stopRecording,
     isRecordingHotkey,
-    getGestureMnemonic
+    getGestureMnemonic,
+    getActionLabel,
+    windowOperations: WINDOW_OPERATIONS
   });
 }
 
@@ -282,11 +291,21 @@ function closeGestureEditor() {
 function saveGestureEditor() {
   const draft = state.gestureDraft;
   const pattern = parsePattern(draft.patternText);
-  const keys = parseKeys(draft.keysText);
   const actionName = String(draft.actionName ?? "").trim() || getGestureMnemonic(draft);
+  const actionType = normalizeActionType(draft.actionType);
 
   if (pattern.length === 0) {
     state.gestureRecognitionMessage = "请先录制手势。";
+    return;
+  }
+
+  if (actionType === "hotkey" && parseKeys(draft.keysText).length === 0) {
+    state.gestureRecognitionMessage = "请先录入快捷键。";
+    return;
+  }
+
+  if (actionType === "window" && !normalizeWindowOperation(draft.windowOperation)) {
+    state.gestureRecognitionMessage = "请选择窗口控制操作。";
     return;
   }
 
@@ -300,8 +319,9 @@ function saveGestureEditor() {
     rule.actionName = actionName;
     rule.patternText = toPatternText(pattern);
     rule.mouseButton = normalizeMouseButton(draft.mouseButton);
-    rule.keysText = keys.join(" + ");
-    rule.actionType = draft.actionType || "hotkey";
+    rule.keysText = draft.keysText;
+    rule.actionType = actionType;
+    rule.windowOperation = normalizeWindowOperation(draft.windowOperation);
     closeGestureEditor();
     scheduleSaveRules();
     return;
@@ -314,8 +334,9 @@ function saveGestureEditor() {
       actionName,
       patternText: toPatternText(pattern),
       mouseButton: normalizeMouseButton(draft.mouseButton),
-      keysText: keys.join(" + "),
-      actionType: draft.actionType || "hotkey"
+      keysText: draft.keysText,
+      actionType,
+      windowOperation: normalizeWindowOperation(draft.windowOperation)
     }));
   closeGestureEditor();
   scheduleSaveRules();
@@ -586,6 +607,11 @@ function resetRules() {
 }
 
 function startRecording(target) {
+  if (normalizeActionType(target?.actionType) !== "hotkey") {
+    setMessage("只有快捷键命令需要录入快捷键。", "error");
+    return;
+  }
+
   stopRecording();
 
   if (!window.chrome?.webview) {
@@ -723,7 +749,8 @@ function toViewRule(rule) {
     mouseButton: normalizeMouseButton(rule.mouseButton),
     actionName: rule.actionName ?? "",
     keysText: Array.isArray(rule.keys) ? rule.keys.join(" + ") : "",
-    actionType: rule.actionType ?? "hotkey"
+    actionType: normalizeActionType(rule.actionType),
+    windowOperation: normalizeWindowOperation(rule.operation)
   };
 }
 
@@ -753,7 +780,8 @@ function createRule(scopeKind, scopeName, values = {}) {
       mouseButton: values.mouseButton
     }),
     keysText: values.keysText ?? "",
-    actionType: values.actionType ?? "hotkey"
+    actionType: normalizeActionType(values.actionType),
+    windowOperation: normalizeWindowOperation(values.windowOperation)
   };
 }
 
@@ -770,9 +798,17 @@ function ensureApplication(name) {
 
 function toPayloadRule(rule) {
   const pattern = parsePattern(rule.patternText);
-  const keys = parseKeys(rule.keysText);
   const scope = buildScope(rule.scopeKind, rule.scopeName);
+  const actionType = normalizeActionType(rule.actionType);
   if (pattern.length === 0 || !scope) {
+    return null;
+  }
+
+  if (actionType === "hotkey" && parseKeys(rule.keysText).length === 0) {
+    return null;
+  }
+
+  if (actionType === "window" && !normalizeWindowOperation(rule.windowOperation)) {
     return null;
   }
 
@@ -781,10 +817,21 @@ function toPayloadRule(rule) {
     mouseButton: normalizeMouseButton(rule.mouseButton),
     pattern,
     actionName: rule.actionName.trim() || getGestureMnemonic(rule),
-    action: {
-      type: rule.actionType || "hotkey",
-      keys
-    }
+    action: toPayloadAction(rule)
+  };
+}
+
+function toPayloadAction(rule) {
+  if (normalizeActionType(rule.actionType) === "window") {
+    return {
+      type: "window",
+      operation: normalizeWindowOperation(rule.windowOperation)
+    };
+  }
+
+  return {
+    type: "hotkey",
+    keys: parseKeys(rule.keysText)
   };
 }
 
@@ -909,7 +956,8 @@ function openGestureEditor(mode, rule, scopeKind, scopeName) {
     patternText: rule?.patternText ?? "",
     mouseButton: normalizeMouseButton(rule?.mouseButton),
     keysText: rule?.keysText ?? "",
-    actionType: rule?.actionType ?? "hotkey"
+    actionType: normalizeActionType(rule?.actionType),
+    windowOperation: normalizeWindowOperation(rule?.windowOperation)
   };
   state.gestureRecognitionMessage = "点击开始录制。再次点击可停止。";
   state.gestureEditorOpen = true;
@@ -971,7 +1019,8 @@ function createEmptyGestureDraft() {
     patternText: "",
     mouseButton: "right",
     keysText: "",
-    actionType: "hotkey"
+    actionType: "hotkey",
+    windowOperation: "toggle-maximize"
   };
 }
 
@@ -1000,6 +1049,26 @@ function getGestureMnemonic(source) {
 
 function normalizeMouseButton(button) {
   return String(button ?? "").toLowerCase() === "middle" ? "middle" : "right";
+}
+
+function normalizeActionType(actionType) {
+  return String(actionType ?? "").toLowerCase() === "window" ? "window" : "hotkey";
+}
+
+function normalizeWindowOperation(operation) {
+  const normalized = String(operation ?? "").trim();
+  return WINDOW_OPERATIONS.some((item) => item.value === normalized)
+    ? normalized
+    : "toggle-maximize";
+}
+
+function getActionLabel(rule) {
+  if (normalizeActionType(rule?.actionType) === "window") {
+    const operation = WINDOW_OPERATIONS.find((item) => item.value === normalizeWindowOperation(rule?.windowOperation));
+    return operation ? `窗口控制：${operation.label}` : "窗口控制";
+  }
+
+  return rule?.keysText || "点击设置";
 }
 
 function createRuleId(seed) {

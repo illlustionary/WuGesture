@@ -1,4 +1,5 @@
 using System.Drawing;
+using System.Runtime.InteropServices;
 
 namespace MyGesture.App.GestureEngine;
 
@@ -25,6 +26,7 @@ public sealed class GestureService : IDisposable
     private IReadOnlyList<Point> lastProgressPath = [];
     private string? lastPreviewActionName;
     private GestureScopeContext currentScopeContext = GestureScopeContext.Empty;
+    private IntPtr currentTargetWindow;
     private SynchronizationContext? synchronizationContext;
     private bool isTracking;
     private bool isPaused;
@@ -178,6 +180,7 @@ public sealed class GestureService : IDisposable
         currentScopeContext = recordingRequestId is null
             ? scopeContextProvider.GetCurrentContext()
             : GestureScopeContext.Empty;
+        currentTargetWindow = recordingRequestId is null ? GetForegroundWindow() : IntPtr.Zero;
         lastProgressPattern = [];
         lastProgressPath = [];
         lastPreviewActionName = null;
@@ -300,7 +303,7 @@ public sealed class GestureService : IDisposable
             try
             {
                 GestureRecognized?.Invoke(this, new GestureRecognizedEventArgs(path, pattern, rule.ActionName));
-                actionExecutor.Execute(rule);
+                actionExecutor.Execute(rule, currentTargetWindow);
             }
             catch (Exception exception)
             {
@@ -419,4 +422,7 @@ public sealed class GestureService : IDisposable
     {
         return button == ActiveMouseButton.Middle ? GestureMouseButton.Middle : GestureMouseButton.Right;
     }
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetForegroundWindow();
 }

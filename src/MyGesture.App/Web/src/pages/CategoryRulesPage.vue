@@ -112,11 +112,10 @@ function confirmCategoryDialog() {
 
           <GestureRuleList
             :rules="editor.getRulesForScope(scopeKind)"
-            :is-recording="editor.isRecordingHotkey"
             :get-gesture-mnemonic="editor.getGestureMnemonic"
+            :get-action-label="editor.getActionLabel"
             @remove="editor.removeRule"
             @edit="editor.openEditRule"
-            @record="editor.startRecording"
             @rename="editor.updateRuleActionName"
           />
         </section>

@@ -76,6 +76,7 @@ editor.initialize();
       :is-recording-hotkey="editor.isRecordingHotkey"
       :is-recording-gesture="editor.state.gestureRecordingActive"
       :get-gesture-mnemonic="editor.getGestureMnemonic"
+      :window-operations="editor.windowOperations"
       @close="editor.closeGestureEditor"
       @confirm="editor.saveGestureEditor"
       @record="editor.startGestureRecording"

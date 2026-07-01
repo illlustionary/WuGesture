@@ -8,10 +8,29 @@ public sealed class ActionExecutor
     private const uint InputKeyboard = 1;
     private const uint KeyEventFExtendedKey = 0x0001;
     private const uint KeyEventFKeyUp = 0x0002;
+    private const int SwMinimize = 6;
+    private const int SwMaximize = 3;
+    private const int SwRestore = 9;
+    private const int GwlExStyle = -20;
+    private const int WsExTopMost = 0x00000008;
+    private const uint SwpNoSize = 0x0001;
+    private const uint SwpNoMove = 0x0002;
+    private const uint SwpNoActivate = 0x0010;
+    private const int WmClose = 0x0010;
+    private static readonly IntPtr HwndTopMost = new(-1);
+    private static readonly IntPtr HwndNoTopMost = new(-2);
 
-    public void Execute(GestureRule rule)
+    public void Execute(GestureRule rule, IntPtr targetWindow)
     {
-        ExecuteHotkey(rule.Action);
+        switch (rule.Action)
+        {
+            case HotkeyAction hotkey:
+                ExecuteHotkey(hotkey);
+                break;
+            case WindowControlAction window:
+                ExecuteWindowControl(window, targetWindow);
+                break;
+        }
     }
 
     private static void ExecuteHotkey(HotkeyAction action)
@@ -38,6 +57,44 @@ public sealed class ActionExecutor
         {
             throw new Win32Exception(Marshal.GetLastWin32Error(), "Failed to send keyboard input.");
         }
+    }
+
+    private static void ExecuteWindowControl(WindowControlAction action, IntPtr targetWindow)
+    {
+        if (targetWindow == IntPtr.Zero || !IsWindow(targetWindow))
+        {
+            return;
+        }
+
+        switch (action.Operation)
+        {
+            case WindowControlOperation.ToggleTopMost:
+                ToggleTopMost(targetWindow);
+                break;
+            case WindowControlOperation.ToggleMaximize:
+                ShowWindow(targetWindow, IsZoomed(targetWindow) ? SwRestore : SwMaximize);
+                break;
+            case WindowControlOperation.Minimize:
+                ShowWindow(targetWindow, SwMinimize);
+                break;
+            case WindowControlOperation.Close:
+                PostMessage(targetWindow, WmClose, IntPtr.Zero, IntPtr.Zero);
+                break;
+        }
+    }
+
+    private static void ToggleTopMost(IntPtr targetWindow)
+    {
+        var style = GetWindowLong(targetWindow, GwlExStyle);
+        var isTopMost = (style & WsExTopMost) != 0;
+        SetWindowPos(
+            targetWindow,
+            isTopMost ? HwndNoTopMost : HwndTopMost,
+            0,
+            0,
+            0,
+            0,
+            SwpNoMove | SwpNoSize | SwpNoActivate);
     }
 
     private static Input CreateKeyboardInput(Keys key, bool keyUp)
@@ -86,6 +143,31 @@ public sealed class ActionExecutor
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern uint SendInput(uint nInputs, Input[] pInputs, int cbSize);
+
+    [DllImport("user32.dll")]
+    private static extern bool IsWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern bool IsZoomed(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+    [DllImport("user32.dll")]
+    private static extern bool PostMessage(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool SetWindowPos(
+        IntPtr hWnd,
+        IntPtr hWndInsertAfter,
+        int x,
+        int y,
+        int cx,
+        int cy,
+        uint flags);
 
     [StructLayout(LayoutKind.Sequential)]
     private struct Input

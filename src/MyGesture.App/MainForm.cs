@@ -270,8 +270,9 @@ public sealed class MainForm : Form
                 mouseButton = string.IsNullOrWhiteSpace(rule.MouseButton) ? "right" : rule.MouseButton,
                 pattern = rule.Pattern,
                 actionName = rule.ActionName,
-                actionType = rule.Action.Type,
-                keys = rule.Action.Keys
+                actionType = string.IsNullOrWhiteSpace(rule.Action.Type) ? "hotkey" : rule.Action.Type,
+                keys = rule.Action.Keys,
+                operation = rule.Action.Operation
             }).ToArray(),
             applications = loadedConfig.Config.Applications.Select(application => new
             {
