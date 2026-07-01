@@ -82,6 +82,7 @@ public sealed class MainForm : Form
         gestureService.GesturePreviewMatched += OnGesturePreviewMatched;
         gestureService.GesturePreviewCleared += OnGesturePreviewCleared;
         gestureService.GestureRecognized += OnGestureRecognized;
+        gestureService.GestureRecordingCompleted += OnGestureRecordingCompleted;
         gestureService.GestureActionFailed += OnGestureActionFailed;
         gestureService.GestureProgressChanged += OnGestureProgressChanged;
         hotkeyRecorder.HotkeyRecorded += OnHotkeyRecorded;
@@ -142,6 +143,30 @@ public sealed class MainForm : Form
 
         webView.CoreWebView2?.PostWebMessageAsJson(payload);
         gestureHintForm.ShowResult(e.ActionName, autoHide: true);
+    }
+
+    private void OnGestureRecordingCompleted(object? sender, GestureRecordingCompletedEventArgs e)
+    {
+        if (!CanUseUi())
+        {
+            return;
+        }
+
+        if (InvokeRequired)
+        {
+            BeginInvokeSafe(() => OnGestureRecordingCompleted(sender, e));
+            return;
+        }
+
+        var payload = JsonSerializer.Serialize(new
+        {
+            type = "gesture-recorded",
+            requestId = e.RequestId,
+            button = e.Button.ToString().ToLowerInvariant(),
+            pattern = e.Pattern.Select(x => x.ToString()).ToArray()
+        });
+
+        webView.CoreWebView2?.PostWebMessageAsJson(payload);
     }
 
     private void OnGestureActionFailed(object? sender, GestureActionFailedEventArgs e)
@@ -290,8 +315,11 @@ public sealed class MainForm : Form
             case "pick-application-window":
                 PickApplicationWindow(json);
                 break;
-            case "recognize-gesture":
-                RecognizeGesture(json);
+            case "start-gesture-recording":
+                StartGestureRecording(json);
+                break;
+            case "stop-gesture-recording":
+                StopGestureRecording();
                 break;
             case "set-gesture-paused":
                 SetGesturePaused(json);
@@ -345,32 +373,25 @@ public sealed class MainForm : Form
         }
     }
 
-    private void RecognizeGesture(string json)
+    private void StartGestureRecording(string json)
     {
         try
         {
-            var message = JsonSerializer.Deserialize<RecognizeGestureWebMessage>(json, WebMessageJsonOptions);
-            var points = message?.Points?
-                .Select(point => new Point(point.X, point.Y))
-                .ToArray() ?? [];
-            var pattern = new GestureRecognizer()
-                .Recognize(points)
-                .Select(direction => direction.ToString())
-                .ToArray();
-
-            var payload = JsonSerializer.Serialize(new
-            {
-                type = "gesture-pattern-recognized",
-                requestId = message?.RequestId ?? "",
-                pattern
-            });
-
-            webView.CoreWebView2?.PostWebMessageAsJson(payload);
+            var message = JsonSerializer.Deserialize<StartGestureRecordingWebMessage>(json, WebMessageJsonOptions);
+            gestureService?.StartRecording(message?.RequestId ?? "");
+            gestureHintForm.ShowResult("录制中", autoHide: false);
         }
         catch (Exception exception)
         {
             PostConfigResult(false, exception.Message);
         }
+    }
+
+    private void StopGestureRecording()
+    {
+        gestureService?.StopRecording();
+        gestureHintForm.ClearResult();
+        DisposeMouseTrailForm();
     }
 
     private void PickApplicationWindow(string json)
@@ -733,15 +754,6 @@ public sealed class MainForm : Form
         public string Category { get; set; } = "";
     }
 
-    private sealed class RecognizeGestureWebMessage
-    {
-        public string Type { get; set; } = "";
-
-        public string RequestId { get; set; } = "";
-
-        public List<GesturePointWebMessage> Points { get; set; } = [];
-    }
-
     private sealed class SetGesturePausedWebMessage
     {
         public string Type { get; set; } = "";
@@ -756,11 +768,11 @@ public sealed class MainForm : Form
         public string RequestId { get; set; } = "";
     }
 
-    private sealed class GesturePointWebMessage
+    private sealed class StartGestureRecordingWebMessage
     {
-        public int X { get; set; }
+        public string Type { get; set; } = "";
 
-        public int Y { get; set; }
+        public string RequestId { get; set; } = "";
     }
 
     private sealed class WindowStateData
