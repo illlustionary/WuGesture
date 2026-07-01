@@ -17,6 +17,7 @@ public sealed class MouseTrailForm : Form
     private readonly Pen inactivePen;
     private readonly Pen activePen;
     private readonly Pen dirtyPen;
+    private readonly GraphicsPath path = new();
     private readonly GraphicsPath dirtyPath = new();
 
     private readonly Size bufferSize;
@@ -47,7 +48,7 @@ public sealed class MouseTrailForm : Form
         var pathWidth = 3f * dpiFactor;
 
         inactivePen = CreatePen(Color.FromArgb(255, 170, 170, 170), pathWidth);
-        activePen = CreatePen(Color.FromArgb(255, 120, 205, 255), pathWidth);
+        activePen = CreatePen(Color.SkyBlue, pathWidth);
         dirtyPen = CreatePen(Color.White, pathWidth * 3.5f);
 
         screenDc = GetDC(IntPtr.Zero);
@@ -88,7 +89,13 @@ public sealed class MouseTrailForm : Form
 
     public void SetHighlighted(bool highlighted)
     {
+        if (isHighlighted == highlighted)
+        {
+            return;
+        }
+
         isHighlighted = highlighted;
+        RedrawPath();
     }
 
     public void ShowPath(IReadOnlyList<Point> points, GestureMouseButton button)
@@ -105,6 +112,7 @@ public sealed class MouseTrailForm : Form
         {
             Show();
             graphics.Clear(Color.Transparent);
+            path.Reset();
             hasLastPoint = false;
         }
 
@@ -134,6 +142,8 @@ public sealed class MouseTrailForm : Form
         }
 
         hasLastPoint = false;
+        isHighlighted = false;
+        path.Reset();
         graphics.Clear(Color.Transparent);
 
         if (Visible)
@@ -152,6 +162,7 @@ public sealed class MouseTrailForm : Form
             DeleteObject(dibSection);
             DeleteDC(memDc);
             ReleaseDC(IntPtr.Zero, screenDc);
+            path.Dispose();
             dirtyPath.Dispose();
             inactivePen.Dispose();
             activePen.Dispose();
@@ -164,6 +175,7 @@ public sealed class MouseTrailForm : Form
     private Rectangle DrawSegment(PointF from, PointF to)
     {
         var pen = isHighlighted ? activePen : inactivePen;
+        path.AddLine(from, to);
         graphics.DrawLine(pen, from, to);
 
         dirtyPath.Reset();
@@ -173,6 +185,31 @@ public sealed class MouseTrailForm : Form
         var dirtyRect = Rectangle.Ceiling(dirtyPath.GetBounds());
         dirtyRect.Intersect(new Rectangle(Point.Empty, bufferSize));
         return dirtyRect;
+    }
+
+    private void RedrawPath()
+    {
+        if (IsDisposed || path.PointCount == 0)
+        {
+            return;
+        }
+
+        dirtyPath.Reset();
+        dirtyPath.AddPath(path, false);
+        dirtyPath.Widen(dirtyPen);
+
+        var dirtyRect = Rectangle.Ceiling(dirtyPath.GetBounds());
+        dirtyRect.Intersect(new Rectangle(Point.Empty, bufferSize));
+
+        graphics.SetClip(dirtyPath);
+        graphics.Clear(Color.Transparent);
+        graphics.ResetClip();
+        graphics.DrawPath(isHighlighted ? activePen : inactivePen, path);
+
+        if (Visible)
+        {
+            Present(dirtyRect);
+        }
     }
 
     private void Present(Rectangle dirtyRect, bool fullWindow = false)
