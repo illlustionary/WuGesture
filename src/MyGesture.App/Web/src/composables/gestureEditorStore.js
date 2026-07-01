@@ -939,7 +939,17 @@ function applyRecordedHotkey(message) {
     return;
   }
 
-  target.keysText = keys.join(" + ");
+  const keysText = keys.join(" + ");
+  state.gestureDraft.keysText = keysText;
+  target.keysText = keysText;
+
+  if (state.gestureEditorMode === "edit") {
+    const rule = state.rules.find((item) => item.id === state.gestureEditorRuleId);
+    if (rule) {
+      rule.keysText = keysText;
+    }
+  }
+
   setMessage("已录制快捷键。", "success");
   scheduleSaveRules();
 }
