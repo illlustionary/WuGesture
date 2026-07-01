@@ -121,7 +121,7 @@ public sealed class GestureService : IDisposable
 
     private void OnMiddleButtonDown(object? sender, MouseHookEventArgs e)
     {
-        StartTracking(e, ActiveMouseButton.Middle, swallowInput: false);
+        StartTracking(e, ActiveMouseButton.Middle, swallowInput: true);
     }
 
     private void StartTracking(MouseHookEventArgs e, ActiveMouseButton button, bool swallowInput)
@@ -178,6 +178,7 @@ public sealed class GestureService : IDisposable
             return;
         }
 
+        e.Handled = true;
         FinishTracking(e.Location, ActiveMouseButton.Middle);
     }
 
