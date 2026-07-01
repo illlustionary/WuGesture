@@ -203,17 +203,18 @@ public sealed class GestureService : IDisposable
         points.Add(location);
         var path = points.ToArray();
 
-        if (button == ActiveMouseButton.Right &&
-            (points.Count < 2 || Distance(points[0], points[^1]) < MinimumGestureDistance))
-        {
-            RaiseProgress(path, [], false, ToPublicButton(button), force: true);
-            Post(MouseInput.ReplayRightClick);
-            return;
-        }
-
         if (points.Count < 2 || Distance(points[0], points[^1]) < MinimumGestureDistance)
         {
             RaiseProgress(path, [], false, ToPublicButton(button), force: true);
+            if (button == ActiveMouseButton.Right)
+            {
+                Post(MouseInput.ReplayRightClick);
+            }
+            else if (button == ActiveMouseButton.Middle)
+            {
+                Post(MouseInput.ReplayMiddleClick);
+            }
+
             return;
         }
 
