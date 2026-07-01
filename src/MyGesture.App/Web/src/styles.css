@@ -362,8 +362,19 @@ p {
   background: #fff;
 }
 
-.gesture-table__cell.is-recording {
-  background: #fff7f7;
+.hotkey-record-button {
+  overflow: hidden;
+  text-align: left;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  color: #222;
+  background: #fff;
+}
+
+.hotkey-record-button.is-recording {
+  color: #9b3a00;
+  background: #fff3df;
 }
 
 .gesture-table__row .ghost-button {

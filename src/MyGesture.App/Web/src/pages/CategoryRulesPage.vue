@@ -108,10 +108,10 @@ const categoryDraft = ref("");
 
             <GestureRuleList
               :rules="editor.getRulesForScope(scopeKind)"
+              :is-recording="editor.isRecordingHotkey"
               @remove="editor.removeRule"
               @edit="editor.openEditRule"
               @record="editor.startRecording"
-              @stop-record="editor.stopRecording"
             />
           </section>
         </div>

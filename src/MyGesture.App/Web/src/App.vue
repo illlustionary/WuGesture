@@ -40,9 +40,11 @@ editor.initialize();
       :open="editor.state.gestureEditorOpen"
       :draft="editor.state.gestureDraft"
       :message="editor.state.gestureRecognitionMessage"
+      :is-recording-hotkey="editor.isRecordingHotkey"
       @close="editor.closeGestureEditor"
       @confirm="editor.saveGestureEditor"
       @record="editor.recordGesturePoints"
+      @record-hotkey="editor.startRecording"
     />
 
     <div v-if="editor.state.applicationPickerOpen" class="modal-backdrop" @click.self="editor.closeApplicationPicker()">

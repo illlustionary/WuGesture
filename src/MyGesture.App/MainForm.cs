@@ -10,6 +10,7 @@ public sealed class MainForm : Form
     private readonly WebView2 webView = new();
     private readonly GestureHintForm gestureHintForm = new();
     private readonly GestureConfigStore configStore = new();
+    private readonly KeyboardShortcutRecorder hotkeyRecorder = new();
     private ConfiguredScopeContextProvider? scopeContextProvider;
     private LoadedGestureConfig? loadedConfig;
     private GestureService? gestureService;
@@ -36,6 +37,7 @@ public sealed class MainForm : Form
         {
             isClosing = true;
             gestureService?.Dispose();
+            hotkeyRecorder.Dispose();
             gestureHintForm.Hide();
             DisposeMouseTrailForm();
         };
@@ -69,6 +71,7 @@ public sealed class MainForm : Form
         gestureService.GestureRecognized += OnGestureRecognized;
         gestureService.GestureActionFailed += OnGestureActionFailed;
         gestureService.GestureProgressChanged += OnGestureProgressChanged;
+        hotkeyRecorder.HotkeyRecorded += OnHotkeyRecorded;
         gestureService.Start();
     }
 
@@ -175,6 +178,29 @@ public sealed class MainForm : Form
         EnsureMouseTrailForm().ShowPath(e.Path, e.Button);
     }
 
+    private void OnHotkeyRecorded(object? sender, HotkeyRecordedEventArgs e)
+    {
+        if (!CanUseUi())
+        {
+            return;
+        }
+
+        if (InvokeRequired)
+        {
+            BeginInvokeSafe(() => OnHotkeyRecorded(sender, e));
+            return;
+        }
+
+        var payload = JsonSerializer.Serialize(new
+        {
+            type = "hotkey-recorded",
+            requestId = e.RequestId,
+            keys = e.Keys
+        });
+
+        webView.CoreWebView2?.PostWebMessageAsJson(payload);
+    }
+
     private void PostStatus(string status)
     {
         var payload = JsonSerializer.Serialize(new
@@ -256,6 +282,12 @@ public sealed class MainForm : Form
             case "set-gesture-paused":
                 SetGesturePaused(json);
                 break;
+            case "start-hotkey-recording":
+                StartHotkeyRecording(json);
+                break;
+            case "stop-hotkey-recording":
+                hotkeyRecorder.Stop();
+                break;
             case "save-rules":
                 SaveRules(json);
                 break;
@@ -265,6 +297,19 @@ public sealed class MainForm : Form
             case "reset-rules":
                 ResetRules();
                 break;
+        }
+    }
+
+    private void StartHotkeyRecording(string json)
+    {
+        try
+        {
+            var message = JsonSerializer.Deserialize<StartHotkeyRecordingWebMessage>(json, WebMessageJsonOptions);
+            hotkeyRecorder.Start(message?.RequestId ?? "");
+        }
+        catch (Exception exception)
+        {
+            PostConfigResult(false, exception.Message);
         }
     }
 
@@ -584,6 +629,13 @@ public sealed class MainForm : Form
         public string Type { get; set; } = "";
 
         public bool Paused { get; set; }
+    }
+
+    private sealed class StartHotkeyRecordingWebMessage
+    {
+        public string Type { get; set; } = "";
+
+        public string RequestId { get; set; } = "";
     }
 
     private sealed class GesturePointWebMessage
