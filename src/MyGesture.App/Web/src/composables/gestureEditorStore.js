@@ -29,6 +29,22 @@ const DEFAULT_APPLICATIONS = [
   { name: "chrome", displayName: "Google Chrome", path: "", category: "浏览器", icon: "" }
 ];
 
+const MOUSE_BUTTON_SYMBOLS = {
+  right: "◑",
+  middle: "●"
+};
+
+const DIRECTION_SYMBOLS = {
+  Up: "↑",
+  Down: "↓",
+  Left: "←",
+  Right: "→",
+  UpLeft: "↖",
+  UpRight: "↗",
+  DownLeft: "↙",
+  DownRight: "↘"
+};
+
 const state = reactive({
   statusText: "启动中",
   statusState: "idle",
@@ -108,7 +124,8 @@ export function useGestureEditorStore() {
     resetRules,
     startRecording,
     stopRecording,
-    isRecordingHotkey
+    isRecordingHotkey,
+    getGestureMnemonic
   });
 }
 
@@ -259,22 +276,12 @@ function closeGestureEditor() {
 
 function saveGestureEditor() {
   const draft = state.gestureDraft;
-  const actionName = String(draft.actionName ?? "").trim();
   const pattern = parsePattern(draft.patternText);
   const keys = parseKeys(draft.keysText);
-
-  if (!actionName) {
-    state.gestureRecognitionMessage = "名称必须填写。";
-    return;
-  }
+  const actionName = String(draft.actionName ?? "").trim() || getGestureMnemonic(draft);
 
   if (pattern.length === 0) {
     state.gestureRecognitionMessage = "请先在录制区域绘制手势。";
-    return;
-  }
-
-  if (keys.length === 0) {
-    state.gestureRecognitionMessage = "请填写命令快捷键。";
     return;
   }
 
@@ -287,6 +294,7 @@ function saveGestureEditor() {
 
     rule.actionName = actionName;
     rule.patternText = toPatternText(pattern);
+    rule.mouseButton = normalizeMouseButton(draft.mouseButton);
     rule.keysText = keys.join(" + ");
     rule.actionType = draft.actionType || "hotkey";
     closeGestureEditor();
@@ -299,20 +307,22 @@ function saveGestureEditor() {
     {
       actionName,
       patternText: toPatternText(pattern),
+      mouseButton: normalizeMouseButton(draft.mouseButton),
       keysText: keys.join(" + "),
       actionType: draft.actionType || "hotkey"
     }));
   closeGestureEditor();
 }
 
-function recordGesturePoints(points) {
-  const normalizedPoints = normalizeGesturePoints(points);
+function recordGesturePoints(recording) {
+  const normalizedPoints = normalizeGesturePoints(recording?.points ?? recording);
   if (normalizedPoints.length < 2) {
     state.gestureDraft.patternText = "";
     state.gestureRecognitionMessage = "移动距离太短。";
     return;
   }
 
+  state.gestureDraft.mouseButton = normalizeMouseButton(recording?.button);
   const requestId = createRequestId();
   pendingGestureRequests.set(requestId, true);
   state.gestureRecognitionMessage = "正在识别...";
@@ -656,6 +666,7 @@ function toViewRule(rule) {
     scopeKind: scope.kind,
     scopeName: scope.name,
     patternText: toPatternText(rule.pattern),
+    mouseButton: normalizeMouseButton(rule.mouseButton),
     actionName: rule.actionName ?? "",
     keysText: Array.isArray(rule.keys) ? rule.keys.join(" + ") : "",
     actionType: rule.actionType ?? "hotkey"
@@ -682,8 +693,12 @@ function createRule(scopeKind, scopeName, values = {}) {
     scopeKind,
     scopeName,
     patternText: values.patternText ?? "Left",
-    actionName: values.actionName ?? "Back",
-    keysText: values.keysText ?? "Alt + Left",
+    mouseButton: normalizeMouseButton(values.mouseButton),
+    actionName: values.actionName ?? getGestureMnemonic({
+      patternText: values.patternText ?? "Left",
+      mouseButton: values.mouseButton
+    }),
+    keysText: values.keysText ?? "",
     actionType: values.actionType ?? "hotkey"
   };
 }
@@ -703,14 +718,15 @@ function toPayloadRule(rule) {
   const pattern = parsePattern(rule.patternText);
   const keys = parseKeys(rule.keysText);
   const scope = buildScope(rule.scopeKind, rule.scopeName);
-  if (pattern.length === 0 || keys.length === 0 || !scope) {
+  if (pattern.length === 0 || !scope) {
     return null;
   }
 
   return {
     scope,
+    mouseButton: normalizeMouseButton(rule.mouseButton),
     pattern,
-    actionName: rule.actionName.trim(),
+    actionName: rule.actionName.trim() || getGestureMnemonic(rule),
     action: {
       type: rule.actionType || "hotkey",
       keys
@@ -827,6 +843,7 @@ function openGestureEditor(mode, rule, scopeKind, scopeName) {
   state.gestureDraft = {
     actionName: rule?.actionName ?? "",
     patternText: rule?.patternText ?? "",
+    mouseButton: normalizeMouseButton(rule?.mouseButton),
     keysText: rule?.keysText ?? "",
     actionType: rule?.actionType ?? "hotkey"
   };
@@ -842,6 +859,9 @@ function applyRecognizedPattern(message) {
   pendingGestureRequests.delete(message.requestId);
   const pattern = Array.isArray(message.pattern) ? message.pattern.filter(Boolean) : [];
   state.gestureDraft.patternText = toPatternText(pattern);
+  if (!String(state.gestureDraft.actionName ?? "").trim()) {
+    state.gestureDraft.actionName = getGestureMnemonic(state.gestureDraft);
+  }
   state.gestureRecognitionMessage = pattern.length > 0 ? "已识别手势。" : "未识别到有效手势。";
 }
 
@@ -885,6 +905,7 @@ function createEmptyGestureDraft() {
   return {
     actionName: "",
     patternText: "",
+    mouseButton: "right",
     keysText: "",
     actionType: "hotkey"
   };
@@ -942,6 +963,25 @@ function toPatternText(pattern) {
   }
 
   return pattern.join(", ");
+}
+
+function getGestureMnemonic(source) {
+  const pattern = Array.isArray(source?.pattern)
+    ? source.pattern
+    : parsePattern(source?.patternText);
+  if (pattern.length === 0) {
+    return "";
+  }
+
+  const button = MOUSE_BUTTON_SYMBOLS[normalizeMouseButton(source?.mouseButton)] ?? MOUSE_BUTTON_SYMBOLS.right;
+  const directions = pattern
+    .map((direction) => DIRECTION_SYMBOLS[direction] ?? "")
+    .join("");
+  return directions ? `${button}${directions}` : "";
+}
+
+function normalizeMouseButton(button) {
+  return String(button ?? "").toLowerCase() === "middle" ? "middle" : "right";
 }
 
 function createRuleId(seed) {

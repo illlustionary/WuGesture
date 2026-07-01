@@ -31,7 +31,7 @@ public sealed class GestureConfigStore
         var config = JsonSerializer.Deserialize<GestureConfig>(json, JsonOptions) ?? new GestureConfig();
         var rules = GestureConfigMapper.ToRules(config);
 
-        if (rules.Count == 0)
+        if (config.Rules.Count == 0)
         {
             config = GestureConfigMapper.FromRules(DefaultGestureRules.Create());
             Save(config);
@@ -44,7 +44,7 @@ public sealed class GestureConfigStore
     public LoadedGestureConfig SaveAndLoad(GestureConfig config)
     {
         var rules = GestureConfigMapper.ToRules(config);
-        if (config.Rules.Count == 0 || rules.Count != config.Rules.Count)
+        if (config.Rules.Count == 0)
         {
             throw new InvalidOperationException("规则配置无效，未保存。");
         }

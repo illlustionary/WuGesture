@@ -109,6 +109,7 @@ const categoryDraft = ref("");
             <GestureRuleList
               :rules="editor.getRulesForScope(scopeKind)"
               :is-recording="editor.isRecordingHotkey"
+              :get-gesture-mnemonic="editor.getGestureMnemonic"
               @remove="editor.removeRule"
               @edit="editor.openEditRule"
               @record="editor.startRecording"
