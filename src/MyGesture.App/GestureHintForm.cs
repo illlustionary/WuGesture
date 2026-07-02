@@ -93,6 +93,14 @@ public sealed class GestureHintForm : Form
         BeginFadeOut();
     }
 
+    public void HideResult()
+    {
+        hideTimer.Stop();
+        fadeTimer.Stop();
+        Hide();
+        Opacity = VisibleOpacity;
+    }
+
     public void Preload()
     {
         if (IsDisposed || IsHandleCreated)
