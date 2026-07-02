@@ -256,7 +256,6 @@ function setEditingCategoryInput(el) {
   min-height: 52px;
   padding: 12px 14px;
   border: 0;
-  border-bottom: 1px solid rgba(20, 30, 40, 0.07);
   text-align: left;
   background: transparent;
   cursor: pointer;
@@ -267,15 +266,7 @@ function setEditingCategoryInput(el) {
   }
 
   &.active {
-    background: linear-gradient(
-      90deg,
-      rgba(29, 81, 109, 0.12),
-      rgba(29, 81, 109, 0.03)
-    );
-  }
-
-  &:hover {
-    background: rgba(29, 81, 109, 0.08);
+    background: transparent;
   }
 
   small {
@@ -399,9 +390,10 @@ function setEditingCategoryInput(el) {
     min-height: 52px;
     padding: 10px 14px;
     align-items: center;
+    cursor: pointer;
 
     + .app-list__item {
-      border-top: 1px solid rgba(20, 30, 40, 0.06);
+      border-top: 0;
     }
   }
 
@@ -417,6 +409,10 @@ function setEditingCategoryInput(el) {
     align-items: center;
     gap: 8px;
     min-width: 0;
+  }
+
+  &__item:hover {
+    background: transparent;
   }
 }
 
