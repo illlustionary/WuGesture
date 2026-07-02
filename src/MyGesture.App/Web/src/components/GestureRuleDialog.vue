@@ -97,3 +97,135 @@ const patternLabel = computed(() => props.getGestureMnemonic?.(props.draft) || "
     </section>
   </div>
 </template>
+
+<style scoped lang="scss">
+.gesture-dialog {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+
+  &__chrome {
+    position: fixed;
+    top: 18px;
+    left: 18px;
+    right: 18px;
+    display: flex;
+    justify-content: center;
+    pointer-events: none;
+  }
+
+  &__panel {
+    width: min(760px, calc(100vw - 36px));
+    pointer-events: auto;
+  }
+
+  &__grid {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: 1fr 1fr;
+    margin-bottom: 12px;
+
+    label {
+      display: grid;
+      gap: 4px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+  }
+
+  &__command {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 12px;
+
+    label {
+      display: grid;
+      gap: 4px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+  }
+
+  &__result {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 34px;
+    padding: 8px 0 0;
+
+    span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    strong {
+      font-size: 14px;
+    }
+  }
+
+  &__message {
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+}
+
+.hotkey-record-button {
+  overflow: hidden;
+  text-align: left;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  color: var(--text);
+  background: #fff;
+
+  &:hover {
+    background: rgba(29, 81, 109, 0.08);
+  }
+
+  &.is-recording {
+    color: #8a441f;
+    background: #fff3df;
+  }
+}
+
+.gesture-recorder__trigger {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  min-height: 68px;
+  margin-bottom: 12px;
+  padding: 14px 16px;
+  text-align: left;
+  border-radius: 18px;
+  border: 1px solid rgba(29, 81, 109, 0.18);
+  background: linear-gradient(180deg, #ffffff, #f2f7fb);
+  box-shadow: 0 10px 20px rgba(18, 30, 42, 0.06);
+
+  strong {
+    color: var(--accent-strong);
+    font-size: 15px;
+  }
+
+  span {
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  &.is-recording {
+    border-color: rgba(173, 76, 57, 0.28);
+    background: linear-gradient(180deg, #fff8f5, #ffeede);
+
+    strong {
+      color: #8a441f;
+    }
+  }
+}
+
+@media (max-width: 720px) {
+  .gesture-dialog__grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

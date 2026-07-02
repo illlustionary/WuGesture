@@ -52,3 +52,17 @@ const value = computed({
     </section>
   </div>
 </template>
+
+<style scoped lang="scss">
+.scope-create-dialog {
+  width: min(480px, 100%);
+
+  &__field {
+    display: grid;
+    gap: 6px;
+    margin-top: 10px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+}
+</style>

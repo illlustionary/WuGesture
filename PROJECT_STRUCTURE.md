@@ -158,15 +158,15 @@ src\MyGesture.App\Web
 文件：
 
 - `index.html`
-- `styles.css`
+- `styles.scss`
 - `package.json`：前端工程依赖与脚本。
 - `vite.config.js`：Vite 构建配置。
 - `src\main.js`：Vue 入口。
-- `src\App.vue`：路由壳和顶栏。
-- `src\components\`：页面壳、左侧插槽和规则表等通用组件。
+- `src\App.vue`：路由壳、全局弹窗挂载和规则编辑弹窗挂载。
+- `src\components\`：顶部栏、页面壳、左侧插槽和规则表等通用组件。
 - `src\composables\gestureEditorStore.js`：共享编辑状态、WebView 消息和快捷键监听。
 - `src\pages\`：`global`、`category`、`app` 三个路由页。
-- `src\styles.css`：编辑器样式。
+- `src\styles.scss`：编辑器全局设计 token、reset、通用按钮、输入框、弹窗和图标样式；组件和页面专属样式放在对应 `.vue` 文件的 scoped SCSS 中。
 - `dist\web\`：Vite 构建产物目录，由桌面宿主加载。
 
 构建方式：
