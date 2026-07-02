@@ -5,7 +5,12 @@
         <h3>{{ title }}</h3>
         <p>{{ description }}</p>
       </div>
-      <slot name="actions" />
+      <div
+        v-if="$slots.actions"
+        class="scope-panel__actions"
+      >
+        <slot name="actions" />
+      </div>
     </div>
 
     <slot />
@@ -26,13 +31,21 @@ defineProps({
   gap: 18px;
   min-width: 0;
   min-height: 100%;
-  padding: 20px;
+  padding: 20px 18px 18px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 18px 40px rgba(18, 30, 42, 0.07);
 
   &__head {
     display: flex;
-    flex-direction: column;
     align-items: flex-start;
+    justify-content: space-between;
     gap: 8px;
+  }
+
+  &__actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
   }
 
   h3 {

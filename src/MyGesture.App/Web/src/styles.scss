@@ -1,10 +1,10 @@
 :root {
-  --bg: #e9eff8;
-  --bg-accent: #d8e2f2;
-  --bg-glow: rgba(198, 212, 255, 0.45);
-  --panel: rgba(255, 255, 255, 0.76);
+  --bg: #f5f7fa;
+  --bg-accent: #eef2f7;
+  --bg-glow: rgba(195, 210, 238, 0.38);
+  --panel: rgba(255, 255, 255, 0.9);
   --panel-solid: #ffffff;
-  --panel-soft: rgba(255, 255, 255, 0.56);
+  --panel-soft: rgba(255, 255, 255, 0.74);
   --border: rgba(18, 30, 42, 0.1);
   --border-strong: rgba(18, 30, 42, 0.16);
   --text: #16202b;
@@ -13,9 +13,9 @@
   --accent-strong: #005fcc;
   --accent-soft: rgba(0, 122, 255, 0.12);
   --danger: #ad4c39;
-  --shadow: 0 18px 40px rgba(18, 30, 42, 0.08);
-  --shadow-soft: 0 22px 60px rgba(18, 30, 42, 0.1);
-  --shadow-float: 0 32px 80px rgba(18, 30, 42, 0.16);
+  --shadow: 0 14px 30px rgba(18, 30, 42, 0.08);
+  --shadow-soft: 0 24px 70px rgba(18, 30, 42, 0.08);
+  --shadow-float: 0 34px 90px rgba(18, 30, 42, 0.14);
 }
 
 * {
@@ -39,14 +39,14 @@ body {
   background:
     radial-gradient(
       circle at top left,
-      rgba(255, 255, 255, 0.95),
-      transparent 32%
+      rgba(255, 255, 255, 0.98),
+      transparent 34%
     ),
-    radial-gradient(circle at 82% 12%, var(--bg-glow), transparent 24%),
+    radial-gradient(circle at 82% 12%, var(--bg-glow), transparent 26%),
     radial-gradient(
       circle at 15% 82%,
-      rgba(223, 227, 255, 0.65),
-      transparent 28%
+      rgba(227, 232, 241, 0.8),
+      transparent 30%
     ),
     linear-gradient(180deg, var(--bg), var(--bg-accent));
   font-family:
@@ -94,7 +94,7 @@ p {
   border: 1px solid var(--border);
   border-radius: 24px;
   background: var(--panel);
-  box-shadow: var(--shadow-soft);
+  box-shadow: 0 24px 64px rgba(18, 30, 42, 0.08);
   backdrop-filter: blur(24px) saturate(1.18);
 }
 
@@ -246,7 +246,7 @@ p {
   border: 1px dashed var(--border-strong);
   border-radius: 20px;
   color: var(--muted);
-  background: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.72);
 }
 
 .empty-state--large {

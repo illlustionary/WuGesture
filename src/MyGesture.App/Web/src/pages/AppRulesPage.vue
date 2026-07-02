@@ -8,6 +8,20 @@ import { useGestureEditorStore } from '../composables/gestureEditorStore'
 const editor = useGestureEditorStore()
 const scopeKind = 'app'
 editor.setActiveScope(scopeKind)
+
+function getAppFallbackGlyph(item) {
+  const text = String(item?.displayName ?? item?.name ?? '').trim()
+  if (!text) {
+    return '?'
+  }
+
+  return text.slice(0, 1).toUpperCase()
+}
+
+function deleteAppItem(name) {
+  editor.selectScope(scopeKind, name)
+  editor.deleteSelectedScope(scopeKind)
+}
 </script>
 
 <template>
@@ -19,52 +33,65 @@ editor.setActiveScope(scopeKind)
     <template #left>
       <ScopeSidebar
         title="程序名称"
-        description="选择一个程序，或在底部新增。"
+        description="选择一个程序，或点击右侧 + 新增。"
       >
+        <template #actions>
+          <IconActionButton
+            icon="add"
+            label="添加程序"
+            class="secondary-button"
+            @click="editor.openApplicationPicker('', scopeKind)"
+          />
+        </template>
+
         <div
           v-if="editor.appItems.length > 0"
           class="scope-list"
         >
-          <button
+          <div
             v-for="item in editor.appItems"
             :key="item.name"
-            type="button"
             class="scope-item"
             :class="{ active: item.name === editor.getSelectedName(scopeKind) }"
+            role="button"
+            tabindex="0"
             @click="editor.selectScope(scopeKind, item.name)"
+            @keydown.enter.prevent="editor.selectScope(scopeKind, item.name)"
+            @keydown.space.prevent="editor.selectScope(scopeKind, item.name)"
           >
+            <span class="scope-item__accent" aria-hidden="true" />
             <span class="scope-item__main">
               <img
                 v-if="item.icon"
-                class="app-icon app-icon--small"
+                class="app-icon app-icon--small scope-item__icon"
                 :src="item.icon"
                 alt=""
               />
+              <span
+                v-else
+                class="scope-item__icon scope-item__icon--fallback"
+                aria-hidden="true"
+              >
+                {{ getAppFallbackGlyph(item) }}
+              </span>
               <span>{{ item.displayName || item.name }}</span>
             </span>
-            <small>{{ item.count }} 条</small>
-          </button>
+            <span class="scope-item__meta">
+              <small class="scope-item__count">{{ item.count }} 条</small>
+              <IconActionButton
+                icon="delete"
+                label="删除程序"
+                class="scope-item__delete"
+                @click.stop="deleteAppItem(item.name)"
+              />
+            </span>
+          </div>
         </div>
         <div
           v-else
           class="empty-state"
         >
           还没有程序，先新增一个。
-        </div>
-
-        <div class="scope-panel__footer">
-          <IconActionButton
-            icon="add"
-            label="添加程序"
-            class="primary-button"
-            @click="editor.openApplicationPicker('', scopeKind)"
-          />
-          <IconActionButton
-            icon="delete"
-            label="删除当前程序"
-            class="ghost-button danger-button"
-            @click="editor.deleteSelectedScope(scopeKind)"
-          />
         </div>
       </ScopeSidebar>
     </template>
@@ -105,12 +132,7 @@ editor.setActiveScope(scopeKind)
 <style scoped lang="scss">
 .scope-list {
   display: grid;
-  gap: 0;
-  overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: 22px;
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 14px 34px rgba(18, 30, 42, 0.08);
+  gap: 8px;
   flex: 1 1 auto;
 }
 
@@ -118,41 +140,111 @@ editor.setActiveScope(scopeKind)
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 12px;
   width: 100%;
-  min-height: 52px;
-  padding: 12px 14px;
+  min-height: 58px;
+  padding: 10px 12px 10px 14px;
   border: 0;
+  border-radius: 18px;
   text-align: left;
-  background: transparent;
+  background: rgba(248, 251, 255, 0.96);
+  border: 1px solid rgba(18, 30, 42, 0.08);
+  box-shadow: 0 10px 24px rgba(18, 30, 42, 0.04);
   cursor: pointer;
+  user-select: none;
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform 120ms ease,
+    background-color 120ms ease,
+    border-color 120ms ease,
+    box-shadow 120ms ease;
 
-  &:last-child {
-    border-bottom: 0;
+  &:hover,
+  &:focus-visible {
+    background: rgba(242, 247, 255, 1);
+    border-color: rgba(0, 122, 255, 0.16);
+    box-shadow: 0 14px 28px rgba(18, 30, 42, 0.06);
+    transform: translateY(-1px);
   }
 
   &.active {
-    background: transparent;
+    background: linear-gradient(180deg, rgba(231, 241, 255, 1), rgba(241, 247, 255, 1));
+    border-color: rgba(0, 122, 255, 0.2);
+    box-shadow: 0 14px 28px rgba(0, 122, 255, 0.08);
   }
 
-  small {
-    color: var(--muted);
+  &.active .scope-item__accent {
+    opacity: 1;
+  }
+
+  &__accent {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 4px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, var(--accent), var(--accent-strong));
+    opacity: 0;
   }
 
   &__main {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 10px;
     min-width: 0;
+    flex: 1 1 auto;
   }
-}
 
-.scope-panel__footer {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: auto;
-  padding-top: 4px;
+  &__icon {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    flex: 0 0 auto;
+    border-radius: 10px;
+    background: rgba(0, 122, 255, 0.1);
+    color: var(--accent-strong);
+    font-size: 15px;
+    line-height: 1;
+  }
+
+  &__icon--fallback {
+    font-weight: 700;
+  }
+
+  &__meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex: 0 0 auto;
+  }
+
+  &__count {
+    display: inline-flex;
+    align-items: center;
+    min-height: 22px;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: rgba(102, 117, 137, 0.1);
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  &__delete {
+    opacity: 0;
+    transform: scale(0.92);
+    transition:
+      opacity 120ms ease,
+      transform 120ms ease;
+  }
+
+  &:hover &__delete,
+  &:focus-within &__delete {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .rules-panel {
@@ -185,7 +277,7 @@ editor.setActiveScope(scopeKind)
     padding: 22px;
     border: 1px solid var(--border);
     border-radius: 26px;
-    background: rgba(255, 255, 255, 0.68);
+    background: rgba(255, 255, 255, 0.9);
     box-shadow: var(--shadow-soft);
     backdrop-filter: blur(20px) saturate(1.12);
 
@@ -219,6 +311,15 @@ editor.setActiveScope(scopeKind)
 @media (max-width: 720px) {
   .rules-panel__section {
     padding: 16px;
+  }
+
+  .scope-item {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .scope-item__meta {
+    margin-left: auto;
   }
 }
 </style>
