@@ -123,24 +123,16 @@ editor.setActiveScope(scopeKind)
   min-height: 52px;
   padding: 12px 14px;
   border: 0;
-  border-bottom: 1px solid rgba(20, 30, 40, 0.07);
   text-align: left;
   background: transparent;
+  cursor: pointer;
 
   &:last-child {
     border-bottom: 0;
   }
 
   &.active {
-    background: linear-gradient(
-      90deg,
-      rgba(29, 81, 109, 0.12),
-      rgba(29, 81, 109, 0.03)
-    );
-  }
-
-  &:hover {
-    background: rgba(29, 81, 109, 0.08);
+    background: transparent;
   }
 
   small {

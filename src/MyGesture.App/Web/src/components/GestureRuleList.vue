@@ -115,19 +115,11 @@
           aria-label="删除规则"
           @click="$emit('remove', rule.id)"
         >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            aria-hidden="true"
-          >
-            <path
-              d="M9 4.5h6m-8 3h10m-8 0v9m6-9v9m-8-9h10l-.8 10.2a1.5 1.5 0 0 1-1.5 1.3H9.3a1.5 1.5 0 0 1-1.5-1.3L7 7.5Z"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
+          <IconActionButton
+            icon="delete"
+            label="删除规则"
+            tone="danger"
+          />
         </button>
       </div>
     </div>
@@ -135,6 +127,7 @@
 </template>
 
 <script setup>
+import IconActionButton from './IconActionButton.vue'
 const DIRECTION_LABELS = {
   Up: '↑',
   Down: '↓',
@@ -249,19 +242,8 @@ function isWindowAction(rule) {
     width: 100%;
     min-height: 36px;
     padding: 8px 10px;
-    border: 1px solid rgba(18, 30, 42, 0.08);
-    border-radius: 14px;
-    background: rgba(255, 255, 255, 0.9);
-    transition:
-      border-color 120ms ease,
-      box-shadow 120ms ease,
-      background-color 120ms ease;
-
-    &:focus {
-      outline: none;
-      border-color: rgba(0, 122, 255, 0.52);
-      box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.12);
-    }
+    border: none;
+    background-color: transparent;
   }
 
   &__cell--name {
@@ -273,11 +255,6 @@ function isWindowAction(rule) {
     justify-self: end;
     opacity: 0;
     transform: translateY(2px);
-    transition:
-      opacity 120ms ease,
-      transform 120ms ease,
-      background-color 120ms ease;
-
     svg {
       width: 16px;
       height: 16px;
@@ -299,11 +276,7 @@ function isWindowAction(rule) {
   padding: 8px 10px;
   overflow: hidden;
   text-align: left;
-  white-space: normal;
-  border-top: 0;
-  border-bottom: 0;
   cursor: pointer;
-  background: rgba(255, 255, 255, 0.9);
 
   &__mouse {
     display: inline-grid;
@@ -343,15 +316,9 @@ function isWindowAction(rule) {
   white-space: normal;
   cursor: pointer;
   color: var(--text);
-  background: rgba(255, 255, 255, 0.9);
 
   &__empty {
     color: var(--muted);
   }
-}
-
-.gesture-pattern-button:hover,
-.command-button:hover {
-  background: rgba(0, 122, 255, 0.08);
 }
 </style>

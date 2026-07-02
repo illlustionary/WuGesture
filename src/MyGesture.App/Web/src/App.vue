@@ -51,6 +51,7 @@ editor.initialize()
             icon="close"
             label="关闭"
             class="ghost-button"
+            tone="muted"
             @click="editor.closeApplicationPicker()"
           />
         </div>

@@ -12,6 +12,14 @@ const props = defineProps({
   label: {
     type: String,
     required: true
+  },
+  tone: {
+    type: String,
+    default: 'neutral'
+  },
+  color: {
+    type: String,
+    default: ''
   }
 })
 
@@ -30,6 +38,9 @@ const iconComponent = computed(() => iconMap[props.icon] ?? addIcon)
     class="icon-action-button"
     :aria-label="label"
     :title="label"
+    :class="[icon]"
+    :data-tone="tone"
+    :style="{ color }"
   >
     <component
       :is="iconComponent"
@@ -45,14 +56,49 @@ const iconComponent = computed(() => iconMap[props.icon] ?? addIcon)
   align-items: center;
   justify-content: center;
   gap: 0;
+  min-width: 34px;
+  min-height: 34px;
+  padding: 0;
   line-height: 0;
+  color: currentColor;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+  cursor: pointer;
+
+  &:hover {
+    background: transparent;
+    box-shadow: none;
+  }
+
+  &.primary-button {
+    min-width: 34px;
+    min-height: 34px;
+  }
+
+  &.ghost-button,
+  &.secondary-button {
+    color: var(--accent-strong);
+  }
+
+  &.add {
+    color: var(--accent-strong);
+  }
+  &.delete {
+    color: var(--danger);
+  }
+  &.close {
+    color: black;
+  }
 }
 
 .icon-action-button__icon {
   display: inline-block;
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
   flex: 0 0 auto;
+  color: inherit;
 
   :deep(svg) {
     width: 100%;

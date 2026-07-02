@@ -37,6 +37,7 @@ const value = computed({
           icon="close"
           label="关闭"
           class="ghost-button"
+          tone="muted"
           @click="$emit('close')"
         />
       </div>
