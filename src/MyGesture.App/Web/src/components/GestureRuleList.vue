@@ -8,7 +8,7 @@
     </header>
 
     <div class="gesture-table__body">
-      <article
+      <div
         v-for="rule in rules"
         :key="rule.id"
         class="gesture-table__row"
@@ -20,13 +20,16 @@
           placeholder="名称"
           spellcheck="false"
           @blur="$emit('rename', rule, $event.target.value)"
-        >
+        />
         <button
           type="button"
           class="gesture-table__cell gesture-pattern-button"
           @click="$emit('edit', rule.id)"
         >
-          <span class="gesture-pattern-button__mouse" aria-hidden="true">
+          <span
+            class="gesture-pattern-button__mouse"
+            aria-hidden="true"
+          >
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -77,7 +80,7 @@
             v-else
             class="gesture-pattern-button__empty"
           >
-            {{ getGestureMnemonic?.(rule) || "未录制" }}
+            {{ getGestureMnemonic?.(rule) || '未录制' }}
           </span>
         </button>
         <button
@@ -86,7 +89,9 @@
           @click.stop="$emit('edit', rule.id)"
         >
           <template v-if="isWindowAction(rule)">
-            <span class="keycap keycap--subtle">{{ getActionLabel?.(rule) || '窗口控制' }}</span>
+            <span class="keycap keycap--subtle">{{
+              getActionLabel?.(rule) || '窗口控制'
+            }}</span>
           </template>
           <template v-else-if="actionKeys(rule).length > 0">
             <span
@@ -101,7 +106,7 @@
             v-else
             class="command-button__empty"
           >
-            {{ getActionLabel?.(rule) || "点击设置" }}
+            {{ getActionLabel?.(rule) || '点击设置' }}
           </span>
         </button>
         <button
@@ -124,60 +129,60 @@
             />
           </svg>
         </button>
-      </article>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
 const DIRECTION_LABELS = {
-  Up: "↑",
-  Down: "↓",
-  Left: "←",
-  Right: "→",
-  UpLeft: "↖",
-  UpRight: "↗",
-  DownLeft: "↙",
-  DownRight: "↘"
+  Up: '↑',
+  Down: '↓',
+  Left: '←',
+  Right: '→',
+  UpLeft: '↖',
+  UpRight: '↗',
+  DownLeft: '↙',
+  DownRight: '↘'
 }
 
 const BUTTON_LABELS = {
-  right: "右键",
-  middle: "中键"
+  right: '右键',
+  middle: '中键'
 }
 
 defineProps({
   rules: { type: Array, required: true },
   getGestureMnemonic: { type: Function, default: null },
   getActionLabel: { type: Function, default: null }
-});
+})
 
-defineEmits(["remove", "edit", "rename"]);
+defineEmits(['remove', 'edit', 'rename'])
 
 function gestureSegments(rule) {
-  return String(rule?.patternText ?? "")
+  return String(rule?.patternText ?? '')
     .split(/[\s,，]+/)
-    .map((part) => DIRECTION_LABELS[part.trim()] ?? part.trim())
-    .filter(Boolean);
+    .map(part => DIRECTION_LABELS[part.trim()] ?? part.trim())
+    .filter(Boolean)
 }
 
 function mouseButtonLabel(rule) {
-  return BUTTON_LABELS[String(rule?.mouseButton ?? "").toLowerCase()] ?? "右键";
+  return BUTTON_LABELS[String(rule?.mouseButton ?? '').toLowerCase()] ?? '右键'
 }
 
 function actionKeys(rule) {
   if (isWindowAction(rule)) {
-    return [];
+    return []
   }
 
-  return String(rule?.keysText ?? "")
-    .split("+")
-    .map((part) => part.trim())
-    .filter(Boolean);
+  return String(rule?.keysText ?? '')
+    .split('+')
+    .map(part => part.trim())
+    .filter(Boolean)
 }
 
 function isWindowAction(rule) {
-  return String(rule?.actionType ?? "").toLowerCase() === "window";
+  return String(rule?.actionType ?? '').toLowerCase() === 'window'
 }
 </script>
 
@@ -193,22 +198,28 @@ function isWindowAction(rule) {
   box-shadow: var(--shadow-soft);
   backdrop-filter: blur(18px) saturate(1.15);
 
+  &__head,
   &__body {
     display: grid;
-    gap: 0;
   }
 
   &__head,
   &__row {
-    display: grid;
-    grid-template-columns: minmax(180px, 1.1fr) minmax(220px, 1.2fr) minmax(220px, 1.25fr) 52px;
-    gap: 0;
+    padding: 0 10px;
+    display: flex;
+    gap: 10px;
     align-items: center;
+    & > :not(:last-child) {
+      flex: 1;
+    }
+    & > :last-child {
+      flex-shrink: 0;
+      width: 44px;
+    }
   }
 
   &__head {
     min-height: 42px;
-    padding: 10px 16px;
     color: var(--muted);
     font-size: 12px;
     font-weight: 700;
@@ -216,17 +227,17 @@ function isWindowAction(rule) {
     text-transform: uppercase;
     background: rgba(0, 122, 255, 0.08);
     border-bottom: 1px solid rgba(18, 30, 42, 0.08);
-
-    &-actions {
-      width: 52px;
+    & > :not(:last-child) {
+      margin-left: 11px;
     }
   }
 
   &__row {
     min-height: 60px;
-    padding: 10px 16px;
     border-top: 1px solid rgba(18, 30, 42, 0.06);
-    transition: background-color 140ms ease, box-shadow 140ms ease;
+    transition:
+      background-color 140ms ease,
+      box-shadow 140ms ease;
 
     &:hover {
       background: rgba(0, 122, 255, 0.04);
@@ -241,7 +252,10 @@ function isWindowAction(rule) {
     border: 1px solid rgba(18, 30, 42, 0.08);
     border-radius: 14px;
     background: rgba(255, 255, 255, 0.9);
-    transition: border-color 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
+    transition:
+      border-color 120ms ease,
+      box-shadow 120ms ease,
+      background-color 120ms ease;
 
     &:focus {
       outline: none;
@@ -255,10 +269,14 @@ function isWindowAction(rule) {
   }
 
   &__remove {
+    flex-shrink: 0;
     justify-self: end;
     opacity: 0;
     transform: translateY(2px);
-    transition: opacity 120ms ease, transform 120ms ease, background-color 120ms ease;
+    transition:
+      opacity 120ms ease,
+      transform 120ms ease,
+      background-color 120ms ease;
 
     svg {
       width: 16px;
@@ -335,25 +353,5 @@ function isWindowAction(rule) {
 .gesture-pattern-button:hover,
 .command-button:hover {
   background: rgba(0, 122, 255, 0.08);
-}
-
-@media (max-width: 720px) {
-  .gesture-table {
-    &__head,
-    &__row {
-      grid-template-columns: 1fr;
-    }
-
-    &__head-actions {
-      display: none;
-    }
-
-    &__remove {
-      justify-self: start;
-      opacity: 1;
-      transform: none;
-      width: 100%;
-    }
-  }
 }
 </style>

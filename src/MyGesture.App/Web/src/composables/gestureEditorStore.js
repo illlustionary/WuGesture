@@ -377,11 +377,17 @@ function createScopeTarget(kind, name) {
   return true;
 }
 
-function renameSelectedScope(kind, nextName) {
+function renameSelectedScope(kind, nextName, sourceName = getSelectedName(kind)) {
   const name = String(nextName ?? "").trim();
-  const currentName = getSelectedName(kind);
+  const currentName = String(sourceName ?? "").trim() || getSelectedName(kind);
   if (!name || !currentName || currentName === name) {
-    return;
+    return false;
+  }
+
+  const scopeItems = getScopeItems(kind);
+  if (scopeItems.some((item) => item.name === name && item.name !== currentName)) {
+    setMessage("名称已存在，请换一个分类名称。", "error");
+    return false;
   }
 
   for (const rule of state.rules) {
@@ -405,6 +411,8 @@ function renameSelectedScope(kind, nextName) {
 
   setSelectedName(kind, name);
   scheduleSaveRules();
+  setMessage(kind === "category" ? "已更新分类名称。" : "已更新程序名称。", "success");
+  return true;
 }
 
 function deleteSelectedScope(kind = activeScope.value) {

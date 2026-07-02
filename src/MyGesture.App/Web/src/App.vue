@@ -1,6 +1,7 @@
 <script setup>
 import { RouterView } from 'vue-router'
 import AppHeader from './components/AppHeader.vue'
+import IconActionButton from './components/IconActionButton.vue'
 import GestureRuleDialog from './components/GestureRuleDialog.vue'
 import { useGestureEditorStore } from './composables/gestureEditorStore'
 
@@ -46,13 +47,12 @@ editor.initialize()
               }}
             </p>
           </div>
-          <button
-            type="button"
+          <IconActionButton
+            icon="close"
+            label="关闭"
             class="ghost-button"
             @click="editor.closeApplicationPicker()"
-          >
-            关闭
-          </button>
+          />
         </div>
 
         <div class="picker-options">

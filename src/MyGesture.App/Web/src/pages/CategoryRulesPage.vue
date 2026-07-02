@@ -1,6 +1,7 @@
 <script setup>
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import AppShell from '../components/AppShell.vue'
+import IconActionButton from '../components/IconActionButton.vue'
 import GestureRuleList from '../components/GestureRuleList.vue'
 import ScopeSidebar from '../components/ScopeSidebar.vue'
 import ScopeCreateDialog from '../components/ScopeCreateDialog.vue'
@@ -11,6 +12,9 @@ const scopeKind = 'category'
 editor.setActiveScope(scopeKind)
 const categoryDraft = ref('')
 const categoryDialogOpen = ref(false)
+const editingCategoryName = ref('')
+const editingCategoryDraft = ref('')
+const editingCategoryInput = ref(null)
 
 function openCategoryDialog() {
   categoryDraft.value = ''
@@ -25,6 +29,33 @@ function confirmCategoryDialog() {
   if (editor.createScopeTarget(scopeKind, categoryDraft.value)) {
     closeCategoryDialog()
   }
+}
+
+async function startCategoryRename(item) {
+  if (!item || editingCategoryName.value === item.name) {
+    return
+  }
+
+  editor.selectScope(scopeKind, item.name)
+  editingCategoryName.value = item.name
+  editingCategoryDraft.value = item.name
+  await nextTick()
+  editingCategoryInput.value?.focus?.()
+  editingCategoryInput.value?.select?.()
+}
+
+function commitCategoryRename(item) {
+  if (!item || editingCategoryName.value !== item.name) {
+    return
+  }
+
+  editingCategoryName.value = ''
+  editingCategoryInput.value = null
+  editor.renameSelectedScope(scopeKind, editingCategoryDraft.value, item.name)
+}
+
+function setEditingCategoryInput(el) {
+  editingCategoryInput.value = el
 }
 </script>
 
@@ -43,19 +74,44 @@ function confirmCategoryDialog() {
           v-if="editor.categoryItems.length > 0"
           class="scope-list"
         >
-          <button
+          <div
             v-for="item in editor.categoryItems"
             :key="item.name"
-            type="button"
             class="scope-item"
-            :class="{ active: item.name === editor.getSelectedName(scopeKind) }"
+            :class="{
+              active: item.name === editor.getSelectedName(scopeKind),
+              'is-editing': editingCategoryName === item.name
+            }"
+            role="button"
+            tabindex="0"
             @click="editor.selectScope(scopeKind, item.name)"
+            @dblclick="startCategoryRename(item)"
           >
             <span class="scope-item__main">
-              <span>{{ item.name }}</span>
+              <img
+                v-if="item.icon"
+                class="app-icon app-icon--small"
+                :src="item.icon"
+                alt=""
+              />
+              <input
+                v-if="editingCategoryName === item.name"
+                :ref="setEditingCategoryInput"
+                v-model.trim="editingCategoryDraft"
+                class="scope-input scope-item__edit"
+                spellcheck="false"
+                @blur="commitCategoryRename(item)"
+                @keydown.enter.prevent="commitCategoryRename(item)"
+              />
+              <span
+                v-else
+                class="scope-item__name"
+              >
+                {{ item.name }}
+              </span>
             </span>
-            <small>{{ item.count }} 条</small>
-          </button>
+            <small class="small">{{ item.count }} 条</small>
+          </div>
         </div>
         <div
           v-else
@@ -65,20 +121,18 @@ function confirmCategoryDialog() {
         </div>
 
         <div class="scope-panel__footer">
-          <button
-            type="button"
+          <IconActionButton
+            icon="add"
+            label="新增分类"
             class="primary-button"
             @click="openCategoryDialog"
-          >
-            新增分类
-          </button>
-          <button
-            type="button"
-            class="ghost-button"
+          />
+          <IconActionButton
+            icon="delete"
+            label="删除当前分类"
+            class="ghost-button danger-button"
             @click="editor.deleteSelectedScope(scopeKind)"
-          >
-            删除当前分类
-          </button>
+          />
         </div>
       </ScopeSidebar>
     </template>
@@ -92,17 +146,16 @@ function confirmCategoryDialog() {
               <p>当前分类关联的程序会从这里管理。</p>
             </div>
             <div class="rules-panel__actions">
-              <button
-                type="button"
+              <IconActionButton
+                icon="add"
+                label="添加程序"
                 class="secondary-button"
                 @click="
                   editor.openApplicationPicker(
                     editor.getSelectedName(scopeKind)
                   )
                 "
-              >
-                添加程序
-              </button>
+              />
             </div>
           </div>
 
@@ -131,13 +184,12 @@ function confirmCategoryDialog() {
                 <span>{{ app.displayName || app.name }}</span>
               </span>
               <span class="app-list__path">{{ app.path || '未设置路径' }}</span>
-              <button
-                type="button"
-                class="ghost-button"
+              <IconActionButton
+                icon="delete"
+                label="移除"
+                class="ghost-button danger-button"
                 @click="editor.removeAppFromCategory(app.name)"
-              >
-                移除
-              </button>
+              />
             </div>
           </div>
         </section>
@@ -149,13 +201,12 @@ function confirmCategoryDialog() {
               <p>分类级规则会在这里统一维护。</p>
             </div>
             <div class="rules-panel__actions">
-              <button
-                type="button"
+              <IconActionButton
+                icon="add"
+                label="添加手势"
                 class="primary-button"
                 @click="editor.openAddRule(scopeKind)"
-              >
-                添加手势...
-              </button>
+              />
             </div>
           </div>
 
@@ -208,6 +259,8 @@ function confirmCategoryDialog() {
   border-bottom: 1px solid rgba(20, 30, 40, 0.07);
   text-align: left;
   background: transparent;
+  cursor: pointer;
+  user-select: none;
 
   &:last-child {
     border-bottom: 0;
@@ -234,6 +287,27 @@ function confirmCategoryDialog() {
     align-items: center;
     gap: 6px;
     min-width: 0;
+  }
+
+  &__name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__edit {
+    min-width: 0;
+    flex: 1;
+    margin-left: -2px;
+    background: rgba(255, 255, 255, 0.96);
+  }
+  .small {
+    white-space: nowrap;
+  }
+
+  &.is-editing {
+    cursor: text;
+    user-select: text;
   }
 }
 
