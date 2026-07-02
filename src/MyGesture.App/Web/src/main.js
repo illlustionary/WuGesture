@@ -4,7 +4,7 @@ import App from "./App.vue";
 import GlobalRulesPage from "./pages/GlobalRulesPage.vue";
 import CategoryRulesPage from "./pages/CategoryRulesPage.vue";
 import AppRulesPage from "./pages/AppRulesPage.vue";
-import "./styles.css";
+import "./styles.scss";
 
 const router = createRouter({
   history: createWebHashHistory(),

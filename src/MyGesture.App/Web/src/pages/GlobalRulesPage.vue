@@ -40,3 +40,30 @@ editor.setActiveScope(scopeKind);
     </template>
   </AppShell>
 </template>
+
+<style scoped lang="scss">
+.rules-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+
+  h3 {
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  p {
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  &__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+}
+</style>
