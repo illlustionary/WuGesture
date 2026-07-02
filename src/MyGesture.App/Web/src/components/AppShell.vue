@@ -60,7 +60,7 @@ defineProps({
     gap: 20px;
 
     &--split {
-      grid-template-columns: 274px minmax(0, 1fr);
+      grid-template-columns: 258px minmax(0, 1fr);
     }
 
     &--single {

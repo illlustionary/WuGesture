@@ -57,6 +57,54 @@ function commitCategoryRename(item) {
 function setEditingCategoryInput(el) {
   editingCategoryInput.value = el
 }
+
+function getCategoryGlyph(name) {
+  const value = String(name ?? '')
+    .trim()
+    .toLowerCase()
+  if (!value) {
+    return '◌'
+  }
+
+  if (
+    value.includes('浏览') ||
+    value.includes('browser') ||
+    value.includes('网页')
+  ) {
+    return '🌐'
+  }
+  if (value.includes('办公') || value.includes('office')) {
+    return '💼'
+  }
+  if (
+    value.includes('开发') ||
+    value.includes('dev') ||
+    value.includes('编程')
+  ) {
+    return '🛠'
+  }
+  if (value.includes('设计') || value.includes('创作')) {
+    return '✦'
+  }
+  if (
+    value.includes('媒体') ||
+    value.includes('音乐') ||
+    value.includes('视频')
+  ) {
+    return '🎬'
+  }
+
+  return '📁'
+}
+
+function hasApplicationPath(app) {
+  return Boolean(String(app?.path ?? '').trim())
+}
+
+function deleteCategoryItem(name) {
+  editor.selectScope(scopeKind, name)
+  editor.deleteSelectedScope(scopeKind)
+}
 </script>
 
 <template>
@@ -68,8 +116,17 @@ function setEditingCategoryInput(el) {
     <template #left>
       <ScopeSidebar
         title="分类名称"
-        description="选择一个分类，或在底部新增。"
+        description="选择一个分类，或点击右侧 + 新增。"
       >
+        <template #actions>
+          <IconActionButton
+            icon="add"
+            label="新增分类"
+            class="secondary-button"
+            @click="openCategoryDialog"
+          />
+        </template>
+
         <div
           v-if="editor.categoryItems.length > 0"
           class="scope-list"
@@ -86,14 +143,20 @@ function setEditingCategoryInput(el) {
             tabindex="0"
             @click="editor.selectScope(scopeKind, item.name)"
             @dblclick="startCategoryRename(item)"
+            @keydown.enter.prevent="editor.selectScope(scopeKind, item.name)"
+            @keydown.space.prevent="editor.selectScope(scopeKind, item.name)"
           >
+            <span
+              class="scope-item__accent"
+              aria-hidden="true"
+            />
             <span class="scope-item__main">
-              <img
-                v-if="item.icon"
-                class="app-icon app-icon--small"
-                :src="item.icon"
-                alt=""
-              />
+              <span
+                class="scope-item__icon"
+                aria-hidden="true"
+              >
+                {{ getCategoryGlyph(item.name) }}
+              </span>
               <input
                 v-if="editingCategoryName === item.name"
                 :ref="setEditingCategoryInput"
@@ -110,7 +173,15 @@ function setEditingCategoryInput(el) {
                 {{ item.name }}
               </span>
             </span>
-            <small class="small">{{ item.count }} 条</small>
+            <span class="scope-item__meta">
+              <small class="scope-item__count">{{ item.count }} 条</small>
+              <IconActionButton
+                icon="delete"
+                label="删除分类"
+                class="scope-item__delete"
+                @click.stop="deleteCategoryItem(item.name)"
+              />
+            </span>
           </div>
         </div>
         <div
@@ -118,21 +189,6 @@ function setEditingCategoryInput(el) {
           class="empty-state"
         >
           还没有分类，先新增一个。
-        </div>
-
-        <div class="scope-panel__footer">
-          <IconActionButton
-            icon="add"
-            label="新增分类"
-            class="primary-button"
-            @click="openCategoryDialog"
-          />
-          <IconActionButton
-            icon="delete"
-            label="删除当前分类"
-            class="ghost-button danger-button"
-            @click="editor.deleteSelectedScope(scopeKind)"
-          />
         </div>
       </ScopeSidebar>
     </template>
@@ -174,22 +230,44 @@ function setEditingCategoryInput(el) {
               :key="app.name"
               class="app-list__item"
             >
-              <span class="app-list__name">
+              <span
+                class="app-list__icon"
+                :class="{ 'app-list__icon--missing': !hasApplicationPath(app) }"
+                aria-hidden="true"
+              >
                 <img
                   v-if="app.icon"
                   class="app-icon app-icon--small"
                   :src="app.icon"
                   alt=""
                 />
-                <span>{{ app.displayName || app.name }}</span>
+                <span
+                  v-else
+                  class="app-list__fallback"
+                >
+                  {{
+                    (app.displayName || app.name || '?')
+                      .slice(0, 1)
+                      .toUpperCase()
+                  }}
+                </span>
               </span>
-              <span class="app-list__path">{{ app.path || '未设置路径' }}</span>
-              <IconActionButton
-                icon="delete"
-                label="移除"
-                class="ghost-button danger-button"
-                @click="editor.removeAppFromCategory(app.name)"
-              />
+              <span class="app-list__content">
+                <span class="app-list__name">{{
+                  app.displayName || app.name
+                }}</span>
+                <span class="app-list__path">{{
+                  app.path || '未设置路径'
+                }}</span>
+              </span>
+              <span class="app-list__status">
+                <IconActionButton
+                  icon="delete"
+                  label="移除"
+                  class="app-list__delete"
+                  @click.stop="editor.removeAppFromCategory(app.name)"
+                />
+              </span>
             </div>
           </div>
         </section>
@@ -239,75 +317,137 @@ function setEditingCategoryInput(el) {
 <style scoped lang="scss">
 .scope-list {
   display: grid;
-  gap: 0;
-  overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: 22px;
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 14px 34px rgba(18, 30, 42, 0.08);
+  gap: 8px;
 }
 
 .scope-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 12px;
   width: 100%;
-  min-height: 52px;
-  padding: 12px 14px;
+  min-height: 58px;
+  padding: 10px 12px 10px 14px;
   border: 0;
+  border-radius: 18px;
   text-align: left;
-  background: transparent;
+  background: rgba(248, 251, 255, 0.96);
+  border: 1px solid rgba(18, 30, 42, 0.08);
+  box-shadow: 0 10px 24px rgba(18, 30, 42, 0.04);
   cursor: pointer;
   user-select: none;
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform 120ms ease,
+    background-color 120ms ease,
+    border-color 120ms ease,
+    box-shadow 120ms ease;
 
-  &:last-child {
-    border-bottom: 0;
+  &:hover,
+  &:focus-visible {
+    background: rgba(242, 247, 255, 1);
+    border-color: rgba(0, 122, 255, 0.16);
+    box-shadow: 0 14px 28px rgba(18, 30, 42, 0.06);
+    transform: translateY(-1px);
   }
 
   &.active {
-    background: transparent;
+    background: linear-gradient(
+      180deg,
+      rgba(231, 241, 255, 1),
+      rgba(241, 247, 255, 1)
+    );
+    border-color: rgba(0, 122, 255, 0.2);
+    box-shadow: 0 14px 28px rgba(0, 122, 255, 0.08);
   }
 
-  small {
-    color: var(--muted);
+  &.active .scope-item__accent {
+    opacity: 1;
+  }
+
+  &__accent {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 4px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, var(--accent), var(--accent-strong));
+    opacity: 0;
   }
 
   &__main {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 10px;
     min-width: 0;
+    flex: 1 1 auto;
   }
 
   &__name {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    font-weight: 600;
   }
 
   &__edit {
     min-width: 0;
     flex: 1;
     margin-left: -2px;
-    background: rgba(255, 255, 255, 0.96);
+    background: rgba(255, 255, 255, 0.98);
   }
-  .small {
+
+  &__icon {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    flex: 0 0 auto;
+    border-radius: 10px;
+    background: rgba(0, 122, 255, 0.1);
+    color: var(--accent-strong);
+    font-size: 15px;
+    line-height: 1;
+  }
+
+  &__meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex: 0 0 auto;
+  }
+
+  &__count {
+    display: inline-flex;
+    align-items: center;
+    min-height: 22px;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: rgba(102, 117, 137, 0.1);
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
     white-space: nowrap;
+  }
+
+  &__delete {
+    opacity: 0;
+    transform: scale(0.92);
+    transition:
+      opacity 120ms ease,
+      transform 120ms ease;
+  }
+
+  &:hover &__delete,
+  &:focus-within &__delete {
+    opacity: 1;
+    transform: scale(1);
   }
 
   &.is-editing {
     cursor: text;
     user-select: text;
   }
-}
-
-.scope-panel__footer {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: auto;
-  padding-top: 4px;
 }
 
 .rules-panel {
@@ -340,7 +480,7 @@ function setEditingCategoryInput(el) {
     padding: 22px;
     border: 1px solid var(--border);
     border-radius: 26px;
-    background: rgba(255, 255, 255, 0.68);
+    background: rgba(255, 255, 255, 0.9);
     box-shadow: var(--shadow-soft);
     backdrop-filter: blur(20px) saturate(1.12);
 
@@ -377,48 +517,139 @@ function setEditingCategoryInput(el) {
 
 .app-list {
   display: grid;
-  overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: 22px;
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 14px 34px rgba(18, 30, 42, 0.08);
+  gap: 8px;
 
   &__item {
     display: grid;
-    grid-template-columns: 1fr 1.4fr auto;
+    grid-template-columns: auto minmax(0, 1fr) auto;
     gap: 12px;
-    min-height: 52px;
-    padding: 10px 14px;
+    min-height: 64px;
+    padding: 12px 14px;
     align-items: center;
-    cursor: pointer;
+    border: 1px solid rgba(18, 30, 42, 0.08);
+    border-radius: 18px;
+    background: rgba(248, 251, 255, 0.96);
+    box-shadow: 0 10px 24px rgba(18, 30, 42, 0.04);
+    transition:
+      transform 120ms ease,
+      background-color 120ms ease,
+      border-color 120ms ease,
+      box-shadow 120ms ease;
+  }
 
-    + .app-list__item {
-      border-top: 0;
+  &__item:hover {
+    background: rgba(242, 247, 255, 1);
+    border-color: rgba(0, 122, 255, 0.16);
+    box-shadow: 0 14px 28px rgba(18, 30, 42, 0.06);
+    transform: translateY(-1px);
+  }
+
+  &__icon {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 12px;
+    background: rgba(0, 122, 255, 0.1);
+    color: var(--accent-strong);
+    overflow: hidden;
+
+    &--missing::after {
+      content: '!';
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      display: grid;
+      place-items: center;
+      width: 14px;
+      height: 14px;
+      border-radius: 999px;
+      background: #ffd54d;
+      color: #7b5300;
+      font-size: 10px;
+      font-weight: 800;
+      border: 1px solid rgba(255, 255, 255, 0.92);
+      box-shadow: 0 4px 10px rgba(18, 30, 42, 0.12);
     }
+  }
+
+  &__fallback {
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  &__content {
+    display: grid;
+    min-width: 0;
+    gap: 4px;
+  }
+
+  &__name {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-weight: 600;
   }
 
   &__path {
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
-    color: var(--muted);
+    color: #8b95a3;
+    font-size: 12px;
   }
 
-  &__name {
+  &__status {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    min-width: 0;
+    flex: 0 0 auto;
   }
 
-  &__item:hover {
-    background: transparent;
+  &__badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 22px;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: rgba(102, 117, 137, 0.1);
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  &__delete {
+    opacity: 0;
+    transform: scale(0.92);
+    transition:
+      opacity 120ms ease,
+      transform 120ms ease;
+  }
+
+  &__item:hover &__delete,
+  &__item:focus-within &__delete {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 
 @media (max-width: 720px) {
   .rules-panel__section {
     padding: 16px;
+  }
+
+  .scope-item {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .scope-item__meta,
+  .app-list__status {
+    margin-left: auto;
+    justify-content: flex-end;
   }
 
   .app-list__item {
