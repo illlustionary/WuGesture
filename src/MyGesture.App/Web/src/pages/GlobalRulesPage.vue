@@ -1,31 +1,29 @@
 <script setup>
-import AppShell from "../components/AppShell.vue";
-import GestureRuleList from "../components/GestureRuleList.vue";
-import { useGestureEditorStore } from "../composables/gestureEditorStore";
+import AppShell from '../components/AppShell.vue'
+import GestureRuleList from '../components/GestureRuleList.vue'
+import { useGestureEditorStore } from '../composables/gestureEditorStore'
 
-const editor = useGestureEditorStore();
-const scopeKind = "global";
-editor.setActiveScope(scopeKind);
+const editor = useGestureEditorStore()
+const scopeKind = 'global'
+editor.setActiveScope(scopeKind)
 </script>
 
 <template>
   <AppShell
     title="全局规则"
-    description="全局规则不需要左侧列表，直接编辑整张表。"
+    description="全局规则对所有程序生效"
     layout-class="page-shell__grid--single"
   >
     <template #right>
       <section class="rules-panel">
         <div class="rules-panel__head">
-          <div>
-            <h3>全局</h3>
-            <p>名称、手势、命令三列编辑，删除放在每行右侧。</p>
-          </div>
-          <button type="button" class="primary-button" @click="editor.openAddRule(scopeKind)">新增规则</button>
-        </div>
-
-        <div v-if="editor.globalRules.length === 0" class="empty-state empty-state--large">
-          当前没有全局规则。
+          <button
+            type="button"
+            class="primary-button"
+            @click="editor.openAddRule(scopeKind)"
+          >
+            新增规则
+          </button>
         </div>
 
         <GestureRuleList

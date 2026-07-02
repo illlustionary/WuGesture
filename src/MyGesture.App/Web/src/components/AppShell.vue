@@ -7,7 +7,10 @@
       </div>
     </div>
 
-    <div class="page-shell__grid" :class="layoutClass">
+    <div
+      class="page-shell__grid"
+      :class="layoutClass"
+    >
       <slot name="left" />
       <slot name="right" />
     </div>
@@ -18,8 +21,8 @@
 defineProps({
   title: { type: String, required: true },
   description: { type: String, required: true },
-  layoutClass: { type: String, default: "" }
-});
+  layoutClass: { type: String, default: '' }
+})
 </script>
 
 <style scoped lang="scss">
@@ -66,18 +69,6 @@ defineProps({
     &--editor {
       align-items: stretch;
     }
-  }
-}
-
-@media (max-width: 1100px) {
-  .page-shell__grid--split {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 720px) {
-  .page-shell {
-    padding: 12px;
   }
 }
 </style>
