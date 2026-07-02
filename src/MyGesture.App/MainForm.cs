@@ -169,6 +169,7 @@ public sealed class MainForm : Form
             pattern = e.Pattern.Select(x => x.ToString()).ToArray()
         });
 
+        gestureHintForm.HideResult();
         webView.CoreWebView2?.PostWebMessageAsJson(payload);
     }
 
@@ -367,7 +368,7 @@ public sealed class MainForm : Form
             gestureService?.SetPaused(message?.Paused ?? false);
             if (message?.Paused == true)
             {
-                gestureHintForm.ClearResult();
+                gestureHintForm.HideResult();
                 mouseTrailForm?.HideTrail();
             }
         }
@@ -383,7 +384,7 @@ public sealed class MainForm : Form
         {
             var message = JsonSerializer.Deserialize<StartGestureRecordingWebMessage>(json, WebMessageJsonOptions);
             gestureService?.StartRecording(message?.RequestId ?? "");
-            gestureHintForm.ShowResult("录制中", autoHide: false);
+            gestureHintForm.HideResult();
         }
         catch (Exception exception)
         {
@@ -394,7 +395,7 @@ public sealed class MainForm : Form
     private void StopGestureRecording()
     {
         gestureService?.StopRecording();
-        gestureHintForm.ClearResult();
+        gestureHintForm.HideResult();
         mouseTrailForm?.HideTrail();
     }
 
