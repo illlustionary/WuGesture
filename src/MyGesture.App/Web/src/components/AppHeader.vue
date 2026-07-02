@@ -1,44 +1,42 @@
 <script setup>
-import { RouterLink } from "vue-router";
+import { RouterLink } from 'vue-router'
 
 defineProps({
   statusText: { type: String, required: true },
   statusState: { type: String, required: true },
   tabs: { type: Array, required: true }
-});
+})
 </script>
 
 <template>
   <header class="app-bar">
-    <div class="app-bar__meta">
-      <div
-        class="status-badge"
-        :data-state="statusState"
-      >
-        {{ statusText }}
-      </div>
-      <nav
-        class="tabs"
-        aria-label="规则作用域"
-      >
-        <RouterLink
-          v-for="tab in tabs"
-          :key="tab.to"
-          :to="tab.to"
-          class="tab"
-          active-class="active"
-        >
-          {{ tab.label }}
-        </RouterLink>
-      </nav>
-      <button
-        type="button"
-        class="menu-button"
-        aria-label="更多菜单"
-      >
-        ☰
-      </button>
+    <div
+      class="status-badge"
+      :data-state="statusState"
+    >
+      {{ statusText }}
     </div>
+    <nav
+      class="tabs"
+      aria-label="规则作用域"
+    >
+      <RouterLink
+        v-for="tab in tabs"
+        :key="tab.to"
+        :to="tab.to"
+        class="tab"
+        active-class="active"
+      >
+        {{ tab.label }}
+      </RouterLink>
+    </nav>
+    <button
+      type="button"
+      class="menu-button"
+      aria-label="更多菜单"
+    >
+      ☰
+    </button>
   </header>
 </template>
 
@@ -60,6 +58,7 @@ defineProps({
     display: flex;
     align-items: center;
     gap: 12px;
+    flex: 1;
   }
 }
 
@@ -76,8 +75,8 @@ defineProps({
 }
 
 .tabs {
-  display: inline-flex;
-  align-items: stretch;
+  flex: 1;
+  display: flex;
   gap: 0;
   padding: 3px;
   border: 1px solid var(--border);
@@ -86,7 +85,7 @@ defineProps({
 }
 
 .tab {
-  min-width: 94px;
+  flex: 1;
   min-height: 34px;
   padding: 0 18px;
   border: 0;
@@ -94,7 +93,7 @@ defineProps({
   color: var(--muted);
   background: transparent;
   text-decoration: none;
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
 
@@ -118,34 +117,34 @@ defineProps({
   box-shadow: 0 8px 18px rgba(18, 30, 42, 0.08);
 }
 
-@media (max-width: 1100px) {
-  .app-bar {
-    align-items: flex-start;
-    flex-direction: column;
+// @media (max-width: 1100px) {
+//   .app-bar {
+//     align-items: flex-start;
+//     flex-direction: column;
 
-    &__meta {
-      width: 100%;
-      flex-wrap: wrap;
-    }
-  }
+//     &__meta {
+//       width: 100%;
+//       flex-wrap: wrap;
+//     }
+//   }
 
-  .tabs {
-    width: 100%;
-  }
-}
+//   .tabs {
+//     width: 100%;
+//   }
+// }
 
-@media (max-width: 720px) {
-  .app-bar {
-    flex-direction: column;
-  }
+// @media (max-width: 720px) {
+//   .app-bar {
+//     flex-direction: column;
+//   }
 
-  .tabs {
-    width: 100%;
-  }
+//   .tabs {
+//     width: 100%;
+//   }
 
-  .tab {
-    flex: 1 1 0;
-    min-width: 0;
-  }
-}
+//   .tab {
+//     flex: 1 1 0;
+//     min-width: 0;
+//   }
+// }
 </style>

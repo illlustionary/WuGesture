@@ -1,29 +1,29 @@
 <script setup>
-import { ref } from "vue";
-import AppShell from "../components/AppShell.vue";
-import GestureRuleList from "../components/GestureRuleList.vue";
-import ScopeSidebar from "../components/ScopeSidebar.vue";
-import ScopeCreateDialog from "../components/ScopeCreateDialog.vue";
-import { useGestureEditorStore } from "../composables/gestureEditorStore";
+import { ref } from 'vue'
+import AppShell from '../components/AppShell.vue'
+import GestureRuleList from '../components/GestureRuleList.vue'
+import ScopeSidebar from '../components/ScopeSidebar.vue'
+import ScopeCreateDialog from '../components/ScopeCreateDialog.vue'
+import { useGestureEditorStore } from '../composables/gestureEditorStore'
 
-const editor = useGestureEditorStore();
-const scopeKind = "category";
-editor.setActiveScope(scopeKind);
-const categoryDraft = ref("");
-const categoryDialogOpen = ref(false);
+const editor = useGestureEditorStore()
+const scopeKind = 'category'
+editor.setActiveScope(scopeKind)
+const categoryDraft = ref('')
+const categoryDialogOpen = ref(false)
 
 function openCategoryDialog() {
-  categoryDraft.value = "";
-  categoryDialogOpen.value = true;
+  categoryDraft.value = ''
+  categoryDialogOpen.value = true
 }
 
 function closeCategoryDialog() {
-  categoryDialogOpen.value = false;
+  categoryDialogOpen.value = false
 }
 
 function confirmCategoryDialog() {
   if (editor.createScopeTarget(scopeKind, categoryDraft.value)) {
-    closeCategoryDialog();
+    closeCategoryDialog()
   }
 }
 </script>
@@ -39,7 +39,10 @@ function confirmCategoryDialog() {
         title="分类名称"
         description="选择一个分类，或在底部新增。"
       >
-        <div v-if="editor.categoryItems.length > 0" class="scope-list">
+        <div
+          v-if="editor.categoryItems.length > 0"
+          class="scope-list"
+        >
           <button
             v-for="item in editor.categoryItems"
             :key="item.name"
@@ -54,11 +57,28 @@ function confirmCategoryDialog() {
             <small>{{ item.count }} 条</small>
           </button>
         </div>
-        <div v-else class="empty-state">还没有分类，先新增一个。</div>
+        <div
+          v-else
+          class="empty-state"
+        >
+          还没有分类，先新增一个。
+        </div>
 
         <div class="scope-panel__footer">
-          <button type="button" class="primary-button" @click="openCategoryDialog">新增分类</button>
-          <button type="button" class="ghost-button" @click="editor.deleteSelectedScope(scopeKind)">删除当前分类</button>
+          <button
+            type="button"
+            class="primary-button"
+            @click="openCategoryDialog"
+          >
+            新增分类
+          </button>
+          <button
+            type="button"
+            class="ghost-button"
+            @click="editor.deleteSelectedScope(scopeKind)"
+          >
+            删除当前分类
+          </button>
         </div>
       </ScopeSidebar>
     </template>
@@ -72,25 +92,52 @@ function confirmCategoryDialog() {
               <p>当前分类关联的程序会从这里管理。</p>
             </div>
             <div class="rules-panel__actions">
-              <button type="button" class="secondary-button" @click="editor.openApplicationPicker(editor.getSelectedName(scopeKind))">添加程序</button>
+              <button
+                type="button"
+                class="secondary-button"
+                @click="
+                  editor.openApplicationPicker(
+                    editor.getSelectedName(scopeKind)
+                  )
+                "
+              >
+                添加程序
+              </button>
             </div>
           </div>
 
-          <div v-if="editor.getApplicationsForCategory().length === 0" class="empty-state empty-state--compact">
+          <div
+            v-if="editor.getApplicationsForCategory().length === 0"
+            class="empty-state empty-state--compact"
+          >
             当前分类还没有关联程序。
           </div>
-          <div v-else class="app-list">
+          <div
+            v-else
+            class="app-list"
+          >
             <div
               v-for="app in editor.getApplicationsForCategory()"
               :key="app.name"
               class="app-list__item"
             >
               <span class="app-list__name">
-                <img v-if="app.icon" class="app-icon app-icon--small" :src="app.icon" alt="">
+                <img
+                  v-if="app.icon"
+                  class="app-icon app-icon--small"
+                  :src="app.icon"
+                  alt=""
+                />
                 <span>{{ app.displayName || app.name }}</span>
               </span>
-              <span class="app-list__path">{{ app.path || "未设置路径" }}</span>
-              <button type="button" class="ghost-button" @click="editor.removeAppFromCategory(app.name)">移除</button>
+              <span class="app-list__path">{{ app.path || '未设置路径' }}</span>
+              <button
+                type="button"
+                class="ghost-button"
+                @click="editor.removeAppFromCategory(app.name)"
+              >
+                移除
+              </button>
             </div>
           </div>
         </section>
@@ -102,12 +149,14 @@ function confirmCategoryDialog() {
               <p>分类级规则会在这里统一维护。</p>
             </div>
             <div class="rules-panel__actions">
-              <button type="button" class="primary-button" @click="editor.openAddRule(scopeKind)">添加手势...</button>
+              <button
+                type="button"
+                class="primary-button"
+                @click="editor.openAddRule(scopeKind)"
+              >
+                添加手势...
+              </button>
             </div>
-          </div>
-
-          <div v-if="editor.getRulesForScope(scopeKind).length === 0" class="empty-state empty-state--large">
-            先在左侧选择一个分类。
           </div>
 
           <GestureRuleList
@@ -144,7 +193,6 @@ function confirmCategoryDialog() {
   border: 1px solid var(--border);
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.95);
-  flex: 1 1 auto;
 }
 
 .scope-item {
@@ -164,7 +212,11 @@ function confirmCategoryDialog() {
   }
 
   &.active {
-    background: linear-gradient(90deg, rgba(29, 81, 109, 0.12), rgba(29, 81, 109, 0.03));
+    background: linear-gradient(
+      90deg,
+      rgba(29, 81, 109, 0.12),
+      rgba(29, 81, 109, 0.03)
+    );
   }
 
   &:hover {
