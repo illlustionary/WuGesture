@@ -38,7 +38,13 @@ editor.initialize()
         <div class="modal-panel__head">
           <div>
             <h3 id="application-picker-title">添加程序</h3>
-            <p>选择一种方式把程序加入当前分类。</p>
+            <p>
+              {{
+                editor.state.applicationPickerScopeKind === 'app'
+                  ? '选择一种方式添加程序规则。'
+                  : '选择一种方式把程序加入当前分类。'
+              }}
+            </p>
           </div>
           <button
             type="button"
