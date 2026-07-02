@@ -191,8 +191,9 @@ function confirmCategoryDialog() {
   gap: 0;
   overflow: hidden;
   border: 1px solid var(--border);
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.95);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 14px 34px rgba(18, 30, 42, 0.08);
 }
 
 .scope-item {
@@ -201,7 +202,8 @@ function confirmCategoryDialog() {
   justify-content: space-between;
   gap: 8px;
   width: 100%;
-  padding: 10px 12px;
+  min-height: 52px;
+  padding: 12px 14px;
   border: 0;
   border-bottom: 1px solid rgba(20, 30, 40, 0.07);
   text-align: left;
@@ -246,7 +248,7 @@ function confirmCategoryDialog() {
 .rules-panel {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
   min-width: 0;
 
   &--stacked,
@@ -270,11 +272,12 @@ function confirmCategoryDialog() {
 
   &__section {
     min-width: 0;
-    padding: 18px;
+    padding: 22px;
     border: 1px solid var(--border);
-    border-radius: 22px;
-    background: rgba(255, 255, 255, 0.76);
-    box-shadow: var(--shadow);
+    border-radius: 26px;
+    background: rgba(255, 255, 255, 0.68);
+    box-shadow: var(--shadow-soft);
+    backdrop-filter: blur(20px) saturate(1.12);
 
     &--compact {
       flex: 0 0 auto;
@@ -297,7 +300,7 @@ function confirmCategoryDialog() {
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    margin-bottom: 6px;
+    margin-bottom: 4px;
   }
 
   &__actions {
@@ -311,15 +314,16 @@ function confirmCategoryDialog() {
   display: grid;
   overflow: hidden;
   border: 1px solid var(--border);
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.96);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 14px 34px rgba(18, 30, 42, 0.08);
 
   &__item {
     display: grid;
     grid-template-columns: 1fr 1.4fr auto;
     gap: 12px;
-    min-height: 40px;
-    padding: 8px 12px;
+    min-height: 52px;
+    padding: 10px 14px;
     align-items: center;
 
     + .app-list__item {
@@ -344,7 +348,7 @@ function confirmCategoryDialog() {
 
 @media (max-width: 720px) {
   .rules-panel__section {
-    padding: 14px;
+    padding: 16px;
   }
 
   .app-list__item {

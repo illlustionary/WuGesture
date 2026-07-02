@@ -1,5 +1,5 @@
 <template>
-  <aside class="scope-panel">
+  <aside class="scope-panel surface-card">
     <div class="scope-panel__head">
       <div>
         <h3>{{ title }}</h3>
@@ -23,24 +23,20 @@ defineProps({
 .scope-panel {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
   min-width: 0;
   min-height: 100%;
-  padding: 18px;
-  border: 1px solid var(--border);
-  border-radius: 22px;
-  background: rgba(255, 255, 255, 0.76);
-  box-shadow: var(--shadow);
+  padding: 20px;
 
   &__head {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 10px;
+    gap: 8px;
   }
 
   h3 {
-    font-size: 16px;
+    font-size: 17px;
     font-weight: 700;
   }
 
@@ -52,7 +48,7 @@ defineProps({
 
 @media (max-width: 720px) {
   .scope-panel {
-    padding: 14px;
+    padding: 16px;
   }
 }
 </style>

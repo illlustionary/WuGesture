@@ -61,7 +61,7 @@ editor.setActiveScope(scopeKind)
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    margin-bottom: 6px;
+    margin-bottom: 4px;
   }
 }
 </style>

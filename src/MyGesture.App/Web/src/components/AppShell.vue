@@ -1,5 +1,5 @@
 <template>
-  <section class="page-shell panel panel--surface">
+  <section class="page-shell surface-card">
     <div class="page-shell__head">
       <div>
         <h2>{{ title }}</h2>
@@ -30,25 +30,26 @@ defineProps({
 .page-shell {
   border: 1px solid var(--border);
   background: var(--panel);
-  box-shadow: var(--shadow);
-  backdrop-filter: blur(18px);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(24px) saturate(1.18);
 }
 
 .page-shell {
-  padding: 18px;
-  border-radius: 24px;
+  padding: 20px;
+  border-radius: 28px;
   overflow: hidden;
 
   &__head {
-    margin-bottom: 14px;
+    margin-bottom: 16px;
 
     h2 {
-      font-size: 22px;
+      font-size: 24px;
       line-height: 1.2;
+      font-weight: 700;
     }
 
     p {
-      margin-top: 6px;
+      margin-top: 8px;
       color: var(--muted);
       font-size: 14px;
     }
@@ -56,10 +57,10 @@ defineProps({
 
   &__grid {
     display: grid;
-    gap: 18px;
+    gap: 20px;
 
     &--split {
-      grid-template-columns: 260px minmax(0, 1fr);
+      grid-template-columns: 274px minmax(0, 1fr);
     }
 
     &--single {

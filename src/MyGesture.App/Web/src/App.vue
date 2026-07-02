@@ -96,9 +96,9 @@ editor.initialize()
 
 <style scoped lang="scss">
 .app-shell {
-  width: min(1360px, calc(100% - 20px));
+  width: min(1440px, calc(100% - 24px));
   margin: 0 auto;
-  padding: 18px 0 24px;
+  padding: 20px 0 26px;
 }
 
 .picker-options {
@@ -110,14 +110,15 @@ editor.initialize()
   display: grid;
   gap: 4px;
   width: 100%;
-  padding: 14px;
+  padding: 16px;
   text-align: left;
-  border-radius: 16px;
+  border-radius: 18px;
   border: 1px solid var(--border);
-  background: linear-gradient(180deg, #ffffff, #f5f8fb);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(240, 246, 252, 0.98));
+  box-shadow: 0 12px 24px rgba(18, 30, 42, 0.08);
 
   &:hover {
-    background: linear-gradient(180deg, #f9fcfe, #eaf3f8);
+    background: linear-gradient(180deg, #ffffff, #edf5ff);
   }
 
   span {

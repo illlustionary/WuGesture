@@ -1,18 +1,21 @@
 :root {
-  --bg: #eef1f4;
-  --bg-accent: #dde5ec;
-  --panel: rgba(255, 255, 255, 0.88);
+  --bg: #e9eff8;
+  --bg-accent: #d8e2f2;
+  --bg-glow: rgba(198, 212, 255, 0.45);
+  --panel: rgba(255, 255, 255, 0.76);
   --panel-solid: #ffffff;
-  --panel-soft: #f7f9fb;
-  --border: rgba(20, 30, 40, 0.12);
-  --border-strong: rgba(20, 30, 40, 0.18);
+  --panel-soft: rgba(255, 255, 255, 0.56);
+  --border: rgba(18, 30, 42, 0.1);
+  --border-strong: rgba(18, 30, 42, 0.16);
   --text: #16202b;
   --muted: #657180;
-  --accent: #1d516d;
-  --accent-strong: #12384d;
-  --accent-soft: rgba(29, 81, 109, 0.1);
+  --accent: #007aff;
+  --accent-strong: #005fcc;
+  --accent-soft: rgba(0, 122, 255, 0.12);
   --danger: #ad4c39;
   --shadow: 0 18px 40px rgba(18, 30, 42, 0.08);
+  --shadow-soft: 0 22px 60px rgba(18, 30, 42, 0.1);
+  --shadow-float: 0 32px 80px rgba(18, 30, 42, 0.16);
 }
 
 * {
@@ -26,13 +29,31 @@ body,
 }
 
 body {
+  position: relative;
   margin: 0;
   color: var(--text);
   background:
-    radial-gradient(circle at top left, rgba(255, 255, 255, 0.9), transparent 35%),
-    radial-gradient(circle at 85% 15%, rgba(198, 214, 226, 0.9), transparent 26%),
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.95), transparent 32%),
+    radial-gradient(circle at 82% 12%, var(--bg-glow), transparent 24%),
+    radial-gradient(circle at 15% 82%, rgba(223, 227, 255, 0.65), transparent 28%),
     linear-gradient(180deg, var(--bg), var(--bg-accent));
-  font-family: "Segoe UI", "Microsoft YaHei UI", sans-serif;
+  font-family: "Segoe UI Variable", "Segoe UI", "Microsoft YaHei UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(rgba(255, 255, 255, 0.16) 0.7px, transparent 0.8px),
+    radial-gradient(rgba(18, 30, 42, 0.02) 0.8px, transparent 0.9px);
+  background-position: 0 0, 6px 6px;
+  background-size: 11px 11px, 13px 13px;
+  opacity: 0.2;
+  mix-blend-mode: soft-light;
 }
 
 [v-cloak] {
@@ -64,26 +85,34 @@ p {
   margin: 0;
 }
 
+.surface-card {
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  background: var(--panel);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(24px) saturate(1.18);
+}
+
 .primary-button,
 .secondary-button,
 .danger-button,
 .ghost-button {
-  min-height: 30px;
-  padding: 0 12px;
-  border-radius: 12px;
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 14px;
 }
 
 .primary-button {
   color: #ffffff;
   border-color: transparent;
-  background: linear-gradient(180deg, var(--accent), var(--accent-strong));
-  box-shadow: 0 10px 20px rgba(29, 81, 109, 0.18);
+  background: linear-gradient(180deg, #2d90ff, var(--accent-strong));
+  box-shadow: 0 14px 24px rgba(0, 122, 255, 0.24);
 }
 
 .secondary-button,
 .ghost-button {
   color: var(--accent-strong);
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.82);
 }
 
 .danger-button {
@@ -92,18 +121,64 @@ p {
 
 .scope-input {
   width: 100%;
-  min-height: 30px;
-  padding: 4px 8px;
+  min-height: 36px;
+  padding: 6px 10px;
   border: 1px solid var(--border);
-  border-radius: 10px;
-  background: #ffffff;
-  transition: border-color 120ms ease, box-shadow 120ms ease;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.92);
+  transition: border-color 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
 
   &:focus {
     outline: none;
-    border-color: rgba(29, 81, 109, 0.45);
-    box-shadow: 0 0 0 3px rgba(29, 81, 109, 0.1);
+    border-color: rgba(0, 122, 255, 0.5);
+    box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.12);
   }
+}
+
+.keycap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 0 8px;
+  border: 1px solid rgba(18, 30, 42, 0.12);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(237, 243, 249, 0.96));
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.8) inset,
+    0 6px 14px rgba(18, 30, 42, 0.06);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.keycap--subtle {
+  color: var(--muted);
+}
+
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid rgba(18, 30, 42, 0.08);
+  border-radius: 999px;
+  color: var(--accent-strong);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(239, 244, 250, 0.94));
+  box-shadow: 0 10px 20px rgba(18, 30, 42, 0.08);
+}
+
+.icon-button:hover {
+  border-color: rgba(0, 122, 255, 0.2);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(228, 239, 250, 0.96));
+}
+
+.icon-button--danger {
+  color: var(--danger);
 }
 
 .modal-backdrop {
@@ -123,11 +198,12 @@ p {
 
 .modal-panel {
   width: min(480px, 100%);
-  padding: 14px;
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 24px 48px rgba(18, 30, 42, 0.2);
+  padding: 16px;
+  border: 1px solid rgba(18, 30, 42, 0.12);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: var(--shadow-float);
+  backdrop-filter: blur(28px) saturate(1.2);
 }
 
 .modal-panel__head {
@@ -162,9 +238,9 @@ p {
   min-height: 120px;
   padding: 12px;
   border: 1px dashed var(--border-strong);
-  border-radius: 18px;
+  border-radius: 20px;
   color: var(--muted);
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.6);
 }
 
 .empty-state--large {

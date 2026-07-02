@@ -170,19 +170,19 @@ const patternLabel = computed(
   // }
 
   &__panel {
-    width: min(760px, calc(100vw - 36px));
+    width: min(780px, calc(100vw - 36px));
     pointer-events: auto;
   }
 
   &__grid {
     display: grid;
-    gap: 10px;
+    gap: 12px;
     grid-template-columns: 1fr 1fr;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
 
     label {
       display: grid;
-      gap: 4px;
+      gap: 6px;
       color: var(--muted);
       font-size: 13px;
     }
@@ -190,12 +190,12 @@ const patternLabel = computed(
 
   &__command {
     display: grid;
-    gap: 8px;
-    margin-bottom: 12px;
+    gap: 10px;
+    margin-bottom: 14px;
 
     label {
       display: grid;
-      gap: 4px;
+      gap: 6px;
       color: var(--muted);
       font-size: 13px;
     }
@@ -205,8 +205,8 @@ const patternLabel = computed(
     display: flex;
     align-items: center;
     gap: 10px;
-    min-height: 34px;
-    padding: 8px 0 0;
+    min-height: 36px;
+    padding: 4px 0 0;
 
     span {
       color: var(--muted);
@@ -248,14 +248,14 @@ const patternLabel = computed(
   display: grid;
   gap: 4px;
   width: 100%;
-  min-height: 68px;
-  margin-bottom: 12px;
-  padding: 14px 16px;
+  min-height: 74px;
+  margin-bottom: 14px;
+  padding: 16px 18px;
   text-align: left;
-  border-radius: 18px;
+  border-radius: 20px;
   border: 1px solid rgba(29, 81, 109, 0.18);
   background: linear-gradient(180deg, #ffffff, #f2f7fb);
-  box-shadow: 0 10px 20px rgba(18, 30, 42, 0.06);
+  box-shadow: 0 12px 28px rgba(18, 30, 42, 0.08);
 
   strong {
     color: var(--accent-strong);
