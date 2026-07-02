@@ -9,11 +9,12 @@ defineProps({
 </script>
 
 <template>
-  <header class="app-bar">
+  <header class="app-bar surface-card">
     <div
       class="status-badge"
       :data-state="statusState"
     >
+      <span class="status-badge__dot" />
       {{ statusText }}
     </div>
     <nav
@@ -32,10 +33,10 @@ defineProps({
     </nav>
     <button
       type="button"
-      class="menu-button"
-      aria-label="更多菜单"
+      class="menu-button icon-button"
+      aria-label="更多设置"
     >
-      ☰
+      ⋯
     </button>
   </header>
 </template>
@@ -45,49 +46,64 @@ defineProps({
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 14px;
-  padding: 14px 18px;
-  border: 1px solid var(--border);
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(16px);
-  box-shadow: var(--shadow);
-
-  &__meta {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex: 1;
-  }
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
 }
 
 .status-badge {
   display: inline-flex;
   align-items: center;
-  min-height: 34px;
-  padding: 0 12px;
+  gap: 8px;
+  min-height: 30px;
+  padding: 0 10px 0 8px;
   border: 1px solid var(--border);
   border-radius: 999px;
   color: var(--muted);
-  background: rgba(255, 255, 255, 0.72);
-  font-size: 13px;
+  background: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 8px 16px rgba(18, 30, 42, 0.05);
+  font-size: 12px;
+  font-weight: 600;
+
+  &__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: currentColor;
+    opacity: 0.45;
+  }
+
+  &[data-state="running"] {
+    color: var(--accent-strong);
+
+    .status-badge__dot {
+      opacity: 1;
+      background: var(--accent);
+      box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.12);
+    }
+  }
 }
 
 .tabs {
+  position: relative;
   flex: 1;
   display: flex;
-  gap: 0;
-  padding: 3px;
+  gap: 4px;
+  min-width: 0;
+  padding: 4px;
   border: 1px solid var(--border);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.62);
+  background: rgba(255, 255, 255, 0.58);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.75) inset,
+    0 10px 24px rgba(18, 30, 42, 0.06);
 }
 
 .tab {
   flex: 1;
-  min-height: 34px;
-  padding: 0 18px;
+  min-width: 0;
+  min-height: 32px;
+  padding: 0 14px;
   border: 0;
   border-radius: 999px;
   color: var(--muted);
@@ -99,52 +115,19 @@ defineProps({
 
   &.active {
     color: var(--accent-strong);
-    background: linear-gradient(180deg, #ffffff, #edf4f8);
-    box-shadow: 0 10px 18px rgba(18, 30, 42, 0.07);
+    background: linear-gradient(180deg, #ffffff, #edf5ff);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.85) inset,
+      0 10px 20px rgba(0, 122, 255, 0.12);
   }
 
   &:hover {
-    background: rgba(29, 81, 109, 0.1);
+    background: rgba(0, 122, 255, 0.08);
   }
 }
 
 .menu-button {
-  width: 36px;
-  height: 36px;
-  border-radius: 999px;
-  color: var(--accent-strong);
-  background: linear-gradient(180deg, #ffffff, #edf3f7);
-  box-shadow: 0 8px 18px rgba(18, 30, 42, 0.08);
+  font-size: 22px;
+  line-height: 1;
 }
-
-// @media (max-width: 1100px) {
-//   .app-bar {
-//     align-items: flex-start;
-//     flex-direction: column;
-
-//     &__meta {
-//       width: 100%;
-//       flex-wrap: wrap;
-//     }
-//   }
-
-//   .tabs {
-//     width: 100%;
-//   }
-// }
-
-// @media (max-width: 720px) {
-//   .app-bar {
-//     flex-direction: column;
-//   }
-
-//   .tabs {
-//     width: 100%;
-//   }
-
-//   .tab {
-//     flex: 1 1 0;
-//     min-width: 0;
-//   }
-// }
 </style>
