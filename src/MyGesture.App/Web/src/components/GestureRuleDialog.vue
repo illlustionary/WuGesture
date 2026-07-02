@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue'
+import IconActionButton from './IconActionButton.vue'
 
 const props = defineProps({
   open: { type: Boolean, required: true },
@@ -37,13 +38,12 @@ const patternLabel = computed(
             <h3 id="gesture-dialog-title">手势</h3>
             <p>点击开始录制后，按住右键或中键绘制，松开后由后端识别。</p>
           </div>
-          <button
-            type="button"
+          <IconActionButton
+            icon="close"
+            label="关闭"
             class="ghost-button"
             @click="$emit('close')"
-          >
-            关闭
-          </button>
+          />
         </div>
 
         <div class="gesture-dialog__grid">

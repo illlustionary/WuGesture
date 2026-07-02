@@ -1,5 +1,6 @@
 <script setup>
 import AppShell from '../components/AppShell.vue'
+import IconActionButton from '../components/IconActionButton.vue'
 import GestureRuleList from '../components/GestureRuleList.vue'
 import ScopeSidebar from '../components/ScopeSidebar.vue'
 import { useGestureEditorStore } from '../composables/gestureEditorStore'
@@ -52,20 +53,18 @@ editor.setActiveScope(scopeKind)
         </div>
 
         <div class="scope-panel__footer">
-          <button
-            type="button"
+          <IconActionButton
+            icon="add"
+            label="添加程序"
             class="primary-button"
             @click="editor.openApplicationPicker('', scopeKind)"
-          >
-            添加程序
-          </button>
-          <button
-            type="button"
-            class="ghost-button"
+          />
+          <IconActionButton
+            icon="delete"
+            label="删除当前程序"
+            class="ghost-button danger-button"
             @click="editor.deleteSelectedScope(scopeKind)"
-          >
-            删除当前程序
-          </button>
+          />
         </div>
       </ScopeSidebar>
     </template>
@@ -81,13 +80,12 @@ editor.setActiveScope(scopeKind)
               <p>这里只维护当前程序的规则。</p>
             </div>
             <div class="rules-panel__actions">
-              <button
-                type="button"
+              <IconActionButton
+                icon="add"
+                label="添加手势"
                 class="primary-button"
                 @click="editor.openAddRule(scopeKind)"
-              >
-                添加手势
-              </button>
+              />
             </div>
           </div>
           <GestureRuleList

@@ -73,7 +73,7 @@ defineProps({
     opacity: 0.45;
   }
 
-  &[data-state="running"] {
+  &[data-state='running'] {
     color: var(--accent-strong);
 
     .status-badge__dot {
@@ -91,12 +91,6 @@ defineProps({
   gap: 4px;
   min-width: 0;
   padding: 4px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.58);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.75) inset,
-    0 10px 24px rgba(18, 30, 42, 0.06);
 }
 
 .tab {
@@ -105,24 +99,16 @@ defineProps({
   min-height: 32px;
   padding: 0 14px;
   border: 0;
-  border-radius: 999px;
   color: var(--muted);
   background: transparent;
   text-decoration: none;
   display: flex;
   align-items: center;
   justify-content: center;
-
+  box-sizing: border-box;
   &.active {
     color: var(--accent-strong);
-    background: linear-gradient(180deg, #ffffff, #edf5ff);
-    box-shadow:
-      0 1px 0 rgba(255, 255, 255, 0.85) inset,
-      0 10px 20px rgba(0, 122, 255, 0.12);
-  }
-
-  &:hover {
-    background: rgba(0, 122, 255, 0.08);
+    border-bottom: 2px solid var(--accent-strong);
   }
 }
 

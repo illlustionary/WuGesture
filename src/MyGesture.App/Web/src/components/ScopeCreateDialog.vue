@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from "vue";
+import IconActionButton from "./IconActionButton.vue";
 
 const props = defineProps({
   open: { type: Boolean, required: true },
@@ -32,7 +33,12 @@ const value = computed({
           <h3 :id="titleId">{{ title }}</h3>
           <p v-if="description">{{ description }}</p>
         </div>
-        <button type="button" class="ghost-button" @click="$emit('close')">关闭</button>
+        <IconActionButton
+          icon="close"
+          label="关闭"
+          class="ghost-button"
+          @click="$emit('close')"
+        />
       </div>
 
       <label class="scope-create-dialog__field">
@@ -47,7 +53,12 @@ const value = computed({
 
       <div class="modal-panel__actions">
         <button type="button" class="ghost-button" @click="$emit('close')">取消</button>
-        <button type="button" class="primary-button" @click="$emit('confirm')">{{ confirmText }}</button>
+        <IconActionButton
+          icon="add"
+          :label="confirmText"
+          class="primary-button"
+          @click="$emit('confirm')"
+        />
       </div>
     </section>
   </div>
