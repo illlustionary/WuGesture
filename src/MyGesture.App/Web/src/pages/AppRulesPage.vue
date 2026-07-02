@@ -1,31 +1,12 @@
 <script setup>
-import { ref } from 'vue'
 import AppShell from '../components/AppShell.vue'
 import GestureRuleList from '../components/GestureRuleList.vue'
 import ScopeSidebar from '../components/ScopeSidebar.vue'
-import ScopeCreateDialog from '../components/ScopeCreateDialog.vue'
 import { useGestureEditorStore } from '../composables/gestureEditorStore'
 
 const editor = useGestureEditorStore()
 const scopeKind = 'app'
 editor.setActiveScope(scopeKind)
-const appDraft = ref('')
-const appDialogOpen = ref(false)
-
-function openAppDialog() {
-  appDraft.value = ''
-  appDialogOpen.value = true
-}
-
-function closeAppDialog() {
-  appDialogOpen.value = false
-}
-
-function confirmAppDialog() {
-  if (editor.createScopeTarget(scopeKind, appDraft.value)) {
-    closeAppDialog()
-  }
-}
 </script>
 
 <template>
@@ -74,7 +55,7 @@ function confirmAppDialog() {
           <button
             type="button"
             class="primary-button"
-            @click="openAppDialog"
+            @click="editor.openApplicationPicker('', scopeKind)"
           >
             添加程序
           </button>
@@ -121,18 +102,6 @@ function confirmAppDialog() {
       </section>
     </template>
   </AppShell>
-
-  <ScopeCreateDialog
-    v-model="appDraft"
-    :open="appDialogOpen"
-    title="添加程序"
-    description="输入一个进程名，创建后会出现在左侧列表。"
-    label="程序名称"
-    placeholder="例如：notepad.exe"
-    confirm-text="添加程序"
-    @close="closeAppDialog"
-    @confirm="confirmAppDialog"
-  />
 </template>
 
 <style scoped lang="scss">

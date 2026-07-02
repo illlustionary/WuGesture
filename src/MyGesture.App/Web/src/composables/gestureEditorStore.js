@@ -65,6 +65,7 @@ const state = reactive({
   selectedApp: "",
   applicationPickerOpen: false,
   applicationPickerCategory: "",
+  applicationPickerScopeKind: "",
   recordingHotkeyTarget: null,
   recordingHotkeyRequestId: "",
   gestureEditorOpen: false,
@@ -80,6 +81,7 @@ const state = reactive({
 
 const activeScope = ref("global");
 const initialized = ref(false);
+const pendingApplicationPickerRequests = new Map();
 let autoSaveTimer = 0;
 
 export function useGestureEditorStore() {
@@ -500,32 +502,44 @@ function removeAppFromCategory(appName, categoryName = getSelectedName("category
   }
 }
 
-function openApplicationPicker(categoryName = "") {
+function openApplicationPicker(categoryName = "", scopeKind = "category") {
   state.applicationPickerCategory = String(categoryName ?? "").trim();
+  state.applicationPickerScopeKind = scopeKind === "app" ? "app" : "category";
   state.applicationPickerOpen = true;
 }
 
 function closeApplicationPicker() {
   state.applicationPickerOpen = false;
   state.applicationPickerCategory = "";
+  state.applicationPickerScopeKind = "";
 }
 
 function selectApplication(categoryName = "") {
   const category = String(categoryName || state.applicationPickerCategory || "").trim();
+  const requestId = createRequestId();
+  pendingApplicationPickerRequests.set(requestId, {
+    scopeKind: state.applicationPickerScopeKind,
+    category
+  });
   closeApplicationPicker();
   postWebMessage({
     type: "select-application",
-    requestId: createRequestId(),
+    requestId,
     category
   });
 }
 
 function pickApplicationWindow(categoryName = "") {
   const category = String(categoryName || state.applicationPickerCategory || "").trim();
+  const requestId = createRequestId();
+  pendingApplicationPickerRequests.set(requestId, {
+    scopeKind: state.applicationPickerScopeKind,
+    category
+  });
   closeApplicationPicker();
   postWebMessage({
     type: "pick-application-window",
-    requestId: createRequestId(),
+    requestId,
     category
   });
 }
@@ -536,11 +550,21 @@ function addSelectedApplication(message) {
     return;
   }
 
+  const requestContext = pendingApplicationPickerRequests.get(message.requestId) ?? null;
+  pendingApplicationPickerRequests.delete(message.requestId);
   const application = ensureApplication(name);
   application.displayName = String(message.displayName ?? application.displayName ?? name).trim();
   application.path = String(message.path ?? "").trim();
-  application.category = String(message.category ?? application.category ?? "").trim();
+  const selectedCategory = String(message.category ?? "").trim();
+  if (selectedCategory || requestContext?.scopeKind !== "app") {
+    application.category = selectedCategory;
+  }
   application.icon = String(message.icon ?? application.icon ?? "").trim();
+
+  if (requestContext?.scopeKind === "app" && !getScopeItems("app").some((item) => item.name === application.name)) {
+    state.rules.push(createRule("app", application.name));
+  }
+
   setSelectedName("app", application.name);
   if (application.category) {
     setSelectedName("category", application.category);
