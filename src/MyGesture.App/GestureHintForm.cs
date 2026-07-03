@@ -1,5 +1,6 @@
 using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
+using MyGesture.App.GestureEngine;
 
 namespace MyGesture.App;
 
@@ -7,17 +8,12 @@ public sealed class GestureHintForm : Form
 {
     private const int WsExNoActivate = 0x08000000;
     private const int WsExToolWindow = 0x00000080;
-    private const int BottomGap = 140;
     private const float CornerRadius = 28f;
     private const double VisibleOpacity = 0.96;
     private const double FadeStep = 0.08;
 
     private readonly System.Windows.Forms.Timer hideTimer = new();
     private readonly System.Windows.Forms.Timer fadeTimer = new();
-    private readonly Font titleFont = new("Segoe UI Semibold", 22, FontStyle.Bold);
-    private readonly Brush textBrush = new SolidBrush(Color.White);
-    private readonly Brush backgroundBrush = new SolidBrush(Color.FromArgb(226, 18, 24, 31));
-    private readonly Pen borderPen = new(Color.FromArgb(90, 255, 255, 255), 1.1f);
     private readonly StringFormat centerFormat = new()
     {
         Alignment = StringAlignment.Center,
@@ -26,6 +22,11 @@ public sealed class GestureHintForm : Form
         FormatFlags = StringFormatFlags.NoWrap
     };
 
+    private Font? titleFont;
+    private Brush? textBrush;
+    private Brush? backgroundBrush;
+    private Pen? borderPen;
+    private GestureHintUiSettings uiSettings = new();
     private string title = "";
 
     public GestureHintForm()
@@ -53,6 +54,7 @@ public sealed class GestureHintForm : Form
         fadeTimer.Interval = 24;
         fadeTimer.Tick += OnFadeTimerTick;
 
+        ApplySettings(uiSettings);
         UpdateWindowRegion();
     }
 
@@ -84,6 +86,41 @@ public sealed class GestureHintForm : Form
         if (autoHide)
         {
             BeginFadeOut();
+        }
+    }
+
+    public void ApplySettings(GestureHintUiSettings? settings)
+    {
+        uiSettings = settings ?? new GestureHintUiSettings();
+
+        DisposeBrushes();
+
+        var baseBackgroundColor = GestureColorParser.Parse(uiSettings.BackgroundColor, Color.FromArgb(18, 24, 31));
+        var backgroundAlpha = ClampOpacity(uiSettings.BackgroundOpacity);
+        var backgroundColor = Color.FromArgb(backgroundAlpha, baseBackgroundColor.R, baseBackgroundColor.G, baseBackgroundColor.B);
+        var textColor = GestureColorParser.Parse(uiSettings.TextColor, Color.White);
+        titleFont = CreateFont(uiSettings.FontFamily, uiSettings.FontSize);
+        textBrush = new SolidBrush(textColor);
+        backgroundBrush = new SolidBrush(backgroundColor);
+        borderPen = new Pen(Color.FromArgb(90, 255, 255, 255), 1.1f);
+
+        Width = Math.Max(240, uiSettings.Width);
+        Height = Math.Max(72, uiSettings.Height);
+        // WinForms form background does not accept alpha in BackColor.
+        BackColor = Color.FromArgb(backgroundColor.R, backgroundColor.G, backgroundColor.B);
+        ForeColor = Color.White;
+
+        UpdateWindowRegion();
+
+        if (IsHandleCreated)
+        {
+            MoveToBottomCenter();
+        }
+
+        if (Visible)
+        {
+            Invalidate();
+            Update();
         }
     }
 
@@ -168,18 +205,19 @@ public sealed class GestureHintForm : Form
         bounds.Inflate(-1, -1);
 
         using var path = RoundedRect(bounds, CornerRadius);
-        graphics.FillPath(backgroundBrush, path);
-        graphics.DrawPath(borderPen, path);
+        graphics.FillPath(backgroundBrush!, path);
+        graphics.DrawPath(borderPen!, path);
 
         var titleRect = new RectangleF(28, 0, Width - 56, Height);
-        graphics.DrawString(title, titleFont, textBrush, titleRect, centerFormat);
+        graphics.DrawString(title, titleFont!, textBrush!, titleRect, centerFormat);
     }
 
     private void MoveToBottomCenter()
     {
         var area = Screen.PrimaryScreen?.WorkingArea ?? Screen.FromControl(this).WorkingArea;
+        var bottomOffset = Math.Max(0, uiSettings.BottomOffset);
         Left = area.Left + (area.Width - Width) / 2;
-        Top = area.Bottom - Height - BottomGap;
+        Top = area.Bottom - Height - bottomOffset;
     }
 
     protected override void Dispose(bool disposing)
@@ -192,10 +230,7 @@ public sealed class GestureHintForm : Form
             fadeTimer.Stop();
             fadeTimer.Tick -= OnFadeTimerTick;
             fadeTimer.Dispose();
-            titleFont.Dispose();
-            textBrush.Dispose();
-            backgroundBrush.Dispose();
-            borderPen.Dispose();
+            DisposeBrushes();
             centerFormat.Dispose();
         }
 
@@ -270,6 +305,38 @@ public sealed class GestureHintForm : Form
         path.AddArc(arc, 90, 90);
         path.CloseFigure();
         return path;
+    }
+
+    private static Font CreateFont(string? familyName, float size)
+    {
+        var resolvedFamily = string.IsNullOrWhiteSpace(familyName) ? "Segoe UI Semibold" : familyName.Trim();
+        var resolvedSize = Math.Max(8f, size);
+
+        try
+        {
+            return new Font(resolvedFamily, resolvedSize, FontStyle.Bold);
+        }
+        catch
+        {
+            return new Font("Segoe UI Semibold", Math.Max(8f, resolvedSize), FontStyle.Bold);
+        }
+    }
+
+    private static int ClampOpacity(int value)
+    {
+        return Math.Max(0, Math.Min(255, (int)Math.Round(value * 255d / 100d)));
+    }
+
+    private void DisposeBrushes()
+    {
+        titleFont?.Dispose();
+        textBrush?.Dispose();
+        backgroundBrush?.Dispose();
+        borderPen?.Dispose();
+        titleFont = null!;
+        textBrush = null!;
+        backgroundBrush = null!;
+        borderPen = null!;
     }
 
     private static class NativeMethods

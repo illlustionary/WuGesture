@@ -54,7 +54,7 @@ src\MyGesture.App
 启动流程：
 
 - `Program.cs` 启动 `MainForm`。
-- `MainForm.cs` 初始化 WebView2、加载配置、创建 `GestureService`，并桥接 WebView 消息。
+- `MainForm.cs` 初始化 WebView2、加载配置、创建 `GestureService`，并桥接 WebView 消息；也会把配置里的 `uiSettings` 应用到轨迹窗和提示窗。
 - 配置窗口首次启动时默认占据主屏工作区的一半，并居中显示；关闭时会保存窗口位置、大小和最大化状态，下次启动时恢复。
 
 历史模板文件：
@@ -86,8 +86,10 @@ src\MyGesture.App\GestureEngine
 - `MouseInput.cs`：当移动距离太小，不足以构成手势时，重放一次普通右键或中键。
 - `GestureDirection.cs`：8 方向枚举。
 - `GestureRule.cs`：运行时规则和热键动作模型。
+- `GestureUiSettings.cs`：持久化的运行时 UI 设置模型，包括轨迹窗和提示泡泡配置。
 - `GestureHintForm.cs`：独立的全局命中提示窗，移动过程中匹配到规则时立即显示规则名。
 - `MouseTrailForm.cs`：独立的全局透明覆盖窗，在按住中键或右键移动时绘制鼠标轨迹；启动后预热并在手势结束时隐藏复用，避免首次绘制和反复创建窗口造成卡顿。
+- 这两个运行时窗体会从配置里的 `uiSettings` 读取并应用轨迹颜色、线宽、未激活/激活透明度，以及提示泡泡字体、文字颜色、背景透明度和尺寸。
 
 手势流水线：
 
@@ -138,6 +140,8 @@ MouseHook
 - `action.keys`：按键列表，例如 `["Control", "W"]`；允许为空，表示先保存手势，之后再补命令，空命令规则不会参与运行时执行。
 - `action.operation`：窗口控制操作，仅在 `action.type` 为 `window` 时使用；当前支持 `toggle-topmost`、`toggle-maximize`、`minimize`、`close`。
 - `applications`：应用程序归属列表，每项包含 `name`、`displayName`、`path`、`category`，运行时通过前台进程名匹配 `name` 后得到分类；`displayName` 只用于 UI 展示和编辑。
+- `uiSettings.mouseTrail`：轨迹窗设置，包含 `inactiveColor`、`activeColor`、`inactiveThickness`、`activeThickness`、`thickness`、`inactiveOpacity`、`activeOpacity`；`thickness` 保留用于兼容旧配置。
+- `uiSettings.gestureHint`：提示泡泡设置，包含 `fontFamily`、`fontSize`、`textColor`、`backgroundColor`、`backgroundOpacity`、`width`、`height`、`bottomOffset`。
 
 默认规则：
 
@@ -162,10 +166,10 @@ src\MyGesture.App\Web
 - `package.json`：前端工程依赖与脚本。
 - `vite.config.js`：Vite 构建配置。
 - `src\main.js`：Vue 入口。
-- `src\App.vue`：路由壳、全局弹窗挂载和规则编辑弹窗挂载。
+- `src\App.vue`：路由壳、全局弹窗挂载和规则编辑弹窗挂载，顶部 `...` 入口会跳转到设置页。
 - `src\components\`：顶部栏、页面壳、左侧插槽和规则表等通用组件。
 - `src\composables\gestureEditorStore.js`：共享编辑状态、WebView 消息和快捷键监听。
-- `src\pages\`：`global`、`category`、`app` 三个路由页。
+- `src\pages\`：`global`、`category`、`app`、`settings` 四个路由页。
 - `src\styles.scss`：编辑器全局设计 token、reset、通用按钮、输入框、弹窗和图标样式；组件和页面专属样式放在对应 `.vue` 文件的 scoped SCSS 中。
 - `dist\web\`：Vite 构建产物目录，由桌面宿主加载。
 
@@ -180,6 +184,8 @@ src\MyGesture.App\Web
 当前 UI：
 
 - 3 个规则 tab：`全局`、`分类`、`程序`，顶部改为更紧凑的分段式切换，当前项使用更轻量的高亮态。
+- 顶部 `...` 按钮会打开独立的 `settings` 页面，用于配置轨迹线和底部提示窗外观。
+- 设置页右上角提供恢复默认按钮，页面中的调整会在输入变化时 debounce 自动保存，并在控件变更结束或离开页面时强制提交最后一次修改；本地编辑期间会避免宿主回传覆盖当前滑块值，不再依赖底部操作按钮。
 - `全局` 直接编辑整张表。
 - `分类` 和 `程序` 采用左右布局：左侧是分类/程序列表和底部新增按钮，右侧是对应内容区。
 - `分类` 页右侧包含“应用程序”和“手势列表”两个区块，分类页可管理当前分类下的 App。
@@ -194,7 +200,7 @@ src\MyGesture.App\Web
 - 添加/编辑手势弹窗只允许通过遮罩点击或右上角关闭按钮退出；底部确认/取消按钮已移除，名称输入和命令控件在失焦或变更时会把当前 draft 持久化到规则里。
 - 规则编辑、删除、快捷键录制、分类/App 变更会发送 `save-rules` 写入配置文件；行内规则名称编辑改为失焦后提交，避免打字时触发保存打断输入，而弹窗里的名称输入仍保持即时编辑体验。
 - 添加/编辑手势弹窗打开时会通过 WebView 消息暂停全局手势，避免全局鼠标钩子干扰编辑；手势录制由后端接管，轨迹会通过原生 `MouseTrailForm` 在屏幕上显示，录制期间不显示全局命中提示窗，前端只接收最终识别结果。
-- 已移除编辑器内的手势提示区，只保留配置结果提示。
+- 已移除编辑器内的手势提示区，只保留配置结果提示；新增、删除、重置和配置错误等操作会通过 toast 弹出反馈。
 - 快捷键命令不支持手动输入；选择 `快捷键` 后点击录制按钮进入录制中，后端拦截并记录系统按键，松开所有按键后显示录制结果。
 
 WebView 消息流：
@@ -208,12 +214,12 @@ WebView 消息流：
   - `{ type: "set-gesture-paused", paused: true/false }`
   - `{ type: "start-hotkey-recording", requestId: "..." }`
   - `{ type: "stop-hotkey-recording" }`
-  - `{ type: "save-rules", rules: [{ scope, mouseButton, pattern, actionName, action }, ...], applications: [...] }`
+  - `{ type: "save-rules", rules: [{ scope, mouseButton, pattern, actionName, action }, ...], applications: [...], uiSettings: {...} }`
   - `{ type: "reload-rules" }`
   - `{ type: "reset-rules" }`
 - 后端发送：
   - `{ type: "status", ... }`
-  - `{ type: "rules", rules: [...], applications: [{ name, displayName, path, category, icon }, ...], ... }`
+  - `{ type: "rules", rules: [...], applications: [{ name, displayName, path, category, icon }, ...], uiSettings: {...}, ... }`
   - `{ type: "application-selected", requestId: "...", name: "...", displayName: "...", path: "...", category: "...", icon: "..." }`
   - `{ type: "gesture-recorded", requestId: "...", button: "right|middle", pattern: ["Down", "Right"] }`
   - `{ type: "hotkey-recorded", requestId: "...", keys: ["Control", "W"] }`
@@ -223,24 +229,9 @@ WebView 消息流：
 
 ## 测试
 
-路径：
+当前仓库没有独立的测试项目。`MyGesture.slnx` 目前只包含桌面应用工程。
 
-```text
-tests\MyGesture.App.Tests
-```
-
-当前测试覆盖：
-
-- `GestureRecognizerTests.cs`：抖动过滤、噪声转向、短回拉、对角线识别。
-- `GestureConfigMapperTests.cs`：默认配置映射、按键别名和作用域保留。
-- `GestureMatcherTests.cs`：作用域优先级。
-- `ConfiguredScopeContextProviderTests.cs`：应用程序到分类的运行时映射。
-
-运行：
-
-```powershell
-dotnet test MyGesture.slnx
-```
+如果后续补回测试工程，可在此补充对应路径、覆盖范围和运行命令。
 
 ## 构建与发布
 
@@ -255,6 +246,8 @@ dotnet build MyGesture.slnx
 ```powershell
 dotnet test MyGesture.slnx
 ```
+
+当前会因没有测试项目而没有可执行测试目标。
 
 发布：
 

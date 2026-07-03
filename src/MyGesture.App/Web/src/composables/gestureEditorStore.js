@@ -1,4 +1,5 @@
 import { computed, proxyRefs, reactive, ref } from "vue";
+import { useToast } from "vue-toastification";
 
 const DEFAULT_RULES = [
   {
@@ -52,6 +53,28 @@ const WINDOW_OPERATIONS = [
   { value: "close", label: "关闭窗口" }
 ];
 
+const DEFAULT_UI_SETTINGS = {
+  mouseTrail: {
+    inactiveColor: "#AAAAAA",
+    activeColor: "#87CEEB",
+    inactiveThickness: 3,
+    activeThickness: 3,
+    thickness: 3,
+    inactiveOpacity: 74,
+    activeOpacity: 100
+  },
+  gestureHint: {
+    fontFamily: "Segoe UI Semibold",
+    fontSize: 22,
+    textColor: "#FFFFFF",
+    backgroundColor: "#12181F",
+    backgroundOpacity: 90,
+    width: 540,
+    height: 120,
+    bottomOffset: 140
+  }
+};
+
 const state = reactive({
   statusText: "启动中",
   statusState: "idle",
@@ -60,6 +83,7 @@ const state = reactive({
   configMessageState: "idle",
   rules: [],
   applications: [],
+  uiSettings: createDefaultUiSettings(),
   nextId: 1,
   selectedCategory: "",
   selectedApp: "",
@@ -83,8 +107,14 @@ const activeScope = ref("global");
 const initialized = ref(false);
 const pendingApplicationPickerRequests = new Map();
 let autoSaveTimer = 0;
+let toast = null;
+let suppressNextConfigResultToast = false;
 
 export function useGestureEditorStore() {
+  if (!toast) {
+    toast = useToast();
+  }
+
   const globalRules = computed(() => getRulesForScope("global"));
   const categoryRules = computed(() => getRulesByKind("category"));
   const appRules = computed(() => getRulesByKind("app"));
@@ -141,6 +171,9 @@ export function useGestureEditorStore() {
     isRecordingHotkey,
     getGestureMnemonic,
     getActionLabel,
+    getUiSettingsSnapshot,
+    saveUiSettings,
+    resetUiSettings,
     windowOperations: WINDOW_OPERATIONS
   });
 }
@@ -156,7 +189,7 @@ function initialize() {
     state.statusText = "浏览器预览";
     state.statusState = "idle";
     state.configPath = "内置默认规则";
-    replaceConfig(DEFAULT_RULES, DEFAULT_APPLICATIONS);
+    replaceConfig(DEFAULT_RULES, DEFAULT_APPLICATIONS, DEFAULT_UI_SETTINGS);
     return;
   }
 
@@ -175,12 +208,14 @@ function handleMessage(message) {
 
   if (message.type === "rules") {
     state.configPath = message.configPath;
-    replaceConfig(message.rules ?? [], message.applications ?? []);
+    replaceConfig(message.rules ?? [], message.applications ?? [], message.uiSettings ?? DEFAULT_UI_SETTINGS);
     return;
   }
 
   if (message.type === "config-result") {
-    setMessage(message.message, message.success ? "success" : "error");
+    const notify = !suppressNextConfigResultToast || !message.success;
+    suppressNextConfigResultToast = false;
+    setMessage(message.message, message.success ? "success" : "error", { notify });
     return;
   }
 
@@ -199,9 +234,10 @@ function handleMessage(message) {
   }
 }
 
-function replaceConfig(rules, applications) {
+function replaceConfig(rules, applications, uiSettings = DEFAULT_UI_SETTINGS) {
   state.rules = rules.map((rule) => toViewRule(rule));
   state.applications = applications.map((application) => toViewApplication(application));
+  state.uiSettings = normalizeUiSettings(uiSettings);
   ensureSelection("category");
   ensureSelection("app");
 }
@@ -606,7 +642,7 @@ function addSelectedApplication(message) {
   scheduleSaveRules();
 }
 
-function saveRules() {
+function saveRules(options = {}) {
   if (autoSaveTimer) {
     clearTimeout(autoSaveTimer);
     autoSaveTimer = 0;
@@ -628,11 +664,19 @@ function saveRules() {
     return;
   }
 
-  postWebMessage({
-    type: "save-rules",
-    rules: payloadRules,
-    applications: state.applications.map(toPayloadApplication)
-  });
+  if (options.notifyResult === false) {
+    suppressNextConfigResultToast = true;
+  }
+
+  postWebMessage(
+    {
+      type: "save-rules",
+      rules: payloadRules,
+      applications: state.applications.map(toPayloadApplication),
+      uiSettings: toPayloadUiSettings(state.uiSettings)
+    },
+    { notifyPreview: options.notifyPreview !== false }
+  );
 }
 
 function scheduleSaveRules() {
@@ -660,6 +704,27 @@ function reloadRules() {
 
 function resetRules() {
   postWebMessage({ type: "reset-rules" });
+}
+
+function getUiSettingsSnapshot() {
+  return cloneUiSettings(state.uiSettings);
+}
+
+function saveUiSettings(nextSettings, options = {}) {
+  state.uiSettings = normalizeUiSettings(nextSettings);
+  saveRules({
+    notifyPreview: Boolean(options.notify),
+    notifyResult: Boolean(options.notify)
+  });
+  if (options.notify) {
+    setMessage("已保存设置。", "success");
+  }
+}
+
+function resetUiSettings() {
+  state.uiSettings = createDefaultUiSettings();
+  saveRules({ notifyPreview: false, notifyResult: false });
+  setMessage("已恢复默认设置。", "success");
 }
 
 function startRecording(target) {
@@ -768,18 +833,42 @@ function getFirstScopeName(kind) {
   return getScopeItems(kind)[0]?.name ?? "";
 }
 
-function setMessage(message, stateName = "idle") {
+function setMessage(message, stateName = "idle", options = {}) {
   state.configMessage = message;
   state.configMessageState = stateName;
+  if (options.notify !== false) {
+    showToast(message, stateName);
+  }
 }
 
-function postWebMessage(message) {
+function showToast(message, stateName = "idle") {
+  const content = String(message ?? "").trim();
+  if (!content || !toast) {
+    return;
+  }
+
+  if (stateName === "success") {
+    toast.success(content);
+    return;
+  }
+
+  if (stateName === "error") {
+    toast.error(content);
+    return;
+  }
+
+  toast.info(content);
+}
+
+function postWebMessage(message, options = {}) {
   if (window.chrome?.webview) {
     window.chrome.webview.postMessage(message);
     return;
   }
 
-  setMessage("浏览器预览中不会写入本机配置。", "idle");
+  setMessage("浏览器预览中不会写入本机配置。", "idle", {
+    notify: options.notifyPreview !== false
+  });
 }
 
 function postWebMessageSilently(message) {
@@ -898,6 +987,10 @@ function toPayloadApplication(application) {
     path: application.path.trim(),
     category: application.category.trim()
   };
+}
+
+function toPayloadUiSettings(settings) {
+  return normalizeUiSettings(settings);
 }
 
 function collectCategoryItems() {
@@ -1079,6 +1172,83 @@ function createEmptyGestureDraft() {
     actionType: "hotkey",
     windowOperation: "toggle-maximize"
   };
+}
+
+function createDefaultUiSettings() {
+  return cloneUiSettings(DEFAULT_UI_SETTINGS);
+}
+
+function cloneUiSettings(settings) {
+  const source = normalizeObjectKeys(settings);
+  return {
+    mouseTrail: normalizeMouseTrailSettings(source.mouseTrail),
+    gestureHint: normalizeGestureHintSettings(source.gestureHint)
+  };
+}
+
+function normalizeUiSettings(settings) {
+  return cloneUiSettings(settings);
+}
+
+function normalizeMouseTrailSettings(settings) {
+  settings = normalizeObjectKeys(settings);
+  const legacyOpacity = settings?.opacity;
+  const legacyThickness = settings?.thickness;
+  return {
+    inactiveColor: String(settings?.inactiveColor ?? DEFAULT_UI_SETTINGS.mouseTrail.inactiveColor).trim() || DEFAULT_UI_SETTINGS.mouseTrail.inactiveColor,
+    activeColor: String(settings?.activeColor ?? DEFAULT_UI_SETTINGS.mouseTrail.activeColor).trim() || DEFAULT_UI_SETTINGS.mouseTrail.activeColor,
+    inactiveThickness: clampFloat(settings?.inactiveThickness ?? legacyThickness, 1, 20, DEFAULT_UI_SETTINGS.mouseTrail.inactiveThickness),
+    activeThickness: clampFloat(settings?.activeThickness ?? legacyThickness, 1, 20, DEFAULT_UI_SETTINGS.mouseTrail.activeThickness),
+    thickness: clampFloat(legacyThickness ?? settings?.inactiveThickness, 1, 20, DEFAULT_UI_SETTINGS.mouseTrail.thickness),
+    inactiveOpacity: clampInteger(settings?.inactiveOpacity ?? legacyOpacity, 0, 100, DEFAULT_UI_SETTINGS.mouseTrail.inactiveOpacity),
+    activeOpacity: clampInteger(settings?.activeOpacity ?? legacyOpacity, 0, 100, DEFAULT_UI_SETTINGS.mouseTrail.activeOpacity)
+  };
+}
+
+function normalizeGestureHintSettings(settings) {
+  settings = normalizeObjectKeys(settings);
+  return {
+    fontFamily: String(settings?.fontFamily ?? DEFAULT_UI_SETTINGS.gestureHint.fontFamily).trim() || DEFAULT_UI_SETTINGS.gestureHint.fontFamily,
+    fontSize: clampFloat(settings?.fontSize, 10, 48, DEFAULT_UI_SETTINGS.gestureHint.fontSize),
+    textColor: String(settings?.textColor ?? DEFAULT_UI_SETTINGS.gestureHint.textColor).trim() || DEFAULT_UI_SETTINGS.gestureHint.textColor,
+    backgroundColor: String(settings?.backgroundColor ?? DEFAULT_UI_SETTINGS.gestureHint.backgroundColor).trim() || DEFAULT_UI_SETTINGS.gestureHint.backgroundColor,
+    backgroundOpacity: clampInteger(settings?.backgroundOpacity, 0, 100, DEFAULT_UI_SETTINGS.gestureHint.backgroundOpacity),
+    width: clampInteger(settings?.width, 240, 960, DEFAULT_UI_SETTINGS.gestureHint.width),
+    height: clampInteger(settings?.height, 80, 260, DEFAULT_UI_SETTINGS.gestureHint.height),
+    bottomOffset: clampInteger(settings?.bottomOffset, 0, 360, DEFAULT_UI_SETTINGS.gestureHint.bottomOffset)
+  };
+}
+
+function normalizeObjectKeys(source) {
+  if (!source || typeof source !== "object") {
+    return {};
+  }
+
+  const normalized = {};
+  for (const [key, value] of Object.entries(source)) {
+    const normalizedKey = key.charAt(0).toLowerCase() + key.slice(1);
+    normalized[normalizedKey] = value;
+  }
+
+  return normalized;
+}
+
+function clampInteger(value, min, max, fallback) {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed)) {
+    return fallback;
+  }
+
+  return Math.min(max, Math.max(min, parsed));
+}
+
+function clampFloat(value, min, max, fallback) {
+  const parsed = Number.parseFloat(value);
+  if (!Number.isFinite(parsed)) {
+    return fallback;
+  }
+
+  return Math.min(max, Math.max(min, parsed));
 }
 
 function toPatternText(pattern) {

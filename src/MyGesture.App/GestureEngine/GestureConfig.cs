@@ -5,6 +5,8 @@ public sealed class GestureConfig
     public List<GestureRuleConfig> Rules { get; set; } = [];
 
     public List<GestureApplicationConfig> Applications { get; set; } = [];
+
+    public GestureUiSettings UiSettings { get; set; } = new();
 }
 
 public sealed class GestureApplicationConfig

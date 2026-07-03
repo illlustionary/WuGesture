@@ -33,21 +33,21 @@ public sealed class GestureConfigStore
         }
 
         var json = File.ReadAllText(ConfigPath);
-        var config = JsonSerializer.Deserialize<GestureConfig>(json, JsonOptions) ?? new GestureConfig();
-        var rules = GestureConfigMapper.ToRules(config);
+        var config = NormalizeConfig(JsonSerializer.Deserialize<GestureConfig>(json, JsonOptions));
 
         if (config.Rules.Count == 0)
         {
-            config = GestureConfigMapper.FromRules(DefaultGestureRules.Create());
+            var defaultConfig = GestureConfigMapper.FromRules(DefaultGestureRules.Create());
+            config.Rules = defaultConfig.Rules;
             Save(config);
-            rules = GestureConfigMapper.ToRules(config);
         }
 
-        return new LoadedGestureConfig(ConfigPath, config, rules);
+        return new LoadedGestureConfig(ConfigPath, config, GestureConfigMapper.ToRules(config));
     }
 
     public LoadedGestureConfig SaveAndLoad(GestureConfig config)
     {
+        config = NormalizeConfig(config);
         var rules = GestureConfigMapper.ToRules(config);
         if (config.Rules.Count == 0)
         {
@@ -65,6 +65,7 @@ public sealed class GestureConfigStore
 
     public void Save(GestureConfig config)
     {
+        config = NormalizeConfig(config);
         var directory = Path.GetDirectoryName(ConfigPath);
         if (!string.IsNullOrEmpty(directory))
         {
@@ -72,5 +73,42 @@ public sealed class GestureConfigStore
         }
 
         File.WriteAllText(ConfigPath, JsonSerializer.Serialize(config, JsonOptions));
+    }
+
+    private static GestureConfig NormalizeConfig(GestureConfig? config)
+    {
+        config ??= new GestureConfig();
+        config.Rules ??= [];
+        config.Applications ??= [];
+        config.UiSettings ??= new GestureUiSettings();
+        config.UiSettings.MouseTrail ??= new MouseTrailUiSettings();
+        config.UiSettings.GestureHint ??= new GestureHintUiSettings();
+        NormalizeUiSettings(config.UiSettings);
+        return config;
+    }
+
+    private static void NormalizeUiSettings(GestureUiSettings settings)
+    {
+        var mouseTrail = settings.MouseTrail;
+        var legacyThickness = mouseTrail.Thickness > 0 ? mouseTrail.Thickness : 3f;
+        if (mouseTrail.InactiveThickness <= 0 ||
+            (Math.Abs(mouseTrail.InactiveThickness - 3f) < 0.001f && Math.Abs(legacyThickness - 3f) > 0.001f))
+        {
+            mouseTrail.InactiveThickness = legacyThickness;
+        }
+
+        if (mouseTrail.ActiveThickness <= 0 ||
+            (Math.Abs(mouseTrail.ActiveThickness - 3f) < 0.001f && Math.Abs(legacyThickness - 3f) > 0.001f))
+        {
+            mouseTrail.ActiveThickness = legacyThickness;
+        }
+
+        mouseTrail.Thickness = Math.Max(1f, mouseTrail.InactiveThickness);
+
+        var gestureHint = settings.GestureHint;
+        if (gestureHint.BottomOffset < 0)
+        {
+            gestureHint.BottomOffset = 140;
+        }
     }
 }

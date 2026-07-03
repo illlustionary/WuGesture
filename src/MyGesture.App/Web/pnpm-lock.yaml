@@ -20,6 +20,9 @@ importers:
       vue-router:
         specifier: ^5.1.0
         version: 5.1.0(@vue/compiler-sfc@3.5.39)(esbuild@0.25.0)(rollup@4.62.2)(vite@6.4.3(sass-embedded@1.100.0)(sass@1.100.0)(yaml@2.9.0))(vue@3.5.39)
+      vue-toastification:
+        specifier: 2.0.0-rc.5
+        version: 2.0.0-rc.5(vue@3.5.39)
     devDependencies:
       '@vitejs/plugin-vue':
         specifier: ^5.2.1
@@ -1035,6 +1038,11 @@ packages:
       vite:
         optional: true
 
+  vue-toastification@2.0.0-rc.5:
+    resolution: {integrity: sha512-q73e5jy6gucEO/U+P48hqX+/qyXDozAGmaGgLFm5tXX4wJBcVsnGp4e/iJqlm9xzHETYOilUuwOUje2Qg1JdwA==}
+    peerDependencies:
+      vue: ^3.0.2
+
   vue@3.5.39:
     resolution: {integrity: sha512-xmZCYabFGcirU8r0fTuvl/LICc1OU620rnqepaJDL/a141ZigkG7AyaxQLdqJ02ZRYzWe6YPaDHeQx7MfknQfA==}
     peerDependencies:
@@ -1873,6 +1881,10 @@ snapshots:
       - rollup
       - unloader
       - webpack
+
+  vue-toastification@2.0.0-rc.5(vue@3.5.39):
+    dependencies:
+      vue: 3.5.39
 
   vue@3.5.39:
     dependencies:

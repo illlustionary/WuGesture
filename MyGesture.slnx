@@ -2,7 +2,4 @@
   <Folder Name="/src/">
     <Project Path="src/MyGesture.App/MyGesture.App.csproj" />
   </Folder>
-  <Folder Name="/tests/">
-    <Project Path="tests/MyGesture.App.Tests/MyGesture.App.Tests.csproj" />
-  </Folder>
 </Solution>

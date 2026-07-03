@@ -17,6 +17,7 @@ public static class GestureConfigMapper
     {
         return new GestureConfig
         {
+            UiSettings = new GestureUiSettings(),
             Rules = rules.Select(rule => new GestureRuleConfig
             {
                 Scope = NormalizeScope(rule.Scope),
