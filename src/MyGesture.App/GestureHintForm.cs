@@ -9,6 +9,8 @@ public sealed class GestureHintForm : Form
     private const int WsExNoActivate = 0x08000000;
     private const int WsExToolWindow = 0x00000080;
     private const float CornerRadius = 28f;
+    private const int HorizontalPadding = 28;
+    private const int MinimumWidth = 240;
     private const double VisibleOpacity = 0.96;
     private const double FadeStep = 0.08;
 
@@ -81,6 +83,7 @@ public sealed class GestureHintForm : Form
         fadeTimer.Stop();
         Opacity = VisibleOpacity;
         title = string.IsNullOrWhiteSpace(ruleName) ? "已触发" : ruleName;
+        UpdateAdaptiveWidth();
         ShowOverlay();
 
         if (autoHide)
@@ -104,13 +107,14 @@ public sealed class GestureHintForm : Form
         backgroundBrush = new SolidBrush(backgroundColor);
         borderPen = new Pen(Color.FromArgb(90, 255, 255, 255), 1.1f);
 
-        Width = Math.Max(240, uiSettings.Width);
+        Width = Math.Max(MinimumWidth, uiSettings.Width);
         Height = Math.Max(72, uiSettings.Height);
         // WinForms form background does not accept alpha in BackColor.
         BackColor = Color.FromArgb(backgroundColor.R, backgroundColor.G, backgroundColor.B);
         ForeColor = Color.White;
 
         UpdateWindowRegion();
+        UpdateAdaptiveWidth();
 
         if (IsHandleCreated)
         {
@@ -218,6 +222,25 @@ public sealed class GestureHintForm : Form
         var bottomOffset = Math.Max(0, uiSettings.BottomOffset);
         Left = area.Left + (area.Width - Width) / 2;
         Top = area.Bottom - Height - bottomOffset;
+    }
+
+    private void UpdateAdaptiveWidth()
+    {
+        if (!uiSettings.AutoWidth || titleFont is null)
+        {
+            return;
+        }
+
+        var area = Screen.PrimaryScreen?.WorkingArea ?? Screen.FromControl(this).WorkingArea;
+        var maxWidth = Math.Max(MinimumWidth, area.Width - 80);
+        var measuredSize = TextRenderer.MeasureText(
+            string.IsNullOrWhiteSpace(title) ? "已触发" : title,
+            titleFont,
+            new Size(maxWidth, Height),
+            TextFormatFlags.SingleLine | TextFormatFlags.NoPadding);
+
+        Width = Math.Min(maxWidth, Math.Max(MinimumWidth, measuredSize.Width + HorizontalPadding * 2));
+        UpdateWindowRegion();
     }
 
     protected override void Dispose(bool disposing)
