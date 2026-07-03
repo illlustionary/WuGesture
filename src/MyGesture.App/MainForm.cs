@@ -306,7 +306,22 @@ public sealed class MainForm : Form
                 operation = rule.Action.Operation,
                 amount = rule.Action.Amount
             }).ToArray(),
-            edgeActions = loadedConfig.Config.EdgeActions,
+            edgeActions = loadedConfig.Config.EdgeActions.Select(action => new
+            {
+                enabled = action.Enabled,
+                triggerType = action.TriggerType,
+                location = action.Location,
+                wheelDirection = action.WheelDirection,
+                frictionCount = action.FrictionCount,
+                actionName = action.ActionName,
+                action = new
+                {
+                    type = string.IsNullOrWhiteSpace(action.Action.Type) ? "hotkey" : action.Action.Type,
+                    keys = action.Action.Keys,
+                    operation = action.Action.Operation,
+                    amount = action.Action.Amount
+                }
+            }).ToArray(),
             applications = loadedConfig.Config.Applications.Select(application => new
             {
                 name = application.Name,

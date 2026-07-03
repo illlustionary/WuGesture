@@ -157,6 +157,7 @@ let autoSaveTimer = 0;
 let pendingAutoSaveOptions = {};
 let toast = null;
 let suppressNextConfigResultToast = false;
+let preserveLocalEdgeActions = false;
 
 export function useGestureEditorStore() {
   if (!toast) {
@@ -261,13 +262,26 @@ function handleMessage(message) {
 
   if (message.type === "rules") {
     state.configPath = message.configPath;
-    replaceConfig(message.rules ?? [], message.applications ?? [], message.uiSettings ?? DEFAULT_UI_SETTINGS, message.edgeActions ?? []);
+    replaceConfig(
+      message.rules ?? [],
+      message.applications ?? [],
+      message.uiSettings ?? DEFAULT_UI_SETTINGS,
+      message.edgeActions ?? [],
+      { preserveEdgeActions: preserveLocalEdgeActions }
+    );
     return;
   }
 
   if (message.type === "config-result") {
     const notify = !suppressNextConfigResultToast || !message.success;
     suppressNextConfigResultToast = false;
+    if (message.success) {
+      window.setTimeout(() => {
+        preserveLocalEdgeActions = false;
+      }, 500);
+    } else {
+      preserveLocalEdgeActions = false;
+    }
     setMessage(message.message, message.success ? "success" : "error", { notify });
     return;
   }
@@ -287,10 +301,12 @@ function handleMessage(message) {
   }
 }
 
-function replaceConfig(rules, applications, uiSettings = DEFAULT_UI_SETTINGS, edgeActions = []) {
+function replaceConfig(rules, applications, uiSettings = DEFAULT_UI_SETTINGS, edgeActions = [], options = {}) {
   state.rules = rules.map((rule) => toViewRule(rule));
   state.applications = applications.map((application) => toViewApplication(application));
-  state.edgeActions = normalizeEdgeActions(edgeActions);
+  if (!options.preserveEdgeActions) {
+    state.edgeActions = normalizeEdgeActions(edgeActions);
+  }
   state.uiSettings = normalizeUiSettings(uiSettings);
   ensureSelection("category");
   ensureSelection("app");
@@ -759,10 +775,12 @@ function scheduleSaveRules(options = {}) {
 }
 
 function reloadRules() {
+  preserveLocalEdgeActions = false;
   postWebMessage({ type: "reload-rules" });
 }
 
 function resetRules() {
+  preserveLocalEdgeActions = false;
   postWebMessage({ type: "reset-rules" });
 }
 
@@ -792,6 +810,7 @@ function updateEdgeAction(action, patch = {}, options = {}) {
     return;
   }
 
+  preserveLocalEdgeActions = true;
   Object.assign(action, patch);
   normalizeEdgeActionInPlace(action);
   scheduleSaveRules(options);
