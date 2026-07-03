@@ -6,6 +6,8 @@ public sealed class GestureConfig
 
     public List<GestureApplicationConfig> Applications { get; set; } = [];
 
+    public List<EdgeActionConfig> EdgeActions { get; set; } = [];
+
     public GestureUiSettings UiSettings { get; set; } = new();
 }
 
@@ -40,6 +42,25 @@ public sealed class GestureActionConfig
     public List<string> Keys { get; set; } = [];
 
     public string Operation { get; set; } = "";
+
+    public int Amount { get; set; } = 5;
+}
+
+public sealed class EdgeActionConfig
+{
+    public bool Enabled { get; set; } = true;
+
+    public string TriggerType { get; set; } = "corner";
+
+    public string Location { get; set; } = "top-left";
+
+    public string WheelDirection { get; set; } = "";
+
+    public int FrictionCount { get; set; } = 4;
+
+    public string ActionName { get; set; } = "";
+
+    public GestureActionConfig Action { get; set; } = new();
 }
 
 public sealed record LoadedGestureConfig(

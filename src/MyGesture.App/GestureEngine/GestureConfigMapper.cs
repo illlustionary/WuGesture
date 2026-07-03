@@ -47,62 +47,53 @@ public static class GestureConfigMapper
             return null;
         }
 
-        var actionType = config.Action.Type.Trim();
+        var action = ToAction(config.Action);
+        if (action is null)
+        {
+            return null;
+        }
+
+        return new GestureRule(
+            pattern,
+            NormalizeScope(config.Scope),
+            string.IsNullOrWhiteSpace(config.ActionName) ? GetDefaultActionName(config.Action, action) : config.ActionName,
+            action,
+            ParseMouseButton(config.MouseButton));
+    }
+
+    public static GestureAction? ToAction(GestureActionConfig config)
+    {
+        var actionType = config.Type.Trim();
         if (string.Equals(actionType, "hotkey", StringComparison.OrdinalIgnoreCase))
         {
-            return ToHotkeyRule(config, pattern);
+            return ToHotkeyAction(config);
         }
 
         if (string.Equals(actionType, "window", StringComparison.OrdinalIgnoreCase))
         {
-            return ToWindowRule(config, pattern);
+            return TryParseWindowOperation(config.Operation, out var operation)
+                ? new WindowControlAction(operation)
+                : null;
+        }
+
+        if (string.Equals(actionType, "volume", StringComparison.OrdinalIgnoreCase))
+        {
+            return TryParseVolumeOperation(config.Operation, out var operation)
+                ? new VolumeControlAction(operation, NormalizeAmount(config.Amount))
+                : null;
+        }
+
+        if (string.Equals(actionType, "brightness", StringComparison.OrdinalIgnoreCase))
+        {
+            return TryParseBrightnessOperation(config.Operation, out var operation)
+                ? new BrightnessControlAction(operation, NormalizeAmount(config.Amount))
+                : null;
         }
 
         return null;
     }
 
-    private static GestureRule? ToHotkeyRule(GestureRuleConfig config, IReadOnlyList<GestureDirection> pattern)
-    {
-        var keys = new List<Keys>();
-        foreach (var keyName in config.Action.Keys)
-        {
-            if (!TryParseKey(keyName, out var key))
-            {
-                return null;
-            }
-
-            keys.Add(key);
-        }
-
-        if (keys.Count == 0)
-        {
-            return null;
-        }
-
-        return new GestureRule(
-            pattern,
-            NormalizeScope(config.Scope),
-            string.IsNullOrWhiteSpace(config.ActionName) ? string.Join(" + ", config.Action.Keys) : config.ActionName,
-            new HotkeyAction(keys),
-            ParseMouseButton(config.MouseButton));
-    }
-
-    private static GestureRule? ToWindowRule(GestureRuleConfig config, IReadOnlyList<GestureDirection> pattern)
-    {
-        if (!TryParseWindowOperation(config.Action.Operation, out var operation))
-        {
-            return null;
-        }
-
-        return new GestureRule(
-            pattern,
-            NormalizeScope(config.Scope),
-            string.IsNullOrWhiteSpace(config.ActionName) ? ToConfigOperationName(operation) : config.ActionName,
-            new WindowControlAction(operation),
-            ParseMouseButton(config.MouseButton));
-    }
-
-    private static GestureActionConfig ToConfigAction(GestureAction action)
+    public static GestureActionConfig ToConfigAction(GestureAction action)
     {
         return action switch
         {
@@ -116,7 +107,47 @@ public static class GestureConfigMapper
                 Type = "window",
                 Operation = ToConfigOperationName(window.Operation)
             },
+            VolumeControlAction volume => new GestureActionConfig
+            {
+                Type = "volume",
+                Operation = ToConfigOperationName(volume.Operation),
+                Amount = NormalizeAmount(volume.Amount)
+            },
+            BrightnessControlAction brightness => new GestureActionConfig
+            {
+                Type = "brightness",
+                Operation = ToConfigOperationName(brightness.Operation),
+                Amount = NormalizeAmount(brightness.Amount)
+            },
             _ => new GestureActionConfig()
+        };
+    }
+
+    private static GestureAction? ToHotkeyAction(GestureActionConfig config)
+    {
+        var keys = new List<Keys>();
+        foreach (var keyName in config.Keys)
+        {
+            if (!TryParseKey(keyName, out var key))
+            {
+                return null;
+            }
+
+            keys.Add(key);
+        }
+
+        return keys.Count == 0 ? null : new HotkeyAction(keys);
+    }
+
+    private static string GetDefaultActionName(GestureActionConfig config, GestureAction action)
+    {
+        return action switch
+        {
+            HotkeyAction => string.Join(" + ", config.Keys),
+            WindowControlAction window => ToConfigOperationName(window.Operation),
+            VolumeControlAction volume => $"volume-{ToConfigOperationName(volume.Operation)}",
+            BrightnessControlAction brightness => $"brightness-{ToConfigOperationName(brightness.Operation)}",
+            _ => ""
         };
     }
 
@@ -200,6 +231,60 @@ public static class GestureConfigMapper
         return false;
     }
 
+    private static bool TryParseVolumeOperation(string value, out VolumeControlOperation operation)
+    {
+        operation = VolumeControlOperation.Increase;
+        var normalized = value.Trim().Replace("-", "", StringComparison.Ordinal).Replace("_", "", StringComparison.Ordinal);
+
+        if (normalized.Equals("increase", StringComparison.OrdinalIgnoreCase) ||
+            normalized.Equals("up", StringComparison.OrdinalIgnoreCase) ||
+            normalized.Equals("plus", StringComparison.OrdinalIgnoreCase))
+        {
+            operation = VolumeControlOperation.Increase;
+            return true;
+        }
+
+        if (normalized.Equals("decrease", StringComparison.OrdinalIgnoreCase) ||
+            normalized.Equals("down", StringComparison.OrdinalIgnoreCase) ||
+            normalized.Equals("minus", StringComparison.OrdinalIgnoreCase))
+        {
+            operation = VolumeControlOperation.Decrease;
+            return true;
+        }
+
+        if (normalized.Equals("mute", StringComparison.OrdinalIgnoreCase))
+        {
+            operation = VolumeControlOperation.Mute;
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool TryParseBrightnessOperation(string value, out BrightnessControlOperation operation)
+    {
+        operation = BrightnessControlOperation.Increase;
+        var normalized = value.Trim().Replace("-", "", StringComparison.Ordinal).Replace("_", "", StringComparison.Ordinal);
+
+        if (normalized.Equals("increase", StringComparison.OrdinalIgnoreCase) ||
+            normalized.Equals("up", StringComparison.OrdinalIgnoreCase) ||
+            normalized.Equals("plus", StringComparison.OrdinalIgnoreCase))
+        {
+            operation = BrightnessControlOperation.Increase;
+            return true;
+        }
+
+        if (normalized.Equals("decrease", StringComparison.OrdinalIgnoreCase) ||
+            normalized.Equals("down", StringComparison.OrdinalIgnoreCase) ||
+            normalized.Equals("minus", StringComparison.OrdinalIgnoreCase))
+        {
+            operation = BrightnessControlOperation.Decrease;
+            return true;
+        }
+
+        return false;
+    }
+
     private static string ToConfigOperationName(WindowControlOperation operation)
     {
         return operation switch
@@ -210,6 +295,32 @@ public static class GestureConfigMapper
             WindowControlOperation.Close => "close",
             _ => "toggle-maximize"
         };
+    }
+
+    private static string ToConfigOperationName(VolumeControlOperation operation)
+    {
+        return operation switch
+        {
+            VolumeControlOperation.Increase => "increase",
+            VolumeControlOperation.Decrease => "decrease",
+            VolumeControlOperation.Mute => "mute",
+            _ => "increase"
+        };
+    }
+
+    private static string ToConfigOperationName(BrightnessControlOperation operation)
+    {
+        return operation switch
+        {
+            BrightnessControlOperation.Increase => "increase",
+            BrightnessControlOperation.Decrease => "decrease",
+            _ => "increase"
+        };
+    }
+
+    private static int NormalizeAmount(int amount)
+    {
+        return Math.Min(100, Math.Max(1, amount <= 0 ? 5 : amount));
     }
 
     private static string ToConfigKeyName(Keys key)

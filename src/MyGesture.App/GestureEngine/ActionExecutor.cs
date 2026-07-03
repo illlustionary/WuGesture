@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Drawing;
+using System.Management;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
@@ -32,6 +33,12 @@ public sealed class ActionExecutor
                 break;
             case WindowControlAction window:
                 ExecuteWindowControl(window, targetWindow);
+                break;
+            case VolumeControlAction volume:
+                ExecuteVolumeControl(volume);
+                break;
+            case BrightnessControlAction brightness:
+                ExecuteBrightnessControl(brightness);
                 break;
         }
     }
@@ -85,6 +92,69 @@ public sealed class ActionExecutor
                 PostMessage(targetWindow, WmClose, IntPtr.Zero, IntPtr.Zero);
                 break;
         }
+    }
+
+    private static void ExecuteVolumeControl(VolumeControlAction action)
+    {
+        var key = action.Operation switch
+        {
+            VolumeControlOperation.Increase => Keys.VolumeUp,
+            VolumeControlOperation.Decrease => Keys.VolumeDown,
+            VolumeControlOperation.Mute => Keys.VolumeMute,
+            _ => Keys.None
+        };
+
+        if (key == Keys.None)
+        {
+            return;
+        }
+
+        var repeat = action.Operation == VolumeControlOperation.Mute ? 1 : Math.Max(1, action.Amount);
+        for (var i = 0; i < repeat; i++)
+        {
+            ExecuteHotkey(new HotkeyAction([key]));
+        }
+    }
+
+    private static void ExecuteBrightnessControl(BrightnessControlAction action)
+    {
+        var current = GetCurrentBrightness();
+        var delta = Math.Max(1, action.Amount);
+        var next = action.Operation switch
+        {
+            BrightnessControlOperation.Increase => current + delta,
+            BrightnessControlOperation.Decrease => current - delta,
+            _ => current
+        };
+
+        SetBrightness(Math.Min(100, Math.Max(0, next)));
+    }
+
+    private static int GetCurrentBrightness()
+    {
+        using var searcher = new ManagementObjectSearcher(
+            "root\\WMI",
+            "SELECT CurrentBrightness FROM WmiMonitorBrightness");
+        foreach (ManagementObject item in searcher.Get())
+        {
+            return Convert.ToInt32(item["CurrentBrightness"]);
+        }
+
+        throw new InvalidOperationException("当前显示器不支持亮度读取。");
+    }
+
+    private static void SetBrightness(int brightness)
+    {
+        using var searcher = new ManagementObjectSearcher(
+            "root\\WMI",
+            "SELECT * FROM WmiMonitorBrightnessMethods");
+        foreach (ManagementObject item in searcher.Get())
+        {
+            item.InvokeMethod("WmiSetBrightness", [1, brightness]);
+            return;
+        }
+
+        throw new InvalidOperationException("当前显示器不支持亮度控制。");
     }
 
     private static IntPtr ResolveWindowTarget(IntPtr fallbackWindow)

@@ -15,6 +15,7 @@ public sealed class MainForm : Form
     private ConfiguredScopeContextProvider? scopeContextProvider;
     private LoadedGestureConfig? loadedConfig;
     private GestureService? gestureService;
+    private EdgeActionService? edgeActionService;
     private MouseTrailForm? mouseTrailForm;
     private bool startMaximized;
     private bool isClosing;
@@ -45,6 +46,7 @@ public sealed class MainForm : Form
             isClosing = true;
             SaveWindowState();
             gestureService?.Dispose();
+            edgeActionService?.Dispose();
             hotkeyRecorder.Dispose();
             gestureHintForm.Hide();
             DisposeMouseTrailForm();
@@ -66,6 +68,7 @@ public sealed class MainForm : Form
         loadedConfig = configStore.LoadOrCreate();
         scopeContextProvider = new ConfiguredScopeContextProvider(loadedConfig.Config.Applications);
         gestureService = new GestureService(new GestureMatcher(loadedConfig.Rules), scopeContextProvider);
+        edgeActionService = new EdgeActionService(loadedConfig.Config.EdgeActions);
         ApplyUiSettings(loadedConfig.Config.UiSettings);
 
         await webView.EnsureCoreWebView2Async();
@@ -87,8 +90,10 @@ public sealed class MainForm : Form
         gestureService.GestureRecordingCompleted += OnGestureRecordingCompleted;
         gestureService.GestureActionFailed += OnGestureActionFailed;
         gestureService.GestureProgressChanged += OnGestureProgressChanged;
+        edgeActionService.EdgeActionFailed += OnEdgeActionFailed;
         hotkeyRecorder.HotkeyRecorded += OnHotkeyRecorded;
         gestureService.Start();
+        edgeActionService.Start();
     }
 
     private void OnGesturePreviewMatched(object? sender, GestureRecognizedEventArgs e)
@@ -199,6 +204,29 @@ public sealed class MainForm : Form
         webView.CoreWebView2?.PostWebMessageAsJson(payload);
     }
 
+    private void OnEdgeActionFailed(object? sender, EdgeActionFailedEventArgs e)
+    {
+        if (!CanUseUi())
+        {
+            return;
+        }
+
+        if (InvokeRequired)
+        {
+            BeginInvokeSafe(() => OnEdgeActionFailed(sender, e));
+            return;
+        }
+
+        var payload = JsonSerializer.Serialize(new
+        {
+            type = "edge-action-failed",
+            action = e.ActionName,
+            error = e.Exception.Message
+        });
+
+        webView.CoreWebView2?.PostWebMessageAsJson(payload);
+    }
+
     private void OnGestureProgressChanged(object? sender, GestureProgressEventArgs e)
     {
         if (!CanUseUi())
@@ -275,8 +303,10 @@ public sealed class MainForm : Form
                 actionName = rule.ActionName,
                 actionType = string.IsNullOrWhiteSpace(rule.Action.Type) ? "hotkey" : rule.Action.Type,
                 keys = rule.Action.Keys,
-                operation = rule.Action.Operation
+                operation = rule.Action.Operation,
+                amount = rule.Action.Amount
             }).ToArray(),
+            edgeActions = loadedConfig.Config.EdgeActions,
             applications = loadedConfig.Config.Applications.Select(application => new
             {
                 name = application.Name,
@@ -368,6 +398,7 @@ public sealed class MainForm : Form
         {
             var message = JsonSerializer.Deserialize<SetGesturePausedWebMessage>(json, WebMessageJsonOptions);
             gestureService?.SetPaused(message?.Paused ?? false);
+            edgeActionService?.SetPaused(message?.Paused ?? false);
             if (message?.Paused == true)
             {
                 gestureHintForm.HideResult();
@@ -515,12 +546,14 @@ public sealed class MainForm : Form
             {
                 Rules = message?.Rules ?? [],
                 Applications = message?.Applications ?? [],
+                EdgeActions = message?.EdgeActions ?? [],
                 UiSettings = uiSettings
             };
 
             loadedConfig = configStore.SaveAndLoad(config);
             scopeContextProvider?.UpdateApplications(loadedConfig.Config.Applications);
             gestureService?.UpdateMatcher(new GestureMatcher(loadedConfig.Rules));
+            edgeActionService?.UpdateActions(loadedConfig.Config.EdgeActions);
             ApplyUiSettings(loadedConfig.Config.UiSettings);
 
             PostRules();
@@ -539,6 +572,7 @@ public sealed class MainForm : Form
             loadedConfig = configStore.LoadOrCreate();
             scopeContextProvider?.UpdateApplications(loadedConfig.Config.Applications);
             gestureService?.UpdateMatcher(new GestureMatcher(loadedConfig.Rules));
+            edgeActionService?.UpdateActions(loadedConfig.Config.EdgeActions);
             ApplyUiSettings(loadedConfig.Config.UiSettings);
 
             PostRules();
@@ -557,6 +591,7 @@ public sealed class MainForm : Form
             loadedConfig = configStore.ResetToDefaults();
             scopeContextProvider?.UpdateApplications(loadedConfig.Config.Applications);
             gestureService?.UpdateMatcher(new GestureMatcher(loadedConfig.Rules));
+            edgeActionService?.UpdateActions(loadedConfig.Config.EdgeActions);
             ApplyUiSettings(loadedConfig.Config.UiSettings);
 
             PostRules();
@@ -761,6 +796,8 @@ public sealed class MainForm : Form
         public List<GestureRuleConfig> Rules { get; set; } = [];
 
         public List<GestureApplicationConfig> Applications { get; set; } = [];
+
+        public List<EdgeActionConfig> EdgeActions { get; set; } = [];
 
         public GestureUiSettings UiSettings { get; set; } = new();
     }

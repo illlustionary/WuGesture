@@ -13,3 +13,18 @@ public sealed class MouseHookEventArgs : EventArgs
 
     public bool Handled { get; set; }
 }
+
+public sealed class MouseWheelHookEventArgs : EventArgs
+{
+    public MouseWheelHookEventArgs(Point location, int delta)
+    {
+        Location = location;
+        Delta = delta;
+    }
+
+    public Point Location { get; }
+
+    public int Delta { get; }
+
+    public bool Handled { get; set; }
+}

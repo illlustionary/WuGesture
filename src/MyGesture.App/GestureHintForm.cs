@@ -8,10 +8,8 @@ public sealed class GestureHintForm : Form
 {
     private const int WsExNoActivate = 0x08000000;
     private const int WsExToolWindow = 0x00000080;
-    private const float CornerRadius = 28f;
     private const int HorizontalPadding = 28;
     private const int MinimumWidth = 240;
-    private const double VisibleOpacity = 0.96;
     private const double FadeStep = 0.08;
 
     private readonly System.Windows.Forms.Timer hideTimer = new();
@@ -46,7 +44,7 @@ public sealed class GestureHintForm : Form
         StartPosition = FormStartPosition.Manual;
         BackColor = Color.FromArgb(18, 24, 31);
         ForeColor = Color.White;
-        Opacity = VisibleOpacity;
+        Opacity = GetTargetOpacity();
         Width = 540;
         Height = 120;
         DoubleBuffered = true;
@@ -81,7 +79,7 @@ public sealed class GestureHintForm : Form
 
         hideTimer.Stop();
         fadeTimer.Stop();
-        Opacity = VisibleOpacity;
+        Opacity = GetTargetOpacity();
         title = string.IsNullOrWhiteSpace(ruleName) ? "已触发" : ruleName;
         UpdateAdaptiveWidth();
         ShowOverlay();
@@ -99,19 +97,17 @@ public sealed class GestureHintForm : Form
         DisposeBrushes();
 
         var baseBackgroundColor = GestureColorParser.Parse(uiSettings.BackgroundColor, Color.FromArgb(18, 24, 31));
-        var backgroundAlpha = ClampOpacity(uiSettings.BackgroundOpacity);
-        var backgroundColor = Color.FromArgb(backgroundAlpha, baseBackgroundColor.R, baseBackgroundColor.G, baseBackgroundColor.B);
+        var backgroundColor = Color.FromArgb(255, baseBackgroundColor.R, baseBackgroundColor.G, baseBackgroundColor.B);
         var textColor = GestureColorParser.Parse(uiSettings.TextColor, Color.White);
         titleFont = CreateFont(uiSettings.FontFamily, uiSettings.FontSize);
         textBrush = new SolidBrush(textColor);
         backgroundBrush = new SolidBrush(backgroundColor);
         borderPen = new Pen(Color.FromArgb(90, 255, 255, 255), 1.1f);
 
-        Width = Math.Max(MinimumWidth, uiSettings.Width);
-        Height = Math.Max(72, uiSettings.Height);
-        // WinForms form background does not accept alpha in BackColor.
+        ApplyPercentSize();
         BackColor = Color.FromArgb(backgroundColor.R, backgroundColor.G, backgroundColor.B);
         ForeColor = Color.White;
+        Opacity = GetTargetOpacity();
 
         UpdateWindowRegion();
         UpdateAdaptiveWidth();
@@ -139,7 +135,7 @@ public sealed class GestureHintForm : Form
         hideTimer.Stop();
         fadeTimer.Stop();
         Hide();
-        Opacity = VisibleOpacity;
+        Opacity = GetTargetOpacity();
     }
 
     public void Preload()
@@ -155,7 +151,7 @@ public sealed class GestureHintForm : Form
         Show();
         Refresh();
         Hide();
-        Opacity = VisibleOpacity;
+        Opacity = GetTargetOpacity();
     }
 
     private void ShowOverlay()
@@ -188,7 +184,7 @@ public sealed class GestureHintForm : Form
 
         if (wasHidden)
         {
-            Opacity = VisibleOpacity;
+            Opacity = GetTargetOpacity();
         }
     }
 
@@ -208,20 +204,32 @@ public sealed class GestureHintForm : Form
         var bounds = ClientRectangle;
         bounds.Inflate(-1, -1);
 
-        using var path = RoundedRect(bounds, CornerRadius);
+        using var path = RoundedRect(bounds, GetCornerRadius());
         graphics.FillPath(backgroundBrush!, path);
         graphics.DrawPath(borderPen!, path);
 
-        var titleRect = new RectangleF(28, 0, Width - 56, Height);
-        graphics.DrawString(title, titleFont!, textBrush!, titleRect, centerFormat);
+        var titleRect = new RectangleF(HorizontalPadding, 0, Width - HorizontalPadding * 2, Height);
+        using var format = CreateTitleFormat();
+        graphics.DrawString(title, titleFont!, textBrush!, titleRect, format);
     }
 
     private void MoveToBottomCenter()
     {
         var area = Screen.PrimaryScreen?.WorkingArea ?? Screen.FromControl(this).WorkingArea;
-        var bottomOffset = Math.Max(0, uiSettings.BottomOffset);
+        var bottomOffset = ResolvePercent(area.Height, uiSettings.BottomOffsetPercent, 0, area.Height);
         Left = area.Left + (area.Width - Width) / 2;
         Top = area.Bottom - Height - bottomOffset;
+    }
+
+    private void ApplyPercentSize()
+    {
+        var area = Screen.PrimaryScreen?.WorkingArea ?? Screen.FromControl(this).WorkingArea;
+        if (!uiSettings.AutoWidth)
+        {
+            Width = Math.Max(MinimumWidth, ResolvePercent(area.Width, uiSettings.WidthPercent, MinimumWidth, area.Width));
+        }
+
+        Height = Math.Max(72, ResolvePercent(area.Height, uiSettings.HeightPercent, 72, area.Height));
     }
 
     private void UpdateAdaptiveWidth()
@@ -232,15 +240,38 @@ public sealed class GestureHintForm : Form
         }
 
         var area = Screen.PrimaryScreen?.WorkingArea ?? Screen.FromControl(this).WorkingArea;
-        var maxWidth = Math.Max(MinimumWidth, area.Width - 80);
-        var measuredSize = TextRenderer.MeasureText(
-            string.IsNullOrWhiteSpace(title) ? "已触发" : title,
-            titleFont,
-            new Size(maxWidth, Height),
-            TextFormatFlags.SingleLine | TextFormatFlags.NoPadding);
-
-        Width = Math.Min(maxWidth, Math.Max(MinimumWidth, measuredSize.Width + HorizontalPadding * 2));
+        var maxWidth = Math.Max(MinimumWidth, area.Width - 24);
+        var measuredWidth = MeasureTitleWidth(string.IsNullOrWhiteSpace(title) ? "已触发" : title);
+        Width = Math.Min(maxWidth, Math.Max(MinimumWidth, measuredWidth + HorizontalPadding * 2));
         UpdateWindowRegion();
+    }
+
+    private int MeasureTitleWidth(string text)
+    {
+        using var graphics = CreateGraphics();
+        using var format = CreateTitleFormat();
+        var measuredSize = graphics.MeasureString(text, titleFont!, int.MaxValue, format);
+        return (int)Math.Ceiling(measuredSize.Width) + 8;
+    }
+
+    private StringFormat CreateTitleFormat()
+    {
+        return new StringFormat(centerFormat)
+        {
+            Trimming = uiSettings.AutoWidth ? StringTrimming.None : StringTrimming.EllipsisCharacter,
+            FormatFlags = StringFormatFlags.NoWrap | StringFormatFlags.NoClip
+        };
+    }
+
+    private double GetTargetOpacity()
+    {
+        return Math.Max(0.05d, Math.Min(1d, uiSettings.BackgroundOpacity / 100d));
+    }
+
+    private static int ResolvePercent(int size, int percent, int min, int max)
+    {
+        var value = (int)Math.Round(size * Math.Max(0, percent) / 100d);
+        return Math.Max(min, Math.Min(max, value));
     }
 
     protected override void Dispose(bool disposing)
@@ -281,7 +312,7 @@ public sealed class GestureHintForm : Form
 
         fadeTimer.Stop();
         Hide();
-        Opacity = VisibleOpacity;
+        Opacity = GetTargetOpacity();
     }
 
     protected override void OnSizeChanged(EventArgs e)
@@ -308,9 +339,14 @@ public sealed class GestureHintForm : Form
             return;
         }
 
-        using var path = RoundedRect(new Rectangle(0, 0, Width, Height), CornerRadius);
+        using var path = RoundedRect(new Rectangle(0, 0, Width, Height), GetCornerRadius());
         Region?.Dispose();
         Region = new Region(path);
+    }
+
+    private float GetCornerRadius()
+    {
+        return Math.Max(0f, Math.Min(Math.Min(Width, Height) / 2f, uiSettings.CornerRadius));
     }
 
     private static GraphicsPath RoundedRect(Rectangle rect, float radius)
@@ -343,11 +379,6 @@ public sealed class GestureHintForm : Form
         {
             return new Font("Segoe UI Semibold", Math.Max(8f, resolvedSize), FontStyle.Bold);
         }
-    }
-
-    private static int ClampOpacity(int value)
-    {
-        return Math.Max(0, Math.Min(255, (int)Math.Round(value * 255d / 100d)));
     }
 
     private void DisposeBrushes()

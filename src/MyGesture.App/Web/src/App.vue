@@ -10,7 +10,8 @@ const router = useRouter()
 const tabs = [
   { to: '/global', label: '全局' },
   { to: '/category', label: '分类' },
-  { to: '/app', label: '程序' }
+  { to: '/app', label: '程序' },
+  { to: '/edge', label: '边缘操作' }
 ]
 
 editor.initialize()
@@ -93,6 +94,8 @@ function openSettingsPage() {
       :is-recording-gesture="editor.state.gestureRecordingActive"
       :get-gesture-mnemonic="editor.getGestureMnemonic"
       :window-operations="editor.windowOperations"
+      :volume-operations="editor.volumeOperations"
+      :brightness-operations="editor.brightnessOperations"
       @close="editor.closeGestureEditor"
       @persist="editor.persistGestureEditor"
       @record="editor.startGestureRecording"

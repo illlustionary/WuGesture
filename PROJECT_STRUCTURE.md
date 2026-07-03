@@ -11,8 +11,9 @@
 - 原生后端负责全局鼠标钩子、手势识别、规则匹配和动作执行。
 - WebView2 前端负责配置界面，当前是独立的 Vue3 + Vite 工程，构建产物由桌面宿主加载。
 - 手势使用 8 个方向。
-- 动作当前支持快捷键和窗口控制；快捷键通过 `SendInput` 执行，窗口控制通过 Win32 窗口 API 执行。
+- 动作当前支持快捷键、窗口控制、音量控制和亮度控制；快捷键和音量键通过 `SendInput` 执行，窗口控制通过 Win32 窗口 API 执行，亮度控制通过 WMI 执行。
 - 规则当前支持 `global`、`category` 和 `app` 作用域，并按 `app > category > global` 优先级匹配。
+- 边缘操作是独立的全局配置，支持触发角、摩擦边和鼠标滚动边。
 
 ## 根目录
 
@@ -77,12 +78,13 @@ src\MyGesture.App\GestureEngine
 - `MouseHook.cs`：低级全局鼠标钩子。
 - `KeyboardShortcutRecorder.cs`：低级键盘 hook，用于配置界面录制快捷键并吞掉录制期间的原生键盘事件。
 - `GestureService.cs`：跟踪右键和中键轨迹生命周期，调用识别器、匹配器和执行器，并向 UI 发送事件；也支持录制会话，把识别结果回传给前端。
+- `EdgeActionService.cs`：监听鼠标移动和滚轮，处理屏幕四角触发、四角摩擦计数和四边滚轮触发；滚轮边命中时会吞掉原始滚轮事件。
 - `GestureRecognizer.cs`：把鼠标轨迹转换为稳定的 8 方向模式。
 - `GestureMatcher.cs`：将识别出的鼠标键和方向模式与已加载规则进行匹配，并按作用域优先级选择命中项。
 - `GestureScopeContext.cs`：当前前台窗口的 app/category 上下文模型。
 - `ForegroundWindowScopeContextProvider.cs`：读取前台窗口进程名。
 - `ConfiguredScopeContextProvider.cs`：用配置里的应用程序列表把前台进程名映射到分类，供作用域匹配使用。
-- `ActionExecutor.cs`：按动作类型执行命令；快捷键通过 Win32 `SendInput` 执行，窗口控制通过 `ShowWindow`、`SetWindowPos` 和窗口消息执行。
+- `ActionExecutor.cs`：按动作类型执行命令；快捷键和音量键通过 Win32 `SendInput` 执行，窗口控制通过 `ShowWindow`、`SetWindowPos` 和窗口消息执行，亮度通过 `WmiMonitorBrightnessMethods` 执行。
 - `MouseInput.cs`：当移动距离太小，不足以构成手势时，重放一次普通右键或中键。
 - `GestureDirection.cs`：8 方向枚举。
 - `GestureRule.cs`：运行时规则和热键动作模型。
@@ -136,12 +138,15 @@ MouseHook
 - `scope`：支持 `global`、`category:<分类名>`、`app:<进程名>`；运行时按 `app > category > global` 优先级匹配。
 - `mouseButton`：支持 `right`、`middle`，运行时会按当前触发的鼠标键区分规则。
 - `pattern`：手势方向列表，例如 `["Down", "Right"]`。
-- `action.type`：支持 `hotkey` 和 `window`。
+- `action.type`：支持 `hotkey`、`window`、`volume` 和 `brightness`。
 - `action.keys`：按键列表，例如 `["Control", "W"]`；允许为空，表示先保存手势，之后再补命令，空命令规则不会参与运行时执行。
 - `action.operation`：窗口控制操作，仅在 `action.type` 为 `window` 时使用；当前支持 `toggle-topmost`、`toggle-maximize`、`minimize`、`close`。
+- `action.operation`：音量控制在 `action.type` 为 `volume` 时支持 `increase`、`decrease`、`mute`；亮度控制在 `action.type` 为 `brightness` 时支持 `increase`、`decrease`。
+- `action.amount`：音量/亮度的 `increase`、`decrease` 步进值，范围 1-100。
+- `edgeActions`：独立的全局边缘操作列表；每项包含 `enabled`、`triggerType`、`location`、`wheelDirection`、`frictionCount`、`actionName` 和 `action`。`triggerType` 支持 `corner`、`friction`、`wheel`；`corner/friction` 的位置为四角，`wheel` 的位置为四边并区分滚轮 `up/down`。
 - `applications`：应用程序归属列表，每项包含 `name`、`displayName`、`path`、`category`，运行时通过前台进程名匹配 `name` 后得到分类；`displayName` 只用于 UI 展示和编辑。
 - `uiSettings.mouseTrail`：轨迹窗设置，包含 `inactiveColor`、`activeColor`、`inactiveThickness`、`activeThickness`、`thickness`、`inactiveOpacity`、`activeOpacity`；`thickness` 保留用于兼容旧配置。
-- `uiSettings.gestureHint`：提示泡泡设置，包含 `fontFamily`、`fontSize`、`textColor`、`backgroundColor`、`backgroundOpacity`、`width`、`autoWidth`、`height`、`bottomOffset`。
+- `uiSettings.gestureHint`：提示泡泡设置，包含 `fontFamily`、`fontSize`、`textColor`、`backgroundColor`、`backgroundOpacity`、`width`、`widthPercent`、`autoWidth`、`height`、`heightPercent`、`cornerRadius`、`bottomOffset`、`bottomOffsetPercent`；百分比字段按当前屏幕工作区宽高换算，像素字段保留用于兼容旧配置。
 
 默认规则：
 
@@ -169,7 +174,7 @@ src\MyGesture.App\Web
 - `src\App.vue`：路由壳、全局弹窗挂载和规则编辑弹窗挂载，顶部 `...` 入口会跳转到设置页。
 - `src\components\`：顶部栏、页面壳、左侧插槽和规则表等通用组件。
 - `src\composables\gestureEditorStore.js`：共享编辑状态、WebView 消息和快捷键监听。
-- `src\pages\`：`global`、`category`、`app`、`settings` 四个路由页。
+- `src\pages\`：`global`、`category`、`app`、`edge`、`settings` 五个路由页。
 - `src\styles.scss`：编辑器全局设计 token、reset、通用按钮、输入框、弹窗和图标样式；组件和页面专属样式放在对应 `.vue` 文件的 scoped SCSS 中。
 - `dist\web\`：Vite 构建产物目录，由桌面宿主加载。
 
@@ -183,13 +188,14 @@ src\MyGesture.App\Web
 
 当前 UI：
 
-- 3 个规则 tab：`全局`、`分类`、`程序`，顶部改为更紧凑的分段式切换，当前项使用更轻量的高亮态。
+- 4 个规则 tab：`全局`、`分类`、`程序`、`边缘操作`，顶部改为更紧凑的分段式切换，当前项使用更轻量的高亮态。
 - 顶部 `...` 按钮会打开独立的 `settings` 页面，用于配置轨迹线和底部提示窗外观。
 - 设置页右上角提供恢复默认按钮，页面中的调整会在输入变化时 debounce 自动保存，并在控件变更结束或离开页面时强制提交最后一次修改；本地编辑期间会避免宿主回传覆盖当前滑块值，不再依赖底部操作按钮。
 - `全局` 直接编辑整张表。
 - `分类` 和 `程序` 采用左右布局：左侧是分类/程序列表和底部新增按钮，右侧是对应内容区。
 - `分类` 页右侧包含“应用程序”和“手势列表”两个区块，分类页可管理当前分类下的 App。
 - `程序` 页右侧只展示手势列表；程序页左侧会列出已保存的全部程序，程序规则仍按 app 作用域单独维护。
+- `边缘操作` 页按触发角、摩擦边、鼠标滚动边三组展示配置；触发角进入角落触发一次，摩擦边按相邻方向反向移动次数触发，滚动边在四条边缘按滚轮上/下触发并吞掉原始滚轮事件。
 - 分类新增通过名称弹窗完成，不再使用左侧内联输入框；分类和程序名称都改为双击列表项后在弹窗里重命名。
 - 分类页和程序页添加程序时都会先显示前端弹窗，用户可按住“拖动准星选择窗口”拖到目标窗口松开，或选择“浏览 exe 文件”作为备用方式；分类页添加会关联到当前分类，程序页添加会创建并选中对应 app 规则作用域。
 - 程序列表和详情会展示从 exe 路径动态提取的应用图标；图标通过 WebView 消息传递，不写入配置文件。
@@ -214,17 +220,18 @@ WebView 消息流：
   - `{ type: "set-gesture-paused", paused: true/false }`
   - `{ type: "start-hotkey-recording", requestId: "..." }`
   - `{ type: "stop-hotkey-recording" }`
-  - `{ type: "save-rules", rules: [{ scope, mouseButton, pattern, actionName, action }, ...], applications: [...], uiSettings: {...} }`
+  - `{ type: "save-rules", rules: [{ scope, mouseButton, pattern, actionName, action }, ...], applications: [...], edgeActions: [...], uiSettings: {...} }`
   - `{ type: "reload-rules" }`
   - `{ type: "reset-rules" }`
 - 后端发送：
   - `{ type: "status", ... }`
-  - `{ type: "rules", rules: [...], applications: [{ name, displayName, path, category, icon }, ...], uiSettings: {...}, ... }`
+  - `{ type: "rules", rules: [...], applications: [{ name, displayName, path, category, icon }, ...], edgeActions: [...], uiSettings: {...}, ... }`
   - `{ type: "application-selected", requestId: "...", name: "...", displayName: "...", path: "...", category: "...", icon: "..." }`
   - `{ type: "gesture-recorded", requestId: "...", button: "right|middle", pattern: ["Down", "Right"] }`
   - `{ type: "hotkey-recorded", requestId: "...", keys: ["Control", "W"] }`
   - `{ type: "gesture", ... }`
   - `{ type: "gesture-action-failed", ... }`
+  - `{ type: "edge-action-failed", ... }`
   - `{ type: "config-result", ... }`
 
 ## 测试

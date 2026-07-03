@@ -40,11 +40,19 @@ public sealed class GestureHintUiSettings
 
     public int Width { get; set; } = 540;
 
+    public int WidthPercent { get; set; } = 28;
+
     public bool AutoWidth { get; set; }
 
     public int Height { get; set; } = 120;
 
+    public int HeightPercent { get; set; } = 11;
+
+    public float CornerRadius { get; set; } = 28f;
+
     public int BottomOffset { get; set; } = 140;
+
+    public int BottomOffsetPercent { get; set; } = 13;
 }
 
 internal static class GestureColorParser
