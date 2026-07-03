@@ -1,6 +1,8 @@
 <script setup>
+import { ref } from 'vue'
 import AppShell from '../components/AppShell.vue'
 import IconActionButton from '../components/IconActionButton.vue'
+import ScopeCreateDialog from '../components/ScopeCreateDialog.vue'
 import GestureRuleList from '../components/GestureRuleList.vue'
 import ScopeSidebar from '../components/ScopeSidebar.vue'
 import { useGestureEditorStore } from '../composables/gestureEditorStore'
@@ -8,6 +10,9 @@ import { useGestureEditorStore } from '../composables/gestureEditorStore'
 const editor = useGestureEditorStore()
 const scopeKind = 'app'
 editor.setActiveScope(scopeKind)
+const appRenameDialogOpen = ref(false)
+const appRenameDraft = ref('')
+const appRenameSource = ref('')
 
 function getAppFallbackGlyph(item) {
   const text = String(item?.displayName ?? item?.name ?? '').trim()
@@ -21,6 +26,41 @@ function getAppFallbackGlyph(item) {
 function deleteAppItem(name) {
   editor.selectScope(scopeKind, name)
   editor.deleteSelectedScope(scopeKind)
+}
+
+function openAppRenameDialog(item) {
+  const name = String(item?.name ?? '').trim()
+  if (!name) {
+    return
+  }
+
+  editor.selectScope(scopeKind, name)
+  appRenameSource.value = name
+  appRenameDraft.value = name
+  appRenameDialogOpen.value = true
+}
+
+function closeAppRenameDialog() {
+  appRenameDialogOpen.value = false
+  appRenameDraft.value = ''
+  appRenameSource.value = ''
+}
+
+function confirmAppRenameDialog() {
+  const nextName = String(appRenameDraft.value ?? '').trim()
+  if (!nextName) {
+    return
+  }
+
+  if (nextName === appRenameSource.value) {
+    closeAppRenameDialog()
+    return
+  }
+
+  if (editor.renameSelectedScope(scopeKind, nextName, appRenameSource.value)) {
+    editor.updateApplicationDisplayName(nextName, nextName)
+    closeAppRenameDialog()
+  }
 }
 </script>
 
@@ -56,6 +96,7 @@ function deleteAppItem(name) {
             role="button"
             tabindex="0"
             @click="editor.selectScope(scopeKind, item.name)"
+            @dblclick="openAppRenameDialog(item)"
             @keydown.enter.prevent="editor.selectScope(scopeKind, item.name)"
             @keydown.space.prevent="editor.selectScope(scopeKind, item.name)"
           >
@@ -74,7 +115,9 @@ function deleteAppItem(name) {
               >
                 {{ getAppFallbackGlyph(item) }}
               </span>
-              <span>{{ item.displayName || item.name }}</span>
+              <span class="scope-item__name">
+                {{ item.displayName || item.name }}
+              </span>
             </span>
             <span class="scope-item__meta">
               <small class="scope-item__count">{{ item.count }} 条</small>
@@ -127,6 +170,17 @@ function deleteAppItem(name) {
       </section>
     </template>
   </AppShell>
+
+  <ScopeCreateDialog
+    v-model="appRenameDraft"
+    :open="appRenameDialogOpen"
+    title="重命名程序"
+    description="输入新的程序名称，失焦或按回车后保存。"
+    label="程序名称"
+    placeholder="输入程序名称"
+    @close="closeAppRenameDialog"
+    @confirm="confirmAppRenameDialog"
+  />
 </template>
 
 <style scoped lang="scss">
@@ -210,6 +264,14 @@ function deleteAppItem(name) {
 
   &__icon--fallback {
     font-weight: 700;
+  }
+
+  &__name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 600;
   }
 
   &__meta {

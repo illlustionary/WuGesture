@@ -192,12 +192,11 @@ function isWindowAction(rule) {
   overflow: hidden;
   border: 1px solid rgba(18, 30, 42, 0.08);
   border-radius: 24px;
-  background:
-    linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.78),
-      rgba(245, 248, 252, 0.72)
-    );
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.78),
+    rgba(245, 248, 252, 0.72)
+  );
   box-shadow: var(--shadow-soft);
   backdrop-filter: blur(18px) saturate(1.15);
 
@@ -227,6 +226,7 @@ function isWindowAction(rule) {
   }
 
   &__head {
+    text-align: center;
     min-height: 38px;
     color: rgba(101, 113, 128, 0.94);
     font-size: 11px;

@@ -28,7 +28,7 @@ This repository is a Vite + Vue 3 web frontend for the MyGesture application. It
   - `ScopeSidebar.vue`: left-side scope navigation and management.
 - `src/assets/`: SVG assets used by the UI, including add, close, and delete icons. These are imported as Vue components.
 - `src/pages/`: route-level views.
-  - `GlobalRulesPage.vue`: global rule scope page.
+  - `GlobalRulesPage.vue`: global rule scope page with the same split layout pattern as the other editor pages.
   - `CategoryRulesPage.vue`: category rule scope page.
   - `AppRulesPage.vue`: application rule scope page.
 

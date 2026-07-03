@@ -88,7 +88,7 @@ editor.initialize()
       :get-gesture-mnemonic="editor.getGestureMnemonic"
       :window-operations="editor.windowOperations"
       @close="editor.closeGestureEditor"
-      @confirm="editor.saveGestureEditor"
+      @persist="editor.persistGestureEditor"
       @record="editor.startGestureRecording"
       @record-hotkey="editor.startRecording"
     />
