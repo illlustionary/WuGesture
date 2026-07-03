@@ -70,6 +70,7 @@ const DEFAULT_UI_SETTINGS = {
     backgroundColor: "#12181F",
     backgroundOpacity: 90,
     width: 540,
+    autoWidth: false,
     height: 120,
     bottomOffset: 140
   }
@@ -1214,8 +1215,9 @@ function normalizeGestureHintSettings(settings) {
     backgroundColor: String(settings?.backgroundColor ?? DEFAULT_UI_SETTINGS.gestureHint.backgroundColor).trim() || DEFAULT_UI_SETTINGS.gestureHint.backgroundColor,
     backgroundOpacity: clampInteger(settings?.backgroundOpacity, 0, 100, DEFAULT_UI_SETTINGS.gestureHint.backgroundOpacity),
     width: clampInteger(settings?.width, 240, 960, DEFAULT_UI_SETTINGS.gestureHint.width),
+    autoWidth: Boolean(settings?.autoWidth ?? DEFAULT_UI_SETTINGS.gestureHint.autoWidth),
     height: clampInteger(settings?.height, 80, 260, DEFAULT_UI_SETTINGS.gestureHint.height),
-    bottomOffset: clampInteger(settings?.bottomOffset, 0, 360, DEFAULT_UI_SETTINGS.gestureHint.bottomOffset)
+    bottomOffset: clampInteger(settings?.bottomOffset, 0, 1200, DEFAULT_UI_SETTINGS.gestureHint.bottomOffset)
   };
 }
 

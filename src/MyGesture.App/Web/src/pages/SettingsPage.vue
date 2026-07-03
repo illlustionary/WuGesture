@@ -24,7 +24,10 @@ const trailPreviewStyle = computed(() => ({
 }))
 
 const hintPreviewStyle = computed(() => ({
-  width: `${draft.gestureHint.width}px`,
+  width: draft.gestureHint.autoWidth
+    ? 'fit-content'
+    : `${draft.gestureHint.width}px`,
+  maxWidth: '100%',
   height: `${draft.gestureHint.height}px`,
   '--hint-color': draft.gestureHint.textColor,
   '--hint-background-rgba': hexToRgba(
@@ -39,7 +42,11 @@ const hintPreviewStyle = computed(() => ({
 watch(
   () => editor.state.uiSettings,
   () => {
-    if (hasPendingPersist || persistTimer || Date.now() - lastLocalPersistAt < 600) {
+    if (
+      hasPendingPersist ||
+      persistTimer ||
+      Date.now() - lastLocalPersistAt < 600
+    ) {
       return
     }
 
@@ -97,8 +104,12 @@ onBeforeUnmount(() => {
 })
 
 function createDraft(settings) {
-  const mouseTrail = normalizeObjectKeys(settings?.mouseTrail ?? settings?.MouseTrail)
-  const gestureHint = normalizeObjectKeys(settings?.gestureHint ?? settings?.GestureHint)
+  const mouseTrail = normalizeObjectKeys(
+    settings?.mouseTrail ?? settings?.MouseTrail
+  )
+  const gestureHint = normalizeObjectKeys(
+    settings?.gestureHint ?? settings?.GestureHint
+  )
   const legacyThickness = mouseTrail.thickness ?? mouseTrail.Thickness
   return {
     mouseTrail: {
@@ -117,6 +128,7 @@ function createDraft(settings) {
       backgroundColor: gestureHint.backgroundColor ?? '#12181F',
       backgroundOpacity: gestureHint.backgroundOpacity ?? 90,
       width: gestureHint.width ?? 540,
+      autoWidth: Boolean(gestureHint.autoWidth ?? false),
       height: gestureHint.height ?? 120,
       bottomOffset: gestureHint.bottomOffset ?? 140
     }
@@ -137,10 +149,16 @@ function normalizeObjectKeys(source) {
 }
 
 function hexToRgba(hex, alpha = 1) {
-  const normalized = String(hex ?? '').trim().replace('#', '')
-  const expanded = normalized.length === 3
-    ? normalized.split('').map((char) => `${char}${char}`).join('')
-    : normalized
+  const normalized = String(hex ?? '')
+    .trim()
+    .replace('#', '')
+  const expanded =
+    normalized.length === 3
+      ? normalized
+          .split('')
+          .map(char => `${char}${char}`)
+          .join('')
+      : normalized
 
   if (!/^[0-9a-fA-F]{6}$/.test(expanded)) {
     return `rgba(0, 0, 0, ${alpha})`
@@ -183,11 +201,23 @@ function hexToRgba(hex, alpha = 1) {
               class="settings-preview__trail"
               :style="trailPreviewStyle"
             >
-              <div class="settings-preview__path settings-preview__path--inactive" />
-              <div class="settings-preview__path settings-preview__path--active" />
-              <div class="settings-preview__legend">
-                <span class="settings-preview__key settings-preview__key--inactive">未激活</span>
-                <span class="settings-preview__key settings-preview__key--active">激活</span>
+              <div class="settings-preview__container">
+                <span
+                  class="settings-preview__key settings-preview__key--inactive"
+                  >未激活</span
+                >
+                <div
+                  class="settings-preview__path settings-preview__path--inactive"
+                />
+              </div>
+              <div class="settings-preview__container">
+                <span
+                  class="settings-preview__key settings-preview__key--active"
+                  >激活</span
+                >
+                <div
+                  class="settings-preview__path settings-preview__path--active"
+                />
               </div>
             </div>
 
@@ -218,7 +248,7 @@ function hexToRgba(hex, alpha = 1) {
                 class="settings-color"
                 @input="queuePersistDraft"
                 @change="flushPersistDraft"
-              >
+              />
             </label>
             <label>
               <span>未激活透明度</span>
@@ -229,7 +259,7 @@ function hexToRgba(hex, alpha = 1) {
                 max="100"
                 @input="queuePersistDraft"
                 @change="flushPersistDraft"
-              >
+              />
               <small>{{ draft.mouseTrail.inactiveOpacity }}%</small>
             </label>
             <label>
@@ -241,7 +271,7 @@ function hexToRgba(hex, alpha = 1) {
                 max="20"
                 @input="queuePersistDraft"
                 @change="flushPersistDraft"
-              >
+              />
               <small>{{ draft.mouseTrail.inactiveThickness }} px</small>
             </label>
             <label>
@@ -252,7 +282,7 @@ function hexToRgba(hex, alpha = 1) {
                 class="settings-color"
                 @input="queuePersistDraft"
                 @change="flushPersistDraft"
-              >
+              />
             </label>
             <label>
               <span>激活透明度</span>
@@ -263,7 +293,7 @@ function hexToRgba(hex, alpha = 1) {
                 max="100"
                 @input="queuePersistDraft"
                 @change="flushPersistDraft"
-              >
+              />
               <small>{{ draft.mouseTrail.activeOpacity }}%</small>
             </label>
             <label>
@@ -275,7 +305,7 @@ function hexToRgba(hex, alpha = 1) {
                 max="20"
                 @input="queuePersistDraft"
                 @change="flushPersistDraft"
-              >
+              />
               <small>{{ draft.mouseTrail.activeThickness }} px</small>
             </label>
           </div>
@@ -299,7 +329,7 @@ function hexToRgba(hex, alpha = 1) {
                 max="48"
                 @input="queuePersistDraft"
                 @change="flushPersistDraft"
-              >
+              />
               <small>{{ draft.gestureHint.fontSize }} px</small>
             </label>
             <label>
@@ -310,7 +340,7 @@ function hexToRgba(hex, alpha = 1) {
                 class="settings-color"
                 @input="queuePersistDraft"
                 @change="flushPersistDraft"
-              >
+              />
             </label>
             <label>
               <span>背景颜色</span>
@@ -320,7 +350,7 @@ function hexToRgba(hex, alpha = 1) {
                 class="settings-color"
                 @input="queuePersistDraft"
                 @change="flushPersistDraft"
-              >
+              />
             </label>
             <label>
               <span>背景透明度</span>
@@ -331,7 +361,7 @@ function hexToRgba(hex, alpha = 1) {
                 max="100"
                 @input="queuePersistDraft"
                 @change="flushPersistDraft"
-              >
+              />
               <small>{{ draft.gestureHint.backgroundOpacity }}%</small>
             </label>
             <label>
@@ -341,10 +371,24 @@ function hexToRgba(hex, alpha = 1) {
                 type="range"
                 min="240"
                 max="960"
+                :disabled="draft.gestureHint.autoWidth"
                 @input="queuePersistDraft"
                 @change="flushPersistDraft"
-              >
-              <small>{{ draft.gestureHint.width }} px</small>
+              />
+              <small>{{
+                draft.gestureHint.autoWidth
+                  ? '自适应'
+                  : `${draft.gestureHint.width} px`
+              }}</small>
+            </label>
+            <label class="settings-check">
+              <span>适应宽度</span>
+              <input
+                v-model="draft.gestureHint.autoWidth"
+                type="checkbox"
+                @input="queuePersistDraft"
+                @change="flushPersistDraft"
+              />
             </label>
             <label>
               <span>高度</span>
@@ -355,7 +399,7 @@ function hexToRgba(hex, alpha = 1) {
                 max="260"
                 @input="queuePersistDraft"
                 @change="flushPersistDraft"
-              >
+              />
               <small>{{ draft.gestureHint.height }} px</small>
             </label>
             <label>
@@ -364,10 +408,10 @@ function hexToRgba(hex, alpha = 1) {
                 v-model.number="draft.gestureHint.bottomOffset"
                 type="range"
                 min="0"
-                max="360"
+                max="1200"
                 @input="queuePersistDraft"
                 @change="flushPersistDraft"
-              >
+              />
               <small>{{ draft.gestureHint.bottomOffset }} px</small>
             </label>
           </div>
@@ -423,11 +467,20 @@ function hexToRgba(hex, alpha = 1) {
     min-height: 180px;
     border-radius: 22px;
     background:
-      radial-gradient(circle at 20% 30%, rgba(0, 122, 255, 0.06), transparent 28%),
+      radial-gradient(
+        circle at 20% 30%,
+        rgba(0, 122, 255, 0.06),
+        transparent 28%
+      ),
       rgba(248, 251, 255, 0.96);
     border: 1px solid rgba(18, 30, 42, 0.08);
   }
 
+  &__container {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+  }
   &__path {
     height: 0;
     border-radius: 999px;
@@ -438,25 +491,19 @@ function hexToRgba(hex, alpha = 1) {
     }
 
     &--active {
-      width: 52%;
-      margin-left: 12%;
+      width: 72%;
       border-top: var(--trail-active-width) solid var(--trail-active-stroke);
     }
-  }
-
-  &__legend {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
   }
 
   &__key {
     display: inline-flex;
     align-items: center;
     min-height: 28px;
+    flex-basis: 80px;
     padding: 0 10px;
     border-radius: 999px;
-    color: #ffffff;
+    color: #292929;
     font-size: 12px;
     font-weight: 700;
 
@@ -474,8 +521,9 @@ function hexToRgba(hex, alpha = 1) {
     display: grid;
     gap: 8px;
     align-self: end;
+    justify-self: center;
     margin-bottom: var(--hint-bottom-offset);
-    padding: 16px 18px;
+    padding: 16px 28px;
     border-radius: 24px;
     color: var(--hint-color);
     background: var(--hint-background-rgba);
@@ -526,6 +574,16 @@ function hexToRgba(hex, alpha = 1) {
   border: 1px solid var(--border);
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.92);
+}
+
+.settings-check {
+  align-content: center;
+
+  input {
+    width: 22px;
+    height: 22px;
+    accent-color: #007aff;
+  }
 }
 
 @media (max-width: 960px) {

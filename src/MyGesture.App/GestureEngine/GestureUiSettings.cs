@@ -40,6 +40,8 @@ public sealed class GestureHintUiSettings
 
     public int Width { get; set; } = 540;
 
+    public bool AutoWidth { get; set; }
+
     public int Height { get; set; } = 120;
 
     public int BottomOffset { get; set; } = 140;
