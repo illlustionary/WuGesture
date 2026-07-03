@@ -1,4 +1,5 @@
 <script setup>
+import IconActionButton from './IconActionButton.vue'
 import { RouterLink } from 'vue-router'
 
 defineProps({
@@ -6,6 +7,8 @@ defineProps({
   statusState: { type: String, required: true },
   tabs: { type: Array, required: true }
 })
+
+defineEmits(['open-settings'])
 </script>
 
 <template>
@@ -31,13 +34,12 @@ defineProps({
         {{ tab.label }}
       </RouterLink>
     </nav>
-    <button
-      type="button"
-      class="menu-button icon-button"
-      aria-label="更多设置"
-    >
-      ⋯
-    </button>
+    <IconActionButton
+      icon="setting"
+      label="更多设置"
+      class="menu-button"
+      @click="$emit('open-settings')"
+    />
   </header>
 </template>
 
@@ -130,7 +132,6 @@ defineProps({
 }
 
 .menu-button {
-  font-size: 22px;
-  line-height: 1;
+  color: var(--accent-strong);
 }
 </style>

@@ -5,6 +5,12 @@
         <h2>{{ title }}</h2>
         <p>{{ description }}</p>
       </div>
+      <div
+        v-if="$slots.actions"
+        class="page-shell__head-actions"
+      >
+        <slot name="actions" />
+      </div>
     </div>
 
     <div
@@ -40,6 +46,10 @@ defineProps({
   overflow: hidden;
 
   &__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
     margin-bottom: 16px;
 
     h2 {
@@ -53,6 +63,13 @@ defineProps({
       color: var(--muted);
       font-size: 14px;
     }
+  }
+
+  &__head-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 0 0 auto;
   }
 
   &__grid {

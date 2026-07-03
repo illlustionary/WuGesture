@@ -1,11 +1,12 @@
 <script setup>
-import { RouterView } from 'vue-router'
+import { useRouter, RouterView } from 'vue-router'
 import AppHeader from './components/AppHeader.vue'
 import IconActionButton from './components/IconActionButton.vue'
 import GestureRuleDialog from './components/GestureRuleDialog.vue'
 import { useGestureEditorStore } from './composables/gestureEditorStore'
 
 const editor = useGestureEditorStore()
+const router = useRouter()
 const tabs = [
   { to: '/global', label: '全局' },
   { to: '/category', label: '分类' },
@@ -13,6 +14,10 @@ const tabs = [
 ]
 
 editor.initialize()
+
+function openSettingsPage() {
+  router.push('/settings')
+}
 </script>
 
 <template>
@@ -21,6 +26,7 @@ editor.initialize()
       :status-text="editor.state.statusText"
       :status-state="editor.state.statusState"
       :tabs="tabs"
+      @open-settings="openSettingsPage"
     />
 
     <RouterView />

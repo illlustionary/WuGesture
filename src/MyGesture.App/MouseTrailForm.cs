@@ -14,9 +14,9 @@ public sealed class MouseTrailForm : Form
     private const int UlwAlpha = 0x00000002;
     private const byte WindowOpacity = 180;
 
-    private readonly Pen inactivePen;
-    private readonly Pen activePen;
-    private readonly Pen dirtyPen;
+    private Pen inactivePen;
+    private Pen activePen;
+    private Pen dirtyPen;
     private readonly GraphicsPath path = new();
     private readonly GraphicsPath dirtyPath = new();
 
@@ -31,6 +31,8 @@ public sealed class MouseTrailForm : Form
     private PointF lastPoint;
     private bool hasLastPoint;
     private bool isHighlighted;
+    private MouseTrailUiSettings uiSettings = new();
+    private byte windowOpacity = 180;
 
     public MouseTrailForm()
     {
@@ -61,6 +63,8 @@ public sealed class MouseTrailForm : Form
         graphics.CompositingQuality = CompositingQuality.HighSpeed;
         graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
         graphics.Clear(Color.Transparent);
+
+        ApplySettings(uiSettings);
     }
 
     protected override CreateParams CreateParams
@@ -85,6 +89,33 @@ public sealed class MouseTrailForm : Form
         _ = Handle;
         graphics.Clear(Color.Transparent);
         Present(new Rectangle(Point.Empty, bufferSize), fullWindow: true);
+    }
+
+    public void ApplySettings(MouseTrailUiSettings? settings)
+    {
+        uiSettings = settings ?? new MouseTrailUiSettings();
+        windowOpacity = 255;
+
+        var dpiFactor = Math.Max(1f, DeviceDpi / 96f);
+        var inactivePathWidth = Math.Max(1f, uiSettings.InactiveThickness) * dpiFactor;
+        var activePathWidth = Math.Max(1f, uiSettings.ActiveThickness) * dpiFactor;
+        var inactiveOpacity = ClampOpacity(uiSettings.InactiveOpacity);
+        var activeOpacity = ClampOpacity(uiSettings.ActiveOpacity);
+        var inactiveColor = ApplyOpacity(GestureColorParser.Parse(uiSettings.InactiveColor, Color.FromArgb(255, 170, 170, 170)), inactiveOpacity);
+        var activeColor = ApplyOpacity(GestureColorParser.Parse(uiSettings.ActiveColor, Color.SkyBlue), activeOpacity);
+
+        inactivePen?.Dispose();
+        activePen?.Dispose();
+        dirtyPen?.Dispose();
+
+        inactivePen = CreatePen(inactiveColor, inactivePathWidth);
+        activePen = CreatePen(activeColor, activePathWidth);
+        dirtyPen = CreatePen(Color.White, Math.Max(inactivePathWidth, activePathWidth) * 3.5f);
+
+        if (Visible && path.PointCount > 0)
+        {
+            RedrawPath();
+        }
     }
 
     public void SetHighlighted(bool highlighted)
@@ -226,7 +257,7 @@ public sealed class MouseTrailForm : Form
         {
             BlendOp = 0,
             BlendFlags = 0,
-            SourceConstantAlpha = WindowOpacity,
+            SourceConstantAlpha = windowOpacity,
             AlphaFormat = 1
         };
 
@@ -271,6 +302,17 @@ public sealed class MouseTrailForm : Form
         };
 
         UpdateLayeredWindowIndirect(Handle, ref updateInfo);
+    }
+
+    private static Color ApplyOpacity(Color color, byte opacity)
+    {
+        return Color.FromArgb(opacity, color.R, color.G, color.B);
+    }
+
+    private static byte ClampOpacity(int value)
+    {
+        var scaled = (int)Math.Round(value * 255d / 100d);
+        return (byte)Math.Max(0, Math.Min(255, scaled));
     }
 
     private PointF ToLocalPoint(Point point)

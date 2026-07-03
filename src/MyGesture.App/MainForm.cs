@@ -66,6 +66,7 @@ public sealed class MainForm : Form
         loadedConfig = configStore.LoadOrCreate();
         scopeContextProvider = new ConfiguredScopeContextProvider(loadedConfig.Config.Applications);
         gestureService = new GestureService(new GestureMatcher(loadedConfig.Rules), scopeContextProvider);
+        ApplyUiSettings(loadedConfig.Config.UiSettings);
 
         await webView.EnsureCoreWebView2Async();
         if (!CanUseUi())
@@ -265,6 +266,7 @@ public sealed class MainForm : Form
         {
             type = "rules",
             configPath = loadedConfig.FilePath,
+            uiSettings = loadedConfig.Config.UiSettings,
             rules = loadedConfig.Config.Rules.Select(rule => new
             {
                 scope = rule.Scope,
@@ -508,15 +510,18 @@ public sealed class MainForm : Form
         try
         {
             var message = JsonSerializer.Deserialize<RulesWebMessage>(json, WebMessageJsonOptions);
+            var uiSettings = message?.UiSettings ?? loadedConfig?.Config.UiSettings ?? new GestureUiSettings();
             var config = new GestureConfig
             {
                 Rules = message?.Rules ?? [],
-                Applications = message?.Applications ?? []
+                Applications = message?.Applications ?? [],
+                UiSettings = uiSettings
             };
 
             loadedConfig = configStore.SaveAndLoad(config);
             scopeContextProvider?.UpdateApplications(loadedConfig.Config.Applications);
             gestureService?.UpdateMatcher(new GestureMatcher(loadedConfig.Rules));
+            ApplyUiSettings(loadedConfig.Config.UiSettings);
 
             PostRules();
             PostConfigResult(true, "已保存");
@@ -534,6 +539,7 @@ public sealed class MainForm : Form
             loadedConfig = configStore.LoadOrCreate();
             scopeContextProvider?.UpdateApplications(loadedConfig.Config.Applications);
             gestureService?.UpdateMatcher(new GestureMatcher(loadedConfig.Rules));
+            ApplyUiSettings(loadedConfig.Config.UiSettings);
 
             PostRules();
             PostConfigResult(true, "已重新加载");
@@ -551,6 +557,7 @@ public sealed class MainForm : Form
             loadedConfig = configStore.ResetToDefaults();
             scopeContextProvider?.UpdateApplications(loadedConfig.Config.Applications);
             gestureService?.UpdateMatcher(new GestureMatcher(loadedConfig.Rules));
+            ApplyUiSettings(loadedConfig.Config.UiSettings);
 
             PostRules();
             PostConfigResult(true, "已恢复默认");
@@ -725,6 +732,12 @@ public sealed class MainForm : Form
         return mouseTrailForm;
     }
 
+    private void ApplyUiSettings(GestureUiSettings uiSettings)
+    {
+        gestureHintForm.ApplySettings(uiSettings.GestureHint);
+        EnsureMouseTrailForm().ApplySettings(uiSettings.MouseTrail);
+    }
+
     private void DisposeMouseTrailForm()
     {
         if (mouseTrailForm is null)
@@ -748,6 +761,8 @@ public sealed class MainForm : Form
         public List<GestureRuleConfig> Rules { get; set; } = [];
 
         public List<GestureApplicationConfig> Applications { get; set; } = [];
+
+        public GestureUiSettings UiSettings { get; set; } = new();
     }
 
     private sealed class SelectApplicationWebMessage
