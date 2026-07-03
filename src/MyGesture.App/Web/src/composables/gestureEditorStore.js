@@ -84,10 +84,7 @@ const DEFAULT_EDGE_ACTIONS = [
   createDefaultEdgeAction("corner", "top-right"),
   createDefaultEdgeAction("corner", "bottom-left"),
   createDefaultEdgeAction("corner", "bottom-right"),
-  createDefaultEdgeAction("friction", "top-left"),
-  createDefaultEdgeAction("friction", "top-right"),
-  createDefaultEdgeAction("friction", "bottom-left"),
-  createDefaultEdgeAction("friction", "bottom-right"),
+  ...EDGE_LOCATIONS.edge.map((edge) => createDefaultEdgeAction("friction", edge.value)),
   ...EDGE_LOCATIONS.edge.flatMap((edge) => [
     createDefaultEdgeAction("wheel", edge.value, "up"),
     createDefaultEdgeAction("wheel", edge.value, "down")
@@ -1482,11 +1479,27 @@ function normalizeEdgeTriggerType(triggerType) {
 }
 
 function normalizeEdgeLocation(location, triggerType) {
-  const locations = triggerType === "wheel" ? EDGE_LOCATIONS.edge : EDGE_LOCATIONS.corner;
+  const locations = triggerType === "corner" ? EDGE_LOCATIONS.corner : EDGE_LOCATIONS.edge;
   const normalized = String(location ?? "").trim();
+  if (triggerType === "friction") {
+    const migratedLocation = migrateLegacyFrictionLocation(normalized);
+    if (migratedLocation) {
+      return migratedLocation;
+    }
+  }
+
   return locations.some((item) => item.value === normalized)
     ? normalized
     : locations[0].value;
+}
+
+function migrateLegacyFrictionLocation(location) {
+  return {
+    "top-left": "left",
+    "top-right": "top",
+    "bottom-left": "bottom",
+    "bottom-right": "right"
+  }[location] ?? "";
 }
 
 function normalizeWheelDirection(direction) {

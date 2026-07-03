@@ -78,7 +78,7 @@ src\MyGesture.App\GestureEngine
 - `MouseHook.cs`：低级全局鼠标钩子。
 - `KeyboardShortcutRecorder.cs`：低级键盘 hook，用于配置界面录制快捷键并吞掉录制期间的原生键盘事件。
 - `GestureService.cs`：跟踪右键和中键轨迹生命周期，调用识别器、匹配器和执行器，并向 UI 发送事件；也支持录制会话，把识别结果回传给前端。
-- `EdgeActionService.cs`：监听鼠标移动和滚轮，处理屏幕四角触发、四角摩擦计数和四边滚轮触发；滚轮边命中时会吞掉原始滚轮事件。
+- `EdgeActionService.cs`：轮询真实光标位置并监听滚轮，处理屏幕四角触发、四边摩擦计数和四边滚轮触发；摩擦边会排除角落区域，按沿边方向的反向位移计数并在触发后防重复，滚轮边命中时会吞掉原始滚轮事件。
 - `GestureRecognizer.cs`：把鼠标轨迹转换为稳定的 8 方向模式。
 - `GestureMatcher.cs`：将识别出的鼠标键和方向模式与已加载规则进行匹配，并按作用域优先级选择命中项。
 - `GestureScopeContext.cs`：当前前台窗口的 app/category 上下文模型。
@@ -143,7 +143,7 @@ MouseHook
 - `action.operation`：窗口控制操作，仅在 `action.type` 为 `window` 时使用；当前支持 `toggle-topmost`、`toggle-maximize`、`minimize`、`close`。
 - `action.operation`：音量控制在 `action.type` 为 `volume` 时支持 `increase`、`decrease`、`mute`；亮度控制在 `action.type` 为 `brightness` 时支持 `increase`、`decrease`。
 - `action.amount`：音量/亮度的 `increase`、`decrease` 步进值，范围 1-100。
-- `edgeActions`：独立的全局边缘操作列表；每项包含 `enabled`、`triggerType`、`location`、`wheelDirection`、`frictionCount`、`actionName` 和 `action`。`triggerType` 支持 `corner`、`friction`、`wheel`；`corner/friction` 的位置为四角，`wheel` 的位置为四边并区分滚轮 `up/down`。
+- `edgeActions`：独立的全局边缘操作列表；每项包含 `enabled`、`triggerType`、`location`、`wheelDirection`、`frictionCount`、`actionName` 和 `action`。`triggerType` 支持 `corner`、`friction`、`wheel`；`corner` 的位置为四角，`friction/wheel` 的位置为四边，`wheel` 额外区分滚轮 `up/down`。
 - `applications`：应用程序归属列表，每项包含 `name`、`displayName`、`path`、`category`，运行时通过前台进程名匹配 `name` 后得到分类；`displayName` 只用于 UI 展示和编辑。
 - `uiSettings.mouseTrail`：轨迹窗设置，包含 `inactiveColor`、`activeColor`、`inactiveThickness`、`activeThickness`、`thickness`、`inactiveOpacity`、`activeOpacity`；`thickness` 保留用于兼容旧配置。
 - `uiSettings.gestureHint`：提示泡泡设置，包含 `fontFamily`、`fontSize`、`textColor`、`backgroundColor`、`backgroundOpacity`、`width`、`widthPercent`、`autoWidth`、`height`、`heightPercent`、`cornerRadius`、`bottomOffset`、`bottomOffsetPercent`；百分比字段按当前屏幕工作区宽高换算，像素字段保留用于兼容旧配置。
@@ -195,7 +195,7 @@ src\MyGesture.App\Web
 - `分类` 和 `程序` 采用左右布局：左侧是分类/程序列表和底部新增按钮，右侧是对应内容区。
 - `分类` 页右侧包含“应用程序”和“手势列表”两个区块，分类页可管理当前分类下的 App。
 - `程序` 页右侧只展示手势列表；程序页左侧会列出已保存的全部程序，程序规则仍按 app 作用域单独维护。
-- `边缘操作` 页按触发角、摩擦边、鼠标滚动边三组展示配置；点击卡片打开独立弹窗编辑启用状态、名称、命令和参数，关闭弹窗后自动保存。触发角进入角落触发一次，摩擦边按相邻方向反向移动次数触发，滚动边在四条边缘按滚轮上/下触发并吞掉原始滚轮事件。
+- `边缘操作` 页按触发角、摩擦边、鼠标滚动边三组展示配置；点击卡片打开独立弹窗编辑启用状态、名称、命令和参数，关闭弹窗后自动保存。触发角进入角落触发一次，摩擦边在四条边缘排除角落后按沿边方向反复移动次数触发，并在触发后离边或超时才允许再次触发；滚动边在四条边缘按滚轮上/下触发并吞掉原始滚轮事件。
 - 分类新增通过名称弹窗完成，不再使用左侧内联输入框；分类和程序名称都改为双击列表项后在弹窗里重命名。
 - 分类页和程序页添加程序时都会先显示前端弹窗，用户可按住“拖动准星选择窗口”拖到目标窗口松开，或选择“浏览 exe 文件”作为备用方式；分类页添加会关联到当前分类，程序页添加会创建并选中对应 app 规则作用域。
 - 程序列表和详情会展示从 exe 路径动态提取的应用图标；图标通过 WebView 消息传递，不写入配置文件。

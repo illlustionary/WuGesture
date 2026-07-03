@@ -17,7 +17,7 @@ const groups = [
   {
     type: 'friction',
     title: '摩擦边',
-    description: '进入角落后按相邻方向反复移动，达到次数后触发。'
+    description: '贴近屏幕边缘后沿边反复移动，达到次数后触发。'
   },
   {
     type: 'wheel',
@@ -50,9 +50,9 @@ const dialogTitle = computed(() => {
 })
 
 function locationLabel(action) {
-  const locations = action.triggerType === 'wheel'
-    ? editor.edgeLocations.edge
-    : editor.edgeLocations.corner
+  const locations = action.triggerType === 'corner'
+    ? editor.edgeLocations.corner
+    : editor.edgeLocations.edge
   return locations.find(item => item.value === action.location)?.label ?? action.location
 }
 
@@ -189,7 +189,7 @@ function toCommitPatch(action) {
 <template>
   <AppShell
     title="边缘操作"
-    description="配置屏幕角落、边缘摩擦和边缘滚轮触发的动作。"
+    description="配置屏幕角落、四边摩擦和边缘滚轮触发的动作。"
     layout-class="page-shell__grid--single"
   >
     <template #right>
