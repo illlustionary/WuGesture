@@ -1,4 +1,5 @@
 using System.Drawing;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace MyGesture.App.GestureEngine;
@@ -7,16 +8,25 @@ public sealed class EdgeActionService : IDisposable
 {
     private const int EdgeThickness = 3;
     private const int CornerSize = 18;
-    private const int FrictionStepPixels = 18;
+    private const int FrictionEdgeThickness = 16;
+    private const int FrictionCornerExcludeSize = 100;
+    private const int FrictionStepPixels = 60;
+    private const int FrictionResetDistance = 50;
+    private static readonly TimeSpan FrictionMoveTimeout = TimeSpan.FromMilliseconds(1200);
+    private static readonly TimeSpan FrictionTriggerResetTimeout = TimeSpan.FromMilliseconds(1500);
 
     private readonly MouseHook mouseHook = new();
     private readonly ActionExecutor actionExecutor = new();
+    private readonly System.Windows.Forms.Timer mousePollTimer = new() { Interval = 16 };
     private IReadOnlyList<EdgeActionConfig> actions;
     private SynchronizationContext? synchronizationContext;
     private EdgeLocation activeCorner = EdgeLocation.None;
-    private Point lastLocation;
+    private EdgeLocation activeFrictionEdge = EdgeLocation.None;
     private FrictionAxisDirection lastFrictionDirection = FrictionAxisDirection.None;
     private int frictionCount;
+    private int frictionPeakPosition;
+    private DateTime lastFrictionMoveTime;
+    private bool frictionTriggered;
     private bool started;
     private bool paused;
     private bool disposed;
@@ -40,6 +50,7 @@ public sealed class EdgeActionService : IDisposable
         if (paused)
         {
             activeCorner = EdgeLocation.None;
+            activeFrictionEdge = EdgeLocation.None;
             ResetFriction();
         }
     }
@@ -52,8 +63,9 @@ public sealed class EdgeActionService : IDisposable
         }
 
         synchronizationContext = SynchronizationContext.Current;
-        mouseHook.MouseMove += OnMouseMove;
         mouseHook.MouseWheel += OnMouseWheel;
+        mousePollTimer.Tick += OnMousePollTimerTick;
+        mousePollTimer.Start();
         mouseHook.Start();
         started = true;
     }
@@ -65,7 +77,8 @@ public sealed class EdgeActionService : IDisposable
             return;
         }
 
-        mouseHook.MouseMove -= OnMouseMove;
+        mousePollTimer.Stop();
+        mousePollTimer.Tick -= OnMousePollTimerTick;
         mouseHook.MouseWheel -= OnMouseWheel;
         mouseHook.Dispose();
         started = false;
@@ -80,69 +93,115 @@ public sealed class EdgeActionService : IDisposable
 
         disposed = true;
         Stop();
+        mousePollTimer.Dispose();
     }
 
-    private void OnMouseMove(object? sender, MouseHookEventArgs e)
+    private void OnMousePollTimerTick(object? sender, EventArgs e)
+    {
+        HandleMouseLocation(Cursor.Position);
+    }
+
+    private void HandleMouseLocation(Point location)
     {
         if (disposed || paused)
         {
             return;
         }
 
-        var corner = GetCorner(e.Location);
+        if (IsAnyMouseButtonPressed())
+        {
+            activeCorner = EdgeLocation.None;
+            activeFrictionEdge = EdgeLocation.None;
+            ResetFriction();
+            return;
+        }
+
+        var corner = GetCorner(location);
+        var frictionEdge = GetFrictionEdge(location);
         if (corner == EdgeLocation.None)
         {
             activeCorner = EdgeLocation.None;
-            ResetFriction();
-            lastLocation = e.Location;
-            return;
         }
 
-        if (activeCorner != corner)
+        if (corner != EdgeLocation.None && activeCorner != corner)
         {
             activeCorner = corner;
-            ResetFriction();
-            lastLocation = e.Location;
             ExecuteFirst("corner", corner);
+        }
+
+        if (frictionEdge == EdgeLocation.None)
+        {
+            activeFrictionEdge = EdgeLocation.None;
+            ResetFriction();
             return;
         }
 
-        HandleFriction(corner, e.Location);
+        if (activeFrictionEdge != frictionEdge)
+        {
+            BeginFriction(frictionEdge, location);
+            return;
+        }
+
+        HandleFriction(frictionEdge, location);
     }
 
-    private void HandleFriction(EdgeLocation corner, Point location)
+    private void HandleFriction(EdgeLocation edge, Point location)
     {
-        var delta = GetFrictionDelta(corner, location, lastLocation);
+        if (frictionTriggered)
+        {
+            if (GetFrictionDistanceToEdge(edge, location) >= FrictionResetDistance ||
+                DateTime.UtcNow - lastFrictionMoveTime > FrictionTriggerResetTimeout)
+            {
+                activeFrictionEdge = EdgeLocation.None;
+                ResetFriction();
+            }
+
+            return;
+        }
+
+        var currentPosition = GetFrictionPosition(edge, location);
+        var delta = currentPosition - frictionPeakPosition;
+        var direction = delta > 0 ? FrictionAxisDirection.Positive : FrictionAxisDirection.Negative;
+        if (lastFrictionDirection != FrictionAxisDirection.None && lastFrictionDirection == direction)
+        {
+            frictionPeakPosition = currentPosition;
+            return;
+        }
+
         if (Math.Abs(delta) < FrictionStepPixels)
         {
             return;
         }
 
-        lastLocation = location;
-        var direction = delta > 0 ? FrictionAxisDirection.Positive : FrictionAxisDirection.Negative;
-        if (lastFrictionDirection == FrictionAxisDirection.None)
+        var now = DateTime.UtcNow;
+        if (lastFrictionDirection != FrictionAxisDirection.None && now - lastFrictionMoveTime > FrictionMoveTimeout)
         {
-            lastFrictionDirection = direction;
+            BeginFriction(edge, location);
             return;
         }
 
-        if (lastFrictionDirection == direction)
-        {
-            return;
-        }
-
+        lastFrictionMoveTime = now;
+        frictionPeakPosition = currentPosition;
         lastFrictionDirection = direction;
         frictionCount++;
 
-        foreach (var action in GetActions("friction", corner))
+        foreach (var action in GetActions("friction", edge))
         {
             if (frictionCount >= Math.Max(1, action.FrictionCount))
             {
-                frictionCount = 0;
+                frictionTriggered = true;
                 Execute(action);
                 return;
             }
         }
+    }
+
+    private void BeginFriction(EdgeLocation edge, Point location)
+    {
+        activeFrictionEdge = edge;
+        ResetFriction();
+        frictionPeakPosition = GetFrictionPosition(edge, location);
+        lastFrictionMoveTime = DateTime.UtcNow;
     }
 
     private void OnMouseWheel(object? sender, MouseWheelHookEventArgs e)
@@ -227,13 +286,6 @@ public sealed class EdgeActionService : IDisposable
         context.Post(_ => action(), null);
     }
 
-    private static int GetFrictionDelta(EdgeLocation corner, Point current, Point previous)
-    {
-        return corner is EdgeLocation.TopLeft or EdgeLocation.BottomLeft
-            ? current.Y - previous.Y
-            : current.X - previous.X;
-    }
-
     private static EdgeLocation GetCorner(Point location)
     {
         foreach (var screen in Screen.AllScreens)
@@ -302,11 +354,117 @@ public sealed class EdgeActionService : IDisposable
         return EdgeLocation.None;
     }
 
+    private static EdgeLocation GetFrictionEdge(Point location)
+    {
+        foreach (var screen in Screen.AllScreens)
+        {
+            var area = screen.Bounds;
+            if (location.X < area.Left || location.X > area.Right || location.Y < area.Top || location.Y > area.Bottom)
+            {
+                continue;
+            }
+
+            var x = location.X - area.Left;
+            var y = location.Y - area.Top;
+            var width = area.Width;
+            var height = area.Height;
+
+            if (x <= FrictionEdgeThickness && y > FrictionCornerExcludeSize && y < height - FrictionCornerExcludeSize)
+            {
+                return EdgeLocation.Left;
+            }
+
+            if (x >= width - FrictionEdgeThickness && y > FrictionCornerExcludeSize && y < height - FrictionCornerExcludeSize)
+            {
+                return EdgeLocation.Right;
+            }
+
+            if (y <= FrictionEdgeThickness && x > FrictionCornerExcludeSize && x < width - FrictionCornerExcludeSize)
+            {
+                return EdgeLocation.Top;
+            }
+
+            if (y >= height - FrictionEdgeThickness && x > FrictionCornerExcludeSize && x < width - FrictionCornerExcludeSize)
+            {
+                return EdgeLocation.Bottom;
+            }
+        }
+
+        return EdgeLocation.None;
+    }
+
+    private static int GetFrictionPosition(EdgeLocation edge, Point location)
+    {
+        return edge is EdgeLocation.Left or EdgeLocation.Right
+            ? location.Y
+            : location.X;
+    }
+
+    private static int GetFrictionDistanceToEdge(EdgeLocation edge, Point location)
+    {
+        foreach (var screen in Screen.AllScreens)
+        {
+            var area = screen.Bounds;
+            if (location.X < area.Left || location.X > area.Right || location.Y < area.Top || location.Y > area.Bottom)
+            {
+                continue;
+            }
+
+            return edge switch
+            {
+                EdgeLocation.Left => location.X - area.Left,
+                EdgeLocation.Right => area.Right - location.X,
+                EdgeLocation.Top => location.Y - area.Top,
+                EdgeLocation.Bottom => area.Bottom - location.Y,
+                _ => int.MaxValue
+            };
+        }
+
+        return int.MaxValue;
+    }
+
     private static IReadOnlyList<EdgeActionConfig> NormalizeActions(IEnumerable<EdgeActionConfig>? source)
     {
         return (source ?? [])
             .Where(action => !string.IsNullOrWhiteSpace(action.TriggerType) && !string.IsNullOrWhiteSpace(action.Location))
+            .Select(NormalizeAction)
             .ToArray();
+    }
+
+    private static EdgeActionConfig NormalizeAction(EdgeActionConfig action)
+    {
+        if (string.Equals(action.TriggerType, "friction", StringComparison.OrdinalIgnoreCase))
+        {
+            action.Location = MigrateLegacyFrictionLocation(action.Location);
+            if (!IsEdgeLocation(action.Location))
+            {
+                action.Location = "left";
+            }
+        }
+        else if (string.Equals(action.TriggerType, "wheel", StringComparison.OrdinalIgnoreCase) &&
+            !IsEdgeLocation(action.Location))
+        {
+            action.Location = "left";
+        }
+
+        return action;
+    }
+
+    private static bool IsEdgeLocation(string location)
+    {
+        return location.Trim().ToLowerInvariant() is "left" or "right" or "top" or "bottom";
+    }
+
+    private static string MigrateLegacyFrictionLocation(string location)
+    {
+        return location.Trim().ToLowerInvariant() switch
+        {
+            "top-left" => "left",
+            "top-right" => "top",
+            "bottom-left" => "bottom",
+            "bottom-right" => "right",
+            _ => location
+        };
     }
 
     private static string ToConfigLocation(EdgeLocation location)
@@ -329,7 +487,23 @@ public sealed class EdgeActionService : IDisposable
     {
         lastFrictionDirection = FrictionAxisDirection.None;
         frictionCount = 0;
+        frictionPeakPosition = 0;
+        lastFrictionMoveTime = DateTime.MinValue;
+        frictionTriggered = false;
     }
+
+    private static bool IsAnyMouseButtonPressed()
+    {
+        return IsKeyPressed(Keys.LButton) || IsKeyPressed(Keys.RButton) || IsKeyPressed(Keys.MButton);
+    }
+
+    private static bool IsKeyPressed(Keys key)
+    {
+        return (GetAsyncKeyState((int)key) & 0x8000) != 0;
+    }
+
+    [DllImport("user32.dll")]
+    private static extern short GetAsyncKeyState(int vKey);
 
     private enum EdgeLocation
     {

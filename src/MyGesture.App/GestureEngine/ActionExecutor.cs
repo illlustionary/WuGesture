@@ -226,6 +226,9 @@ public sealed class ActionExecutor
             Keys.Down or
             Keys.Left or
             Keys.Right or
+            Keys.LWin or
+            Keys.RWin or
+            Keys.Apps or
             Keys.NumLock or
             Keys.PrintScreen or
             Keys.RMenu or
