@@ -122,6 +122,7 @@ export function useGestureEditorStore() {
     openAddRule,
     openEditRule,
     closeGestureEditor,
+    persistGestureEditor,
     saveGestureEditor,
     createScopeTarget,
     renameSelectedScope,
@@ -290,58 +291,81 @@ function closeGestureEditor() {
   setGesturePaused(false);
 }
 
+function persistGestureEditor() {
+  return commitGestureEditor(false);
+}
+
 function saveGestureEditor() {
+  return commitGestureEditor(true);
+}
+
+function commitGestureEditor(closeAfterSave) {
   const draft = state.gestureDraft;
   const pattern = parsePattern(draft.patternText);
   const actionName = String(draft.actionName ?? "").trim() || getGestureMnemonic(draft);
   const actionType = normalizeActionType(draft.actionType);
 
   if (pattern.length === 0) {
-    state.gestureRecognitionMessage = "请先录制手势。";
-    return;
+    if (closeAfterSave) {
+      state.gestureRecognitionMessage = "请先录制手势。";
+    }
+    return false;
   }
 
   if (actionType === "hotkey" && parseKeys(draft.keysText).length === 0) {
-    state.gestureRecognitionMessage = "请先录入快捷键。";
-    return;
+    if (closeAfterSave) {
+      state.gestureRecognitionMessage = "请先录入快捷键。";
+    }
+    return false;
   }
 
   if (actionType === "window" && !normalizeWindowOperation(draft.windowOperation)) {
-    state.gestureRecognitionMessage = "请选择窗口控制操作。";
-    return;
-  }
-
-  if (state.gestureEditorMode === "edit") {
-    const rule = state.rules.find((item) => item.id === state.gestureEditorRuleId);
-    if (!rule) {
-      closeGestureEditor();
-      return;
+    if (closeAfterSave) {
+      state.gestureRecognitionMessage = "请选择窗口控制操作。";
     }
-
-    rule.actionName = actionName;
-    rule.patternText = toPatternText(pattern);
-    rule.mouseButton = normalizeMouseButton(draft.mouseButton);
-    rule.keysText = draft.keysText;
-    rule.actionType = actionType;
-    rule.windowOperation = normalizeWindowOperation(draft.windowOperation);
-    closeGestureEditor();
-    scheduleSaveRules();
-    return;
+    return false;
   }
 
-  state.rules.push(createRule(
-    state.gestureEditorScopeKind,
-    state.gestureEditorScopeName,
-    {
-      actionName,
-      patternText: toPatternText(pattern),
-      mouseButton: normalizeMouseButton(draft.mouseButton),
-      keysText: draft.keysText,
-      actionType,
-      windowOperation: normalizeWindowOperation(draft.windowOperation)
-    }));
-  closeGestureEditor();
+  let rule = null;
+  if (state.gestureEditorMode === "edit") {
+    rule = state.rules.find((item) => item.id === state.gestureEditorRuleId);
+    if (!rule) {
+      if (closeAfterSave) {
+        closeGestureEditor();
+      }
+      return false;
+    }
+  } else {
+    rule = createRule(
+      state.gestureEditorScopeKind,
+      state.gestureEditorScopeName,
+      {
+        actionName,
+        patternText: toPatternText(pattern),
+        mouseButton: normalizeMouseButton(draft.mouseButton),
+        keysText: draft.keysText,
+        actionType,
+        windowOperation: normalizeWindowOperation(draft.windowOperation)
+      }
+    );
+    state.rules.push(rule);
+    state.gestureEditorRuleId = rule.id;
+    state.gestureEditorMode = "edit";
+  }
+
+  rule.actionName = actionName;
+  rule.patternText = toPatternText(pattern);
+  rule.mouseButton = normalizeMouseButton(draft.mouseButton);
+  rule.keysText = draft.keysText;
+  rule.actionType = actionType;
+  rule.windowOperation = normalizeWindowOperation(draft.windowOperation);
   scheduleSaveRules();
+
+  if (closeAfterSave) {
+    closeGestureEditor();
+  }
+
+  return true;
 }
 
 function removeRule(id) {
@@ -1009,6 +1033,7 @@ function applyRecordedGesture(message) {
   state.gestureRecognitionMessage = pattern.length > 0 ? "已识别手势。" : "未识别到有效手势。";
   state.gestureRecordingActive = false;
   state.gestureRecordingRequestId = "";
+  persistGestureEditor();
 }
 
 function applyRecordedHotkey(message) {
@@ -1042,7 +1067,7 @@ function applyRecordedHotkey(message) {
   }
 
   setMessage("已录制快捷键。", "success");
-  scheduleSaveRules();
+  persistGestureEditor();
 }
 
 function createEmptyGestureDraft() {

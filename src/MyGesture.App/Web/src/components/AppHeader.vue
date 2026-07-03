@@ -106,9 +106,26 @@ defineProps({
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
+  position: relative;
   &.active {
     color: var(--accent-strong);
-    border-bottom: 2px solid var(--accent-strong);
+    // border-bottom: 2px solid var(--accent-strong);
+    &::after {
+      background-color: var(--accent-strong);
+      transform: scale(1);
+    }
+  }
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: transparent;
+    transition: 0.3s ease-in-out;
+    transform: scaleX(0);
+    transform-origin: center center;
   }
 }
 

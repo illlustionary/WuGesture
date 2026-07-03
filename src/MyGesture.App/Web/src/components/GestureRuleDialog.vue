@@ -12,7 +12,7 @@ const props = defineProps({
   windowOperations: { type: Array, default: () => [] }
 })
 
-defineEmits(['close', 'confirm', 'record', 'record-hotkey'])
+defineEmits(['close', 'persist', 'record', 'record-hotkey'])
 
 const patternLabel = computed(
   () => props.getGestureMnemonic?.(props.draft) || '尚未录制'
@@ -31,7 +31,6 @@ const patternLabel = computed(
       aria-modal="true"
       aria-labelledby="gesture-dialog-title"
     >
-      <!-- <div class="gesture-dialog__chrome"> -->
       <div class="modal-panel gesture-dialog__panel">
         <div class="modal-panel__head">
           <div>
@@ -53,6 +52,7 @@ const patternLabel = computed(
               v-model.trim="draft.actionName"
               class="scope-input"
               placeholder="例如：关闭标签"
+              @blur="$emit('persist')"
             />
           </label>
 
@@ -61,6 +61,7 @@ const patternLabel = computed(
             <select
               v-model="draft.actionType"
               class="scope-input"
+              @change="$emit('persist')"
             >
               <option value="hotkey">快捷键</option>
               <option value="window">窗口控制</option>
@@ -74,6 +75,7 @@ const patternLabel = computed(
             <select
               v-model="draft.windowOperation"
               class="scope-input"
+              @change="$emit('persist')"
             >
               <option
                 v-for="operation in windowOperations"
@@ -92,6 +94,7 @@ const patternLabel = computed(
               class="scope-input hotkey-record-button"
               :class="{ 'is-recording': isRecordingHotkey?.(draft) }"
               @click="$emit('record-hotkey', draft)"
+              @blur="$emit('persist')"
             >
               {{
                 isRecordingHotkey?.(draft)
@@ -127,25 +130,7 @@ const patternLabel = computed(
         >
           {{ message }}
         </p>
-
-        <div class="modal-panel__actions">
-          <button
-            type="button"
-            class="ghost-button"
-            @click="$emit('close')"
-          >
-            取消
-          </button>
-          <button
-            type="button"
-            class="primary-button"
-            @click="$emit('confirm')"
-          >
-            确认
-          </button>
-        </div>
       </div>
-      <!-- </div> -->
     </section>
   </div>
 </template>

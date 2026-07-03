@@ -1,5 +1,5 @@
 <script setup>
-import { nextTick, ref } from 'vue'
+import { ref } from 'vue'
 import AppShell from '../components/AppShell.vue'
 import IconActionButton from '../components/IconActionButton.vue'
 import GestureRuleList from '../components/GestureRuleList.vue'
@@ -12,9 +12,9 @@ const scopeKind = 'category'
 editor.setActiveScope(scopeKind)
 const categoryDraft = ref('')
 const categoryDialogOpen = ref(false)
-const editingCategoryName = ref('')
-const editingCategoryDraft = ref('')
-const editingCategoryInput = ref(null)
+const categoryRenameDraft = ref('')
+const categoryRenameDialogOpen = ref(false)
+const categoryRenameSource = ref('')
 
 function openCategoryDialog() {
   categoryDraft.value = ''
@@ -31,31 +31,38 @@ function confirmCategoryDialog() {
   }
 }
 
-async function startCategoryRename(item) {
-  if (!item || editingCategoryName.value === item.name) {
+function openCategoryRenameDialog(item) {
+  const name = String(item?.name ?? '').trim()
+  if (!name) {
     return
   }
 
-  editor.selectScope(scopeKind, item.name)
-  editingCategoryName.value = item.name
-  editingCategoryDraft.value = item.name
-  await nextTick()
-  editingCategoryInput.value?.focus?.()
-  editingCategoryInput.value?.select?.()
+  editor.selectScope(scopeKind, name)
+  categoryRenameSource.value = name
+  categoryRenameDraft.value = name
+  categoryRenameDialogOpen.value = true
 }
 
-function commitCategoryRename(item) {
-  if (!item || editingCategoryName.value !== item.name) {
+function closeCategoryRenameDialog() {
+  categoryRenameDialogOpen.value = false
+  categoryRenameDraft.value = ''
+  categoryRenameSource.value = ''
+}
+
+function confirmCategoryRenameDialog() {
+  const nextName = String(categoryRenameDraft.value ?? '').trim()
+  if (!nextName) {
     return
   }
 
-  editingCategoryName.value = ''
-  editingCategoryInput.value = null
-  editor.renameSelectedScope(scopeKind, editingCategoryDraft.value, item.name)
-}
+  if (nextName === categoryRenameSource.value) {
+    closeCategoryRenameDialog()
+    return
+  }
 
-function setEditingCategoryInput(el) {
-  editingCategoryInput.value = el
+  if (editor.renameSelectedScope(scopeKind, nextName, categoryRenameSource.value)) {
+    closeCategoryRenameDialog()
+  }
 }
 
 function getCategoryGlyph(name) {
@@ -135,14 +142,11 @@ function deleteCategoryItem(name) {
             v-for="item in editor.categoryItems"
             :key="item.name"
             class="scope-item"
-            :class="{
-              active: item.name === editor.getSelectedName(scopeKind),
-              'is-editing': editingCategoryName === item.name
-            }"
+            :class="{ active: item.name === editor.getSelectedName(scopeKind) }"
             role="button"
             tabindex="0"
             @click="editor.selectScope(scopeKind, item.name)"
-            @dblclick="startCategoryRename(item)"
+            @dblclick="openCategoryRenameDialog(item)"
             @keydown.enter.prevent="editor.selectScope(scopeKind, item.name)"
             @keydown.space.prevent="editor.selectScope(scopeKind, item.name)"
           >
@@ -157,19 +161,7 @@ function deleteCategoryItem(name) {
               >
                 {{ getCategoryGlyph(item.name) }}
               </span>
-              <input
-                v-if="editingCategoryName === item.name"
-                :ref="setEditingCategoryInput"
-                v-model.trim="editingCategoryDraft"
-                class="scope-input scope-item__edit"
-                spellcheck="false"
-                @blur="commitCategoryRename(item)"
-                @keydown.enter.prevent="commitCategoryRename(item)"
-              />
-              <span
-                v-else
-                class="scope-item__name"
-              >
+              <span class="scope-item__name">
                 {{ item.name }}
               </span>
             </span>
@@ -308,9 +300,19 @@ function deleteCategoryItem(name) {
     description="输入一个分类名称，创建后会出现在左侧列表。"
     label="分类名称"
     placeholder="例如：浏览器"
-    confirm-text="新增分类"
     @close="closeCategoryDialog"
     @confirm="confirmCategoryDialog"
+  />
+
+  <ScopeCreateDialog
+    v-model="categoryRenameDraft"
+    :open="categoryRenameDialogOpen"
+    title="重命名分类"
+    description="输入新的分类名称，失焦或按回车后保存。"
+    label="分类名称"
+    placeholder="输入分类名称"
+    @close="closeCategoryRenameDialog"
+    @confirm="confirmCategoryRenameDialog"
   />
 </template>
 
@@ -383,7 +385,16 @@ function deleteCategoryItem(name) {
     flex: 1 1 auto;
   }
 
+  &__label {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
   &__name {
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -400,8 +411,8 @@ function deleteCategoryItem(name) {
   &__icon {
     display: grid;
     place-items: center;
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
     flex: 0 0 auto;
     border-radius: 10px;
     background: rgba(0, 122, 255, 0.1);
@@ -444,10 +455,6 @@ function deleteCategoryItem(name) {
     transform: scale(1);
   }
 
-  &.is-editing {
-    cursor: text;
-    user-select: text;
-  }
 }
 
 .rules-panel {

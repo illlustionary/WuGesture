@@ -1,6 +1,5 @@
 <script setup>
-import { computed } from "vue";
-import IconActionButton from "./IconActionButton.vue";
+import { computed, nextTick, ref, watch } from "vue";
 
 const props = defineProps({
   open: { type: Boolean, required: true },
@@ -8,12 +7,12 @@ const props = defineProps({
   description: { type: String, default: "" },
   label: { type: String, required: true },
   placeholder: { type: String, default: "" },
-  confirmText: { type: String, default: "确认" },
   modelValue: { type: String, default: "" }
 });
 
 const emit = defineEmits(["close", "confirm", "update:modelValue"]);
 const titleId = "scope-create-dialog-title";
+const inputRef = ref(null);
 
 const value = computed({
   get() {
@@ -23,6 +22,23 @@ const value = computed({
     emit("update:modelValue", nextValue);
   }
 });
+
+function confirm() {
+  emit("confirm");
+}
+
+watch(
+  () => props.open,
+  async (isOpen) => {
+    if (!isOpen) {
+      return;
+    }
+
+    await nextTick();
+    inputRef.value?.focus?.();
+    inputRef.value?.select?.();
+  }
+);
 </script>
 
 <template>
@@ -33,34 +49,22 @@ const value = computed({
           <h3 :id="titleId">{{ title }}</h3>
           <p v-if="description">{{ description }}</p>
         </div>
-        <IconActionButton
-          icon="close"
-          label="关闭"
-          class="ghost-button"
-          tone="muted"
-          @click="$emit('close')"
-        />
+        <button type="button" class="scope-create-dialog__close" aria-label="关闭" title="关闭" @click="$emit('close')">
+          <span aria-hidden="true">×</span>
+        </button>
       </div>
 
       <label class="scope-create-dialog__field">
         <span>{{ label }}</span>
         <input
+          ref="inputRef"
           v-model.trim="value"
           class="scope-input"
           :placeholder="placeholder"
-          @keydown.enter.prevent="$emit('confirm')"
+          @blur="confirm"
+          @keydown.enter.prevent="confirm"
         >
       </label>
-
-      <div class="modal-panel__actions">
-        <button type="button" class="ghost-button" @click="$emit('close')">取消</button>
-        <IconActionButton
-          icon="add"
-          :label="confirmText"
-          class="primary-button"
-          @click="$emit('confirm')"
-        />
-      </div>
     </section>
   </div>
 </template>
@@ -69,12 +73,38 @@ const value = computed({
 .scope-create-dialog {
   width: min(480px, 100%);
 
+  .modal-panel__head {
+    align-items: flex-start;
+  }
+
   &__field {
     display: grid;
     gap: 6px;
     margin-top: 10px;
     color: var(--muted);
     font-size: 13px;
+  }
+
+  &__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+
+    &:hover {
+      background: rgba(18, 30, 42, 0.06);
+      color: var(--text);
+    }
   }
 }
 </style>
