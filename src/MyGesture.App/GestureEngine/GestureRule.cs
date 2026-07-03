@@ -28,10 +28,27 @@ public sealed record HotkeyAction(IReadOnlyList<Keys> Keys) : GestureAction;
 
 public sealed record WindowControlAction(WindowControlOperation Operation) : GestureAction;
 
+public sealed record VolumeControlAction(VolumeControlOperation Operation, int Amount) : GestureAction;
+
+public sealed record BrightnessControlAction(BrightnessControlOperation Operation, int Amount) : GestureAction;
+
 public enum WindowControlOperation
 {
     ToggleTopMost,
     ToggleMaximize,
     Minimize,
     Close
+}
+
+public enum VolumeControlOperation
+{
+    Increase,
+    Decrease,
+    Mute
+}
+
+public enum BrightnessControlOperation
+{
+    Increase,
+    Decrease
 }

@@ -26,9 +26,9 @@ const trailPreviewStyle = computed(() => ({
 const hintPreviewStyle = computed(() => ({
   width: draft.gestureHint.autoWidth
     ? 'fit-content'
-    : `${draft.gestureHint.width}px`,
+    : `${draft.gestureHint.widthPercent}%`,
   maxWidth: '100%',
-  height: `${draft.gestureHint.height}px`,
+  height: `${Math.max(80, draft.gestureHint.heightPercent * 3)}px`,
   '--hint-color': draft.gestureHint.textColor,
   '--hint-background-rgba': hexToRgba(
     draft.gestureHint.backgroundColor,
@@ -36,7 +36,8 @@ const hintPreviewStyle = computed(() => ({
   ),
   '--hint-muted-color': hexToRgba(draft.gestureHint.textColor, 0.72),
   '--hint-font-size': `${draft.gestureHint.fontSize}px`,
-  '--hint-bottom-offset': `${Math.min(80, draft.gestureHint.bottomOffset / 3)}px`
+  '--hint-radius': `${draft.gestureHint.cornerRadius}px`,
+  '--hint-bottom-offset': `${Math.min(80, draft.gestureHint.bottomOffsetPercent * 0.8)}px`
 }))
 
 watch(
@@ -128,9 +129,13 @@ function createDraft(settings) {
       backgroundColor: gestureHint.backgroundColor ?? '#12181F',
       backgroundOpacity: gestureHint.backgroundOpacity ?? 90,
       width: gestureHint.width ?? 540,
+      widthPercent: gestureHint.widthPercent ?? 28,
       autoWidth: Boolean(gestureHint.autoWidth ?? false),
       height: gestureHint.height ?? 120,
-      bottomOffset: gestureHint.bottomOffset ?? 140
+      heightPercent: gestureHint.heightPercent ?? 11,
+      cornerRadius: gestureHint.cornerRadius ?? 28,
+      bottomOffset: gestureHint.bottomOffset ?? 140,
+      bottomOffsetPercent: gestureHint.bottomOffsetPercent ?? 13
     }
   }
 }
@@ -367,10 +372,10 @@ function hexToRgba(hex, alpha = 1) {
             <label>
               <span>宽度</span>
               <input
-                v-model.number="draft.gestureHint.width"
+                v-model.number="draft.gestureHint.widthPercent"
                 type="range"
-                min="240"
-                max="960"
+                min="10"
+                max="90"
                 :disabled="draft.gestureHint.autoWidth"
                 @input="queuePersistDraft"
                 @change="flushPersistDraft"
@@ -378,7 +383,7 @@ function hexToRgba(hex, alpha = 1) {
               <small>{{
                 draft.gestureHint.autoWidth
                   ? '自适应'
-                  : `${draft.gestureHint.width} px`
+                  : `${draft.gestureHint.widthPercent}%`
               }}</small>
             </label>
             <label class="settings-check">
@@ -393,26 +398,38 @@ function hexToRgba(hex, alpha = 1) {
             <label>
               <span>高度</span>
               <input
-                v-model.number="draft.gestureHint.height"
+                v-model.number="draft.gestureHint.heightPercent"
                 type="range"
-                min="80"
-                max="260"
+                min="5"
+                max="40"
                 @input="queuePersistDraft"
                 @change="flushPersistDraft"
               />
-              <small>{{ draft.gestureHint.height }} px</small>
+              <small>{{ draft.gestureHint.heightPercent }}%</small>
+            </label>
+            <label>
+              <span>圆角</span>
+              <input
+                v-model.number="draft.gestureHint.cornerRadius"
+                type="range"
+                min="0"
+                max="80"
+                @input="queuePersistDraft"
+                @change="flushPersistDraft"
+              />
+              <small>{{ draft.gestureHint.cornerRadius }} px</small>
             </label>
             <label>
               <span>距离底部</span>
               <input
-                v-model.number="draft.gestureHint.bottomOffset"
+                v-model.number="draft.gestureHint.bottomOffsetPercent"
                 type="range"
                 min="0"
-                max="1200"
+                max="100"
                 @input="queuePersistDraft"
                 @change="flushPersistDraft"
               />
-              <small>{{ draft.gestureHint.bottomOffset }} px</small>
+              <small>{{ draft.gestureHint.bottomOffsetPercent }}%</small>
             </label>
           </div>
         </section>
@@ -524,7 +541,7 @@ function hexToRgba(hex, alpha = 1) {
     justify-self: center;
     margin-bottom: var(--hint-bottom-offset);
     padding: 16px 28px;
-    border-radius: 24px;
+    border-radius: var(--hint-radius);
     color: var(--hint-color);
     background: var(--hint-background-rgba);
     box-shadow: 0 18px 34px rgba(18, 30, 42, 0.16);

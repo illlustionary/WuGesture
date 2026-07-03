@@ -53,6 +53,47 @@ const WINDOW_OPERATIONS = [
   { value: "close", label: "关闭窗口" }
 ];
 
+const VOLUME_OPERATIONS = [
+  { value: "increase", label: "音量 +" },
+  { value: "decrease", label: "音量 -" },
+  { value: "mute", label: "静音" }
+];
+
+const BRIGHTNESS_OPERATIONS = [
+  { value: "increase", label: "亮度 +" },
+  { value: "decrease", label: "亮度 -" }
+];
+
+const EDGE_LOCATIONS = {
+  corner: [
+    { value: "top-left", label: "左上角" },
+    { value: "top-right", label: "右上角" },
+    { value: "bottom-left", label: "左下角" },
+    { value: "bottom-right", label: "右下角" }
+  ],
+  edge: [
+    { value: "left", label: "左边" },
+    { value: "right", label: "右边" },
+    { value: "top", label: "上边" },
+    { value: "bottom", label: "下边" }
+  ]
+};
+
+const DEFAULT_EDGE_ACTIONS = [
+  createDefaultEdgeAction("corner", "top-left"),
+  createDefaultEdgeAction("corner", "top-right"),
+  createDefaultEdgeAction("corner", "bottom-left"),
+  createDefaultEdgeAction("corner", "bottom-right"),
+  createDefaultEdgeAction("friction", "top-left"),
+  createDefaultEdgeAction("friction", "top-right"),
+  createDefaultEdgeAction("friction", "bottom-left"),
+  createDefaultEdgeAction("friction", "bottom-right"),
+  ...EDGE_LOCATIONS.edge.flatMap((edge) => [
+    createDefaultEdgeAction("wheel", edge.value, "up"),
+    createDefaultEdgeAction("wheel", edge.value, "down")
+  ])
+];
+
 const DEFAULT_UI_SETTINGS = {
   mouseTrail: {
     inactiveColor: "#AAAAAA",
@@ -70,9 +111,13 @@ const DEFAULT_UI_SETTINGS = {
     backgroundColor: "#12181F",
     backgroundOpacity: 90,
     width: 540,
+    widthPercent: 28,
     autoWidth: false,
     height: 120,
-    bottomOffset: 140
+    heightPercent: 11,
+    cornerRadius: 28,
+    bottomOffset: 140,
+    bottomOffsetPercent: 13
   }
 };
 
@@ -84,6 +129,7 @@ const state = reactive({
   configMessageState: "idle",
   rules: [],
   applications: [],
+  edgeActions: [],
   uiSettings: createDefaultUiSettings(),
   nextId: 1,
   selectedCategory: "",
@@ -108,6 +154,7 @@ const activeScope = ref("global");
 const initialized = ref(false);
 const pendingApplicationPickerRequests = new Map();
 let autoSaveTimer = 0;
+let pendingAutoSaveOptions = {};
 let toast = null;
 let suppressNextConfigResultToast = false;
 
@@ -165,6 +212,7 @@ export function useGestureEditorStore() {
     saveRules,
     reloadRules,
     resetRules,
+    updateEdgeAction,
     startGestureRecording,
     stopGestureRecording,
     startRecording,
@@ -172,10 +220,14 @@ export function useGestureEditorStore() {
     isRecordingHotkey,
     getGestureMnemonic,
     getActionLabel,
+    getEdgeActionLabel,
     getUiSettingsSnapshot,
     saveUiSettings,
     resetUiSettings,
-    windowOperations: WINDOW_OPERATIONS
+    windowOperations: WINDOW_OPERATIONS,
+    volumeOperations: VOLUME_OPERATIONS,
+    brightnessOperations: BRIGHTNESS_OPERATIONS,
+    edgeLocations: EDGE_LOCATIONS
   });
 }
 
@@ -209,7 +261,7 @@ function handleMessage(message) {
 
   if (message.type === "rules") {
     state.configPath = message.configPath;
-    replaceConfig(message.rules ?? [], message.applications ?? [], message.uiSettings ?? DEFAULT_UI_SETTINGS);
+    replaceConfig(message.rules ?? [], message.applications ?? [], message.uiSettings ?? DEFAULT_UI_SETTINGS, message.edgeActions ?? []);
     return;
   }
 
@@ -235,9 +287,10 @@ function handleMessage(message) {
   }
 }
 
-function replaceConfig(rules, applications, uiSettings = DEFAULT_UI_SETTINGS) {
+function replaceConfig(rules, applications, uiSettings = DEFAULT_UI_SETTINGS, edgeActions = []) {
   state.rules = rules.map((rule) => toViewRule(rule));
   state.applications = applications.map((application) => toViewApplication(application));
+  state.edgeActions = normalizeEdgeActions(edgeActions);
   state.uiSettings = normalizeUiSettings(uiSettings);
   ensureSelection("category");
   ensureSelection("app");
@@ -382,7 +435,10 @@ function commitGestureEditor(closeAfterSave) {
         mouseButton: normalizeMouseButton(draft.mouseButton),
         keysText: draft.keysText,
         actionType,
-        windowOperation: normalizeWindowOperation(draft.windowOperation)
+        windowOperation: normalizeWindowOperation(draft.windowOperation),
+        volumeOperation: normalizeVolumeOperation(draft.volumeOperation),
+        brightnessOperation: normalizeBrightnessOperation(draft.brightnessOperation),
+        amount: normalizeAmount(draft.amount)
       }
     );
     state.rules.push(rule);
@@ -396,6 +452,9 @@ function commitGestureEditor(closeAfterSave) {
   rule.keysText = draft.keysText;
   rule.actionType = actionType;
   rule.windowOperation = normalizeWindowOperation(draft.windowOperation);
+  rule.volumeOperation = normalizeVolumeOperation(draft.volumeOperation);
+  rule.brightnessOperation = normalizeBrightnessOperation(draft.brightnessOperation);
+  rule.amount = normalizeAmount(draft.amount);
   scheduleSaveRules();
 
   if (closeAfterSave) {
@@ -647,21 +706,13 @@ function saveRules(options = {}) {
   if (autoSaveTimer) {
     clearTimeout(autoSaveTimer);
     autoSaveTimer = 0;
+    pendingAutoSaveOptions = {};
   }
 
-  const payloadRules = [];
-  for (const rule of state.rules) {
-    const parsed = toPayloadRule(rule);
-    if (!parsed) {
-      setMessage("存在无效规则，请检查方向和快捷键。", "error");
-      return;
-    }
-
-    payloadRules.push(parsed);
-  }
+  const payloadRules = state.rules.map(toPayloadRule);
 
   if (payloadRules.length === 0) {
-    setMessage("至少保留一条有效规则。", "error");
+    setMessage("至少保留一条规则。", "error");
     return;
   }
 
@@ -674,13 +725,14 @@ function saveRules(options = {}) {
       type: "save-rules",
       rules: payloadRules,
       applications: state.applications.map(toPayloadApplication),
+      edgeActions: state.edgeActions.map(toPayloadEdgeAction),
       uiSettings: toPayloadUiSettings(state.uiSettings)
     },
     { notifyPreview: options.notifyPreview !== false }
   );
 }
 
-function scheduleSaveRules() {
+function scheduleSaveRules(options = {}) {
   if (!initialized.value) {
     return;
   }
@@ -689,13 +741,20 @@ function scheduleSaveRules() {
     return;
   }
 
+  pendingAutoSaveOptions = {
+    ...pendingAutoSaveOptions,
+    ...options
+  };
+
   if (autoSaveTimer) {
     clearTimeout(autoSaveTimer);
   }
 
   autoSaveTimer = window.setTimeout(() => {
+    const options = pendingAutoSaveOptions;
     autoSaveTimer = 0;
-    saveRules();
+    pendingAutoSaveOptions = {};
+    saveRules(options);
   }, 250);
 }
 
@@ -726,6 +785,16 @@ function resetUiSettings() {
   state.uiSettings = createDefaultUiSettings();
   saveRules({ notifyPreview: false, notifyResult: false });
   setMessage("已恢复默认设置。", "success");
+}
+
+function updateEdgeAction(action, patch = {}, options = {}) {
+  if (!action) {
+    return;
+  }
+
+  Object.assign(action, patch);
+  normalizeEdgeActionInPlace(action);
+  scheduleSaveRules(options);
 }
 
 function startRecording(target) {
@@ -896,7 +965,10 @@ function toViewRule(rule) {
     actionName: rule.actionName ?? "",
     keysText: Array.isArray(rule.keys) ? rule.keys.join(" + ") : "",
     actionType: normalizeActionType(rule.actionType),
-    windowOperation: normalizeWindowOperation(rule.operation)
+    windowOperation: normalizeWindowOperation(rule.operation),
+    volumeOperation: normalizeVolumeOperation(rule.operation),
+    brightnessOperation: normalizeBrightnessOperation(rule.operation),
+    amount: normalizeAmount(rule.amount)
   };
 }
 
@@ -927,7 +999,10 @@ function createRule(scopeKind, scopeName, values = {}) {
     }),
     keysText: values.keysText ?? "",
     actionType: normalizeActionType(values.actionType),
-    windowOperation: normalizeWindowOperation(values.windowOperation)
+    windowOperation: normalizeWindowOperation(values.windowOperation),
+    volumeOperation: normalizeVolumeOperation(values.volumeOperation),
+    brightnessOperation: normalizeBrightnessOperation(values.brightnessOperation),
+    amount: normalizeAmount(values.amount)
   };
 }
 
@@ -943,26 +1018,11 @@ function ensureApplication(name) {
 }
 
 function toPayloadRule(rule) {
-  const pattern = parsePattern(rule.patternText);
-  const scope = buildScope(rule.scopeKind, rule.scopeName);
-  const actionType = normalizeActionType(rule.actionType);
-  if (pattern.length === 0 || !scope) {
-    return null;
-  }
-
-  if (actionType === "hotkey" && parseKeys(rule.keysText).length === 0) {
-    return null;
-  }
-
-  if (actionType === "window" && !normalizeWindowOperation(rule.windowOperation)) {
-    return null;
-  }
-
   return {
-    scope,
+    scope: buildScope(rule.scopeKind, rule.scopeName),
     mouseButton: normalizeMouseButton(rule.mouseButton),
-    pattern,
-    actionName: rule.actionName.trim() || getGestureMnemonic(rule),
+    pattern: parsePattern(rule.patternText),
+    actionName: String(rule.actionName ?? "").trim() || getGestureMnemonic(rule),
     action: toPayloadAction(rule)
   };
 }
@@ -972,6 +1032,22 @@ function toPayloadAction(rule) {
     return {
       type: "window",
       operation: normalizeWindowOperation(rule.windowOperation)
+    };
+  }
+
+  if (normalizeActionType(rule.actionType) === "volume") {
+    return {
+      type: "volume",
+      operation: normalizeVolumeOperation(rule.volumeOperation),
+      amount: normalizeAmount(rule.amount)
+    };
+  }
+
+  if (normalizeActionType(rule.actionType) === "brightness") {
+    return {
+      type: "brightness",
+      operation: normalizeBrightnessOperation(rule.brightnessOperation),
+      amount: normalizeAmount(rule.amount)
     };
   }
 
@@ -987,6 +1063,19 @@ function toPayloadApplication(application) {
     displayName: String(application.displayName || application.name || "").trim(),
     path: application.path.trim(),
     category: application.category.trim()
+  };
+}
+
+function toPayloadEdgeAction(action) {
+  normalizeEdgeActionInPlace(action);
+  return {
+    enabled: Boolean(action.enabled),
+    triggerType: action.triggerType,
+    location: action.location,
+    wheelDirection: action.wheelDirection,
+    frictionCount: normalizeFrictionCount(action.frictionCount),
+    actionName: String(action.actionName ?? "").trim() || getEdgeActionLabel(action),
+    action: toPayloadAction(action)
   };
 }
 
@@ -1107,7 +1196,10 @@ function openGestureEditor(mode, rule, scopeKind, scopeName) {
     mouseButton: normalizeMouseButton(rule?.mouseButton),
     keysText: rule?.keysText ?? "",
     actionType: normalizeActionType(rule?.actionType),
-    windowOperation: normalizeWindowOperation(rule?.windowOperation)
+    windowOperation: normalizeWindowOperation(rule?.windowOperation),
+    volumeOperation: normalizeVolumeOperation(rule?.volumeOperation),
+    brightnessOperation: normalizeBrightnessOperation(rule?.brightnessOperation),
+    amount: normalizeAmount(rule?.amount)
   };
   state.gestureRecognitionMessage = "点击开始录制。再次点击可停止。";
   state.gestureEditorOpen = true;
@@ -1150,8 +1242,10 @@ function applyRecordedHotkey(message) {
   }
 
   const keysText = keys.join(" + ");
-  state.gestureDraft.keysText = keysText;
   target.keysText = keysText;
+  if (target === state.gestureDraft) {
+    state.gestureDraft.keysText = keysText;
+  }
 
   if (state.gestureEditorMode === "edit") {
     const rule = state.rules.find((item) => item.id === state.gestureEditorRuleId);
@@ -1161,7 +1255,11 @@ function applyRecordedHotkey(message) {
   }
 
   setMessage("已录制快捷键。", "success");
-  persistGestureEditor();
+  if (state.gestureEditorOpen) {
+    persistGestureEditor();
+  } else {
+    scheduleSaveRules();
+  }
 }
 
 function createEmptyGestureDraft() {
@@ -1171,7 +1269,10 @@ function createEmptyGestureDraft() {
     mouseButton: "right",
     keysText: "",
     actionType: "hotkey",
-    windowOperation: "toggle-maximize"
+    windowOperation: "toggle-maximize",
+    volumeOperation: "increase",
+    brightnessOperation: "increase",
+    amount: 5
   };
 }
 
@@ -1215,9 +1316,13 @@ function normalizeGestureHintSettings(settings) {
     backgroundColor: String(settings?.backgroundColor ?? DEFAULT_UI_SETTINGS.gestureHint.backgroundColor).trim() || DEFAULT_UI_SETTINGS.gestureHint.backgroundColor,
     backgroundOpacity: clampInteger(settings?.backgroundOpacity, 0, 100, DEFAULT_UI_SETTINGS.gestureHint.backgroundOpacity),
     width: clampInteger(settings?.width, 240, 960, DEFAULT_UI_SETTINGS.gestureHint.width),
+    widthPercent: clampInteger(settings?.widthPercent, 10, 90, DEFAULT_UI_SETTINGS.gestureHint.widthPercent),
     autoWidth: Boolean(settings?.autoWidth ?? DEFAULT_UI_SETTINGS.gestureHint.autoWidth),
     height: clampInteger(settings?.height, 80, 260, DEFAULT_UI_SETTINGS.gestureHint.height),
-    bottomOffset: clampInteger(settings?.bottomOffset, 0, 1200, DEFAULT_UI_SETTINGS.gestureHint.bottomOffset)
+    heightPercent: clampInteger(settings?.heightPercent, 5, 40, DEFAULT_UI_SETTINGS.gestureHint.heightPercent),
+    cornerRadius: clampFloat(settings?.cornerRadius, 0, 80, DEFAULT_UI_SETTINGS.gestureHint.cornerRadius),
+    bottomOffset: clampInteger(settings?.bottomOffset, 0, 1200, DEFAULT_UI_SETTINGS.gestureHint.bottomOffset),
+    bottomOffsetPercent: clampInteger(settings?.bottomOffsetPercent, 0, 100, DEFAULT_UI_SETTINGS.gestureHint.bottomOffsetPercent)
   };
 }
 
@@ -1281,7 +1386,8 @@ function normalizeMouseButton(button) {
 }
 
 function normalizeActionType(actionType) {
-  return String(actionType ?? "").toLowerCase() === "window" ? "window" : "hotkey";
+  const normalized = String(actionType ?? "").toLowerCase();
+  return ["hotkey", "window", "volume", "brightness"].includes(normalized) ? normalized : "hotkey";
 }
 
 function normalizeWindowOperation(operation) {
@@ -1291,13 +1397,134 @@ function normalizeWindowOperation(operation) {
     : "toggle-maximize";
 }
 
+function normalizeVolumeOperation(operation) {
+  const normalized = String(operation ?? "").trim();
+  return VOLUME_OPERATIONS.some((item) => item.value === normalized)
+    ? normalized
+    : "increase";
+}
+
+function normalizeBrightnessOperation(operation) {
+  const normalized = String(operation ?? "").trim();
+  return BRIGHTNESS_OPERATIONS.some((item) => item.value === normalized)
+    ? normalized
+    : "increase";
+}
+
+function normalizeAmount(value) {
+  return clampInteger(value, 1, 100, 5);
+}
+
+function normalizeFrictionCount(value) {
+  return clampInteger(value, 1, 20, 4);
+}
+
+function normalizeEdgeActions(edgeActions) {
+  const merged = new Map();
+  for (const action of DEFAULT_EDGE_ACTIONS) {
+    merged.set(getEdgeActionKey(action), { ...action });
+  }
+
+  for (const action of Array.isArray(edgeActions) ? edgeActions : []) {
+    const normalized = normalizeEdgeAction(action);
+    merged.set(getEdgeActionKey(normalized), normalized);
+  }
+
+  return [...merged.values()];
+}
+
+function normalizeEdgeAction(action) {
+  const normalized = {
+    enabled: Boolean(action?.enabled ?? false),
+    triggerType: normalizeEdgeTriggerType(action?.triggerType),
+    location: "",
+    wheelDirection: "",
+    frictionCount: normalizeFrictionCount(action?.frictionCount),
+    actionName: String(action?.actionName ?? "").trim(),
+    keysText: Array.isArray(action?.action?.keys) ? action.action.keys.join(" + ") : String(action?.keysText ?? "").trim(),
+    actionType: normalizeActionType(action?.action?.type ?? action?.actionType),
+    windowOperation: normalizeWindowOperation(action?.action?.operation ?? action?.windowOperation),
+    volumeOperation: normalizeVolumeOperation(action?.action?.operation ?? action?.volumeOperation),
+    brightnessOperation: normalizeBrightnessOperation(action?.action?.operation ?? action?.brightnessOperation),
+    amount: normalizeAmount(action?.action?.amount ?? action?.amount)
+  };
+  normalized.location = normalizeEdgeLocation(action?.location, normalized.triggerType);
+  normalized.wheelDirection = normalized.triggerType === "wheel" ? normalizeWheelDirection(action?.wheelDirection) : "";
+  return normalized;
+}
+
+function normalizeEdgeActionInPlace(action) {
+  Object.assign(action, normalizeEdgeAction(action));
+}
+
+function normalizeEdgeTriggerType(triggerType) {
+  const normalized = String(triggerType ?? "").toLowerCase();
+  return ["corner", "friction", "wheel"].includes(normalized) ? normalized : "corner";
+}
+
+function normalizeEdgeLocation(location, triggerType) {
+  const locations = triggerType === "wheel" ? EDGE_LOCATIONS.edge : EDGE_LOCATIONS.corner;
+  const normalized = String(location ?? "").trim();
+  return locations.some((item) => item.value === normalized)
+    ? normalized
+    : locations[0].value;
+}
+
+function normalizeWheelDirection(direction) {
+  return String(direction ?? "").toLowerCase() === "down" ? "down" : "up";
+}
+
+function createDefaultEdgeAction(triggerType, location, wheelDirection = "") {
+  return {
+    enabled: false,
+    triggerType,
+    location,
+    wheelDirection,
+    frictionCount: 4,
+    actionName: "",
+    keysText: "",
+    actionType: "hotkey",
+    windowOperation: "toggle-maximize",
+    volumeOperation: "increase",
+    brightnessOperation: "increase",
+    amount: 5
+  };
+}
+
+function getEdgeActionKey(action) {
+  return `${action.triggerType}:${action.location}:${action.wheelDirection || ""}`;
+}
+
 function getActionLabel(rule) {
-  if (normalizeActionType(rule?.actionType) === "window") {
+  const actionType = normalizeActionType(rule?.actionType);
+  if (actionType === "window") {
     const operation = WINDOW_OPERATIONS.find((item) => item.value === normalizeWindowOperation(rule?.windowOperation));
     return operation ? `窗口控制：${operation.label}` : "窗口控制";
   }
 
+  if (actionType === "volume") {
+    const operation = VOLUME_OPERATIONS.find((item) => item.value === normalizeVolumeOperation(rule?.volumeOperation));
+    return operation?.value === "mute" ? "音量控制：静音" : `音量控制：${operation?.label ?? "音量 +" } ${normalizeAmount(rule?.amount)}`;
+  }
+
+  if (actionType === "brightness") {
+    const operation = BRIGHTNESS_OPERATIONS.find((item) => item.value === normalizeBrightnessOperation(rule?.brightnessOperation));
+    return `亮度控制：${operation?.label ?? "亮度 +" } ${normalizeAmount(rule?.amount)}`;
+  }
+
   return rule?.keysText || "点击设置";
+}
+
+function getEdgeActionLabel(action) {
+  const triggerLabel = {
+    corner: "触发角",
+    friction: "摩擦边",
+    wheel: "滚动边"
+  }[normalizeEdgeTriggerType(action?.triggerType)];
+  const allLocations = [...EDGE_LOCATIONS.corner, ...EDGE_LOCATIONS.edge];
+  const location = allLocations.find((item) => item.value === action?.location)?.label ?? "";
+  const wheel = action?.wheelDirection ? (action.wheelDirection === "down" ? "滚轮下" : "滚轮上") : "";
+  return [triggerLabel, location, wheel].filter(Boolean).join(" ");
 }
 
 function createRuleId(seed) {

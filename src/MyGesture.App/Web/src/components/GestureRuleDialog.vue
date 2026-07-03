@@ -9,7 +9,9 @@ const props = defineProps({
   isRecordingHotkey: { type: Function, default: null },
   isRecordingGesture: { type: Boolean, default: false },
   getGestureMnemonic: { type: Function, default: null },
-  windowOperations: { type: Array, default: () => [] }
+  windowOperations: { type: Array, default: () => [] },
+  volumeOperations: { type: Array, default: () => [] },
+  brightnessOperations: { type: Array, default: () => [] }
 })
 
 defineEmits(['close', 'persist', 'record', 'record-hotkey'])
@@ -65,6 +67,8 @@ const patternLabel = computed(
             >
               <option value="hotkey">快捷键</option>
               <option value="window">窗口控制</option>
+              <option value="volume">音量控制</option>
+              <option value="brightness">亮度控制</option>
             </select>
           </label>
         </div>
@@ -86,6 +90,66 @@ const patternLabel = computed(
               </option>
             </select>
           </label>
+
+          <template v-else-if="draft.actionType === 'volume'">
+            <label>
+              <span>操作</span>
+              <select
+                v-model="draft.volumeOperation"
+                class="scope-input"
+                @change="$emit('persist')"
+              >
+                <option
+                  v-for="operation in volumeOperations"
+                  :key="operation.value"
+                  :value="operation.value"
+                >
+                  {{ operation.label }}
+                </option>
+              </select>
+            </label>
+            <label v-if="draft.volumeOperation !== 'mute'">
+              <span>数值</span>
+              <input
+                v-model.number="draft.amount"
+                class="scope-input"
+                type="number"
+                min="1"
+                max="100"
+                @blur="$emit('persist')"
+              />
+            </label>
+          </template>
+
+          <template v-else-if="draft.actionType === 'brightness'">
+            <label>
+              <span>操作</span>
+              <select
+                v-model="draft.brightnessOperation"
+                class="scope-input"
+                @change="$emit('persist')"
+              >
+                <option
+                  v-for="operation in brightnessOperations"
+                  :key="operation.value"
+                  :value="operation.value"
+                >
+                  {{ operation.label }}
+                </option>
+              </select>
+            </label>
+            <label>
+              <span>数值</span>
+              <input
+                v-model.number="draft.amount"
+                class="scope-input"
+                type="number"
+                min="1"
+                max="100"
+                @blur="$emit('persist')"
+              />
+            </label>
+          </template>
 
           <label v-else>
             <span>操作</span>

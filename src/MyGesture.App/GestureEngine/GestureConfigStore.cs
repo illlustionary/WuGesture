@@ -80,6 +80,7 @@ public sealed class GestureConfigStore
         config ??= new GestureConfig();
         config.Rules ??= [];
         config.Applications ??= [];
+        config.EdgeActions ??= [];
         config.UiSettings ??= new GestureUiSettings();
         config.UiSettings.MouseTrail ??= new MouseTrailUiSettings();
         config.UiSettings.GestureHint ??= new GestureHintUiSettings();
@@ -106,9 +107,22 @@ public sealed class GestureConfigStore
         mouseTrail.Thickness = Math.Max(1f, mouseTrail.InactiveThickness);
 
         var gestureHint = settings.GestureHint;
+        gestureHint.WidthPercent = ClampInteger(gestureHint.WidthPercent, 10, 90, 28);
+        gestureHint.HeightPercent = ClampInteger(gestureHint.HeightPercent, 5, 40, 11);
+        gestureHint.BottomOffsetPercent = ClampInteger(gestureHint.BottomOffsetPercent, 0, 100, 13);
         if (gestureHint.BottomOffset < 0)
         {
             gestureHint.BottomOffset = 140;
         }
+    }
+
+    private static int ClampInteger(int value, int min, int max, int fallback)
+    {
+        if (value < min || value > max)
+        {
+            return fallback;
+        }
+
+        return value;
     }
 }
