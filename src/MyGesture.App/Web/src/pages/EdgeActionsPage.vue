@@ -21,7 +21,7 @@ const groups = [
   },
   {
     type: 'wheel',
-    title: '鼠标滚动边',
+    title: '边缘滚动',
     description: '鼠标停在屏幕边缘滚动时触发，并吞掉原始滚轮事件。'
   }
 ]
@@ -29,7 +29,7 @@ const groups = [
 const triggerLabels = {
   corner: '触发角',
   friction: '摩擦边',
-  wheel: '滚动边'
+  wheel: '边缘滚动'
 }
 
 function groupActions(type) {
