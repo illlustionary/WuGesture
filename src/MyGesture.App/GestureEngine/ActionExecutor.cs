@@ -133,17 +133,7 @@ public sealed class ActionExecutor
 
     private static void ExecuteBrightnessControl(BrightnessControlAction action)
     {
-        var current = BrightnessController.GetBrightness();
-        var delta = Math.Max(1, action.Amount);
-        var next = action.Operation switch
-        {
-            BrightnessControlOperation.Increase => current + delta,
-            BrightnessControlOperation.Decrease => current - delta,
-            _ => current
-        };
-
-        BrightnessController.SetBrightness(next);
-        LevelOsdForm.ShowBrightness(BrightnessController.GetBrightness());
+        BrightnessAdjustmentQueue.Enqueue(action);
     }
 
     private static IntPtr ResolveWindowTarget(IntPtr fallbackWindow)
