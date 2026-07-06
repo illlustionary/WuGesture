@@ -14,6 +14,8 @@ internal static class BrightnessController
     private static bool? gammaAvailable;
     private static int lastGammaBrightness = 100;
     private static GammaRamp? originalGammaRamp;
+    private static uint ddcMinBrightness;
+    private static uint ddcMaxBrightness;
 
     public static int GetBrightness()
     {
@@ -23,6 +25,8 @@ internal static class BrightnessController
             {
                 if (GetMonitorBrightness(cachedPhysicalMonitor, out var min, out var current, out var max))
                 {
+                    ddcMinBrightness = min;
+                    ddcMaxBrightness = max;
                     return max > min ? (int)((current - min) * 100 / (max - min)) : (int)current;
                 }
             }
@@ -51,9 +55,9 @@ internal static class BrightnessController
         {
             try
             {
-                if (GetMonitorBrightness(cachedPhysicalMonitor, out var min, out _, out var max) && max > min)
+                if (ddcMaxBrightness > ddcMinBrightness)
                 {
-                    var target = (uint)(min + (max - min) * level / 100d);
+                    var target = (uint)(ddcMinBrightness + (ddcMaxBrightness - ddcMinBrightness) * level / 100d);
                     if (SetMonitorBrightness(cachedPhysicalMonitor, target))
                     {
                         RestoreOriginalGamma();
@@ -109,6 +113,8 @@ internal static class BrightnessController
         ddcAvailable = null;
         wmiAvailable = null;
         gammaAvailable = null;
+        ddcMinBrightness = 0;
+        ddcMaxBrightness = 0;
         lastGammaBrightness = 100;
     }
 
@@ -143,6 +149,7 @@ internal static class BrightnessController
 
             if (ok)
             {
+                GetMonitorBrightness(monitors[0].Handle, out ddcMinBrightness, out _, out ddcMaxBrightness);
                 cachedPhysicalMonitor = monitors[0].Handle;
                 cachedMonitorForCleanup = monitor;
             }

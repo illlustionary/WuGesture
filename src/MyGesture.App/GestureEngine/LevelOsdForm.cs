@@ -14,6 +14,8 @@ internal sealed class LevelOsdForm : Form
     private const int ShowDurationMs = 1800;
     private const double FadeStep = 0.08d;
     private static readonly object Sync = new();
+    private static readonly ManualResetEventSlim Ready = new();
+    private static Thread? uiThread;
     private static LevelOsdForm? instance;
 
     private readonly System.Windows.Forms.Timer hideTimer = new();
@@ -93,9 +95,24 @@ internal sealed class LevelOsdForm : Form
                 return instance;
             }
 
-            instance = new LevelOsdForm();
-            return instance;
+            Ready.Reset();
+            if (uiThread is null || !uiThread.IsAlive)
+            {
+                uiThread = new Thread(() =>
+                {
+                    instance = new LevelOsdForm();
+                    _ = instance.Handle;
+                    Ready.Set();
+                    Application.Run();
+                });
+                uiThread.SetApartmentState(ApartmentState.STA);
+                uiThread.IsBackground = true;
+                uiThread.Start();
+            }
         }
+
+        Ready.Wait(TimeSpan.FromSeconds(3));
+        return instance!;
     }
 
     private void ShowInternal(OsdKind nextKind, int nextValue, bool nextMuted)

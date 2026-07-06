@@ -91,6 +91,7 @@ src\MyGesture.App\GestureEngine
 - `ActionExecutor.cs`：按动作类型执行命令；快捷键通过 Win32 `SendInput` 执行，窗口控制通过 `ShowWindow`、`SetWindowPos` 和窗口消息执行，音量/亮度会调用对应控制器并显示 OSD。
 - `AudioController.cs`：通过 Windows Core Audio API 读取和设置系统主音量、静音状态。
 - `BrightnessController.cs`：通过 DDC/CI、WMI、Gamma 三段回退读取和设置显示亮度。
+- `BrightnessAdjustmentQueue.cs`：把亮度调节放到后台串行队列执行，并合并连续滚轮输入，避免 DDC/CI 等慢调用阻塞鼠标钩子或主 UI。
 - `LevelOsdForm.cs`：音量和亮度调节后的置顶非激活弹窗提示。
 - `MouseInput.cs`：当移动距离太小，不足以构成手势时，重放一次普通右键或中键。
 - `GestureDirection.cs`：8 方向枚举。
