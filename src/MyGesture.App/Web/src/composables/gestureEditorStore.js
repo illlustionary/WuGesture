@@ -1551,7 +1551,7 @@ function getEdgeActionLabel(action) {
   const triggerLabel = {
     corner: "触发角",
     friction: "摩擦边",
-    wheel: "滚动边"
+    wheel: "边缘滚动"
   }[normalizeEdgeTriggerType(action?.triggerType)];
   const allLocations = [...EDGE_LOCATIONS.corner, ...EDGE_LOCATIONS.edge];
   const location = allLocations.find((item) => item.value === action?.location)?.label ?? "";
