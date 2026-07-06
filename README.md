@@ -1,6 +1,6 @@
-# My Gesture
+# Wu Gesture
 
-使用 C# WinForms、WebView2 和原生全局鼠标钩子的 Windows 鼠标手势原型。
+使用 C# WinForms、WebView2 和原生全局鼠标钩子的 Windows 鼠标手势应用。
 
 ## 当前状态
 
@@ -40,7 +40,7 @@ dotnet build MyGesture.slnx
 默认发布输出会被 Git 忽略：
 
 ```text
-artifacts\publish\MyGesture
+artifacts\publish\WuGesture
 ```
 
 ## 架构

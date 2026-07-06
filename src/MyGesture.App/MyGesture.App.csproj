@@ -8,6 +8,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);MSB3277</NoWarn>
+    <AssemblyName>Wu Gesture</AssemblyName>
+    <Title>Wu Gesture</Title>
+    <Product>Wu Gesture</Product>
+    <ApplicationIcon>Resources\wu.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>

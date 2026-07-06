@@ -11,8 +11,10 @@ namespace MyGesture.App;
 
 public sealed class MainForm : Form
 {
+    private const string ApplicationDisplayName = "Wu Gesture";
     private const string StartupRegistryPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
-    private const string StartupRegistryValueName = "MyGesture";
+    private const string LegacyStartupRegistryValueName = "MyGesture";
+    private const string StartupRegistryValueName = "WuGesture";
     private readonly GestureHintForm gestureHintForm = new();
     private readonly GestureConfigStore configStore = new();
     private readonly WebDavConfigSyncService webDavConfigSyncService = new();
@@ -44,7 +46,8 @@ public sealed class MainForm : Form
 
     public MainForm()
     {
-        Text = "My Gesture";
+        Text = ApplicationDisplayName;
+        Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? SystemIcons.Application;
         StartPosition = FormStartPosition.Manual;
         ApplyInitialWindowState();
         InitializeTrayIcon();
@@ -110,7 +113,7 @@ public sealed class MainForm : Form
         trayMenu.Items.Add(new ToolStripSeparator());
         trayMenu.Items.Add(exitItem);
 
-        trayIcon.Text = "My Gesture";
+        trayIcon.Text = ApplicationDisplayName;
         trayIcon.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? SystemIcons.Application;
         trayIcon.ContextMenuStrip = trayMenu;
         trayIcon.Visible = true;
@@ -231,10 +234,12 @@ public sealed class MainForm : Form
             if (enabled)
             {
                 key.SetValue(StartupRegistryValueName, $"\"{Application.ExecutablePath}\"");
+                key.DeleteValue(LegacyStartupRegistryValueName, throwOnMissingValue: false);
             }
             else
             {
                 key.DeleteValue(StartupRegistryValueName, throwOnMissingValue: false);
+                key.DeleteValue(LegacyStartupRegistryValueName, throwOnMissingValue: false);
             }
         }
         catch

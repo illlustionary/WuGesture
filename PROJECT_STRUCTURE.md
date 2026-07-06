@@ -4,7 +4,7 @@
 
 ## 产品方向
 
-`my-gesture` 是一个 Windows 鼠标手势应用。
+`Wu Gesture` 是一个 Windows 鼠标手势应用；仓库和工程目录仍沿用 `my-gesture` / `MyGesture.App` 命名。
 
 当前目标：
 
@@ -55,7 +55,7 @@ src\MyGesture.App
 启动流程：
 
 - `Program.cs` 启动 `MainForm`。
-- `MainForm.cs` 加载配置、应用开机自启动和管理员启动设置、创建 `GestureService` / `EdgeActionService`、初始化 WebView2 配置界面、创建托盘图标，并桥接 WebView 消息；也会把配置里的 `uiSettings` 应用到轨迹窗、提示窗和应用行为。
+- `MainForm.cs` 加载配置、应用开机自启动和管理员启动设置、创建 `GestureService` / `EdgeActionService`、初始化 WebView2 配置界面、创建托盘图标，并桥接 WebView 消息；也会把配置里的 `uiSettings` 应用到轨迹窗、提示窗和应用行为。主窗口和托盘显示名为 `Wu Gesture`。
 - 配置窗口首次启动时默认占据主屏工作区的一半，并居中显示；关闭窗口时会保存窗口位置、大小和最大化状态，并按设置选择隐藏到托盘、最小化到任务栏或直接退出。隐藏到托盘会释放 WebView2 配置界面以降低后台内存占用，托盘恢复时重建 WebView2。通过托盘菜单“退出”始终会真正释放后台手势服务并结束进程。
 
 历史模板文件：
@@ -68,6 +68,8 @@ src\MyGesture.App
 资源：
 
 - `Resources\volume.png`、`Resources\sun.png`：音量和亮度 OSD 使用的嵌入图标资源。
+- `Resources\wu.jpg`：应用图标来源图片。
+- `Resources\wu.ico`：从 `wu.jpg` 生成的 Windows 应用图标，用于可执行文件、任务栏、窗口左上角和托盘。
 
 ## 手势引擎
 
@@ -227,7 +229,7 @@ dotnet test MyGesture.slnx
 默认发布输出：
 
 ```text
-artifacts\publish\MyGesture
+artifacts\publish\WuGesture
 ```
 
 `artifacts/` 已被 Git 忽略。
