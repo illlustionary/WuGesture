@@ -4,7 +4,7 @@
 
 ## 概览
 
-这是 MyGesture 的 Vite + Vue 3 前端工程，由桌面宿主通过 WebView2 加载。它负责规则编辑、分类和程序管理、边缘操作配置，以及轨迹线和提示窗外观设置。
+这是 Wu Gesture 的 Vite + Vue 3 前端工程，由桌面宿主通过 WebView2 加载。它负责规则编辑、分类和程序管理、边缘操作配置，以及轨迹线和提示窗外观设置。
 
 ## 根目录
 
@@ -24,7 +24,7 @@ src\MyGesture.App\Web
 根目录重要文件：
 
 - `agents.md`：Web 子项目的代理指令。
-- `index.html`：Vite 入口 HTML。
+- `index.html`：Vite 入口 HTML，页面标题为 `Wu Gesture`。
 - `package.json`：前端工程依赖与脚本。
 - `pnpm-lock.yaml`：锁定依赖树。
 - `pnpm-workspace.yaml`：工作区配置，并放行 `@parcel/watcher` 的本地构建脚本，避免非交互环境下依赖安装中断。

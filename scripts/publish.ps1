@@ -10,16 +10,19 @@ $rootDir = Split-Path -Parent $scriptDir
 $projectPath = Join-Path $rootDir "src\MyGesture.App\MyGesture.App.csproj"
 
 if ([string]::IsNullOrWhiteSpace($OutputPath)) {
-    $OutputPath = Join-Path $rootDir "artifacts\publish\MyGesture"
+    $OutputPath = Join-Path $rootDir "artifacts\publish\WuGesture"
 }
 
-$runningProcess = Get-Process -Name "MyGesture.App" -ErrorAction SilentlyContinue
+$runningProcess = @(
+    Get-Process -Name "Wu Gesture" -ErrorAction SilentlyContinue
+    Get-Process -Name "MyGesture.App" -ErrorAction SilentlyContinue
+)
 if ($runningProcess) {
     $ids = ($runningProcess | Select-Object -ExpandProperty Id) -join ", "
-    throw "MyGesture.App is still running. Close it before publishing. Process id(s): $ids"
+    throw "Wu Gesture is still running. Close it before publishing. Process id(s): $ids"
 }
 
-Write-Host "Publishing MyGesture.App"
+Write-Host "Publishing Wu Gesture"
 Write-Host "Configuration: $Configuration"
 Write-Host "Output: $OutputPath"
 
