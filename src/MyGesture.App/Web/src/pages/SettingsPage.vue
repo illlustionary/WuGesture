@@ -40,6 +40,13 @@ const hintPreviewStyle = computed(() => ({
   '--hint-bottom-offset': `${Math.min(80, draft.gestureHint.bottomOffsetPercent * 0.8)}px`
 }))
 
+const webDavDraftSignature = computed(() => editor.getWebDavSignature(draft.webDav))
+const webDavReady = computed(
+  () =>
+    Boolean(draft.webDav.address) &&
+    editor.state.webDavTestedSignature === webDavDraftSignature.value
+)
+
 watch(
   () => editor.state.uiSettings,
   () => {
@@ -114,6 +121,7 @@ function createDraft(settings) {
   const appBehavior = normalizeObjectKeys(
     settings?.appBehavior ?? settings?.AppBehavior
   )
+  const webDav = normalizeObjectKeys(settings?.webDav ?? settings?.WebDav)
   const legacyThickness = mouseTrail.thickness ?? mouseTrail.Thickness
   return {
     mouseTrail: {
@@ -146,8 +154,29 @@ function createDraft(settings) {
       closeButtonBehavior: normalizeCloseButtonBehavior(
         appBehavior.closeButtonBehavior
       )
+    },
+    webDav: {
+      address: webDav.address ?? '',
+      userName: webDav.userName ?? '',
+      password: webDav.password ?? '',
+      remotePath: webDav.remotePath ?? ''
     }
   }
+}
+
+function saveToWebDav() {
+  flushPersistDraft()
+  editor.saveConfigToWebDav()
+}
+
+function restoreFromWebDav() {
+  flushPersistDraft()
+  editor.restoreConfigFromWebDav()
+}
+
+function testWebDav() {
+  flushPersistDraft()
+  editor.testWebDavConnection()
 }
 
 function normalizeCloseButtonBehavior(value) {
@@ -375,6 +404,85 @@ function hexToRgba(hex, alpha = 1) {
         <section class="settings-panel">
           <div class="settings-panel__head">
             <div>
+              <h3>WebDAV</h3>
+              <p>把当前配置保存到远程，或从远程恢复本机配置。</p>
+            </div>
+            <div class="settings-panel__actions">
+              <IconActionButton
+                icon="test"
+                :label="editor.state.webDavTesting ? '测试中' : '测试'"
+                class="secondary-button"
+                :disabled="editor.state.webDavTesting"
+                @click="testWebDav"
+              />
+              <IconActionButton
+                icon="download"
+                label="恢复"
+                class="secondary-button"
+                :disabled="!webDavReady || editor.state.webDavTesting"
+                @click="restoreFromWebDav"
+              />
+              <IconActionButton
+                icon="upload"
+                label="保存"
+                class="primary-button"
+                :disabled="!webDavReady || editor.state.webDavTesting"
+                @click="saveToWebDav"
+              />
+            </div>
+          </div>
+
+          <div class="settings-grid">
+            <label>
+              <span>地址</span>
+              <input
+                v-model.trim="draft.webDav.address"
+                type="url"
+                placeholder="https://example.com/dav/"
+                @input="queuePersistDraft"
+                @change="flushPersistDraft"
+              />
+            </label>
+            <label>
+              <span>路径</span>
+              <input
+                v-model.trim="draft.webDav.remotePath"
+                type="text"
+                placeholder="my-gesture/"
+                @input="queuePersistDraft"
+                @change="flushPersistDraft"
+              />
+              <small>留空时使用 gestures.json。</small>
+            </label>
+            <label>
+              <span>账号</span>
+              <input
+                v-model.trim="draft.webDav.userName"
+                type="text"
+                autocomplete="username"
+                @input="queuePersistDraft"
+                @change="flushPersistDraft"
+              />
+            </label>
+            <label>
+              <span>密码</span>
+              <input
+                v-model="draft.webDav.password"
+                type="password"
+                autocomplete="current-password"
+                @input="queuePersistDraft"
+                @change="flushPersistDraft"
+              />
+            </label>
+          </div>
+          <p class="settings-panel__note">
+            {{ webDavReady ? '当前 WebDAV 配置已测试通过。' : '保存或恢复前需要先测试当前 WebDAV 配置。' }}
+          </p>
+        </section>
+
+        <section class="settings-panel">
+          <div class="settings-panel__head">
+            <div>
               <h3>底部提示窗</h3>
               <p>激活规则后的提示窗字体、颜色和尺寸。</p>
             </div>
@@ -511,6 +619,7 @@ function hexToRgba(hex, alpha = 1) {
   &__head {
     display: flex;
     justify-content: space-between;
+    align-items: flex-start;
     gap: 10px;
     margin-bottom: 16px;
 
@@ -524,6 +633,19 @@ function hexToRgba(hex, alpha = 1) {
       color: var(--muted);
       font-size: 13px;
     }
+  }
+
+  &__actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  &__note {
+    margin-top: 12px;
+    color: var(--muted);
+    font-size: 12px;
   }
 }
 
@@ -649,7 +771,10 @@ function hexToRgba(hex, alpha = 1) {
   background: rgba(255, 255, 255, 0.92);
 }
 
-.settings-grid select {
+.settings-grid select,
+.settings-grid input[type='text'],
+.settings-grid input[type='url'],
+.settings-grid input[type='password'] {
   min-height: 42px;
   padding: 0 12px;
   border: 1px solid var(--border);
@@ -666,6 +791,12 @@ function hexToRgba(hex, alpha = 1) {
     height: 22px;
     accent-color: #007aff;
   }
+}
+
+.settings-panel__actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+  box-shadow: none;
 }
 
 @media (max-width: 960px) {

@@ -3,8 +3,11 @@ import { computed } from 'vue'
 import addIcon from '../assets/add.svg'
 import closeIcon from '../assets/close.svg'
 import deleteIcon from '../assets/delete.svg'
+import downloadIcon from '../assets/download.svg'
 import settingIcon from '../assets/setting.svg'
 import resetIcon from '../assets/reset.svg'
+import testIcon from '../assets/test.svg'
+import uploadIcon from '../assets/upload.svg'
 
 const props = defineProps({
   icon: {
@@ -29,8 +32,11 @@ const iconMap = {
   add: addIcon,
   close: closeIcon,
   delete: deleteIcon,
+  download: downloadIcon,
   setting: settingIcon,
-  reset: resetIcon
+  reset: resetIcon,
+  test: testIcon,
+  upload: uploadIcon
 }
 
 const iconComponent = computed(() => iconMap[props.icon] ?? addIcon)

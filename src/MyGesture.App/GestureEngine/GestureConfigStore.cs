@@ -58,6 +58,17 @@ public sealed class GestureConfigStore
         return new LoadedGestureConfig(ConfigPath, config, rules);
     }
 
+    public LoadedGestureConfig SaveJsonAndLoad(string json, WebDavUiSettings? fallbackWebDavSettings = null)
+    {
+        var config = NormalizeConfig(JsonSerializer.Deserialize<GestureConfig>(json, JsonOptions));
+        if (fallbackWebDavSettings is not null && IsEmptyWebDavSettings(config.UiSettings.WebDav))
+        {
+            config.UiSettings.WebDav = fallbackWebDavSettings;
+        }
+
+        return SaveAndLoad(config);
+    }
+
     public LoadedGestureConfig ResetToDefaults()
     {
         return SaveAndLoad(DefaultGestureConfig.Create());
@@ -85,6 +96,7 @@ public sealed class GestureConfigStore
         config.UiSettings.MouseTrail ??= new MouseTrailUiSettings();
         config.UiSettings.GestureHint ??= new GestureHintUiSettings();
         config.UiSettings.AppBehavior ??= new AppBehaviorUiSettings();
+        config.UiSettings.WebDav ??= new WebDavUiSettings();
         NormalizeUiSettings(config.UiSettings);
         return config;
     }
@@ -118,6 +130,12 @@ public sealed class GestureConfigStore
 
         var appBehavior = settings.AppBehavior;
         appBehavior.CloseButtonBehavior = NormalizeCloseButtonBehavior(appBehavior.CloseButtonBehavior);
+
+        var webDav = settings.WebDav;
+        webDav.Address = (webDav.Address ?? "").Trim();
+        webDav.UserName = (webDav.UserName ?? "").Trim();
+        webDav.Password ??= "";
+        webDav.RemotePath = (webDav.RemotePath ?? "").Trim();
     }
 
     private static string NormalizeCloseButtonBehavior(string? value)
@@ -125,6 +143,14 @@ public sealed class GestureConfigStore
         return value is "minimize-to-tray" or "minimize-to-taskbar" or "exit"
             ? value
             : "minimize-to-tray";
+    }
+
+    private static bool IsEmptyWebDavSettings(WebDavUiSettings settings)
+    {
+        return string.IsNullOrWhiteSpace(settings.Address) &&
+            string.IsNullOrWhiteSpace(settings.UserName) &&
+            string.IsNullOrWhiteSpace(settings.Password) &&
+            string.IsNullOrWhiteSpace(settings.RemotePath);
     }
 
     private static int ClampInteger(int value, int min, int max, int fallback)
