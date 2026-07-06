@@ -55,8 +55,8 @@ src\MyGesture.App
 启动流程：
 
 - `Program.cs` 启动 `MainForm`。
-- `MainForm.cs` 初始化 WebView2、加载配置、创建 `GestureService`，并桥接 WebView 消息；也会把配置里的 `uiSettings` 应用到轨迹窗和提示窗。
-- 配置窗口首次启动时默认占据主屏工作区的一半，并居中显示；关闭时会保存窗口位置、大小和最大化状态，下次启动时恢复。
+- `MainForm.cs` 加载配置、创建 `GestureService` / `EdgeActionService`、初始化 WebView2 配置界面、创建托盘图标，并桥接 WebView 消息；也会把配置里的 `uiSettings` 应用到轨迹窗和提示窗。
+- 配置窗口首次启动时默认占据主屏工作区的一半，并居中显示；关闭窗口时会保存窗口位置、大小和最大化状态，隐藏到托盘并释放 WebView2 配置界面以降低后台内存占用，托盘恢复时重建 WebView2。通过托盘菜单“退出”才会真正释放后台手势服务并结束进程。
 
 历史模板文件：
 
