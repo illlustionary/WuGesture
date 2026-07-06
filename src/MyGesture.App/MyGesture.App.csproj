@@ -20,6 +20,11 @@
     <None Include="Web\vite.config.js" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\sun.png" />
+    <EmbeddedResource Include="Resources\volume.png" />
+  </ItemGroup>
+
   <Target Name="BuildWebFrontend" BeforeTargets="PrepareForBuild">
     <Exec WorkingDirectory="$(MSBuildProjectDirectory)\Web" Command="pnpm build" />
   </Target>
