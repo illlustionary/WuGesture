@@ -27,7 +27,7 @@ public sealed class GestureConfigStore
     {
         if (!File.Exists(ConfigPath))
         {
-            var defaultConfig = GestureConfigMapper.FromRules(DefaultGestureRules.Create());
+            var defaultConfig = DefaultGestureConfig.Create();
             Save(defaultConfig);
             return new LoadedGestureConfig(ConfigPath, defaultConfig, GestureConfigMapper.ToRules(defaultConfig));
         }
@@ -37,7 +37,7 @@ public sealed class GestureConfigStore
 
         if (config.Rules.Count == 0)
         {
-            var defaultConfig = GestureConfigMapper.FromRules(DefaultGestureRules.Create());
+            var defaultConfig = DefaultGestureConfig.Create();
             config.Rules = defaultConfig.Rules;
             Save(config);
         }
@@ -60,7 +60,7 @@ public sealed class GestureConfigStore
 
     public LoadedGestureConfig ResetToDefaults()
     {
-        return SaveAndLoad(GestureConfigMapper.FromRules(DefaultGestureRules.Create()));
+        return SaveAndLoad(DefaultGestureConfig.Create());
     }
 
     public void Save(GestureConfig config)
@@ -84,6 +84,7 @@ public sealed class GestureConfigStore
         config.UiSettings ??= new GestureUiSettings();
         config.UiSettings.MouseTrail ??= new MouseTrailUiSettings();
         config.UiSettings.GestureHint ??= new GestureHintUiSettings();
+        config.UiSettings.AppBehavior ??= new AppBehaviorUiSettings();
         NormalizeUiSettings(config.UiSettings);
         return config;
     }
@@ -114,6 +115,16 @@ public sealed class GestureConfigStore
         {
             gestureHint.BottomOffset = 140;
         }
+
+        var appBehavior = settings.AppBehavior;
+        appBehavior.CloseButtonBehavior = NormalizeCloseButtonBehavior(appBehavior.CloseButtonBehavior);
+    }
+
+    private static string NormalizeCloseButtonBehavior(string? value)
+    {
+        return value is "minimize-to-tray" or "minimize-to-taskbar" or "exit"
+            ? value
+            : "minimize-to-tray";
     }
 
     private static int ClampInteger(int value, int min, int max, int fallback)

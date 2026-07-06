@@ -1,13 +1,18 @@
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.WinForms;
+using Microsoft.Win32;
 using MyGesture.App.GestureEngine;
+using System.Diagnostics;
 using System.Drawing.Imaging;
+using System.Security.Principal;
 using System.Text.Json;
 
 namespace MyGesture.App;
 
 public sealed class MainForm : Form
 {
+    private const string StartupRegistryPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
+    private const string StartupRegistryValueName = "MyGesture";
     private readonly GestureHintForm gestureHintForm = new();
     private readonly GestureConfigStore configStore = new();
     private readonly KeyboardShortcutRecorder hotkeyRecorder = new();
@@ -64,6 +69,12 @@ public sealed class MainForm : Form
         }
 
         loadedConfig = configStore.LoadOrCreate();
+        ApplyAppBehaviorSettings(loadedConfig.Config.UiSettings.AppBehavior);
+        if (TryRelaunchAsAdministrator(loadedConfig.Config.UiSettings.AppBehavior))
+        {
+            return;
+        }
+
         scopeContextProvider = new ConfiguredScopeContextProvider(loadedConfig.Config.Applications);
         gestureService = new GestureService(new GestureMatcher(loadedConfig.Rules), scopeContextProvider);
         edgeActionService = new EdgeActionService(loadedConfig.Config.EdgeActions);
@@ -109,9 +120,25 @@ public sealed class MainForm : Form
     {
         if (!isExiting && e.CloseReason == CloseReason.UserClosing)
         {
-            e.Cancel = true;
-            MinimizeToTray();
-            return;
+            var closeButtonBehavior = GetCloseButtonBehavior();
+            if (closeButtonBehavior == "exit")
+            {
+                isExiting = true;
+            }
+            else
+            {
+                e.Cancel = true;
+                if (closeButtonBehavior == "minimize-to-taskbar")
+                {
+                    MinimizeToTaskbar();
+                }
+                else
+                {
+                    MinimizeToTray();
+                }
+
+                return;
+            }
         }
 
         isClosing = true;
@@ -139,6 +166,19 @@ public sealed class MainForm : Form
         Hide();
     }
 
+    private void MinimizeToTaskbar()
+    {
+        SaveWindowState();
+        hotkeyRecorder.Stop();
+        gestureService?.StopRecording();
+        gestureService?.SetPaused(false);
+        edgeActionService?.SetPaused(false);
+        gestureHintForm.HideResult();
+        mouseTrailForm?.HideTrail();
+        ShowInTaskbar = true;
+        WindowState = FormWindowState.Minimized;
+    }
+
     private async void RestoreFromTray()
     {
         if (isClosing || IsDisposed)
@@ -161,6 +201,76 @@ public sealed class MainForm : Form
     {
         isExiting = true;
         Close();
+    }
+
+    private string GetCloseButtonBehavior()
+    {
+        return loadedConfig?.Config.UiSettings.AppBehavior.CloseButtonBehavior is
+            "minimize-to-tray" or "minimize-to-taskbar" or "exit"
+            ? loadedConfig.Config.UiSettings.AppBehavior.CloseButtonBehavior
+            : "minimize-to-tray";
+    }
+
+    private void ApplyAppBehaviorSettings(AppBehaviorUiSettings settings)
+    {
+        ApplyStartupRegistration(settings.LaunchAtStartup);
+    }
+
+    private static void ApplyStartupRegistration(bool enabled)
+    {
+        try
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(StartupRegistryPath, writable: true) ??
+                Registry.CurrentUser.CreateSubKey(StartupRegistryPath, writable: true);
+            if (key is null)
+            {
+                return;
+            }
+
+            if (enabled)
+            {
+                key.SetValue(StartupRegistryValueName, $"\"{Application.ExecutablePath}\"");
+            }
+            else
+            {
+                key.DeleteValue(StartupRegistryValueName, throwOnMissingValue: false);
+            }
+        }
+        catch
+        {
+        }
+    }
+
+    private bool TryRelaunchAsAdministrator(AppBehaviorUiSettings settings)
+    {
+        if (!settings.RunAsAdministrator || IsRunningAsAdministrator())
+        {
+            return false;
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = Application.ExecutablePath,
+                UseShellExecute = true,
+                Verb = "runas"
+            });
+            isExiting = true;
+            BeginInvoke(new Action(Close));
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static bool IsRunningAsAdministrator()
+    {
+        using var identity = WindowsIdentity.GetCurrent();
+        var principal = new WindowsPrincipal(identity);
+        return principal.IsInRole(WindowsBuiltInRole.Administrator);
     }
 
     private async Task EnsureWebViewAsync()
@@ -738,6 +848,7 @@ public sealed class MainForm : Form
             scopeContextProvider?.UpdateApplications(loadedConfig.Config.Applications);
             gestureService?.UpdateMatcher(new GestureMatcher(loadedConfig.Rules));
             edgeActionService?.UpdateActions(loadedConfig.Config.EdgeActions);
+            ApplyAppBehaviorSettings(loadedConfig.Config.UiSettings.AppBehavior);
             ApplyUiSettings(loadedConfig.Config.UiSettings);
 
             PostRules();
@@ -757,6 +868,7 @@ public sealed class MainForm : Form
             scopeContextProvider?.UpdateApplications(loadedConfig.Config.Applications);
             gestureService?.UpdateMatcher(new GestureMatcher(loadedConfig.Rules));
             edgeActionService?.UpdateActions(loadedConfig.Config.EdgeActions);
+            ApplyAppBehaviorSettings(loadedConfig.Config.UiSettings.AppBehavior);
             ApplyUiSettings(loadedConfig.Config.UiSettings);
 
             PostRules();
@@ -776,6 +888,7 @@ public sealed class MainForm : Form
             scopeContextProvider?.UpdateApplications(loadedConfig.Config.Applications);
             gestureService?.UpdateMatcher(new GestureMatcher(loadedConfig.Rules));
             edgeActionService?.UpdateActions(loadedConfig.Config.EdgeActions);
+            ApplyAppBehaviorSettings(loadedConfig.Config.UiSettings.AppBehavior);
             ApplyUiSettings(loadedConfig.Config.UiSettings);
 
             PostRules();
