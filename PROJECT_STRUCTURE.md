@@ -212,6 +212,12 @@ src\MyGesture.App\Web\PROJECT_STRUCTURE.md
 dotnet build MyGesture.slnx
 ```
 
+默认 Debug 构建输出：
+
+```text
+artifacts\debug\WuGesture
+```
+
 测试：
 
 ```powershell
@@ -232,7 +238,7 @@ dotnet test MyGesture.slnx
 artifacts\publish\WuGesture
 ```
 
-`artifacts/` 已被 Git 忽略。
+`artifacts/` 已被 Git 忽略，用于统一存放 Debug 构建和发布产物。
 
 ## 何时更新此文件
 

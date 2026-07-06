@@ -12,6 +12,16 @@
     <Title>Wu Gesture</Title>
     <Product>Wu Gesture</Product>
     <ApplicationIcon>Resources\wu.ico</ApplicationIcon>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <OutputPath>..\..\artifacts\debug\WuGesture\</OutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <OutputPath>..\..\artifacts\publish\WuGesture\</OutputPath>
   </PropertyGroup>
 
   <ItemGroup>
