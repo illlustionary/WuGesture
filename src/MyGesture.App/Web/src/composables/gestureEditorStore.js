@@ -115,6 +115,11 @@ const DEFAULT_UI_SETTINGS = {
     cornerRadius: 28,
     bottomOffset: 140,
     bottomOffsetPercent: 13
+  },
+  appBehavior: {
+    launchAtStartup: false,
+    runAsAdministrator: false,
+    closeButtonBehavior: "minimize-to-tray"
   }
 };
 
@@ -1300,7 +1305,8 @@ function cloneUiSettings(settings) {
   const source = normalizeObjectKeys(settings);
   return {
     mouseTrail: normalizeMouseTrailSettings(source.mouseTrail),
-    gestureHint: normalizeGestureHintSettings(source.gestureHint)
+    gestureHint: normalizeGestureHintSettings(source.gestureHint),
+    appBehavior: normalizeAppBehaviorSettings(source.appBehavior)
   };
 }
 
@@ -1340,6 +1346,22 @@ function normalizeGestureHintSettings(settings) {
     bottomOffset: clampInteger(settings?.bottomOffset, 0, 1200, DEFAULT_UI_SETTINGS.gestureHint.bottomOffset),
     bottomOffsetPercent: clampInteger(settings?.bottomOffsetPercent, 0, 100, DEFAULT_UI_SETTINGS.gestureHint.bottomOffsetPercent)
   };
+}
+
+function normalizeAppBehaviorSettings(settings) {
+  settings = normalizeObjectKeys(settings);
+  return {
+    launchAtStartup: Boolean(settings?.launchAtStartup ?? DEFAULT_UI_SETTINGS.appBehavior.launchAtStartup),
+    runAsAdministrator: Boolean(settings?.runAsAdministrator ?? DEFAULT_UI_SETTINGS.appBehavior.runAsAdministrator),
+    closeButtonBehavior: normalizeCloseButtonBehavior(settings?.closeButtonBehavior)
+  };
+}
+
+function normalizeCloseButtonBehavior(value) {
+  const normalized = String(value ?? "").trim();
+  return ["minimize-to-tray", "minimize-to-taskbar", "exit"].includes(normalized)
+    ? normalized
+    : DEFAULT_UI_SETTINGS.appBehavior.closeButtonBehavior;
 }
 
 function normalizeObjectKeys(source) {

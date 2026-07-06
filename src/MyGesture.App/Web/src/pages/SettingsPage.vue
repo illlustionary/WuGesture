@@ -111,6 +111,9 @@ function createDraft(settings) {
   const gestureHint = normalizeObjectKeys(
     settings?.gestureHint ?? settings?.GestureHint
   )
+  const appBehavior = normalizeObjectKeys(
+    settings?.appBehavior ?? settings?.AppBehavior
+  )
   const legacyThickness = mouseTrail.thickness ?? mouseTrail.Thickness
   return {
     mouseTrail: {
@@ -136,8 +139,21 @@ function createDraft(settings) {
       cornerRadius: gestureHint.cornerRadius ?? 28,
       bottomOffset: gestureHint.bottomOffset ?? 140,
       bottomOffsetPercent: gestureHint.bottomOffsetPercent ?? 13
+    },
+    appBehavior: {
+      launchAtStartup: Boolean(appBehavior.launchAtStartup ?? false),
+      runAsAdministrator: Boolean(appBehavior.runAsAdministrator ?? false),
+      closeButtonBehavior: normalizeCloseButtonBehavior(
+        appBehavior.closeButtonBehavior
+      )
     }
   }
+}
+
+function normalizeCloseButtonBehavior(value) {
+  return ['minimize-to-tray', 'minimize-to-taskbar', 'exit'].includes(value)
+    ? value
+    : 'minimize-to-tray'
 }
 
 function normalizeObjectKeys(source) {
@@ -312,6 +328,46 @@ function hexToRgba(hex, alpha = 1) {
                 @change="flushPersistDraft"
               />
               <small>{{ draft.mouseTrail.activeThickness }} px</small>
+            </label>
+          </div>
+        </section>
+
+        <section class="settings-panel">
+          <div class="settings-panel__head">
+            <div>
+              <h3>应用行为</h3>
+              <p>启动权限、开机启动和关闭按钮行为。</p>
+            </div>
+          </div>
+
+          <div class="settings-grid settings-grid--behavior">
+            <label class="settings-check">
+              <span>开机自启动</span>
+              <input
+                v-model="draft.appBehavior.launchAtStartup"
+                type="checkbox"
+                @change="queuePersistDraft(); flushPersistDraft()"
+              />
+            </label>
+            <label class="settings-check">
+              <span>以管理员身份打开</span>
+              <input
+                v-model="draft.appBehavior.runAsAdministrator"
+                type="checkbox"
+                @change="queuePersistDraft(); flushPersistDraft()"
+              />
+              <small>保存后下次启动时生效。</small>
+            </label>
+            <label>
+              <span>关闭按钮</span>
+              <select
+                v-model="draft.appBehavior.closeButtonBehavior"
+                @change="queuePersistDraft(); flushPersistDraft()"
+              >
+                <option value="minimize-to-tray">最小化到托盘</option>
+                <option value="minimize-to-taskbar">最小化到任务栏</option>
+                <option value="exit">直接关闭</option>
+              </select>
             </label>
           </div>
         </section>
@@ -591,6 +647,15 @@ function hexToRgba(hex, alpha = 1) {
   border: 1px solid var(--border);
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.92);
+}
+
+.settings-grid select {
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--text);
 }
 
 .settings-check {

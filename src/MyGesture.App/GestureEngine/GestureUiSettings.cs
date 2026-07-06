@@ -7,6 +7,17 @@ public sealed class GestureUiSettings
     public MouseTrailUiSettings MouseTrail { get; set; } = new();
 
     public GestureHintUiSettings GestureHint { get; set; } = new();
+
+    public AppBehaviorUiSettings AppBehavior { get; set; } = new();
+}
+
+public sealed class AppBehaviorUiSettings
+{
+    public bool LaunchAtStartup { get; set; }
+
+    public bool RunAsAdministrator { get; set; }
+
+    public string CloseButtonBehavior { get; set; } = "minimize-to-tray";
 }
 
 public sealed class MouseTrailUiSettings
