@@ -1,3 +1,4 @@
+using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.WinForms;
 using MyGesture.App.GestureEngine;
 using System.Drawing.Imaging;
@@ -7,11 +8,13 @@ namespace MyGesture.App;
 
 public sealed class MainForm : Form
 {
-    private readonly WebView2 webView = new();
     private readonly GestureHintForm gestureHintForm = new();
     private readonly GestureConfigStore configStore = new();
     private readonly KeyboardShortcutRecorder hotkeyRecorder = new();
     private readonly string windowStatePath = GetWindowStatePath();
+    private readonly NotifyIcon trayIcon = new();
+    private readonly ContextMenuStrip trayMenu = new();
+    private WebView2? webView;
     private ConfiguredScopeContextProvider? scopeContextProvider;
     private LoadedGestureConfig? loadedConfig;
     private GestureService? gestureService;
@@ -19,6 +22,8 @@ public sealed class MainForm : Form
     private MouseTrailForm? mouseTrailForm;
     private bool startMaximized;
     private bool isClosing;
+    private bool isExiting;
+    private bool isWebViewInitializing;
 
     private static readonly JsonSerializerOptions WebMessageJsonOptions = new()
     {
@@ -36,23 +41,16 @@ public sealed class MainForm : Form
         Text = "My Gesture";
         StartPosition = FormStartPosition.Manual;
         ApplyInitialWindowState();
-
-        webView.Dock = DockStyle.Fill;
-        Controls.Add(webView);
+        InitializeTrayIcon();
 
         Load += OnLoad;
-        FormClosing += (_, _) =>
-        {
-            isClosing = true;
-            SaveWindowState();
-            gestureService?.Dispose();
-            edgeActionService?.Dispose();
-            hotkeyRecorder.Dispose();
-            gestureHintForm.Hide();
-            DisposeMouseTrailForm();
-        };
+        FormClosing += OnFormClosing;
         FormClosed += (_, _) =>
         {
+            trayIcon.Visible = false;
+            trayIcon.Dispose();
+            trayMenu.Dispose();
+            DisposeWebView();
             gestureHintForm.Dispose();
             DisposeMouseTrailForm();
         };
@@ -71,16 +69,12 @@ public sealed class MainForm : Form
         edgeActionService = new EdgeActionService(loadedConfig.Config.EdgeActions);
         ApplyUiSettings(loadedConfig.Config.UiSettings);
 
-        await webView.EnsureCoreWebView2Async();
+        await EnsureWebViewAsync();
         if (!CanUseUi())
         {
             return;
         }
 
-        webView.CoreWebView2.WebMessageReceived += (_, args) => HandleWebMessage(args.WebMessageAsJson);
-        ConfigureWebViewHostMapping();
-
-        webView.Source = new Uri("https://appassets.local/index.html");
         gestureHintForm.Preload();
         EnsureMouseTrailForm().Preload();
 
@@ -94,6 +88,181 @@ public sealed class MainForm : Form
         hotkeyRecorder.HotkeyRecorded += OnHotkeyRecorded;
         gestureService.Start();
         edgeActionService.Start();
+    }
+
+    private void InitializeTrayIcon()
+    {
+        var openItem = new ToolStripMenuItem("打开配置", null, (_, _) => RestoreFromTray());
+        var exitItem = new ToolStripMenuItem("退出", null, (_, _) => ExitFromTray());
+        trayMenu.Items.Add(openItem);
+        trayMenu.Items.Add(new ToolStripSeparator());
+        trayMenu.Items.Add(exitItem);
+
+        trayIcon.Text = "My Gesture";
+        trayIcon.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? SystemIcons.Application;
+        trayIcon.ContextMenuStrip = trayMenu;
+        trayIcon.Visible = true;
+        trayIcon.DoubleClick += (_, _) => RestoreFromTray();
+    }
+
+    private void OnFormClosing(object? sender, FormClosingEventArgs e)
+    {
+        if (!isExiting && e.CloseReason == CloseReason.UserClosing)
+        {
+            e.Cancel = true;
+            MinimizeToTray();
+            return;
+        }
+
+        isClosing = true;
+        SaveWindowState();
+        hotkeyRecorder.Stop();
+        gestureService?.Dispose();
+        edgeActionService?.Dispose();
+        hotkeyRecorder.Dispose();
+        gestureHintForm.Hide();
+        DisposeMouseTrailForm();
+        DisposeWebView();
+    }
+
+    private void MinimizeToTray()
+    {
+        SaveWindowState();
+        hotkeyRecorder.Stop();
+        gestureService?.StopRecording();
+        gestureService?.SetPaused(false);
+        edgeActionService?.SetPaused(false);
+        gestureHintForm.HideResult();
+        mouseTrailForm?.HideTrail();
+        DisposeWebView();
+        ShowInTaskbar = false;
+        Hide();
+    }
+
+    private async void RestoreFromTray()
+    {
+        if (isClosing || IsDisposed)
+        {
+            return;
+        }
+
+        ShowInTaskbar = true;
+        Show();
+        if (WindowState == FormWindowState.Minimized)
+        {
+            WindowState = FormWindowState.Normal;
+        }
+
+        Activate();
+        await EnsureWebViewAsync();
+    }
+
+    private void ExitFromTray()
+    {
+        isExiting = true;
+        Close();
+    }
+
+    private async Task EnsureWebViewAsync()
+    {
+        if (webView is { IsDisposed: false, CoreWebView2: not null } || isWebViewInitializing)
+        {
+            return;
+        }
+
+        isWebViewInitializing = true;
+        try
+        {
+            DisposeWebView();
+            var createdWebView = new WebView2
+            {
+                Dock = DockStyle.Fill
+            };
+            webView = createdWebView;
+            Controls.Add(createdWebView);
+            createdWebView.BringToFront();
+
+            await createdWebView.EnsureCoreWebView2Async();
+            if (!CanUseUi() || createdWebView.IsDisposed || !ReferenceEquals(webView, createdWebView))
+            {
+                return;
+            }
+
+            createdWebView.CoreWebView2.WebMessageReceived += OnWebMessageReceived;
+            ConfigureWebViewHostMapping();
+            createdWebView.Source = new Uri("https://appassets.local/index.html");
+        }
+        catch (ObjectDisposedException)
+        {
+        }
+        catch (InvalidOperationException) when (isClosing || webView is null)
+        {
+        }
+        finally
+        {
+            isWebViewInitializing = false;
+        }
+    }
+
+    private void DisposeWebView()
+    {
+        if (webView is null)
+        {
+            return;
+        }
+
+        if (!webView.IsDisposed)
+        {
+            if (webView.CoreWebView2 is not null)
+            {
+                webView.CoreWebView2.WebMessageReceived -= OnWebMessageReceived;
+            }
+
+            Controls.Remove(webView);
+            webView.Dispose();
+        }
+
+        webView = null;
+    }
+
+    private void OnWebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs args)
+    {
+        HandleWebMessage(args.WebMessageAsJson);
+    }
+
+    private void TryPostWebMessage(string payload)
+    {
+        if (!CanPostWebMessage())
+        {
+            return;
+        }
+
+        webView!.CoreWebView2!.PostWebMessageAsJson(payload);
+    }
+
+    private bool CanPostWebMessage()
+    {
+        return !isClosing && webView is { IsDisposed: false, CoreWebView2: not null };
+    }
+
+    private void ConfigureWebViewHostMapping()
+    {
+        if (webView?.CoreWebView2 is null)
+        {
+            return;
+        }
+
+        var webDistPath = Path.Combine(AppContext.BaseDirectory, "Web", "dist");
+        if (!Directory.Exists(webDistPath))
+        {
+            throw new DirectoryNotFoundException(
+                $"Web frontend output was not found at '{webDistPath}'. Run 'dotnet build MyGesture.slnx' from the repository root first.");
+        }
+
+        webView.CoreWebView2.SetVirtualHostNameToFolderMapping(
+            "appassets.local",
+            webDistPath,
+            CoreWebView2HostResourceAccessKind.Allow);
     }
 
     private void OnGesturePreviewMatched(object? sender, GestureRecognizedEventArgs e)
@@ -150,7 +319,7 @@ public sealed class MainForm : Form
             action = e.ActionName
         });
 
-        webView.CoreWebView2?.PostWebMessageAsJson(payload);
+        TryPostWebMessage(payload);
         gestureHintForm.ShowResult(e.ActionName, autoHide: true);
     }
 
@@ -176,7 +345,7 @@ public sealed class MainForm : Form
         });
 
         gestureHintForm.HideResult();
-        webView.CoreWebView2?.PostWebMessageAsJson(payload);
+        TryPostWebMessage(payload);
     }
 
     private void OnGestureActionFailed(object? sender, GestureActionFailedEventArgs e)
@@ -201,7 +370,7 @@ public sealed class MainForm : Form
             error = message
         });
 
-        webView.CoreWebView2?.PostWebMessageAsJson(payload);
+        TryPostWebMessage(payload);
     }
 
     private void OnEdgeActionFailed(object? sender, EdgeActionFailedEventArgs e)
@@ -224,7 +393,7 @@ public sealed class MainForm : Form
             error = e.Exception.Message
         });
 
-        webView.CoreWebView2?.PostWebMessageAsJson(payload);
+        TryPostWebMessage(payload);
     }
 
     private void OnGestureProgressChanged(object? sender, GestureProgressEventArgs e)
@@ -269,7 +438,7 @@ public sealed class MainForm : Form
             keys = e.Keys
         });
 
-        webView.CoreWebView2?.PostWebMessageAsJson(payload);
+        TryPostWebMessage(payload);
     }
 
     private void PostStatus(string status)
@@ -280,7 +449,7 @@ public sealed class MainForm : Form
             status
         });
 
-        webView.CoreWebView2?.PostWebMessageAsJson(payload);
+        TryPostWebMessage(payload);
     }
 
     private void PostRules()
@@ -332,7 +501,7 @@ public sealed class MainForm : Form
             }).ToArray()
         });
 
-        webView.CoreWebView2?.PostWebMessageAsJson(payload);
+        TryPostWebMessage(payload);
     }
 
     private void HandleWebMessage(string json)
@@ -522,7 +691,7 @@ public sealed class MainForm : Form
             icon = GetApplicationIconDataUrl(path)
         });
 
-        webView.CoreWebView2?.PostWebMessageAsJson(payload);
+        TryPostWebMessage(payload);
     }
 
     private static string GetApplicationIconDataUrl(string path)
@@ -627,22 +796,7 @@ public sealed class MainForm : Form
             message
         });
 
-        webView.CoreWebView2?.PostWebMessageAsJson(payload);
-    }
-
-    private void ConfigureWebViewHostMapping()
-    {
-        var webDistPath = Path.Combine(AppContext.BaseDirectory, "Web", "dist");
-        if (!Directory.Exists(webDistPath))
-        {
-            throw new DirectoryNotFoundException(
-                $"Web frontend output was not found at '{webDistPath}'. Run 'dotnet build MyGesture.slnx' from the repository root first.");
-        }
-
-        webView.CoreWebView2!.SetVirtualHostNameToFolderMapping(
-            "appassets.local",
-            webDistPath,
-            Microsoft.Web.WebView2.Core.CoreWebView2HostResourceAccessKind.Allow);
+        TryPostWebMessage(payload);
     }
 
     private void BeginInvokeSafe(Action action)
