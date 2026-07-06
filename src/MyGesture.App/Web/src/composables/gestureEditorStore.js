@@ -120,6 +120,12 @@ const DEFAULT_UI_SETTINGS = {
     launchAtStartup: false,
     runAsAdministrator: false,
     closeButtonBehavior: "minimize-to-tray"
+  },
+  webDav: {
+    address: "",
+    userName: "",
+    password: "",
+    remotePath: ""
   }
 };
 
@@ -149,7 +155,9 @@ const state = reactive({
   gestureDraft: createEmptyGestureDraft(),
   gestureRecognitionMessage: "",
   gestureRecordingActive: false,
-  gestureRecordingRequestId: ""
+  gestureRecordingRequestId: "",
+  webDavTesting: false,
+  webDavTestedSignature: ""
 });
 
 const activeScope = ref("global");
@@ -160,6 +168,7 @@ let pendingAutoSaveOptions = {};
 let toast = null;
 let suppressNextConfigResultToast = false;
 let preserveLocalEdgeActions = false;
+let pendingWebDavTestSignature = "";
 
 export function useGestureEditorStore() {
   if (!toast) {
@@ -227,6 +236,11 @@ export function useGestureEditorStore() {
     getUiSettingsSnapshot,
     saveUiSettings,
     resetUiSettings,
+    testWebDavConnection,
+    saveConfigToWebDav,
+    restoreConfigFromWebDav,
+    getWebDavSignature,
+    isWebDavTested,
     windowOperations: WINDOW_OPERATIONS,
     volumeOperations: VOLUME_OPERATIONS,
     brightnessOperations: BRIGHTNESS_OPERATIONS,
@@ -285,6 +299,11 @@ function handleMessage(message) {
       preserveLocalEdgeActions = false;
     }
     setMessage(message.message, message.success ? "success" : "error", { notify });
+    return;
+  }
+
+  if (message.type === "webdav-result") {
+    handleWebDavResult(message);
     return;
   }
 
@@ -727,9 +746,9 @@ function saveRules(options = {}) {
     pendingAutoSaveOptions = {};
   }
 
-  const payloadRules = state.rules.map(toPayloadRule);
+  const payload = getConfigPayload();
 
-  if (payloadRules.length === 0) {
+  if (payload.rules.length === 0) {
     setMessage("至少保留一条规则。", "error");
     return;
   }
@@ -741,10 +760,7 @@ function saveRules(options = {}) {
   postWebMessage(
     {
       type: "save-rules",
-      rules: payloadRules,
-      applications: state.applications.map(toPayloadApplication),
-      edgeActions: state.edgeActions.map(toPayloadEdgeAction),
-      uiSettings: toPayloadUiSettings(state.uiSettings)
+      ...payload
     },
     { notifyPreview: options.notifyPreview !== false }
   );
@@ -803,8 +819,63 @@ function saveUiSettings(nextSettings, options = {}) {
 
 function resetUiSettings() {
   state.uiSettings = createDefaultUiSettings();
+  state.webDavTestedSignature = "";
+  pendingWebDavTestSignature = "";
   saveRules({ notifyPreview: false, notifyResult: false });
   setMessage("已恢复默认设置。", "success");
+}
+
+function testWebDavConnection() {
+  const payload = getConfigPayload();
+  const signature = getWebDavSignature(payload.uiSettings.webDav);
+  if (!payload.uiSettings.webDav.address) {
+    setMessage("请先填写 WebDAV 地址。", "error");
+    return;
+  }
+
+  if (!window.chrome?.webview) {
+    setMessage("浏览器预览中无法测试 WebDAV。", "error");
+    return;
+  }
+
+  state.webDavTesting = true;
+  state.webDavTestedSignature = "";
+  pendingWebDavTestSignature = signature;
+  postWebMessage({
+    type: "webdav-test",
+    ...payload
+  });
+}
+
+function saveConfigToWebDav() {
+  const payload = getConfigPayload();
+  if (payload.rules.length === 0) {
+    setMessage("至少保留一条规则。", "error");
+    return;
+  }
+
+  if (!isWebDavTested(payload.uiSettings.webDav)) {
+    setMessage("请先测试 WebDAV 连接。", "error");
+    return;
+  }
+
+  postWebMessage({
+    type: "webdav-save",
+    ...payload
+  });
+}
+
+function restoreConfigFromWebDav() {
+  const payload = getConfigPayload();
+  if (!isWebDavTested(payload.uiSettings.webDav)) {
+    setMessage("请先测试 WebDAV 连接。", "error");
+    return;
+  }
+
+  postWebMessage({
+    type: "webdav-restore",
+    ...payload
+  });
 }
 
 function updateEdgeAction(action, patch = {}, options = {}) {
@@ -1104,6 +1175,39 @@ function toPayloadUiSettings(settings) {
   return normalizeUiSettings(settings);
 }
 
+function getConfigPayload() {
+  return {
+    rules: state.rules.map(toPayloadRule),
+    applications: state.applications.map(toPayloadApplication),
+    edgeActions: state.edgeActions.map(toPayloadEdgeAction),
+    uiSettings: toPayloadUiSettings(state.uiSettings)
+  };
+}
+
+function handleWebDavResult(message) {
+  if (message.operation === "test") {
+    state.webDavTesting = false;
+    if (message.success) {
+      state.webDavTestedSignature = pendingWebDavTestSignature;
+    } else {
+      state.webDavTestedSignature = "";
+    }
+    pendingWebDavTestSignature = "";
+  }
+
+  setMessage(message.message, message.success ? "success" : "error");
+}
+
+function isWebDavTested(settings = state.uiSettings.webDav) {
+  const signature = getWebDavSignature(settings);
+  return Boolean(signature && signature === state.webDavTestedSignature);
+}
+
+function getWebDavSignature(settings = state.uiSettings.webDav) {
+  const normalized = normalizeWebDavSettings(settings);
+  return JSON.stringify(normalized);
+}
+
 function collectCategoryItems() {
   const counts = new Map();
 
@@ -1306,7 +1410,8 @@ function cloneUiSettings(settings) {
   return {
     mouseTrail: normalizeMouseTrailSettings(source.mouseTrail),
     gestureHint: normalizeGestureHintSettings(source.gestureHint),
-    appBehavior: normalizeAppBehaviorSettings(source.appBehavior)
+    appBehavior: normalizeAppBehaviorSettings(source.appBehavior),
+    webDav: normalizeWebDavSettings(source.webDav)
   };
 }
 
@@ -1354,6 +1459,16 @@ function normalizeAppBehaviorSettings(settings) {
     launchAtStartup: Boolean(settings?.launchAtStartup ?? DEFAULT_UI_SETTINGS.appBehavior.launchAtStartup),
     runAsAdministrator: Boolean(settings?.runAsAdministrator ?? DEFAULT_UI_SETTINGS.appBehavior.runAsAdministrator),
     closeButtonBehavior: normalizeCloseButtonBehavior(settings?.closeButtonBehavior)
+  };
+}
+
+function normalizeWebDavSettings(settings) {
+  settings = normalizeObjectKeys(settings);
+  return {
+    address: String(settings?.address ?? DEFAULT_UI_SETTINGS.webDav.address).trim(),
+    userName: String(settings?.userName ?? DEFAULT_UI_SETTINGS.webDav.userName).trim(),
+    password: String(settings?.password ?? DEFAULT_UI_SETTINGS.webDav.password),
+    remotePath: String(settings?.remotePath ?? DEFAULT_UI_SETTINGS.webDav.remotePath).trim()
   };
 }
 

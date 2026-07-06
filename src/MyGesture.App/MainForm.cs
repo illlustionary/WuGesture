@@ -15,6 +15,7 @@ public sealed class MainForm : Form
     private const string StartupRegistryValueName = "MyGesture";
     private readonly GestureHintForm gestureHintForm = new();
     private readonly GestureConfigStore configStore = new();
+    private readonly WebDavConfigSyncService webDavConfigSyncService = new();
     private readonly KeyboardShortcutRecorder hotkeyRecorder = new();
     private readonly string windowStatePath = GetWindowStatePath();
     private readonly NotifyIcon trayIcon = new();
@@ -664,6 +665,15 @@ public sealed class MainForm : Form
             case "save-rules":
                 SaveRules(json);
                 break;
+            case "webdav-test":
+                TestWebDavConnection(json);
+                break;
+            case "webdav-save":
+                SaveConfigToWebDav(json);
+                break;
+            case "webdav-restore":
+                RestoreConfigFromWebDav(json);
+                break;
             case "reload-rules":
                 ReloadRules();
                 break;
@@ -845,11 +855,7 @@ public sealed class MainForm : Form
             };
 
             loadedConfig = configStore.SaveAndLoad(config);
-            scopeContextProvider?.UpdateApplications(loadedConfig.Config.Applications);
-            gestureService?.UpdateMatcher(new GestureMatcher(loadedConfig.Rules));
-            edgeActionService?.UpdateActions(loadedConfig.Config.EdgeActions);
-            ApplyAppBehaviorSettings(loadedConfig.Config.UiSettings.AppBehavior);
-            ApplyUiSettings(loadedConfig.Config.UiSettings);
+            ApplyLoadedConfig();
 
             PostRules();
             PostConfigResult(true, "已保存");
@@ -860,16 +866,78 @@ public sealed class MainForm : Form
         }
     }
 
+    private async void TestWebDavConnection(string json)
+    {
+        try
+        {
+            var message = JsonSerializer.Deserialize<RulesWebMessage>(json, WebMessageJsonOptions);
+            var settings = message?.UiSettings?.WebDav ?? loadedConfig?.Config.UiSettings.WebDav ?? new WebDavUiSettings();
+            await webDavConfigSyncService.TestConnectionAsync(settings);
+            PostWebDavResult("test", true, "WebDAV 连接成功");
+        }
+        catch (Exception exception)
+        {
+            PostWebDavResult("test", false, exception.Message);
+        }
+    }
+
+    private async void SaveConfigToWebDav(string json)
+    {
+        try
+        {
+            var message = JsonSerializer.Deserialize<RulesWebMessage>(json, WebMessageJsonOptions);
+            var uiSettings = message?.UiSettings ?? loadedConfig?.Config.UiSettings ?? new GestureUiSettings();
+            var config = new GestureConfig
+            {
+                Rules = message?.Rules ?? [],
+                Applications = message?.Applications ?? [],
+                EdgeActions = message?.EdgeActions ?? [],
+                UiSettings = uiSettings
+            };
+
+            loadedConfig = configStore.SaveAndLoad(config);
+            ApplyLoadedConfig();
+            await webDavConfigSyncService.UploadAsync(loadedConfig.FilePath, loadedConfig.Config.UiSettings.WebDav);
+
+            PostRules();
+            PostWebDavResult("save", true, "已保存到 WebDAV");
+        }
+        catch (Exception exception)
+        {
+            PostWebDavResult("save", false, exception.Message);
+        }
+    }
+
+    private async void RestoreConfigFromWebDav(string json)
+    {
+        try
+        {
+            if (loadedConfig is null)
+            {
+                loadedConfig = configStore.LoadOrCreate();
+            }
+
+            var message = JsonSerializer.Deserialize<RulesWebMessage>(json, WebMessageJsonOptions);
+            var currentWebDavSettings = message?.UiSettings?.WebDav ?? loadedConfig.Config.UiSettings.WebDav;
+            var downloadedJson = await webDavConfigSyncService.DownloadAsync(currentWebDavSettings);
+            loadedConfig = configStore.SaveJsonAndLoad(downloadedJson, currentWebDavSettings);
+            ApplyLoadedConfig();
+
+            PostRules();
+            PostWebDavResult("restore", true, "已从 WebDAV 恢复");
+        }
+        catch (Exception exception)
+        {
+            PostWebDavResult("restore", false, exception.Message);
+        }
+    }
+
     private void ReloadRules()
     {
         try
         {
             loadedConfig = configStore.LoadOrCreate();
-            scopeContextProvider?.UpdateApplications(loadedConfig.Config.Applications);
-            gestureService?.UpdateMatcher(new GestureMatcher(loadedConfig.Rules));
-            edgeActionService?.UpdateActions(loadedConfig.Config.EdgeActions);
-            ApplyAppBehaviorSettings(loadedConfig.Config.UiSettings.AppBehavior);
-            ApplyUiSettings(loadedConfig.Config.UiSettings);
+            ApplyLoadedConfig();
 
             PostRules();
             PostConfigResult(true, "已重新加载");
@@ -885,11 +953,7 @@ public sealed class MainForm : Form
         try
         {
             loadedConfig = configStore.ResetToDefaults();
-            scopeContextProvider?.UpdateApplications(loadedConfig.Config.Applications);
-            gestureService?.UpdateMatcher(new GestureMatcher(loadedConfig.Rules));
-            edgeActionService?.UpdateActions(loadedConfig.Config.EdgeActions);
-            ApplyAppBehaviorSettings(loadedConfig.Config.UiSettings.AppBehavior);
-            ApplyUiSettings(loadedConfig.Config.UiSettings);
+            ApplyLoadedConfig();
 
             PostRules();
             PostConfigResult(true, "已恢复默认");
@@ -900,11 +964,38 @@ public sealed class MainForm : Form
         }
     }
 
+    private void ApplyLoadedConfig()
+    {
+        if (loadedConfig is null)
+        {
+            return;
+        }
+
+        scopeContextProvider?.UpdateApplications(loadedConfig.Config.Applications);
+        gestureService?.UpdateMatcher(new GestureMatcher(loadedConfig.Rules));
+        edgeActionService?.UpdateActions(loadedConfig.Config.EdgeActions);
+        ApplyAppBehaviorSettings(loadedConfig.Config.UiSettings.AppBehavior);
+        ApplyUiSettings(loadedConfig.Config.UiSettings);
+    }
+
     private void PostConfigResult(bool success, string message)
     {
         var payload = JsonSerializer.Serialize(new
         {
             type = "config-result",
+            success,
+            message
+        });
+
+        TryPostWebMessage(payload);
+    }
+
+    private void PostWebDavResult(string operation, bool success, string message)
+    {
+        var payload = JsonSerializer.Serialize(new
+        {
+            type = "webdav-result",
+            operation,
             success,
             message
         });

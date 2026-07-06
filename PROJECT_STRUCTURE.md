@@ -157,6 +157,7 @@ MouseHook
 - `uiSettings.mouseTrail`：轨迹窗设置，包含 `inactiveColor`、`activeColor`、`inactiveThickness`、`activeThickness`、`thickness`、`inactiveOpacity`、`activeOpacity`；`thickness` 保留用于兼容旧配置。
 - `uiSettings.gestureHint`：提示泡泡设置，包含 `fontFamily`、`fontSize`、`textColor`、`backgroundColor`、`backgroundOpacity`、`width`、`widthPercent`、`autoWidth`、`height`、`heightPercent`、`cornerRadius`、`bottomOffset`、`bottomOffsetPercent`；百分比字段按当前屏幕工作区宽高换算，像素字段保留用于兼容旧配置。
 - `uiSettings.appBehavior`：应用行为设置，包含 `launchAtStartup`、`runAsAdministrator` 和 `closeButtonBehavior`；关闭按钮行为支持 `minimize-to-tray`、`minimize-to-taskbar`、`exit`。
+- `uiSettings.webDav`：WebDAV 备份设置，包含 `address`、`userName`、`password` 和 `remotePath`。设置页可测试 WebDAV 连接；测试当前配置成功后，才允许把当前完整配置保存到 WebDAV，或从 WebDAV 下载配置并覆盖本地配置；恢复后会刷新规则匹配、边缘操作、应用行为和 UI 设置。
 
 默认初始配置只包含全局规则和边缘操作，不包含应用程序归属或分类规则。边缘操作会预置触发角、摩擦边和边缘滚动项，但默认全部关闭。
 

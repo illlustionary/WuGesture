@@ -9,6 +9,8 @@ public sealed class GestureUiSettings
     public GestureHintUiSettings GestureHint { get; set; } = new();
 
     public AppBehaviorUiSettings AppBehavior { get; set; } = new();
+
+    public WebDavUiSettings WebDav { get; set; } = new();
 }
 
 public sealed class AppBehaviorUiSettings
@@ -18,6 +20,17 @@ public sealed class AppBehaviorUiSettings
     public bool RunAsAdministrator { get; set; }
 
     public string CloseButtonBehavior { get; set; } = "minimize-to-tray";
+}
+
+public sealed class WebDavUiSettings
+{
+    public string Address { get; set; } = "";
+
+    public string UserName { get; set; } = "";
+
+    public string Password { get; set; } = "";
+
+    public string RemotePath { get; set; } = "";
 }
 
 public sealed class MouseTrailUiSettings

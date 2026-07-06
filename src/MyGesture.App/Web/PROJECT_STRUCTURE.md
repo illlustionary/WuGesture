@@ -62,8 +62,11 @@ src\assets
 - `add.svg`
 - `close.svg`
 - `delete.svg`
+- `download.svg`
 - `reset.svg`
 - `setting.svg`
+- `test.svg`
+- `upload.svg`
 
 这些 SVG 通过 `vite-svg-loader` 作为 Vue 组件导入。
 
@@ -80,7 +83,7 @@ src\components
 - `GestureRuleDialog.vue`：添加和编辑手势规则的弹窗。
 - `GestureRuleList.vue`：规则表、规则展示和规则操作入口。
 - `HoverBubble.vue`：悬浮提示气泡。
-- `IconActionButton.vue`：共享图标按钮。
+- `IconActionButton.vue`：共享图标按钮，支持添加、关闭、删除、设置、重置，以及 WebDAV 测试、上传和下载图标。
 - `ScopeCreateDialog.vue`：分类或作用域名称创建/编辑弹窗。
 - `ScopeSidebar.vue`：分类和程序等作用域列表侧栏。
 
@@ -106,7 +109,7 @@ src\pages
 - `CategoryRulesPage.vue`：分类规则页，左侧分类列表，右侧包含分类下应用程序和手势列表。
 - `AppRulesPage.vue`：程序规则页，左侧程序列表，右侧展示当前程序的手势列表。
 - `EdgeActionsPage.vue`：边缘操作页，按触发角、摩擦边、边缘滚动三组展示和编辑配置。
-- `SettingsPage.vue`：设置页，用于配置轨迹线、底部提示窗外观和应用行为。
+- `SettingsPage.vue`：设置页，用于配置轨迹线、底部提示窗外观、应用行为和 WebDAV 配置备份/恢复。
 
 ## Routing
 
@@ -127,7 +130,7 @@ src\pages
 - `分类` 页右侧包含“应用程序”和“手势列表”两个区块，分类页可管理当前分类下的 App。
 - `程序` 页右侧只展示手势列表；程序页左侧会列出已保存的全部程序，程序规则仍按 app 作用域单独维护。
 - `边缘操作` 页按触发角、摩擦边、边缘滚动三组展示配置；点击卡片打开独立弹窗编辑启用状态、名称、命令和参数，关闭弹窗后自动保存。
-- `设置` 页右上角提供恢复默认按钮，页面中的调整会在输入变化时 debounce 自动保存，并在控件变更结束或离开页面时强制提交最后一次修改；本地编辑期间会避免宿主回传覆盖当前滑块值。设置页也包含开机自启动、以管理员身份打开和关闭按钮行为。
+- `设置` 页右上角提供恢复默认按钮，页面中的调整会在输入变化时 debounce 自动保存，并在控件变更结束或离开页面时强制提交最后一次修改；本地编辑期间会避免宿主回传覆盖当前滑块值。设置页也包含开机自启动、以管理员身份打开、关闭按钮行为，以及 WebDAV 地址、账号、密码和远程路径。WebDAV 区域提供测试、恢复和保存按钮；当前 WebDAV 参数测试成功后，才允许把当前配置保存到远程或从远程恢复本地配置。
 - 分类新增通过名称弹窗完成，不再使用左侧内联输入框；分类和程序名称都通过双击列表项后在弹窗里重命名。
 - 分类页和程序页添加程序时都会先显示前端弹窗，用户可按住“拖动准星选择窗口”拖到目标窗口松开，或选择“浏览 exe 文件”作为备用方式。
 - 程序列表和详情会展示从 exe 路径动态提取的应用图标；图标通过 WebView 消息传递，不写入配置文件。
@@ -150,6 +153,9 @@ src\pages
 - `{ type: "start-hotkey-recording", requestId: "..." }`
 - `{ type: "stop-hotkey-recording" }`
 - `{ type: "save-rules", rules: [{ scope, mouseButton, pattern, actionName, action }, ...], applications: [...], edgeActions: [...], uiSettings: {...} }`
+- `{ type: "webdav-test", rules: [...], applications: [...], edgeActions: [...], uiSettings: {...} }`
+- `{ type: "webdav-save", rules: [...], applications: [...], edgeActions: [...], uiSettings: {...} }`
+- `{ type: "webdav-restore", rules: [...], applications: [...], edgeActions: [...], uiSettings: {...} }`
 - `{ type: "reload-rules" }`
 - `{ type: "reset-rules" }`
 
@@ -164,6 +170,7 @@ src\pages
 - `{ type: "gesture-action-failed", ... }`
 - `{ type: "edge-action-failed", ... }`
 - `{ type: "config-result", ... }`
+- `{ type: "webdav-result", operation: "test|save|restore", success: true/false, message: "..." }`
 
 ## 构建
 
