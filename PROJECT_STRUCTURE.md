@@ -11,7 +11,7 @@
 - 原生后端负责全局鼠标钩子、手势识别、规则匹配和动作执行。
 - WebView2 前端负责配置界面，当前是独立的 Vue3 + Vite 工程，构建产物由桌面宿主加载。
 - 手势使用 8 个方向。
-- 动作当前支持快捷键、窗口控制、音量控制和亮度控制；快捷键和音量键通过 `SendInput` 执行，窗口控制通过 Win32 窗口 API 执行，亮度控制通过 WMI 执行。
+- 动作当前支持快捷键、窗口控制、音量控制和亮度控制；快捷键通过 `SendInput` 执行，窗口控制通过 Win32 窗口 API 执行，音量通过 Core Audio API 执行并带按键回退，亮度通过 DDC/CI、WMI、Gamma 三段回退执行。
 - 规则当前支持 `global`、`category` 和 `app` 作用域，并按 `app > category > global` 优先级匹配。
 - 边缘操作是独立的全局配置，支持触发角、摩擦边和鼠标滚动边。
 
@@ -65,6 +65,10 @@ src\MyGesture.App
 
 这两个文件是未使用的模板残留。
 
+资源：
+
+- `Resources\volume.png`、`Resources\sun.png`：音量和亮度 OSD 使用的嵌入图标资源。
+
 ## 手势引擎
 
 路径：
@@ -84,7 +88,10 @@ src\MyGesture.App\GestureEngine
 - `GestureScopeContext.cs`：当前前台窗口的 app/category 上下文模型。
 - `ForegroundWindowScopeContextProvider.cs`：读取前台窗口进程名。
 - `ConfiguredScopeContextProvider.cs`：用配置里的应用程序列表把前台进程名映射到分类，供作用域匹配使用。
-- `ActionExecutor.cs`：按动作类型执行命令；快捷键和音量键通过 Win32 `SendInput` 执行，窗口控制通过 `ShowWindow`、`SetWindowPos` 和窗口消息执行，亮度通过 `WmiMonitorBrightnessMethods` 执行。
+- `ActionExecutor.cs`：按动作类型执行命令；快捷键通过 Win32 `SendInput` 执行，窗口控制通过 `ShowWindow`、`SetWindowPos` 和窗口消息执行，音量/亮度会调用对应控制器并显示 OSD。
+- `AudioController.cs`：通过 Windows Core Audio API 读取和设置系统主音量、静音状态。
+- `BrightnessController.cs`：通过 DDC/CI、WMI、Gamma 三段回退读取和设置显示亮度。
+- `LevelOsdForm.cs`：音量和亮度调节后的置顶非激活弹窗提示。
 - `MouseInput.cs`：当移动距离太小，不足以构成手势时，重放一次普通右键或中键。
 - `GestureDirection.cs`：8 方向枚举。
 - `GestureRule.cs`：运行时规则和热键动作模型。

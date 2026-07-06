@@ -1,6 +1,5 @@
 using System.ComponentModel;
 using System.Drawing;
-using System.Management;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
@@ -96,29 +95,45 @@ public sealed class ActionExecutor
 
     private static void ExecuteVolumeControl(VolumeControlAction action)
     {
-        var key = action.Operation switch
+        if (!AudioController.IsAvailable)
         {
-            VolumeControlOperation.Increase => Keys.VolumeUp,
-            VolumeControlOperation.Decrease => Keys.VolumeDown,
-            VolumeControlOperation.Mute => Keys.VolumeMute,
-            _ => Keys.None
-        };
+            var key = action.Operation switch
+            {
+                VolumeControlOperation.Increase => Keys.VolumeUp,
+                VolumeControlOperation.Decrease => Keys.VolumeDown,
+                VolumeControlOperation.Mute => Keys.VolumeMute,
+                _ => Keys.None
+            };
 
-        if (key == Keys.None)
-        {
+            if (key != Keys.None)
+            {
+                ExecuteHotkey(new HotkeyAction([key]));
+            }
+
             return;
         }
 
-        var repeat = action.Operation == VolumeControlOperation.Mute ? 1 : Math.Max(1, action.Amount);
-        for (var i = 0; i < repeat; i++)
+        if (action.Operation == VolumeControlOperation.Mute)
         {
-            ExecuteHotkey(new HotkeyAction([key]));
+            AudioController.SetMute(!AudioController.IsMuted);
         }
+        else
+        {
+            var current = AudioController.GetMasterVolume();
+            var delta = Math.Max(1, action.Amount) / 100f;
+            var next = action.Operation == VolumeControlOperation.Increase
+                ? current + delta
+                : current - delta;
+            AudioController.SetMasterVolume(next);
+        }
+
+        var volume = (int)Math.Round(AudioController.GetMasterVolume() * 100);
+        LevelOsdForm.ShowVolume(volume, AudioController.IsMuted);
     }
 
     private static void ExecuteBrightnessControl(BrightnessControlAction action)
     {
-        var current = GetCurrentBrightness();
+        var current = BrightnessController.GetBrightness();
         var delta = Math.Max(1, action.Amount);
         var next = action.Operation switch
         {
@@ -127,34 +142,8 @@ public sealed class ActionExecutor
             _ => current
         };
 
-        SetBrightness(Math.Min(100, Math.Max(0, next)));
-    }
-
-    private static int GetCurrentBrightness()
-    {
-        using var searcher = new ManagementObjectSearcher(
-            "root\\WMI",
-            "SELECT CurrentBrightness FROM WmiMonitorBrightness");
-        foreach (ManagementObject item in searcher.Get())
-        {
-            return Convert.ToInt32(item["CurrentBrightness"]);
-        }
-
-        throw new InvalidOperationException("当前显示器不支持亮度读取。");
-    }
-
-    private static void SetBrightness(int brightness)
-    {
-        using var searcher = new ManagementObjectSearcher(
-            "root\\WMI",
-            "SELECT * FROM WmiMonitorBrightnessMethods");
-        foreach (ManagementObject item in searcher.Get())
-        {
-            item.InvokeMethod("WmiSetBrightness", [1, brightness]);
-            return;
-        }
-
-        throw new InvalidOperationException("当前显示器不支持亮度控制。");
+        BrightnessController.SetBrightness(next);
+        LevelOsdForm.ShowBrightness(BrightnessController.GetBrightness());
     }
 
     private static IntPtr ResolveWindowTarget(IntPtr fallbackWindow)
