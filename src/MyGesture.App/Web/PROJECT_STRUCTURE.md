@@ -1,0 +1,184 @@
+# Web 项目结构
+
+这是 `src\MyGesture.App\Web` 的项目地图。修改 Web 前端页面、路由、组件、样式、构建配置或 WebView 消息时，先阅读并按需同步更新这里。
+
+## 概览
+
+这是 MyGesture 的 Vite + Vue 3 前端工程，由桌面宿主通过 WebView2 加载。它负责规则编辑、分类和程序管理、边缘操作配置，以及轨迹线和提示窗外观设置。
+
+## 根目录
+
+```text
+src\MyGesture.App\Web
+├─ agents.md
+├─ index.html
+├─ package.json
+├─ pnpm-lock.yaml
+├─ pnpm-workspace.yaml
+├─ vite.config.js
+├─ PROJECT_STRUCTURE.md
+├─ node_modules
+└─ src
+```
+
+根目录重要文件：
+
+- `agents.md`：Web 子项目的代理指令。
+- `index.html`：Vite 入口 HTML。
+- `package.json`：前端工程依赖与脚本。
+- `pnpm-lock.yaml`：锁定依赖树。
+- `pnpm-workspace.yaml`：工作区配置，并放行 `@parcel/watcher` 的本地构建脚本，避免非交互环境下依赖安装中断。
+- `vite.config.js`：Vite 构建配置，包含 `vite-svg-loader`。
+- `PROJECT_STRUCTURE.md`：当前 Web 子项目地图。
+- `node_modules`：本地依赖目录，不纳入源码维护。
+
+## Source Structure
+
+```text
+src
+├─ main.js
+├─ App.vue
+├─ styles.scss
+├─ assets
+├─ components
+├─ composables
+└─ pages
+```
+
+- `src\main.js`：Vue 应用入口，设置 hash 路由并挂载应用。
+- `src\App.vue`：路由壳、全局弹窗挂载和规则编辑弹窗挂载，顶部 `...` 入口会跳转到设置页。
+- `src\styles.scss`：编辑器全局设计 token、reset、通用按钮、输入框、弹窗和图标样式；组件和页面专属样式放在对应 `.vue` 文件的 scoped SCSS 中。
+
+## Assets
+
+路径：
+
+```text
+src\assets
+```
+
+当前 SVG 图标：
+
+- `add.svg`
+- `close.svg`
+- `delete.svg`
+- `reset.svg`
+- `setting.svg`
+
+这些 SVG 通过 `vite-svg-loader` 作为 Vue 组件导入。
+
+## Components
+
+路径：
+
+```text
+src\components
+```
+
+- `AppHeader.vue`：顶部栏和规则 tab / 设置入口。
+- `AppShell.vue`：页面布局壳，提供主体区域和插槽。
+- `GestureRuleDialog.vue`：添加和编辑手势规则的弹窗。
+- `GestureRuleList.vue`：规则表、规则展示和规则操作入口。
+- `HoverBubble.vue`：悬浮提示气泡。
+- `IconActionButton.vue`：共享图标按钮。
+- `ScopeCreateDialog.vue`：分类或作用域名称创建/编辑弹窗。
+- `ScopeSidebar.vue`：分类和程序等作用域列表侧栏。
+
+## Composables
+
+路径：
+
+```text
+src\composables
+```
+
+- `gestureEditorStore.js`：共享编辑状态、规则加载保存、作用域选择、应用/分类状态、WebView 消息、快捷键监听、手势录制状态和 UI 设置同步。
+
+## Pages
+
+路径：
+
+```text
+src\pages
+```
+
+- `GlobalRulesPage.vue`：全局规则页，直接编辑全局规则表。
+- `CategoryRulesPage.vue`：分类规则页，左侧分类列表，右侧包含分类下应用程序和手势列表。
+- `AppRulesPage.vue`：程序规则页，左侧程序列表，右侧展示当前程序的手势列表。
+- `EdgeActionsPage.vue`：边缘操作页，按触发角、摩擦边、边缘滚动三组展示和编辑配置。
+- `SettingsPage.vue`：设置页，用于配置轨迹线和底部提示窗外观。
+
+## Routing
+
+路由使用 hash 模式，当前页面包括：
+
+- `global`
+- `category`
+- `app`
+- `edge`
+- `settings`
+
+顶部规则 tab 包含 `全局`、`分类`、`程序`、`边缘操作`。顶部 `...` 按钮打开独立的 `settings` 页面。
+
+## 当前 UI
+
+- `全局` 直接编辑整张表。
+- `分类` 和 `程序` 采用左右布局：左侧是分类/程序列表和底部新增按钮，右侧是对应内容区。
+- `分类` 页右侧包含“应用程序”和“手势列表”两个区块，分类页可管理当前分类下的 App。
+- `程序` 页右侧只展示手势列表；程序页左侧会列出已保存的全部程序，程序规则仍按 app 作用域单独维护。
+- `边缘操作` 页按触发角、摩擦边、边缘滚动三组展示配置；点击卡片打开独立弹窗编辑启用状态、名称、命令和参数，关闭弹窗后自动保存。
+- `设置` 页右上角提供恢复默认按钮，页面中的调整会在输入变化时 debounce 自动保存，并在控件变更结束或离开页面时强制提交最后一次修改；本地编辑期间会避免宿主回传覆盖当前滑块值。
+- 分类新增通过名称弹窗完成，不再使用左侧内联输入框；分类和程序名称都通过双击列表项后在弹窗里重命名。
+- 分类页和程序页添加程序时都会先显示前端弹窗，用户可按住“拖动准星选择窗口”拖到目标窗口松开，或选择“浏览 exe 文件”作为备用方式。
+- 程序列表和详情会展示从 exe 路径动态提取的应用图标；图标通过 WebView 消息传递，不写入配置文件。
+- 规则表列为 `名称`、`手势`、`命令`，删除按钮默认隐藏、在行悬浮时才显示；双击规则行、点击手势列或点击命令列都会打开规则编辑弹窗。
+- 添加/编辑手势通过弹窗完成：弹窗里可选择命令类型，快捷键命令显示录制按钮，窗口控制命令显示操作下拉框。
+- 添加/编辑手势弹窗打开时会通过 WebView 消息暂停全局手势；手势录制由后端接管，前端只接收最终识别结果。
+- 规则编辑、删除、快捷键录制、分类/App 变更会发送 `save-rules` 写入配置文件。
+- 已移除编辑器内的手势提示区，只保留配置结果提示；新增、删除、重置和配置错误等操作会通过 toast 弹出反馈。
+
+## WebView 消息流
+
+前端发送：
+
+- `"get-status"`
+- `{ type: "select-application", requestId: "...", category: "..." }`
+- `{ type: "pick-application-window", requestId: "...", category: "..." }`
+- `{ type: "start-gesture-recording", requestId: "..." }`
+- `{ type: "stop-gesture-recording" }`
+- `{ type: "set-gesture-paused", paused: true/false }`
+- `{ type: "start-hotkey-recording", requestId: "..." }`
+- `{ type: "stop-hotkey-recording" }`
+- `{ type: "save-rules", rules: [{ scope, mouseButton, pattern, actionName, action }, ...], applications: [...], edgeActions: [...], uiSettings: {...} }`
+- `{ type: "reload-rules" }`
+- `{ type: "reset-rules" }`
+
+后端发送：
+
+- `{ type: "status", ... }`
+- `{ type: "rules", rules: [...], applications: [{ name, displayName, path, category, icon }, ...], edgeActions: [...], uiSettings: {...}, ... }`
+- `{ type: "application-selected", requestId: "...", name: "...", displayName: "...", path: "...", category: "...", icon: "..." }`
+- `{ type: "gesture-recorded", requestId: "...", button: "right|middle", pattern: ["Down", "Right"] }`
+- `{ type: "hotkey-recorded", requestId: "...", keys: ["Control", "W"] }`
+- `{ type: "gesture", ... }`
+- `{ type: "gesture-action-failed", ... }`
+- `{ type: "edge-action-failed", ... }`
+- `{ type: "config-result", ... }`
+
+## 构建
+
+- 前端使用 `pnpm build` 生成仓库根目录下的 `dist\web`。
+- `MyGesture.App.csproj` 会在 `.NET` 构建前自动执行前端构建。
+- `MyGesture.App.csproj` 会在前端构建后把 `dist\web` 复制到宿主输出目录中的 `Web\dist`。
+- 桌面宿主通过 WebView2 虚拟主机 `https://appassets.local/` 加载宿主输出目录中的 `Web\dist`。
+
+## 何时更新此文件
+
+在修改以下内容时同步更新：
+
+- Web 目录结构
+- 页面、路由、布局或复用组件
+- 前端构建配置和输出路径
+- WebView 消息契约
+- 规则编辑器、边缘操作或设置页的核心职责
+- 图标资产和共享 UI 组件职责

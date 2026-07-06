@@ -172,75 +172,21 @@ Down,Right  -> Control + W
 src\MyGesture.App\Web
 ```
 
-文件：
+Web 前端有独立项目地图：
 
-- `index.html`
-- `styles.scss`
-- `package.json`：前端工程依赖与脚本。
-- `vite.config.js`：Vite 构建配置。
-- `src\main.js`：Vue 入口。
-- `src\App.vue`：路由壳、全局弹窗挂载和规则编辑弹窗挂载，顶部 `...` 入口会跳转到设置页。
-- `src\components\`：顶部栏、页面壳、左侧插槽和规则表等通用组件。
-- `src\composables\gestureEditorStore.js`：共享编辑状态、WebView 消息和快捷键监听。
-- `src\pages\`：`global`、`category`、`app`、`edge`、`settings` 五个路由页。
-- `src\styles.scss`：编辑器全局设计 token、reset、通用按钮、输入框、弹窗和图标样式；组件和页面专属样式放在对应 `.vue` 文件的 scoped SCSS 中。
-- `dist\web\`：Vite 构建产物目录，由桌面宿主加载。
+```text
+src\MyGesture.App\Web\PROJECT_STRUCTURE.md
+```
 
-构建方式：
+根文档只记录桌面宿主和 Web 子项目之间的集成关系；页面、路由、组件、图标、前端状态模块和 WebView 消息细节以 Web 子项目文档为准。
+
+宿主集成：
 
 - 前端使用 `pnpm build` 生成根目录下的 `dist\web`。
 - 前端 `pnpm` 构建脚本通过 `src\MyGesture.App\Web\pnpm-workspace.yaml` 放行 `@parcel/watcher` 的本地构建脚本，避免非交互环境下的依赖安装中断。
 - `MyGesture.App.csproj` 会在 `.NET` 构建前自动执行前端构建。
 - `MyGesture.App.csproj` 会在前端构建后把 `dist\web` 复制到宿主输出目录中的 `Web\dist`。
 - 桌面宿主通过 WebView2 虚拟主机 `https://appassets.local/` 加载宿主输出目录中的 `Web\dist`。
-
-当前 UI：
-
-- 4 个规则 tab：`全局`、`分类`、`程序`、`边缘操作`，顶部改为更紧凑的分段式切换，当前项使用更轻量的高亮态。
-- 顶部 `...` 按钮会打开独立的 `settings` 页面，用于配置轨迹线和底部提示窗外观。
-- 设置页右上角提供恢复默认按钮，页面中的调整会在输入变化时 debounce 自动保存，并在控件变更结束或离开页面时强制提交最后一次修改；本地编辑期间会避免宿主回传覆盖当前滑块值，不再依赖底部操作按钮。
-- `全局` 直接编辑整张表。
-- `分类` 和 `程序` 采用左右布局：左侧是分类/程序列表和底部新增按钮，右侧是对应内容区。
-- `分类` 页右侧包含“应用程序”和“手势列表”两个区块，分类页可管理当前分类下的 App。
-- `程序` 页右侧只展示手势列表；程序页左侧会列出已保存的全部程序，程序规则仍按 app 作用域单独维护。
-- `边缘操作` 页按触发角、摩擦边、边缘滚动三组展示配置；点击卡片打开独立弹窗编辑启用状态、名称、命令和参数，关闭弹窗后自动保存。触发角进入角落触发一次，摩擦边在四条边缘排除角落后按沿边方向反复移动次数触发，并在触发后离边或超时才允许再次触发；边缘滚动在四条边缘按滚轮上/下触发并吞掉原始滚轮事件。
-- 分类新增通过名称弹窗完成，不再使用左侧内联输入框；分类和程序名称都改为双击列表项后在弹窗里重命名。
-- 分类页和程序页添加程序时都会先显示前端弹窗，用户可按住“拖动准星选择窗口”拖到目标窗口松开，或选择“浏览 exe 文件”作为备用方式；分类页添加会关联到当前分类，程序页添加会创建并选中对应 app 规则作用域。
-- 程序列表和详情会展示从 exe 路径动态提取的应用图标；图标通过 WebView 消息传递，不写入配置文件。
-- 程序名称可通过双击弹窗重命名，进程名称保持只读并用于规则匹配；重命名后列表显示会同步更新。
-- 规则表列为 `名称`、`手势`、`命令`，删除按钮默认隐藏、在行悬浮时才显示；双击规则行、点击手势列或点击命令列都会打开规则编辑弹窗，手势列改为更具图形感的鼠标示意图，并把按键拆成键帽样式。
-- 添加/编辑手势通过弹窗完成：弹窗里可选择命令类型（`快捷键` 或 `窗口控制`），快捷键命令显示录制按钮，窗口控制命令显示操作下拉框；点击“录制手势”后，由后端直接复用正常鼠标轨迹采集和识别流程，识别出 8 方向手势后回传前端写入规则列表；如果名称为空，会使用手势助记符作为默认名称。
-- 添加/编辑手势弹窗不再包含前端绘制 canvas，控制区只负责编辑名称、命令和触发录制，不会遮挡输入框。
-- 添加/编辑手势弹窗只允许通过遮罩点击或右上角关闭按钮退出；底部确认/取消按钮已移除，名称输入和命令控件在失焦或变更时会把当前 draft 持久化到规则里。
-- 规则编辑、删除、快捷键录制、分类/App 变更会发送 `save-rules` 写入配置文件；行内规则名称编辑改为失焦后提交，避免打字时触发保存打断输入，而弹窗里的名称输入仍保持即时编辑体验。
-- 添加/编辑手势弹窗打开时会通过 WebView 消息暂停全局手势，避免全局鼠标钩子干扰编辑；手势录制由后端接管，轨迹会通过原生 `MouseTrailForm` 在屏幕上显示，录制期间不显示全局命中提示窗，前端只接收最终识别结果。
-- 已移除编辑器内的手势提示区，只保留配置结果提示；新增、删除、重置和配置错误等操作会通过 toast 弹出反馈。
-- 快捷键命令不支持手动输入；选择 `快捷键` 后点击录制按钮进入录制中，后端拦截并记录系统按键，松开所有按键后显示录制结果。
-
-WebView 消息流：
-
-- 前端发送：
-  - `"get-status"`
-  - `{ type: "select-application", requestId: "...", category: "..." }`
-  - `{ type: "pick-application-window", requestId: "...", category: "..." }`
-  - `{ type: "start-gesture-recording", requestId: "..." }`
-  - `{ type: "stop-gesture-recording" }`
-  - `{ type: "set-gesture-paused", paused: true/false }`
-  - `{ type: "start-hotkey-recording", requestId: "..." }`
-  - `{ type: "stop-hotkey-recording" }`
-  - `{ type: "save-rules", rules: [{ scope, mouseButton, pattern, actionName, action }, ...], applications: [...], edgeActions: [...], uiSettings: {...} }`
-  - `{ type: "reload-rules" }`
-  - `{ type: "reset-rules" }`
-- 后端发送：
-  - `{ type: "status", ... }`
-  - `{ type: "rules", rules: [...], applications: [{ name, displayName, path, category, icon }, ...], edgeActions: [...], uiSettings: {...}, ... }`
-  - `{ type: "application-selected", requestId: "...", name: "...", displayName: "...", path: "...", category: "...", icon: "..." }`
-  - `{ type: "gesture-recorded", requestId: "...", button: "right|middle", pattern: ["Down", "Right"] }`
-  - `{ type: "hotkey-recorded", requestId: "...", keys: ["Control", "W"] }`
-  - `{ type: "gesture", ... }`
-  - `{ type: "gesture-action-failed", ... }`
-  - `{ type: "edge-action-failed", ... }`
-  - `{ type: "config-result", ... }`
 
 ## 测试
 
