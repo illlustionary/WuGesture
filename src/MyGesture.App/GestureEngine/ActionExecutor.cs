@@ -119,6 +119,11 @@ public sealed class ActionExecutor
         }
         else
         {
+            if (AudioController.IsMuted)
+            {
+                AudioController.SetMute(false);
+            }
+
             var current = AudioController.GetMasterVolume();
             var delta = Math.Max(1, action.Amount) / 100f;
             var next = action.Operation == VolumeControlOperation.Increase
