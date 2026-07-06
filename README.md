@@ -31,6 +31,12 @@ dotnet run --project src\MyGesture.App\MyGesture.App.csproj
 dotnet build MyGesture.slnx
 ```
 
+默认 Debug 输出会被 Git 忽略：
+
+```text
+artifacts\debug\WuGesture
+```
+
 ## 发布
 
 ```powershell
