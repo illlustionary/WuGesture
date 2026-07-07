@@ -140,7 +140,7 @@ function createDraft(settings) {
       backgroundOpacity: gestureHint.backgroundOpacity ?? 90,
       width: gestureHint.width ?? 540,
       widthPercent: gestureHint.widthPercent ?? 28,
-      autoWidth: Boolean(gestureHint.autoWidth ?? false),
+      autoWidth: Boolean(gestureHint.autoWidth ?? true),
       height: gestureHint.height ?? 120,
       heightPercent: gestureHint.heightPercent ?? 11,
       cornerRadius: gestureHint.cornerRadius ?? 28,

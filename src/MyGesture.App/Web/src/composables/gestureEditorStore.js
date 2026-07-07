@@ -109,7 +109,7 @@ const DEFAULT_UI_SETTINGS = {
     backgroundOpacity: 90,
     width: 540,
     widthPercent: 28,
-    autoWidth: false,
+    autoWidth: true,
     height: 120,
     heightPercent: 11,
     cornerRadius: 28,
