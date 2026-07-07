@@ -137,15 +137,14 @@ function openSettingsPage() {
   text-align: left;
   border-radius: 18px;
   border: 1px solid var(--border);
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.98),
-    rgba(240, 246, 252, 0.98)
-  );
-  box-shadow: 0 12px 24px rgba(18, 30, 42, 0.08);
+  background: var(--interactive-bg);
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease;
 
   &:hover {
-    background: linear-gradient(180deg, #ffffff, #edf5ff);
+    border-color: var(--border-strong);
+    background: var(--interactive-hover-bg);
   }
 
   &__icon {

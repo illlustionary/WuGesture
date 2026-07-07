@@ -58,7 +58,7 @@ defineProps({
     background:
       radial-gradient(
         circle at 20% 30%,
-        rgba(0, 122, 255, 0.06),
+        var(--accent-soft),
         transparent 28%
       ),
       rgba(248, 251, 255, 0.96);

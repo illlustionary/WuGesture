@@ -63,20 +63,15 @@ const missingPath = computed(() => !String(props.app.path ?? '').trim())
   align-items: center;
   border: 1px solid rgba(18, 30, 42, 0.08);
   border-radius: 18px;
-  background: rgba(248, 251, 255, 0.96);
-  box-shadow: 0 10px 24px rgba(18, 30, 42, 0.04);
+  background: var(--interactive-bg);
   transition:
-    transform 120ms ease,
     background-color 120ms ease,
-    border-color 120ms ease,
-    box-shadow 120ms ease;
+    border-color 120ms ease;
 }
 
 .app-list__item:hover {
-  background: rgba(242, 247, 255, 1);
-  border-color: rgba(0, 122, 255, 0.16);
-  box-shadow: 0 14px 28px rgba(18, 30, 42, 0.06);
-  transform: translateY(-1px);
+  background: var(--interactive-hover-bg);
+  border-color: var(--border-strong);
 }
 
 .app-list__icon {
@@ -86,7 +81,7 @@ const missingPath = computed(() => !String(props.app.path ?? '').trim())
   width: 32px;
   height: 32px;
   border-radius: 12px;
-  background: rgba(0, 122, 255, 0.1);
+  background: var(--interactive-icon-bg);
   color: var(--accent-strong);
   overflow: hidden;
 
