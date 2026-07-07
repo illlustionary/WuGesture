@@ -20,7 +20,9 @@ const {
   resetSettings
 } = useUiSettingsDraft(editor)
 
-const webDavDraftSignature = computed(() => editor.getWebDavSignature(draft.webDav))
+const webDavDraftSignature = computed(() =>
+  editor.getWebDavSignature(draft.webDav)
+)
 const webDavReady = computed(
   () =>
     Boolean(draft.webDav.address) &&
@@ -46,7 +48,6 @@ function testWebDav() {
 <template>
   <AppShell
     title="设置"
-    description="调整轨迹显示和手势触发后的底部提示窗外观。"
     layout-class="page-shell__grid--single page-shell__grid--settings"
   >
     <template #actions>
