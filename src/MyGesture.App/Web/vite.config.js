@@ -1,10 +1,11 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import UnoCSS from 'unocss/vite'
 import svgLoader from 'vite-svg-loader'
 import { fileURLToPath, URL } from 'node:url'
 
 export default defineConfig({
-  plugins: [vue(), svgLoader()],
+  plugins: [vue(), UnoCSS(), svgLoader()],
   base: './',
   build: {
     outDir: '../../../dist/web',

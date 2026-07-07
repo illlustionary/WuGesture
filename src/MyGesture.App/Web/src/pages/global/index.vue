@@ -1,9 +1,10 @@
 <script setup>
-import AppShell from '../components/AppShell.vue'
-import IconActionButton from '../components/IconActionButton.vue'
-import GestureRuleList from '../components/GestureRuleList.vue'
-import ScopeSidebar from '../components/ScopeSidebar.vue'
-import { useGestureEditorStore } from '../composables/gestureEditorStore'
+import AppShell from '../../components/AppShell.vue'
+import GestureRuleList from '../../components/GestureRuleList.vue'
+import IconActionButton from '../../components/IconActionButton.vue'
+import ScopeSidebar from '../../components/ScopeSidebar.vue'
+import RulesSection from '../../components/rules/RulesSection.vue'
+import { useGestureEditorStore } from '../../composables/gestureEditorStore'
 
 const editor = useGestureEditorStore()
 const scopeKind = 'global'
@@ -33,22 +34,20 @@ editor.setActiveScope(scopeKind)
     </template>
 
     <template #right>
-      <section class="rules-panel rules-panel--stacked rules-panel--editor">
-        <section class="rules-panel__section rules-panel__section--flex">
-          <div class="rules-panel__head">
-            <div>
-              <h3>手势列表</h3>
-              <p>这里的规则会影响所有页面。</p>
-            </div>
-            <div class="rules-panel__actions">
-              <IconActionButton
-                icon="add"
-                label="添加规则"
-                class="primary-button"
-                @click="editor.openAddRule(scopeKind)"
-              />
-            </div>
-          </div>
+      <section class="rules-panel">
+        <RulesSection
+          title="手势列表"
+          description="这里的规则会影响所有页面。"
+          flex
+        >
+          <template #actions>
+            <IconActionButton
+              icon="add"
+              label="添加规则"
+              class="primary-button"
+              @click="editor.openAddRule(scopeKind)"
+            />
+          </template>
 
           <GestureRuleList
             :rules="editor.globalRules"
@@ -58,7 +57,7 @@ editor.setActiveScope(scopeKind)
             @edit="editor.openEditRule"
             @rename="editor.updateRuleActionName"
           />
-        </section>
+        </RulesSection>
       </section>
     </template>
   </AppShell>
@@ -88,29 +87,5 @@ editor.setActiveScope(scopeKind)
   flex-direction: column;
   gap: 18px;
   min-width: 0;
-
-  h3 {
-    font-size: 16px;
-    font-weight: 700;
-  }
-
-  p {
-    color: var(--muted);
-    font-size: 13px;
-  }
-
-  &__head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    margin-bottom: 4px;
-  }
-
-  &__actions {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
 }
 </style>

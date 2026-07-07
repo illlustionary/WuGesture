@@ -2,12 +2,13 @@ import { createApp } from "vue";
 import { createRouter, createWebHashHistory } from "vue-router";
 import Toast from "vue-toastification";
 import App from "./App.vue";
-import GlobalRulesPage from "./pages/GlobalRulesPage.vue";
-import CategoryRulesPage from "./pages/CategoryRulesPage.vue";
-import AppRulesPage from "./pages/AppRulesPage.vue";
-import EdgeActionsPage from "./pages/EdgeActionsPage.vue";
-import SettingsPage from "./pages/SettingsPage.vue";
+import GlobalRulesPage from "./pages/global/index.vue";
+import CategoryRulesPage from "./pages/category/index.vue";
+import AppRulesPage from "./pages/app/index.vue";
+import EdgeActionsPage from "./pages/edge/index.vue";
+import SettingsPage from "./pages/settings/index.vue";
 import "vue-toastification/dist/index.css";
+import "virtual:uno.css";
 import "./styles.scss";
 
 const router = createRouter({

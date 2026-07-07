@@ -15,6 +15,7 @@ src\MyGesture.App\Web
 ├─ package.json
 ├─ pnpm-lock.yaml
 ├─ pnpm-workspace.yaml
+├─ uno.config.js
 ├─ vite.config.js
 ├─ PROJECT_STRUCTURE.md
 ├─ node_modules
@@ -28,7 +29,8 @@ src\MyGesture.App\Web
 - `package.json`：前端工程依赖与脚本。
 - `pnpm-lock.yaml`：锁定依赖树。
 - `pnpm-workspace.yaml`：工作区配置，并放行 `@parcel/watcher` 的本地构建脚本，避免非交互环境下依赖安装中断。
-- `vite.config.js`：Vite 构建配置，包含 `vite-svg-loader`。
+- `uno.config.js`：UnoCSS 配置，集中定义页面区块、表单、列表等常用 shortcuts。
+- `vite.config.js`：Vite 构建配置，包含 `vite-svg-loader` 和 UnoCSS Vite 插件。
 - `PROJECT_STRUCTURE.md`：当前 Web 子项目地图。
 - `node_modules`：本地依赖目录，不纳入源码维护。
 
@@ -45,9 +47,9 @@ src
 └─ pages
 ```
 
-- `src\main.js`：Vue 应用入口，设置 hash 路由并挂载应用。
+- `src\main.js`：Vue 应用入口，设置 hash 路由、加载 `virtual:uno.css` 并挂载应用。
 - `src\App.vue`：路由壳、全局弹窗挂载和规则编辑弹窗挂载，顶部 `...` 入口会跳转到设置页。
-- `src\styles.scss`：编辑器全局设计 token、reset、通用按钮、输入框、弹窗和图标样式；组件和页面专属样式放在对应 `.vue` 文件的 scoped SCSS 中。
+- `src\styles.scss`：编辑器全局设计 token、reset、通用按钮、输入框、弹窗和图标样式；常用布局/区块/表单/列表样式优先用 UnoCSS shortcuts，复杂动态样式和组件专属样式放在对应 `.vue` 文件的 scoped SCSS 中。
 
 ## Assets
 
@@ -86,6 +88,9 @@ src\components
 - `IconActionButton.vue`：共享图标按钮，支持添加、关闭、删除、设置、重置，以及 WebDAV 测试、上传和下载图标。
 - `ScopeCreateDialog.vue`：分类或作用域名称创建/编辑弹窗。
 - `ScopeSidebar.vue`：分类和程序等作用域列表侧栏。
+- `applications\ApplicationListItem.vue`：分类页右侧程序关联列表项。
+- `rules\RulesSection.vue`：规则页右侧复用区块，统一标题、说明、操作区和内容面板。
+- `scope\ScopeListItem.vue`：分类页和程序页左侧作用域列表项，统一选中态、键盘选择、双击重命名和删除操作。
 
 ## Composables
 
@@ -105,11 +110,27 @@ src\composables
 src\pages
 ```
 
-- `GlobalRulesPage.vue`：全局规则页，直接编辑全局规则表。
-- `CategoryRulesPage.vue`：分类规则页，左侧分类列表，右侧包含分类下应用程序和手势列表。
-- `AppRulesPage.vue`：程序规则页，左侧程序列表，右侧展示当前程序的手势列表。
-- `EdgeActionsPage.vue`：边缘操作页，按触发角、摩擦边、边缘滚动三组展示和编辑配置。
-- `SettingsPage.vue`：设置页，用于配置轨迹线、底部提示窗外观、应用行为和 WebDAV 配置备份/恢复。
+页面按目录组织，目录名就是页面名，入口统一为 `index.vue`。页面私有组件放在同级 `components`，页面私有逻辑放在同级 `composables`。
+
+- `global\index.vue`：全局规则页，直接编辑全局规则表。
+- `category\index.vue`：分类规则页，左侧分类列表，右侧包含分类下应用程序和手势列表。
+- `app\index.vue`：程序规则页，左侧程序列表，右侧展示当前程序的手势列表。
+- `edge\index.vue`：边缘操作页，按触发角、摩擦边、边缘滚动三组展示配置。
+  - `edge\components\EdgeActionSection.vue`：边缘操作大项区块。
+  - `edge\components\EdgeActionCard.vue`：单个边缘操作卡片。
+  - `edge\components\EdgeActionDialog.vue`：边缘操作编辑弹窗。
+  - `edge\components\EdgeActionCommandFields.vue`：快捷键、窗口、音量、亮度命令字段。
+  - `edge\composables\useEdgeActionDraft.js`：边缘操作编辑草稿、打开、关闭和保存逻辑。
+- `settings\index.vue`：设置页，用于组合轨迹线、底部提示窗、应用行为和 WebDAV 配置区块。
+  - `settings\components\SettingsSectionCard.vue`：设置页大项标题、说明、操作区和内容布局。
+  - `settings\components\SettingsFormGrid.vue`：设置项双列表单布局。
+  - `settings\components\SettingsField.vue`：设置项卡片。
+  - `settings\components\SettingsPreviewPanel.vue`：轨迹线和底部提示窗实时预览。
+  - `settings\components\MouseTrailSettings.vue`：轨迹线配置。
+  - `settings\components\AppBehaviorSettings.vue`：应用行为配置。
+  - `settings\components\WebDavSettings.vue`：WebDAV 配置、测试、恢复和保存操作。
+  - `settings\components\GestureHintSettings.vue`：底部提示窗配置。
+  - `settings\composables\useUiSettingsDraft.js`：设置草稿归一化、debounce 保存、重置和预览样式计算。
 
 ## Routing
 
