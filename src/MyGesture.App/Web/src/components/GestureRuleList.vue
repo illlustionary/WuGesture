@@ -232,21 +232,14 @@ function isWindowAction(rule) {
     padding-block: 2px;
     border: 1px solid rgba(18, 30, 42, 0.06);
     border-radius: 18px;
-    background: rgba(255, 255, 255, 0.8);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    background: var(--interactive-bg);
     transition:
       background-color 140ms ease,
-      box-shadow 140ms ease,
-      border-color 140ms ease,
-      transform 140ms ease;
+      border-color 140ms ease;
 
     &:hover {
-      background: rgba(255, 255, 255, 0.94);
-      border-color: rgba(18, 30, 42, 0.1);
-      box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.72),
-        0 10px 24px rgba(18, 30, 42, 0.05);
-      transform: translateY(-1px);
+      background: var(--interactive-hover-bg);
+      border-color: var(--border-strong);
     }
   }
 
@@ -333,7 +326,7 @@ function isWindowAction(rule) {
     height: 28px;
     flex: 0 0 auto;
     color: var(--accent-strong);
-    background: rgba(0, 122, 255, 0.08);
+    background: var(--interactive-icon-bg);
     border-radius: 10px;
 
     &-icon {

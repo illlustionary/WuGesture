@@ -84,35 +84,26 @@ function displayLabel() {
   border: 0;
   border-radius: 18px;
   text-align: left;
-  background: rgba(248, 251, 255, 0.96);
+  background: var(--interactive-bg);
   border: 1px solid rgba(18, 30, 42, 0.08);
-  box-shadow: 0 10px 24px rgba(18, 30, 42, 0.04);
   cursor: pointer;
   user-select: none;
   position: relative;
   overflow: hidden;
   transition:
-    transform 120ms ease,
     background-color 120ms ease,
-    border-color 120ms ease,
-    box-shadow 120ms ease;
+    border-color 120ms ease;
 
   &:hover,
   &:focus-visible {
-    background: rgba(242, 247, 255, 1);
-    border-color: rgba(0, 122, 255, 0.16);
-    box-shadow: 0 14px 28px rgba(18, 30, 42, 0.06);
-    transform: translateY(-1px);
+    background: var(--interactive-hover-bg);
+    border-color: var(--border-strong);
+    outline: none;
   }
 
   &.active {
-    background: linear-gradient(
-      180deg,
-      rgba(231, 241, 255, 1),
-      rgba(241, 247, 255, 1)
-    );
-    border-color: rgba(0, 122, 255, 0.2);
-    box-shadow: 0 14px 28px rgba(0, 122, 255, 0.08);
+    background: var(--interactive-active-bg);
+    border-color: rgba(29, 81, 109, 0.24);
   }
 
   &.active .scope-item__accent {
@@ -143,7 +134,7 @@ function displayLabel() {
     height: 28px;
     flex: 0 0 auto;
     border-radius: 10px;
-    background: rgba(0, 122, 255, 0.1);
+    background: var(--interactive-icon-bg);
     color: var(--accent-strong);
     font-size: 15px;
     line-height: 1;

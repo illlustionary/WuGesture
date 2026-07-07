@@ -9,9 +9,14 @@
   --border-strong: rgba(18, 30, 42, 0.16);
   --text: #16202b;
   --muted: #657180;
-  --accent: #007aff;
-  --accent-strong: #005fcc;
-  --accent-soft: rgba(0, 122, 255, 0.12);
+  --accent: #2f6f8f;
+  --accent-strong: #1d516d;
+  --accent-soft: rgba(29, 81, 109, 0.1);
+  --interactive-bg: rgba(248, 250, 252, 0.94);
+  --interactive-hover-bg: rgba(242, 245, 248, 0.98);
+  --interactive-active-bg: rgba(232, 240, 246, 0.96);
+  --interactive-icon-bg: rgba(29, 81, 109, 0.08);
+  --focus-ring: rgba(29, 81, 109, 0.14);
   --danger: #ad4c39;
   --shadow: 0 14px 30px rgba(18, 30, 42, 0.08);
   --shadow-soft: 0 24px 70px rgba(18, 30, 42, 0.08);
@@ -110,14 +115,20 @@ p {
 .primary-button {
   color: #ffffff;
   border-color: transparent;
-  background: linear-gradient(180deg, #2d90ff, var(--accent-strong));
-  box-shadow: 0 14px 24px rgba(0, 122, 255, 0.24);
+  background: linear-gradient(180deg, var(--accent), var(--accent-strong));
+  box-shadow: 0 12px 22px rgba(29, 81, 109, 0.18);
 }
 
 .secondary-button,
 .ghost-button {
-  color: var(--accent-strong);
-  background: rgba(255, 255, 255, 0.82);
+  color: var(--text);
+  border: 1px solid var(--border);
+  background: var(--interactive-bg);
+
+  &:hover {
+    border-color: var(--border-strong);
+    background: var(--interactive-hover-bg);
+  }
 }
 
 .danger-button {
@@ -138,8 +149,8 @@ p {
 
   &:focus {
     outline: none;
-    border-color: rgba(0, 122, 255, 0.5);
-    box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.12);
+    border-color: rgba(29, 81, 109, 0.42);
+    box-shadow: 0 0 0 4px var(--focus-ring);
   }
 }
 

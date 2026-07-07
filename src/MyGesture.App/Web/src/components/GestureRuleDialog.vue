@@ -308,7 +308,7 @@ const patternLabel = computed(
   }
 
   &:hover {
-    background: rgba(29, 81, 109, 0.08);
+    background: var(--interactive-hover-bg);
   }
 
   &.is-recording {
@@ -327,9 +327,17 @@ const patternLabel = computed(
   padding: 16px 18px;
   text-align: left;
   border-radius: 20px;
-  border: 1px solid rgba(29, 81, 109, 0.18);
-  background: linear-gradient(180deg, #ffffff, #f2f7fb);
-  box-shadow: 0 12px 28px rgba(18, 30, 42, 0.08);
+  border: 1px solid var(--border-strong);
+  background: var(--interactive-bg);
+  box-shadow: none;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease;
+
+  &:hover {
+    border-color: rgba(29, 81, 109, 0.24);
+    background: var(--interactive-hover-bg);
+  }
 
   .gesture-recorder__icon {
     width: 28px;

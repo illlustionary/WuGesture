@@ -81,7 +81,7 @@ defineEmits(['open-settings'])
     .status-badge__dot {
       opacity: 1;
       background: var(--accent);
-      box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.12);
+      box-shadow: 0 0 0 4px var(--focus-ring);
     }
   }
 }
@@ -109,6 +109,16 @@ defineEmits(['open-settings'])
   justify-content: center;
   box-sizing: border-box;
   position: relative;
+  border-radius: 10px;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+
+  &:hover {
+    color: var(--text);
+    background: var(--interactive-hover-bg);
+  }
+
   &.active {
     color: var(--accent-strong);
     // border-bottom: 2px solid var(--accent-strong);
@@ -132,6 +142,10 @@ defineEmits(['open-settings'])
 }
 
 .menu-button {
-  color: var(--accent-strong);
+  color: var(--muted);
+
+  &:hover {
+    color: var(--text);
+  }
 }
 </style>

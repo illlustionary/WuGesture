@@ -113,7 +113,7 @@ const iconComponent = computed(() => iconMap[props.icon] ?? addIcon)
 
   &.ghost-button,
   &.secondary-button {
-    color: var(--accent-strong);
+    color: var(--muted);
   }
 
   &.add {

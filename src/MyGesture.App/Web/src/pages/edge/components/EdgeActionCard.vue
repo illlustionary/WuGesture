@@ -54,8 +54,8 @@ const emit = defineEmits(['open'])
 
   &:hover,
   &:focus-visible {
-    border-color: rgba(29, 81, 109, 0.26);
-    background: #fff;
+    border-color: var(--border-strong);
+    background: var(--interactive-hover-bg);
     outline: none;
   }
 
@@ -113,7 +113,7 @@ const emit = defineEmits(['open'])
 
   &.is-enabled {
     background: var(--accent);
-    box-shadow: 0 0 0 4px rgba(29, 81, 109, 0.1);
+    box-shadow: 0 0 0 4px var(--focus-ring);
   }
 }
 </style>

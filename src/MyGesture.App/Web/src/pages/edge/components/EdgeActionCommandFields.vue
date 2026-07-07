@@ -121,6 +121,10 @@ const emit = defineEmits(['record-hotkey', 'update-operation'])
     color: var(--accent-strong);
   }
 
+  &:hover {
+    background: var(--interactive-hover-bg);
+  }
+
   &.is-recording {
     color: #8a441f;
     background: #fff3df;
