@@ -5,12 +5,15 @@ static class Program
     private const string SingleInstanceMutexName = @"Local\WuGesture.SingleInstance";
     private const string ShowExistingInstanceEventName = @"Local\WuGesture.ShowExistingInstance";
     private const string ElevatedRelaunchArgument = "--elevated-relaunch";
+    private const string StartupLaunchArgument = "--startup";
 
     [STAThread]
     static void Main(string[] args)
     {
         var isElevatedRelaunch = args.Any(arg =>
             string.Equals(arg, ElevatedRelaunchArgument, StringComparison.OrdinalIgnoreCase));
+        var isStartupLaunch = args.Any(arg =>
+            string.Equals(arg, StartupLaunchArgument, StringComparison.OrdinalIgnoreCase));
         using var mutex = new Mutex(initiallyOwned: false, SingleInstanceMutexName);
         var ownsMutex = mutex.WaitOne(isElevatedRelaunch ? TimeSpan.FromSeconds(15) : TimeSpan.Zero);
         if (!ownsMutex)
@@ -26,7 +29,7 @@ static class Program
                 initialState: false,
                 mode: EventResetMode.AutoReset,
                 name: ShowExistingInstanceEventName);
-            using var form = new MainForm();
+            using var form = new MainForm(isStartupLaunch);
             using var listenerCancellation = new CancellationTokenSource();
             var listener = Task.Run(() => ListenForExistingInstanceRequests(
                 showExistingInstanceEvent,
