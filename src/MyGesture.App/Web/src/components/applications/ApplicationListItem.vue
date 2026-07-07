@@ -61,7 +61,7 @@ const missingPath = computed(() => !String(props.app.path ?? '').trim())
   min-height: 64px;
   padding: 12px 14px;
   align-items: center;
-  border: 1px solid rgba(18, 30, 42, 0.08);
+  border: 1px solid var(--border-subtle);
   border-radius: 18px;
   background: var(--interactive-bg);
   transition:
@@ -95,12 +95,12 @@ const missingPath = computed(() => !String(props.app.path ?? '').trim())
     width: 14px;
     height: 14px;
     border-radius: 999px;
-    background: #ffd54d;
-    color: #7b5300;
+    background: var(--warning-bg);
+    color: var(--warning-text);
     font-size: 10px;
     font-weight: 800;
-    border: 1px solid rgba(255, 255, 255, 0.92);
-    box-shadow: 0 4px 10px rgba(18, 30, 42, 0.12);
+    border: 1px solid var(--border-inverse-strong);
+    box-shadow: var(--shadow-inline);
   }
 }
 
@@ -127,7 +127,7 @@ const missingPath = computed(() => !String(props.app.path ?? '').trim())
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  color: #8b95a3;
+  color: var(--text-subtle);
   font-size: 12px;
 }
 

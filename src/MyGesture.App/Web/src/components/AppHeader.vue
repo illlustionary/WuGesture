@@ -62,8 +62,8 @@ defineEmits(['open-settings'])
   border: 1px solid var(--border);
   border-radius: 999px;
   color: var(--muted);
-  background: rgba(255, 255, 255, 0.7);
-  box-shadow: 0 8px 16px rgba(18, 30, 42, 0.05);
+  background: var(--panel-soft);
+  box-shadow: none;
   font-size: 12px;
   font-weight: 600;
 
