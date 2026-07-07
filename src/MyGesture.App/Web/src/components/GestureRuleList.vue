@@ -34,33 +34,7 @@
               class="gesture-pattern-button__mouse"
               aria-hidden="true"
             >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                aria-hidden="true"
-              >
-                <rect
-                  x="7"
-                  y="3"
-                  width="10"
-                  height="18"
-                  rx="5"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                />
-                <path
-                  d="M12 7v3"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                />
-                <path
-                  d="M9 10.5h6"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                />
-              </svg>
+              <MouseIcon class="gesture-pattern-button__mouse-icon" />
             </span>
             <span
               v-if="gestureSegments(rule).length > 0"
@@ -133,6 +107,7 @@
 
 <script setup>
 import IconActionButton from './IconActionButton.vue'
+import MouseIcon from '../assets/mouse.svg'
 const DIRECTION_LABELS = {
   Up: '↑',
   Down: '↓',
@@ -361,7 +336,7 @@ function isWindowAction(rule) {
     background: rgba(0, 122, 255, 0.08);
     border-radius: 10px;
 
-    svg {
+    &-icon {
       width: 18px;
       height: 18px;
     }

@@ -1,6 +1,8 @@
 <script setup>
 import { computed } from 'vue'
 import IconActionButton from './IconActionButton.vue'
+import KeyboardIcon from '../assets/keyboard.svg'
+import RecordIcon from '../assets/record.svg'
 
 const props = defineProps({
   open: { type: Boolean, required: true },
@@ -160,11 +162,17 @@ const patternLabel = computed(
               @click="$emit('record-hotkey', draft)"
               @blur="$emit('persist')"
             >
-              {{
-                isRecordingHotkey?.(draft)
-                  ? '录制中...'
-                  : draft.keysText || '点击录制快捷键'
-              }}
+              <KeyboardIcon
+                class="hotkey-record-button__icon"
+                aria-hidden="true"
+              />
+              <span>
+                {{
+                  isRecordingHotkey?.(draft)
+                    ? '录制中...'
+                    : draft.keysText || '点击录制快捷键'
+                }}
+              </span>
             </button>
           </label>
         </div>
@@ -175,12 +183,18 @@ const patternLabel = computed(
           :class="{ 'is-recording': isRecordingGesture }"
           @click="$emit('record')"
         >
-          <strong>{{ isRecordingGesture ? '停止录制' : '开始录制' }}</strong>
-          <span>{{
-            isRecordingGesture
-              ? '再次点击停止录制。'
-              : '点击后立即开始录制，按住右键或中键绘制。'
-          }}</span>
+          <RecordIcon
+            class="gesture-recorder__icon"
+            aria-hidden="true"
+          />
+          <span class="gesture-recorder__text">
+            <strong>{{ isRecordingGesture ? '停止录制' : '开始录制' }}</strong>
+            <span>{{
+              isRecordingGesture
+                ? '再次点击停止录制。'
+                : '点击后立即开始录制，按住右键或中键绘制。'
+            }}</span>
+          </span>
         </button>
 
         <div class="gesture-dialog__result">
@@ -275,6 +289,9 @@ const patternLabel = computed(
 }
 
 .hotkey-record-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   overflow: hidden;
   text-align: left;
   white-space: nowrap;
@@ -282,6 +299,13 @@ const patternLabel = computed(
   cursor: pointer;
   color: var(--text);
   background: #fff;
+
+  &__icon {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 auto;
+    color: var(--accent-strong);
+  }
 
   &:hover {
     background: rgba(29, 81, 109, 0.08);
@@ -294,8 +318,9 @@ const patternLabel = computed(
 }
 
 .gesture-recorder__trigger {
-  display: grid;
-  gap: 4px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   width: 100%;
   min-height: 74px;
   margin-bottom: 14px;
@@ -305,6 +330,19 @@ const patternLabel = computed(
   border: 1px solid rgba(29, 81, 109, 0.18);
   background: linear-gradient(180deg, #ffffff, #f2f7fb);
   box-shadow: 0 12px 28px rgba(18, 30, 42, 0.08);
+
+  .gesture-recorder__icon {
+    width: 28px;
+    height: 28px;
+    flex: 0 0 auto;
+    color: var(--accent-strong);
+  }
+
+  .gesture-recorder__text {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+  }
 
   strong {
     color: var(--accent-strong);
@@ -321,6 +359,10 @@ const patternLabel = computed(
     background: linear-gradient(180deg, #fff8f5, #ffeede);
 
     strong {
+      color: #8a441f;
+    }
+
+    .gesture-recorder__icon {
       color: #8a441f;
     }
   }

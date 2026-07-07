@@ -9,6 +9,13 @@ import ApplicationListItem from '../../components/applications/ApplicationListIt
 import RulesSection from '../../components/rules/RulesSection.vue'
 import ScopeListItem from '../../components/scope/ScopeListItem.vue'
 import { useGestureEditorStore } from '../../composables/gestureEditorStore'
+import BriefcaseIcon from '../../assets/briefcase.svg'
+import BrowserIcon from '../../assets/browser.svg'
+import CircleDashedIcon from '../../assets/circle-dashed.svg'
+import CodeIcon from '../../assets/code.svg'
+import FolderIcon from '../../assets/folder.svg'
+import MediaIcon from '../../assets/media.svg'
+import SparkleIcon from '../../assets/sparkle.svg'
 
 const editor = useGestureEditorStore()
 const scopeKind = 'category'
@@ -68,12 +75,12 @@ function confirmCategoryRenameDialog() {
   }
 }
 
-function getCategoryGlyph(name) {
+function getCategoryIcon(name) {
   const value = String(name ?? '')
     .trim()
     .toLowerCase()
   if (!value) {
-    return '◌'
+    return CircleDashedIcon
   }
 
   if (
@@ -81,30 +88,30 @@ function getCategoryGlyph(name) {
     value.includes('browser') ||
     value.includes('网页')
   ) {
-    return '🌐'
+    return BrowserIcon
   }
   if (value.includes('办公') || value.includes('office')) {
-    return '💼'
+    return BriefcaseIcon
   }
   if (
     value.includes('开发') ||
     value.includes('dev') ||
     value.includes('编程')
   ) {
-    return '🛠'
+    return CodeIcon
   }
   if (value.includes('设计') || value.includes('创作')) {
-    return '✦'
+    return SparkleIcon
   }
   if (
     value.includes('媒体') ||
     value.includes('音乐') ||
     value.includes('视频')
   ) {
-    return '🎬'
+    return MediaIcon
   }
 
-  return '📁'
+  return FolderIcon
 }
 
 function deleteCategoryItem(name) {
@@ -143,7 +150,7 @@ function deleteCategoryItem(name) {
             :item="item"
             :active="item.name === editor.getSelectedName(scopeKind)"
             :label="item.name"
-            :fallback-glyph="getCategoryGlyph(item.name)"
+            :icon-component="getCategoryIcon(item.name)"
             delete-label="删除分类"
             icon-mode="category"
             @select="editor.selectScope(scopeKind, $event.name)"
