@@ -254,6 +254,19 @@ function isWindowAction(rule) {
 
   &__cell--name {
     padding-inline: 14px;
+    border: 1px solid transparent;
+    color: var(--text);
+    transition:
+      border-color 120ms ease,
+      box-shadow 120ms ease,
+      background-color 120ms ease;
+
+    &:focus {
+      outline: none;
+      border-color: var(--accent-border-strong);
+      background: var(--panel-control);
+      box-shadow: 0 0 0 4px var(--focus-ring);
+    }
   }
 
   &__remove {

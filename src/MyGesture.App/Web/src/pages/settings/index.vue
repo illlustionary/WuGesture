@@ -1,6 +1,7 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import AppShell from '../../components/AppShell.vue'
+import ConfirmDialog from '../../components/ConfirmDialog.vue'
 import IconActionButton from '../../components/IconActionButton.vue'
 import { useGestureEditorStore } from '../../composables/gestureEditorStore'
 import AppBehaviorSettings from './components/AppBehaviorSettings.vue'
@@ -28,6 +29,20 @@ const webDavReady = computed(
     Boolean(draft.webDav.address) &&
     editor.state.webDavTestedSignature === webDavDraftSignature.value
 )
+const resetConfirmOpen = ref(false)
+
+function openResetConfirm() {
+  resetConfirmOpen.value = true
+}
+
+function closeResetConfirm() {
+  resetConfirmOpen.value = false
+}
+
+function confirmResetSettings() {
+  resetSettings()
+  closeResetConfirm()
+}
 
 function saveToWebDav() {
   flushPersistDraft()
@@ -55,7 +70,7 @@ function testWebDav() {
         icon="reset"
         label="恢复默认设置"
         class="secondary-button"
-        @click="resetSettings"
+        @click="openResetConfirm"
       />
     </template>
 
@@ -93,6 +108,17 @@ function testWebDav() {
       </section>
     </template>
   </AppShell>
+
+  <ConfirmDialog
+    :open="resetConfirmOpen"
+    title="恢复默认设置"
+    message="这会把轨迹线、底部提示窗、应用行为和 WebDAV 设置恢复为默认值。"
+    confirm-text="恢复默认"
+    cancel-text="取消"
+    tone="danger"
+    @close="closeResetConfirm"
+    @confirm="confirmResetSettings"
+  />
 </template>
 
 <style scoped lang="scss">
