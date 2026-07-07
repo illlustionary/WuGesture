@@ -27,6 +27,8 @@ public sealed class MainForm : Form
     private readonly NotifyIcon trayIcon = new();
     private readonly ContextMenuStrip trayMenu = new();
     private ToolStripMenuItem? pauseItem;
+    private Icon? normalTrayIcon;
+    private Icon? pausedTrayIcon;
     private WebView2? webView;
     private ConfiguredScopeContextProvider? scopeContextProvider;
     private LoadedGestureConfig? loadedConfig;
@@ -66,6 +68,8 @@ public sealed class MainForm : Form
             trayIcon.Visible = false;
             trayIcon.Dispose();
             trayMenu.Dispose();
+            normalTrayIcon?.Dispose();
+            pausedTrayIcon?.Dispose();
             DisposeWebView();
             gestureHintForm.Dispose();
             DisposeMouseTrailForm();
@@ -127,8 +131,10 @@ public sealed class MainForm : Form
         trayMenu.Items.Add(new ToolStripSeparator());
         trayMenu.Items.Add(exitItem);
 
+        normalTrayIcon = Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? (Icon)SystemIcons.Application.Clone();
+        pausedTrayIcon = CreateGrayscaleIcon(normalTrayIcon);
         trayIcon.Text = ApplicationDisplayName;
-        trayIcon.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? SystemIcons.Application;
+        trayIcon.Icon = normalTrayIcon;
         trayIcon.ContextMenuStrip = trayMenu;
         trayIcon.Visible = true;
         trayIcon.DoubleClick += (_, _) => RestoreFromTray();
@@ -250,6 +256,11 @@ public sealed class MainForm : Form
         {
             pauseItem.Text = isUserPaused ? "恢复 Wu Gesture" : "暂停 Wu Gesture";
         }
+
+        trayIcon.Text = isUserPaused ? $"{ApplicationDisplayName}（已暂停）" : ApplicationDisplayName;
+        trayIcon.Icon = isUserPaused && pausedTrayIcon is not null
+            ? pausedTrayIcon
+            : normalTrayIcon;
     }
 
     private void ApplyGesturePauseState()
@@ -1213,6 +1224,31 @@ public sealed class MainForm : Form
         return Path.Combine(appData, "MyGesture", "window-state.json");
     }
 
+    private static Icon CreateGrayscaleIcon(Icon source)
+    {
+        using var bitmap = source.ToBitmap();
+        for (var y = 0; y < bitmap.Height; y++)
+        {
+            for (var x = 0; x < bitmap.Width; x++)
+            {
+                var color = bitmap.GetPixel(x, y);
+                var gray = (int)Math.Round(color.R * 0.299 + color.G * 0.587 + color.B * 0.114);
+                bitmap.SetPixel(x, y, Color.FromArgb(color.A, gray, gray, gray));
+            }
+        }
+
+        var handle = bitmap.GetHicon();
+        try
+        {
+            using var icon = Icon.FromHandle(handle);
+            return (Icon)icon.Clone();
+        }
+        finally
+        {
+            DestroyIcon(handle);
+        }
+    }
+
     [DllImport("user32.dll")]
     private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
@@ -1221,6 +1257,9 @@ public sealed class MainForm : Form
 
     [DllImport("user32.dll")]
     private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern bool DestroyIcon(IntPtr hIcon);
 
     private MouseTrailForm EnsureMouseTrailForm()
     {
