@@ -2,12 +2,18 @@
 import SettingsField from './SettingsField.vue'
 import SettingsFormGrid from './SettingsFormGrid.vue'
 import SettingsSectionCard from './SettingsSectionCard.vue'
+import ToggleCheckbox from '../../../components/ToggleCheckbox.vue'
 
 defineProps({
   draft: { type: Object, required: true }
 })
 
 const emit = defineEmits(['queue-persist', 'flush-persist'])
+
+function commit() {
+  emit('queue-persist')
+  emit('flush-persist')
+}
 </script>
 
 <template>
@@ -74,17 +80,13 @@ const emit = defineEmits(['queue-persist', 'flush-persist'])
           @change="emit('flush-persist')"
         />
       </SettingsField>
-      <SettingsField
-        label="适应宽度"
-        check
-      >
-        <input
+      <div class="field-card">
+        <ToggleCheckbox
           v-model="draft.gestureHint.autoWidth"
-          type="checkbox"
-          @input="emit('queue-persist')"
-          @change="emit('flush-persist')"
+          label="自动适应内容宽度"
+          @change="commit"
         />
-      </SettingsField>
+      </div>
       <SettingsField
         label="高度"
         :note="`${draft.gestureHint.heightPercent}%`"

@@ -1,5 +1,6 @@
 <script setup>
 import IconActionButton from '../../../components/IconActionButton.vue'
+import ToggleCheckbox from '../../../components/ToggleCheckbox.vue'
 import EdgeActionCommandFields from './EdgeActionCommandFields.vue'
 
 defineProps({
@@ -41,16 +42,11 @@ const emit = defineEmits(['close', 'record-hotkey', 'update-operation'])
       </div>
 
       <div class="edge-dialog__grid">
-        <label class="edge-toggle-field">
-          <span>启用</span>
-          <span class="edge-toggle">
-            <input
-              v-model="draft.enabled"
-              type="checkbox"
-            />
-            <span />
-          </span>
-        </label>
+        <ToggleCheckbox
+          v-model="draft.enabled"
+          label="启用"
+          class="edge-dialog__enabled"
+        />
 
         <label
           v-if="draft.triggerType === 'friction'"
@@ -110,54 +106,8 @@ const emit = defineEmits(['close', 'record-hotkey', 'update-operation'])
   font-size: 13px;
 }
 
-.edge-toggle-field {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+.edge-dialog__enabled {
   min-height: 42px;
-  color: var(--muted);
-  font-size: 13px;
-}
-
-.edge-toggle {
-  position: relative;
-  display: inline-flex;
-  width: 42px;
-  height: 24px;
-  flex: 0 0 auto;
-
-  input {
-    position: absolute;
-    opacity: 0;
-  }
-
-  span {
-    width: 100%;
-    border-radius: 999px;
-    background: var(--toggle-off-bg);
-    transition: background-color 120ms ease;
-
-    &::after {
-      content: '';
-      position: absolute;
-      top: 3px;
-      left: 3px;
-      width: 18px;
-      height: 18px;
-      border-radius: 999px;
-      background: var(--panel-solid);
-      box-shadow: var(--shadow-thumb);
-      transition: transform 120ms ease;
-    }
-  }
-
-  input:checked + span {
-    background: var(--accent);
-
-    &::after {
-      transform: translateX(18px);
-    }
-  }
 }
 
 @media (max-width: 920px) {
