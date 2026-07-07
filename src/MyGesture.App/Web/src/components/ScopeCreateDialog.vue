@@ -1,5 +1,6 @@
 <script setup>
 import { computed, nextTick, ref, watch } from "vue";
+import IconActionButton from "./IconActionButton.vue";
 
 const props = defineProps({
   open: { type: Boolean, required: true },
@@ -49,9 +50,12 @@ watch(
           <h3 :id="titleId">{{ title }}</h3>
           <p v-if="description">{{ description }}</p>
         </div>
-        <button type="button" class="scope-create-dialog__close" aria-label="关闭" title="关闭" @click="$emit('close')">
-          <span aria-hidden="true">×</span>
-        </button>
+        <IconActionButton
+          icon="close"
+          label="关闭"
+          class="scope-create-dialog__close ghost-button"
+          @click="$emit('close')"
+        />
       </div>
 
       <label class="scope-create-dialog__field">
@@ -86,25 +90,7 @@ watch(
   }
 
   &__close {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 34px;
-    height: 34px;
-    margin: 0;
-    padding: 0;
-    border: none;
-    border-radius: 999px;
-    background: transparent;
     color: var(--muted);
-    font-size: 22px;
-    line-height: 1;
-    cursor: pointer;
-
-    &:hover {
-      background: rgba(18, 30, 42, 0.06);
-      color: var(--text);
-    }
   }
 }
 </style>

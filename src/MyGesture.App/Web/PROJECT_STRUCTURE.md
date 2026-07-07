@@ -62,15 +62,27 @@ src\assets
 当前 SVG 图标：
 
 - `add.svg`
+- `briefcase.svg`
+- `browser.svg`
+- `circle-dashed.svg`
 - `close.svg`
+- `close-alt.svg`
+- `code.svg`
+- `crosshair.svg`
 - `delete.svg`
 - `download.svg`
+- `folder.svg`
+- `keyboard.svg`
+- `media.svg`
+- `mouse.svg`
+- `record.svg`
 - `reset.svg`
 - `setting.svg`
+- `sparkle.svg`
 - `test.svg`
 - `upload.svg`
 
-这些 SVG 通过 `vite-svg-loader` 作为 Vue 组件导入。
+这些 SVG 通过 `vite-svg-loader` 作为 Vue 组件导入。图标文件名统一使用小写 kebab-case，路径颜色应使用 `currentColor`，便于按钮和状态样式控制。
 
 ## Components
 
@@ -85,7 +97,7 @@ src\components
 - `GestureRuleDialog.vue`：添加和编辑手势规则的弹窗。
 - `GestureRuleList.vue`：规则表、规则展示和规则操作入口。
 - `HoverBubble.vue`：悬浮提示气泡。
-- `IconActionButton.vue`：共享图标按钮，支持添加、关闭、删除、设置、重置，以及 WebDAV 测试、上传和下载图标。
+- `IconActionButton.vue`：共享图标按钮，集中导入 `src\assets` 下的 SVG，并通过 `icon` key 映射到按钮图标。
 - `ScopeCreateDialog.vue`：分类或作用域名称创建/编辑弹窗。
 - `ScopeSidebar.vue`：分类和程序等作用域列表侧栏。
 - `applications\ApplicationListItem.vue`：分类页右侧程序关联列表项。

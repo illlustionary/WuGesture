@@ -6,6 +6,7 @@ const props = defineProps({
   active: { type: Boolean, default: false },
   label: { type: String, default: '' },
   icon: { type: String, default: '' },
+  iconComponent: { type: [Object, Function], default: null },
   fallbackGlyph: { type: String, default: '' },
   deleteLabel: { type: String, required: true },
   iconMode: { type: String, default: 'category' }
@@ -39,6 +40,12 @@ function displayLabel() {
         class="app-icon app-icon--small scope-item__icon"
         :src="icon"
         alt=""
+      />
+      <component
+        :is="iconComponent"
+        v-else-if="iconComponent"
+        class="scope-item__icon scope-item__svg-icon"
+        aria-hidden="true"
       />
       <span
         v-else
@@ -140,6 +147,11 @@ function displayLabel() {
     color: var(--accent-strong);
     font-size: 15px;
     line-height: 1;
+  }
+
+  &__svg-icon {
+    padding: 5px;
+    color: var(--accent-strong);
   }
 
   &__icon--fallback {

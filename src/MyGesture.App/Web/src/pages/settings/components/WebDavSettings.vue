@@ -36,14 +36,16 @@ const emit = defineEmits([
       <IconActionButton
         icon="download"
         label="恢复"
-        class="secondary-button"
+        class="secondary-button webdav-action-button"
+        :color="ready ? 'var(--accent-strong)' : 'var(--muted)'"
         :disabled="!ready || editor.state.webDavTesting"
         @click="emit('restore')"
       />
       <IconActionButton
         icon="upload"
         label="保存"
-        class="primary-button"
+        class="primary-button webdav-action-button"
+        :color="ready ? 'var(--accent-strong)' : 'var(--muted)'"
         :disabled="!ready || editor.state.webDavTesting"
         @click="emit('save')"
       />
@@ -96,7 +98,14 @@ const emit = defineEmits([
 <style scoped lang="scss">
 :deep(button:disabled) {
   cursor: not-allowed;
-  opacity: 0.48;
   box-shadow: none;
+}
+
+:deep(.webdav-action-button) {
+  opacity: 0.48;
+}
+
+:deep(.webdav-action-button:not(:disabled)) {
+  opacity: 1;
 }
 </style>

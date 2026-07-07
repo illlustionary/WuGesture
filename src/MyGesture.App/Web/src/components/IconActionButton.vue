@@ -1,11 +1,23 @@
 <script setup>
 import { computed } from 'vue'
 import addIcon from '../assets/add.svg'
+import briefcaseIcon from '../assets/briefcase.svg'
+import browserIcon from '../assets/browser.svg'
+import circleDashedIcon from '../assets/circle-dashed.svg'
 import closeIcon from '../assets/close.svg'
+import closeAltIcon from '../assets/close-alt.svg'
+import codeIcon from '../assets/code.svg'
+import crosshairIcon from '../assets/crosshair.svg'
 import deleteIcon from '../assets/delete.svg'
 import downloadIcon from '../assets/download.svg'
-import settingIcon from '../assets/setting.svg'
+import folderIcon from '../assets/folder.svg'
+import keyboardIcon from '../assets/keyboard.svg'
+import mediaIcon from '../assets/media.svg'
+import mouseIcon from '../assets/mouse.svg'
+import recordIcon from '../assets/record.svg'
 import resetIcon from '../assets/reset.svg'
+import settingIcon from '../assets/setting.svg'
+import sparkleIcon from '../assets/sparkle.svg'
 import testIcon from '../assets/test.svg'
 import uploadIcon from '../assets/upload.svg'
 
@@ -30,11 +42,23 @@ const props = defineProps({
 
 const iconMap = {
   add: addIcon,
+  briefcase: briefcaseIcon,
+  browser: browserIcon,
+  'circle-dashed': circleDashedIcon,
   close: closeIcon,
+  'close-alt': closeAltIcon,
+  code: codeIcon,
+  crosshair: crosshairIcon,
   delete: deleteIcon,
   download: downloadIcon,
-  setting: settingIcon,
+  folder: folderIcon,
+  keyboard: keyboardIcon,
+  media: mediaIcon,
+  mouse: mouseIcon,
+  record: recordIcon,
   reset: resetIcon,
+  setting: settingIcon,
+  sparkle: sparkleIcon,
   test: testIcon,
   upload: uploadIcon
 }

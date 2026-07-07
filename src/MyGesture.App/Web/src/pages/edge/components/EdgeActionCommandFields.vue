@@ -1,4 +1,6 @@
 <script setup>
+import KeyboardIcon from '../../../assets/keyboard.svg'
+
 defineProps({
   draft: { type: Object, required: true },
   editor: { type: Object, required: true },
@@ -22,11 +24,17 @@ const emit = defineEmits(['record-hotkey', 'update-operation'])
         :class="{ 'is-recording': editor.isRecordingHotkey(draft) }"
         @click="emit('record-hotkey')"
       >
-        {{
-          editor.isRecordingHotkey(draft)
-            ? '录制中...'
-            : draft.keysText || '点击录制快捷键'
-        }}
+        <KeyboardIcon
+          class="hotkey-record-button__icon"
+          aria-hidden="true"
+        />
+        <span>
+          {{
+            editor.isRecordingHotkey(draft)
+              ? '录制中...'
+              : draft.keysText || '点击录制快捷键'
+          }}
+        </span>
       </button>
     </label>
 
@@ -95,6 +103,9 @@ const emit = defineEmits(['record-hotkey', 'update-operation'])
 }
 
 .hotkey-record-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   overflow: hidden;
   text-align: left;
   white-space: nowrap;
@@ -102,6 +113,13 @@ const emit = defineEmits(['record-hotkey', 'update-operation'])
   cursor: pointer;
   color: var(--text);
   background: #fff;
+
+  &__icon {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 auto;
+    color: var(--accent-strong);
+  }
 
   &.is-recording {
     color: #8a441f;

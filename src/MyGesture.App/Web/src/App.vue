@@ -4,6 +4,8 @@ import AppHeader from './components/AppHeader.vue'
 import IconActionButton from './components/IconActionButton.vue'
 import GestureRuleDialog from './components/GestureRuleDialog.vue'
 import { useGestureEditorStore } from './composables/gestureEditorStore'
+import CrosshairIcon from './assets/crosshair.svg'
+import FolderIcon from './assets/folder.svg'
 
 const editor = useGestureEditorStore()
 const router = useRouter()
@@ -70,8 +72,14 @@ function openSettingsPage() {
             @pointerdown.prevent="editor.pickApplicationWindow()"
             @click.prevent
           >
-            <strong>拖动准星选择窗口</strong>
-            <span>使用准星拖动选择</span>
+            <CrosshairIcon
+              class="picker-option__icon"
+              aria-hidden="true"
+            />
+            <span class="picker-option__text">
+              <strong>拖动准星选择窗口</strong>
+              <span>使用准星拖动选择</span>
+            </span>
           </button>
 
           <button
@@ -79,8 +87,14 @@ function openSettingsPage() {
             class="picker-option"
             @click="editor.selectApplication()"
           >
-            <strong>浏览 exe 文件</strong>
-            <span>使用文件资源管理器选择</span>
+            <FolderIcon
+              class="picker-option__icon"
+              aria-hidden="true"
+            />
+            <span class="picker-option__text">
+              <strong>浏览 exe 文件</strong>
+              <span>使用文件资源管理器选择</span>
+            </span>
           </button>
         </div>
       </section>
@@ -115,8 +129,9 @@ function openSettingsPage() {
 }
 
 .picker-option {
-  display: grid;
-  gap: 4px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   width: 100%;
   padding: 16px;
   text-align: left;
@@ -133,7 +148,20 @@ function openSettingsPage() {
     background: linear-gradient(180deg, #ffffff, #edf5ff);
   }
 
-  span {
+  &__icon {
+    width: 24px;
+    height: 24px;
+    flex: 0 0 auto;
+    color: var(--accent-strong);
+  }
+
+  &__text {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  &__text > span {
     color: var(--muted);
     font-size: 13px;
   }
