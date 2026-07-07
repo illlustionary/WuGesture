@@ -4,6 +4,7 @@ using Microsoft.Win32;
 using MyGesture.App.GestureEngine;
 using System.Diagnostics;
 using System.Drawing.Imaging;
+using System.Runtime.InteropServices;
 using System.Security.Principal;
 using System.Text.Json;
 
@@ -11,7 +12,10 @@ namespace MyGesture.App;
 
 public sealed class MainForm : Form
 {
+    private const int SwShow = 5;
+    private const int SwRestore = 9;
     private const string ApplicationDisplayName = "Wu Gesture";
+    private const string ElevatedRelaunchArgument = "--elevated-relaunch";
     private const string StartupRegistryPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
     private const string LegacyStartupRegistryValueName = "MyGesture";
     private const string StartupRegistryValueName = "WuGesture";
@@ -22,6 +26,7 @@ public sealed class MainForm : Form
     private readonly string windowStatePath = GetWindowStatePath();
     private readonly NotifyIcon trayIcon = new();
     private readonly ContextMenuStrip trayMenu = new();
+    private ToolStripMenuItem? pauseItem;
     private WebView2? webView;
     private ConfiguredScopeContextProvider? scopeContextProvider;
     private LoadedGestureConfig? loadedConfig;
@@ -32,6 +37,8 @@ public sealed class MainForm : Form
     private bool isClosing;
     private bool isExiting;
     private bool isWebViewInitializing;
+    private bool isUserPaused;
+    private bool isEditorPaused;
 
     private static readonly JsonSerializerOptions WebMessageJsonOptions = new()
     {
@@ -103,13 +110,20 @@ public sealed class MainForm : Form
         hotkeyRecorder.HotkeyRecorded += OnHotkeyRecorded;
         gestureService.Start();
         edgeActionService.Start();
+        ApplyGesturePauseState();
     }
 
     private void InitializeTrayIcon()
     {
         var openItem = new ToolStripMenuItem("打开配置", null, (_, _) => RestoreFromTray());
+        pauseItem = new ToolStripMenuItem("暂停 Wu Gesture")
+        {
+            CheckOnClick = true
+        };
+        pauseItem.CheckedChanged += (_, _) => SetUserPaused(pauseItem.Checked);
         var exitItem = new ToolStripMenuItem("退出", null, (_, _) => ExitFromTray());
         trayMenu.Items.Add(openItem);
+        trayMenu.Items.Add(pauseItem);
         trayMenu.Items.Add(new ToolStripSeparator());
         trayMenu.Items.Add(exitItem);
 
@@ -161,8 +175,8 @@ public sealed class MainForm : Form
         SaveWindowState();
         hotkeyRecorder.Stop();
         gestureService?.StopRecording();
-        gestureService?.SetPaused(false);
-        edgeActionService?.SetPaused(false);
+        isEditorPaused = false;
+        ApplyGesturePauseState();
         gestureHintForm.HideResult();
         mouseTrailForm?.HideTrail();
         DisposeWebView();
@@ -175,8 +189,8 @@ public sealed class MainForm : Form
         SaveWindowState();
         hotkeyRecorder.Stop();
         gestureService?.StopRecording();
-        gestureService?.SetPaused(false);
-        edgeActionService?.SetPaused(false);
+        isEditorPaused = false;
+        ApplyGesturePauseState();
         gestureHintForm.HideResult();
         mouseTrailForm?.HideTrail();
         ShowInTaskbar = true;
@@ -205,6 +219,49 @@ public sealed class MainForm : Form
     {
         isExiting = true;
         Close();
+    }
+
+    public void ShowExistingInstance()
+    {
+        RestoreFromTray();
+        BringWindowToFront();
+    }
+
+    private void SetUserPaused(bool paused)
+    {
+        if (isUserPaused == paused)
+        {
+            return;
+        }
+
+        isUserPaused = paused;
+        if (pauseItem is not null && pauseItem.Checked != paused)
+        {
+            pauseItem.Checked = paused;
+        }
+
+        UpdatePauseMenuText();
+        ApplyGesturePauseState();
+    }
+
+    private void UpdatePauseMenuText()
+    {
+        if (pauseItem is not null)
+        {
+            pauseItem.Text = isUserPaused ? "恢复 Wu Gesture" : "暂停 Wu Gesture";
+        }
+    }
+
+    private void ApplyGesturePauseState()
+    {
+        var paused = isUserPaused || isEditorPaused;
+        gestureService?.SetPaused(paused);
+        edgeActionService?.SetPaused(paused);
+        if (paused)
+        {
+            gestureHintForm.HideResult();
+            mouseTrailForm?.HideTrail();
+        }
     }
 
     private string GetCloseButtonBehavior()
@@ -259,6 +316,7 @@ public sealed class MainForm : Form
             Process.Start(new ProcessStartInfo
             {
                 FileName = Application.ExecutablePath,
+                Arguments = ElevatedRelaunchArgument,
                 UseShellExecute = true,
                 Verb = "runas"
             });
@@ -706,8 +764,8 @@ public sealed class MainForm : Form
         try
         {
             var message = JsonSerializer.Deserialize<SetGesturePausedWebMessage>(json, WebMessageJsonOptions);
-            gestureService?.SetPaused(message?.Paused ?? false);
-            edgeActionService?.SetPaused(message?.Paused ?? false);
+            isEditorPaused = message?.Paused ?? false;
+            ApplyGesturePauseState();
             if (message?.Paused == true)
             {
                 gestureHintForm.HideResult();
@@ -1029,6 +1087,28 @@ public sealed class MainForm : Form
         return !isClosing && !IsDisposed && !Disposing && IsHandleCreated;
     }
 
+    private void BringWindowToFront()
+    {
+        if (!IsHandleCreated)
+        {
+            return;
+        }
+
+        if (IsIconic(Handle))
+        {
+            ShowWindow(Handle, SwRestore);
+        }
+        else
+        {
+            ShowWindow(Handle, SwShow);
+        }
+
+        Activate();
+        SetForegroundWindow(Handle);
+        TopMost = true;
+        TopMost = false;
+    }
+
     private void ApplyInitialWindowState()
     {
         if (TryLoadWindowState(out var windowState))
@@ -1132,6 +1212,15 @@ public sealed class MainForm : Form
         var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
         return Path.Combine(appData, "MyGesture", "window-state.json");
     }
+
+    [DllImport("user32.dll")]
+    private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+    [DllImport("user32.dll")]
+    private static extern bool IsIconic(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern bool SetForegroundWindow(IntPtr hWnd);
 
     private MouseTrailForm EnsureMouseTrailForm()
     {
