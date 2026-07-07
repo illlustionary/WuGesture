@@ -298,7 +298,7 @@ const patternLabel = computed(
   text-overflow: ellipsis;
   cursor: pointer;
   color: var(--text);
-  background: #fff;
+  background: var(--panel-solid);
 
   &__icon {
     width: 18px;
@@ -312,8 +312,8 @@ const patternLabel = computed(
   }
 
   &.is-recording {
-    color: #8a441f;
-    background: #fff3df;
+    color: var(--recording-text);
+    background: var(--recording-bg);
   }
 }
 
@@ -335,7 +335,7 @@ const patternLabel = computed(
     border-color 140ms ease;
 
   &:hover {
-    border-color: rgba(29, 81, 109, 0.24);
+    border-color: var(--accent-border);
     background: var(--interactive-hover-bg);
   }
 
@@ -363,15 +363,19 @@ const patternLabel = computed(
   }
 
   &.is-recording {
-    border-color: rgba(173, 76, 57, 0.28);
-    background: linear-gradient(180deg, #fff8f5, #ffeede);
+    border-color: var(--danger-border);
+    background: linear-gradient(
+      180deg,
+      var(--recording-bg-start),
+      var(--recording-bg-end)
+    );
 
     strong {
-      color: #8a441f;
+      color: var(--recording-text);
     }
 
     .gesture-recorder__icon {
-      color: #8a441f;
+      color: var(--recording-text);
     }
   }
 }

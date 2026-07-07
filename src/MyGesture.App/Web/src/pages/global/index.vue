@@ -69,7 +69,7 @@ editor.setActiveScope(scopeKind)
   gap: 4px;
   padding: 12px 14px;
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--panel-soft);
   color: var(--muted);
 
   strong {

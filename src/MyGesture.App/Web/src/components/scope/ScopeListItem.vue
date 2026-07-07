@@ -85,7 +85,7 @@ function displayLabel() {
   border-radius: 18px;
   text-align: left;
   background: var(--interactive-bg);
-  border: 1px solid rgba(18, 30, 42, 0.08);
+  border: 1px solid var(--border-subtle);
   cursor: pointer;
   user-select: none;
   position: relative;
@@ -103,7 +103,7 @@ function displayLabel() {
 
   &.active {
     background: var(--interactive-active-bg);
-    border-color: rgba(29, 81, 109, 0.24);
+    border-color: var(--accent-border);
   }
 
   &.active .scope-item__accent {

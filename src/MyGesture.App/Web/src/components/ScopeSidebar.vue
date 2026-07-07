@@ -32,8 +32,8 @@ defineProps({
   min-width: 0;
   min-height: 100%;
   padding: 20px 18px 18px;
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 18px 40px rgba(18, 30, 42, 0.07);
+  background: var(--panel-control);
+  box-shadow: var(--shadow-soft);
 
   &__head {
     display: flex;

@@ -61,8 +61,8 @@ defineProps({
         var(--accent-soft),
         transparent 28%
       ),
-      rgba(248, 251, 255, 0.96);
-    border: 1px solid rgba(18, 30, 42, 0.08);
+      var(--panel-inset);
+    border: 1px solid var(--border-subtle);
   }
 
   &__container {
@@ -93,7 +93,7 @@ defineProps({
     flex-basis: 80px;
     padding: 0 10px;
     border-radius: 999px;
-    color: #292929;
+    color: var(--text-preview);
     font-size: 12px;
     font-weight: 700;
 
@@ -117,8 +117,8 @@ defineProps({
     border-radius: var(--hint-radius);
     color: var(--hint-color);
     background: var(--hint-background-rgba);
-    box-shadow: 0 18px 34px rgba(18, 30, 42, 0.16);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: var(--shadow-popover);
+    border: 1px solid var(--border-inverse);
 
     strong {
       font-size: var(--hint-font-size);

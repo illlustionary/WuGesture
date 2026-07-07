@@ -134,7 +134,7 @@ const emit = defineEmits(['close', 'record-hotkey', 'update-operation'])
   span {
     width: 100%;
     border-radius: 999px;
-    background: rgba(101, 113, 128, 0.22);
+    background: var(--toggle-off-bg);
     transition: background-color 120ms ease;
 
     &::after {
@@ -145,8 +145,8 @@ const emit = defineEmits(['close', 'record-hotkey', 'update-operation'])
       width: 18px;
       height: 18px;
       border-radius: 999px;
-      background: #fff;
-      box-shadow: 0 3px 8px rgba(18, 30, 42, 0.18);
+      background: var(--panel-solid);
+      box-shadow: var(--shadow-thumb);
       transition: transform 120ms ease;
     }
   }

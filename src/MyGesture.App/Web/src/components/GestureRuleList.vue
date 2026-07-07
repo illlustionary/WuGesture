@@ -165,12 +165,12 @@ function isWindowAction(rule) {
   flex-direction: column;
   gap: 0;
   overflow: hidden;
-  border: 1px solid rgba(18, 30, 42, 0.08);
+  border: 1px solid var(--border-subtle);
   border-radius: 24px;
   background: linear-gradient(
     180deg,
-    rgba(255, 255, 255, 0.78),
-    rgba(245, 248, 252, 0.72)
+    var(--panel-soft),
+    var(--panel-muted)
   );
   box-shadow: var(--shadow-soft);
   backdrop-filter: blur(18px) saturate(1.15);
@@ -206,17 +206,17 @@ function isWindowAction(rule) {
   &__head {
     text-align: center;
     min-height: 38px;
-    color: rgba(101, 113, 128, 0.94);
+    color: var(--muted-strong);
     font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     background: linear-gradient(
       180deg,
-      rgba(255, 255, 255, 0.78),
-      rgba(242, 246, 250, 0.82)
+      var(--panel-soft),
+      var(--interactive-hover-bg)
     );
-    border-bottom: 1px solid rgba(18, 30, 42, 0.06);
+    border-bottom: 1px solid var(--border-muted);
     & > :not(:last-child) {
       margin-left: 11px;
     }
@@ -230,7 +230,7 @@ function isWindowAction(rule) {
   &__row {
     min-height: 66px;
     padding-block: 2px;
-    border: 1px solid rgba(18, 30, 42, 0.06);
+    border: 1px solid var(--border-muted);
     border-radius: 18px;
     background: var(--interactive-bg);
     transition:
@@ -282,9 +282,9 @@ function isWindowAction(rule) {
     justify-items: center;
     margin: 4px 0 0;
     padding: 20px 18px;
-    border: 1px dashed rgba(18, 30, 42, 0.14);
+    border: 1px dashed var(--border-dashed);
     border-radius: 18px;
-    background: rgba(255, 255, 255, 0.68);
+    background: var(--panel-soft);
     color: var(--muted);
     text-align: center;
 

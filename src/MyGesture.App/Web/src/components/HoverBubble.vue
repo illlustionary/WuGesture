@@ -209,15 +209,15 @@ onBeforeUnmount(() => {
   z-index: 40;
   display: inline-flex;
   padding: 10px 12px;
-  border: 1px solid rgba(18, 30, 42, 0.1);
+  border: 1px solid var(--border);
   border-radius: 16px;
   background:
     linear-gradient(
       180deg,
-      rgba(255, 255, 255, 0.98),
-      rgba(245, 249, 253, 0.98)
+      var(--panel-strong),
+      var(--panel-hover)
     );
-  box-shadow: 0 16px 34px rgba(18, 30, 42, 0.16);
+  box-shadow: var(--shadow-popover);
   backdrop-filter: blur(24px) saturate(1.18);
   color: var(--text);
   font-size: 13px;
@@ -240,8 +240,8 @@ onBeforeUnmount(() => {
     width: 10px;
     height: 10px;
     background: inherit;
-    border-left: 1px solid rgba(18, 30, 42, 0.1);
-    border-top: 1px solid rgba(18, 30, 42, 0.1);
+    border-left: 1px solid var(--border);
+    border-top: 1px solid var(--border);
     transform: translateX(-50%) rotate(45deg);
   }
 

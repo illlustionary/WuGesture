@@ -101,7 +101,7 @@ function testWebDav() {
   padding: 4px;
   border: 1px solid var(--border);
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.92);
+  background: var(--panel-control);
 }
 
 :deep(select),
@@ -112,7 +112,7 @@ function testWebDav() {
   padding: 0 12px;
   border: 1px solid var(--border);
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.92);
+  background: var(--panel-control);
   color: var(--text);
 }
 </style>

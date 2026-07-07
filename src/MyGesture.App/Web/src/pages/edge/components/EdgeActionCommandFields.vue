@@ -112,7 +112,7 @@ const emit = defineEmits(['record-hotkey', 'update-operation'])
   text-overflow: ellipsis;
   cursor: pointer;
   color: var(--text);
-  background: #fff;
+  background: var(--panel-solid);
 
   &__icon {
     width: 18px;
@@ -126,8 +126,8 @@ const emit = defineEmits(['record-hotkey', 'update-operation'])
   }
 
   &.is-recording {
-    color: #8a441f;
-    background: #fff3df;
+    color: var(--recording-text);
+    background: var(--recording-bg);
   }
 }
 </style>

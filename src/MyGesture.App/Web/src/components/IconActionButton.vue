@@ -123,7 +123,7 @@ const iconComponent = computed(() => iconMap[props.icon] ?? addIcon)
     color: var(--danger);
   }
   &.close {
-    color: black;
+    color: var(--text);
   }
 }
 

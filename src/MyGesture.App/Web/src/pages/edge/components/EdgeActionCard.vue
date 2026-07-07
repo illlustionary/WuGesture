@@ -46,9 +46,9 @@ const emit = defineEmits(['open'])
   gap: 12px;
   min-width: 0;
   padding: 14px;
-  border: 1px solid rgba(18, 30, 42, 0.08);
+  border: 1px solid var(--border-subtle);
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.78);
+  background: var(--panel-soft);
   text-align: left;
   cursor: pointer;
 
@@ -109,7 +109,7 @@ const emit = defineEmits(['open'])
   height: 12px;
   border-radius: 999px;
   flex: 0 0 auto;
-  background: rgba(101, 113, 128, 0.32);
+  background: var(--disabled-bg);
 
   &.is-enabled {
     background: var(--accent);
