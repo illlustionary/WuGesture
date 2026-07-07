@@ -58,8 +58,6 @@ public sealed class EdgeActionConfig
 
     public int FrictionCount { get; set; } = 4;
 
-    public string ActionName { get; set; } = "";
-
     public GestureActionConfig Action { get; set; } = new();
 }
 

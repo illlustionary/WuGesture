@@ -51,7 +51,6 @@ function createEmptyDraft() {
     location: 'top-left',
     wheelDirection: '',
     frictionCount: 4,
-    actionName: '',
     keysText: '',
     actionType: 'hotkey',
     windowOperation: 'toggle-maximize',
@@ -64,7 +63,6 @@ function createEmptyDraft() {
 function toCommitPatch(action) {
   return {
     enabled: action.enabled,
-    actionName: action.actionName,
     frictionCount: action.frictionCount,
     actionType: action.actionType,
     keysText: action.keysText,

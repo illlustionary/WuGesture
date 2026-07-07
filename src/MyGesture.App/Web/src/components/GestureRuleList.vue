@@ -2,7 +2,7 @@
   <div class="gesture-table">
     <header class="gesture-table__head">
       <span>名称</span>
-      <span>手势</span>
+      <span class="gesture">手势</span>
       <span>命令</span>
       <span class="gesture-table__head-actions" />
     </header>
@@ -27,7 +27,7 @@
           />
           <button
             type="button"
-            class="gesture-table__cell gesture-pattern-button"
+            class="gesture-table__cell gesture-pattern-button gesture"
             @click="$emit('edit', rule.id)"
           >
             <span
@@ -219,6 +219,9 @@ function isWindowAction(rule) {
     & > :not(:last-child) {
       flex: 1;
     }
+    .gesture {
+      flex: 2;
+    }
     & > :last-child {
       flex-shrink: 0;
       width: 44px;
@@ -331,6 +334,7 @@ function isWindowAction(rule) {
 }
 
 .gesture-pattern-button {
+  flex: 2;
   display: flex;
   align-items: center;
   gap: 8px;

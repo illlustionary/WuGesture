@@ -667,7 +667,6 @@ public sealed class MainForm : Form
                 location = action.Location,
                 wheelDirection = action.WheelDirection,
                 frictionCount = action.FrictionCount,
-                actionName = action.ActionName,
                 action = new
                 {
                     type = string.IsNullOrWhiteSpace(action.Action.Type) ? "hotkey" : action.Action.Type,

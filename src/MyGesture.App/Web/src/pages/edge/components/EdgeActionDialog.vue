@@ -52,15 +52,6 @@ const emit = defineEmits(['close', 'record-hotkey', 'update-operation'])
           </span>
         </label>
 
-        <label class="edge-field">
-          <span>名称</span>
-          <input
-            v-model="draft.actionName"
-            class="scope-input"
-            :placeholder="editor.getEdgeActionLabel(action)"
-          />
-        </label>
-
         <label
           v-if="draft.triggerType === 'friction'"
           class="edge-field"

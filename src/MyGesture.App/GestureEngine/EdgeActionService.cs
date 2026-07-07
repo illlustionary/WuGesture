@@ -265,11 +265,12 @@ public sealed class EdgeActionService : IDisposable
 
             try
             {
-                actionExecutor.Execute(new GestureRule([], "global", config.ActionName, action), IntPtr.Zero);
+                var actionName = GetActionName(config);
+                actionExecutor.Execute(new GestureRule([], "global", actionName, action), IntPtr.Zero);
             }
             catch (Exception exception)
             {
-                EdgeActionFailed?.Invoke(this, new EdgeActionFailedEventArgs(config.ActionName, exception));
+                EdgeActionFailed?.Invoke(this, new EdgeActionFailedEventArgs(GetActionName(config), exception));
             }
         });
     }
@@ -481,6 +482,36 @@ public sealed class EdgeActionService : IDisposable
             EdgeLocation.Bottom => "bottom",
             _ => ""
         };
+    }
+
+    private static string GetActionName(EdgeActionConfig config)
+    {
+        var triggerLabel = (config.TriggerType ?? "").Trim().ToLowerInvariant() switch
+        {
+            "corner" => "触发角",
+            "friction" => "摩擦边",
+            "wheel" => "边缘滚动",
+            _ => "边缘操作"
+        };
+        var locationLabel = (config.Location ?? "").Trim().ToLowerInvariant() switch
+        {
+            "top-left" => "左上角",
+            "top-right" => "右上角",
+            "bottom-left" => "左下角",
+            "bottom-right" => "右下角",
+            "left" => "左边",
+            "right" => "右边",
+            "top" => "上边",
+            "bottom" => "下边",
+            _ => ""
+        };
+        var wheelLabel = string.Equals(config.WheelDirection, "down", StringComparison.OrdinalIgnoreCase)
+            ? "滚轮下"
+            : string.Equals(config.WheelDirection, "up", StringComparison.OrdinalIgnoreCase)
+                ? "滚轮上"
+                : "";
+
+        return string.Join(' ', new[] { triggerLabel, locationLabel, wheelLabel }.Where(static part => part.Length > 0));
     }
 
     private void ResetFriction()
