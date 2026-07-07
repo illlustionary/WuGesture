@@ -37,7 +37,7 @@ const patternLabel = computed(
         <div class="modal-panel__head">
           <div>
             <h3 id="gesture-dialog-title">手势</h3>
-            <p>点击开始录制后，按住右键或中键绘制，松开后由后端识别。</p>
+            <p>点击开始录制后，按住右键或中键绘制，松开后完成识别。</p>
           </div>
           <IconActionButton
             icon="close"

@@ -46,13 +46,13 @@ function openSettingsPage() {
         <div class="modal-panel__head">
           <div>
             <h3 id="application-picker-title">添加程序</h3>
-            <p>
+            <!-- <p>
               {{
                 editor.state.applicationPickerScopeKind === 'app'
                   ? '选择一种方式添加程序规则。'
                   : '选择一种方式把程序加入当前分类。'
               }}
-            </p>
+            </p> -->
           </div>
           <IconActionButton
             icon="close"
@@ -71,7 +71,7 @@ function openSettingsPage() {
             @click.prevent
           >
             <strong>拖动准星选择窗口</strong>
-            <span>从正在打开的目标窗口读取程序名称和路径。</span>
+            <span>使用准星拖动选择</span>
           </button>
 
           <button
@@ -80,7 +80,7 @@ function openSettingsPage() {
             @click="editor.selectApplication()"
           >
             <strong>浏览 exe 文件</strong>
-            <span>从磁盘选择程序文件作为备用添加方式。</span>
+            <span>使用文件资源管理器选择</span>
           </button>
         </div>
       </section>
