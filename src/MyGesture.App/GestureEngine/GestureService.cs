@@ -268,7 +268,7 @@ public sealed class GestureService : IDisposable
             return;
         }
 
-        if (points.Count < 2 || Distance(points[0], points[^1]) < MinimumGestureDistance)
+        if (points.Count < 2 || PathLength(points) < MinimumGestureDistance)
         {
             RaiseProgress(path, [], false, ToPublicButton(button), force: true);
             if (button == ActiveMouseButton.Right)
@@ -416,6 +416,17 @@ public sealed class GestureService : IDisposable
         var dx = a.X - b.X;
         var dy = a.Y - b.Y;
         return Math.Sqrt(dx * dx + dy * dy);
+    }
+
+    private static double PathLength(IReadOnlyList<Point> path)
+    {
+        var length = 0.0;
+        for (var i = 1; i < path.Count; i++)
+        {
+            length += Distance(path[i - 1], path[i]);
+        }
+
+        return length;
     }
 
     private static GestureMouseButton ToPublicButton(ActiveMouseButton button)
