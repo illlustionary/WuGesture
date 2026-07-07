@@ -166,7 +166,6 @@ function deleteCategoryItem(name) {
               </span>
             </span>
             <span class="scope-item__meta">
-              <small class="scope-item__count">{{ item.count }} 条</small>
               <IconActionButton
                 icon="delete"
                 label="删除分类"
@@ -426,19 +425,6 @@ function deleteCategoryItem(name) {
     align-items: center;
     gap: 8px;
     flex: 0 0 auto;
-  }
-
-  &__count {
-    display: inline-flex;
-    align-items: center;
-    min-height: 22px;
-    padding: 0 8px;
-    border-radius: 999px;
-    background: rgba(102, 117, 137, 0.1);
-    color: var(--muted);
-    font-size: 12px;
-    font-weight: 600;
-    white-space: nowrap;
   }
 
   &__delete {
