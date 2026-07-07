@@ -16,6 +16,7 @@ public sealed class MainForm : Form
     private const int SwRestore = 9;
     private const string ApplicationDisplayName = "Wu Gesture";
     private const string ElevatedRelaunchArgument = "--elevated-relaunch";
+    private const string StartupLaunchArgument = "--startup";
     private const string StartupRegistryPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
     private const string LegacyStartupRegistryValueName = "MyGesture";
     private const string StartupRegistryValueName = "WuGesture";
@@ -26,6 +27,7 @@ public sealed class MainForm : Form
     private readonly string windowStatePath = GetWindowStatePath();
     private readonly NotifyIcon trayIcon = new();
     private readonly ContextMenuStrip trayMenu = new();
+    private readonly bool startHiddenToTray;
     private ToolStripMenuItem? pauseItem;
     private Icon? normalTrayIcon;
     private Icon? pausedTrayIcon;
@@ -53,12 +55,20 @@ public sealed class MainForm : Form
         WriteIndented = true
     };
 
-    public MainForm()
+    public MainForm(bool startHiddenToTray = false)
     {
+        this.startHiddenToTray = startHiddenToTray;
         Text = ApplicationDisplayName;
         Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? SystemIcons.Application;
         StartPosition = FormStartPosition.Manual;
         ApplyInitialWindowState();
+        if (startHiddenToTray)
+        {
+            ShowInTaskbar = false;
+            WindowState = FormWindowState.Minimized;
+            Opacity = 0;
+        }
+
         InitializeTrayIcon();
 
         Load += OnLoad;
@@ -78,7 +88,7 @@ public sealed class MainForm : Form
 
     private async void OnLoad(object? sender, EventArgs e)
     {
-        if (startMaximized)
+        if (startMaximized && !startHiddenToTray)
         {
             WindowState = FormWindowState.Maximized;
         }
@@ -95,7 +105,11 @@ public sealed class MainForm : Form
         edgeActionService = new EdgeActionService(loadedConfig.Config.EdgeActions);
         ApplyUiSettings(loadedConfig.Config.UiSettings);
 
-        await EnsureWebViewAsync();
+        if (!startHiddenToTray)
+        {
+            await EnsureWebViewAsync();
+        }
+
         if (!CanUseUi())
         {
             return;
@@ -115,6 +129,11 @@ public sealed class MainForm : Form
         gestureService.Start();
         edgeActionService.Start();
         ApplyGesturePauseState();
+
+        if (startHiddenToTray)
+        {
+            HideStartupWindow();
+        }
     }
 
     private void InitializeTrayIcon()
@@ -211,6 +230,7 @@ public sealed class MainForm : Form
         }
 
         ShowInTaskbar = true;
+        Opacity = 1;
         Show();
         if (WindowState == FormWindowState.Minimized)
         {
@@ -219,6 +239,14 @@ public sealed class MainForm : Form
 
         Activate();
         await EnsureWebViewAsync();
+    }
+
+    private void HideStartupWindow()
+    {
+        ShowInTaskbar = false;
+        Hide();
+        WindowState = FormWindowState.Normal;
+        Opacity = 1;
     }
 
     private void ExitFromTray()
@@ -301,7 +329,7 @@ public sealed class MainForm : Form
 
             if (enabled)
             {
-                key.SetValue(StartupRegistryValueName, $"\"{Application.ExecutablePath}\"");
+                key.SetValue(StartupRegistryValueName, $"\"{Application.ExecutablePath}\" {StartupLaunchArgument}");
                 key.DeleteValue(LegacyStartupRegistryValueName, throwOnMissingValue: false);
             }
             else
@@ -327,7 +355,9 @@ public sealed class MainForm : Form
             Process.Start(new ProcessStartInfo
             {
                 FileName = Application.ExecutablePath,
-                Arguments = ElevatedRelaunchArgument,
+                Arguments = startHiddenToTray
+                    ? $"{ElevatedRelaunchArgument} {StartupLaunchArgument}"
+                    : ElevatedRelaunchArgument,
                 UseShellExecute = true,
                 Verb = "runas"
             });
