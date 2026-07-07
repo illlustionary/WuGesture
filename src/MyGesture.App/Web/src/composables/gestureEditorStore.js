@@ -1166,7 +1166,6 @@ function toPayloadEdgeAction(action) {
     location: action.location,
     wheelDirection: action.wheelDirection,
     frictionCount: normalizeFrictionCount(action.frictionCount),
-    actionName: String(action.actionName ?? "").trim() || getEdgeActionLabel(action),
     action: toPayloadAction(action)
   };
 }
@@ -1593,7 +1592,6 @@ function normalizeEdgeAction(action) {
     location: "",
     wheelDirection: "",
     frictionCount: normalizeFrictionCount(action?.frictionCount),
-    actionName: String(action?.actionName ?? "").trim(),
     keysText: Array.isArray(action?.action?.keys) ? action.action.keys.join(" + ") : String(action?.keysText ?? "").trim(),
     actionType: normalizeActionType(action?.action?.type ?? action?.actionType),
     windowOperation: normalizeWindowOperation(action?.action?.operation ?? action?.windowOperation),
@@ -1650,7 +1648,6 @@ function createDefaultEdgeAction(triggerType, location, wheelDirection = "") {
     location,
     wheelDirection,
     frictionCount: 4,
-    actionName: "",
     keysText: "",
     actionType: "hotkey",
     windowOperation: "toggle-maximize",

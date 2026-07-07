@@ -31,7 +31,7 @@ const emit = defineEmits(['open'])
         :action="action"
         :title="locationLabel(action)"
         :subtitle="wheelLabel(action) || triggerLabels[action.triggerType]"
-        :name="action.actionName || getEdgeActionLabel(action)"
+        :name="getEdgeActionLabel(action)"
         :summary="actionSummary(action)"
         @open="emit('open', $event)"
       />
