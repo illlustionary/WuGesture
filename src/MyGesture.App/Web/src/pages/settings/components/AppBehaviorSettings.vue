@@ -1,8 +1,9 @@
 <script setup>
+import CustomSelect from '../../../components/CustomSelect.vue'
+import ToggleCheckbox from '../../../components/ToggleCheckbox.vue'
 import SettingsField from './SettingsField.vue'
 import SettingsFormGrid from './SettingsFormGrid.vue'
 import SettingsSectionCard from './SettingsSectionCard.vue'
-import ToggleCheckbox from '../../../components/ToggleCheckbox.vue'
 
 defineProps({
   draft: { type: Object, required: true }
@@ -10,10 +11,17 @@ defineProps({
 
 const emit = defineEmits(['queue-persist', 'flush-persist'])
 
+const closeButtonOptions = [
+  { value: 'minimize-to-tray', label: '最小化到托盘' },
+  { value: 'minimize-to-taskbar', label: '最小化到任务栏' },
+  { value: 'exit', label: '直接关闭' }
+]
+
 function commit() {
   emit('queue-persist')
   emit('flush-persist')
 }
+
 </script>
 
 <template>
@@ -34,16 +42,20 @@ function commit() {
           note="保存后下次启动时生效。"
           @change="commit"
         />
+        <ToggleCheckbox
+          v-model="draft.appBehavior.gesturePaused"
+          label="暂停 Wu Gesture"
+          note="关闭后立即恢复手势。"
+          @change="commit"
+        />
       </div>
       <SettingsField label="关闭按钮">
-        <select
+        <CustomSelect
           v-model="draft.appBehavior.closeButtonBehavior"
+          :options="closeButtonOptions"
+          placeholder="选择关闭行为"
           @change="commit"
-        >
-          <option value="minimize-to-tray">最小化到托盘</option>
-          <option value="minimize-to-taskbar">最小化到任务栏</option>
-          <option value="exit">直接关闭</option>
-        </select>
+        />
       </SettingsField>
     </SettingsFormGrid>
   </SettingsSectionCard>

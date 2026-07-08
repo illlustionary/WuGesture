@@ -5,7 +5,8 @@ import SettingsSectionCard from './SettingsSectionCard.vue'
 import ToggleCheckbox from '../../../components/ToggleCheckbox.vue'
 
 defineProps({
-  draft: { type: Object, required: true }
+  draft: { type: Object, required: true },
+  previewStyle: { type: Object, required: true }
 })
 
 const emit = defineEmits(['queue-persist', 'flush-persist'])
@@ -21,6 +22,16 @@ function commit() {
     title="底部提示窗"
     description="激活规则后的提示窗字体、颜色和尺寸。"
   >
+    <div class="gesture-hint-preview">
+      <div
+        class="gesture-hint-preview__bubble"
+        :style="previewStyle"
+      >
+        <strong>已触发：关闭标签</strong>
+        <span>这里是底部提示窗示例。</span>
+      </div>
+    </div>
+
     <SettingsFormGrid>
       <SettingsField
         label="字体大小"
@@ -129,3 +140,41 @@ function commit() {
     </SettingsFormGrid>
   </SettingsSectionCard>
 </template>
+
+<style scoped lang="scss">
+.gesture-hint-preview {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  min-height: 180px;
+  margin-bottom: 14px;
+  padding: 18px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 18px;
+  background: var(--panel-inset);
+  overflow: hidden;
+}
+
+.gesture-hint-preview__bubble {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  margin-bottom: var(--hint-bottom-offset);
+  padding: 16px 28px;
+  border: 1px solid var(--border-inverse);
+  border-radius: var(--hint-radius);
+  color: var(--hint-color);
+  background: var(--hint-background-rgba);
+  box-shadow: var(--shadow-popover);
+
+  strong {
+    font-size: var(--hint-font-size);
+    line-height: 1.1;
+  }
+
+  span {
+    color: var(--hint-muted-color);
+    font-size: 13px;
+  }
+}
+</style>

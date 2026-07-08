@@ -7,7 +7,6 @@ import { useGestureEditorStore } from '../../composables/gestureEditorStore'
 import AppBehaviorSettings from './components/AppBehaviorSettings.vue'
 import GestureHintSettings from './components/GestureHintSettings.vue'
 import MouseTrailSettings from './components/MouseTrailSettings.vue'
-import SettingsPreviewPanel from './components/SettingsPreviewPanel.vue'
 import WebDavSettings from './components/WebDavSettings.vue'
 import { useUiSettingsDraft } from './composables/useUiSettingsDraft'
 
@@ -76,12 +75,9 @@ function testWebDav() {
 
     <template #right>
       <section class="page-stack">
-        <SettingsPreviewPanel
-          :trail-preview-style="trailPreviewStyle"
-          :hint-preview-style="hintPreviewStyle"
-        />
         <MouseTrailSettings
           :draft="draft"
+          :preview-style="trailPreviewStyle"
           @queue-persist="queuePersistDraft"
           @flush-persist="flushPersistDraft"
         />
@@ -102,6 +98,7 @@ function testWebDav() {
         />
         <GestureHintSettings
           :draft="draft"
+          :preview-style="hintPreviewStyle"
           @queue-persist="queuePersistDraft"
           @flush-persist="flushPersistDraft"
         />
@@ -112,7 +109,7 @@ function testWebDav() {
   <ConfirmDialog
     :open="resetConfirmOpen"
     title="恢复默认设置"
-    message="这会把轨迹线、底部提示窗、应用行为和 WebDAV 设置恢复为默认值。"
+    message="这会把轨迹线、底部提示窗、应用行为、排除项和 WebDAV 设置恢复为默认值。"
     confirm-text="恢复默认"
     cancel-text="取消"
     tone="danger"
@@ -131,7 +128,6 @@ function testWebDav() {
   background: var(--panel-control);
 }
 
-:deep(select),
 :deep(input[type='text']),
 :deep(input[type='url']),
 :deep(input[type='password']) {

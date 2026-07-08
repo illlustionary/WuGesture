@@ -1,5 +1,6 @@
 <script setup>
 import KeyboardIcon from '../../../assets/keyboard.svg'
+import CustomSelect from '../../../components/CustomSelect.vue'
 
 defineProps({
   draft: { type: Object, required: true },
@@ -43,19 +44,12 @@ const emit = defineEmits(['record-hotkey', 'update-operation'])
       class="edge-field"
     >
       <span>操作</span>
-      <select
+      <CustomSelect
         :value="operationModel(draft)"
-        class="scope-input"
-        @change="emit('update-operation', $event.target.value)"
-      >
-        <option
-          v-for="operation in operationOptions(draft)"
-          :key="operation.value"
-          :value="operation.value"
-        >
-          {{ operation.label }}
-        </option>
-      </select>
+        :options="operationOptions(draft)"
+        placeholder="选择操作"
+        @change="emit('update-operation', $event)"
+      />
     </label>
 
     <label

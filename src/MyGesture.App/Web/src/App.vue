@@ -13,7 +13,8 @@ const tabs = [
   { to: '/global', label: '全局' },
   { to: '/category', label: '分类' },
   { to: '/app', label: '程序' },
-  { to: '/edge', label: '边缘操作' }
+  { to: '/edge', label: '边缘操作' },
+  { to: '/exclusions', label: '排除项' }
 ]
 
 editor.initialize()
@@ -47,7 +48,13 @@ function openSettingsPage() {
       >
         <div class="modal-panel__head">
           <div>
-            <h3 id="application-picker-title">添加程序</h3>
+            <h3 id="application-picker-title">
+              {{
+                editor.state.applicationPickerTarget === 'exclusion'
+                  ? '添加排除项'
+                  : '添加程序'
+              }}
+            </h3>
             <!-- <p>
               {{
                 editor.state.applicationPickerScopeKind === 'app'

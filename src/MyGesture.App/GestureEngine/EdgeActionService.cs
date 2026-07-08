@@ -17,6 +17,7 @@ public sealed class EdgeActionService : IDisposable
 
     private readonly MouseHook mouseHook = new();
     private readonly ActionExecutor actionExecutor = new();
+    private readonly ApplicationExclusionMatcher exclusionMatcher = new();
     private readonly System.Windows.Forms.Timer mousePollTimer = new() { Interval = 16 };
     private IReadOnlyList<EdgeActionConfig> actions;
     private SynchronizationContext? synchronizationContext;
@@ -42,6 +43,17 @@ public sealed class EdgeActionService : IDisposable
     {
         actions = NormalizeActions(nextActions);
         ResetFriction();
+    }
+
+    public void UpdateExcludedApplications(IEnumerable<ExcludedApplicationConfig>? applications)
+    {
+        exclusionMatcher.Update(applications);
+        if (exclusionMatcher.IsEdgeActionExcluded())
+        {
+            activeCorner = EdgeLocation.None;
+            activeFrictionEdge = EdgeLocation.None;
+            ResetFriction();
+        }
     }
 
     public void SetPaused(bool isPaused)
@@ -103,7 +115,7 @@ public sealed class EdgeActionService : IDisposable
 
     private void HandleMouseLocation(Point location)
     {
-        if (disposed || paused)
+        if (disposed || paused || exclusionMatcher.IsEdgeActionExcluded())
         {
             return;
         }
@@ -206,7 +218,7 @@ public sealed class EdgeActionService : IDisposable
 
     private void OnMouseWheel(object? sender, MouseWheelHookEventArgs e)
     {
-        if (disposed || paused)
+        if (disposed || paused || exclusionMatcher.IsEdgeActionExcluded())
         {
             return;
         }

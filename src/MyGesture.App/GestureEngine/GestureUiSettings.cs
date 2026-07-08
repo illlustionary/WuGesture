@@ -20,6 +20,21 @@ public sealed class AppBehaviorUiSettings
     public bool RunAsAdministrator { get; set; }
 
     public string CloseButtonBehavior { get; set; } = "minimize-to-tray";
+
+    public bool GesturePaused { get; set; }
+
+    public List<ExcludedApplicationConfig> ExcludedApplications { get; set; } = [];
+}
+
+public sealed class ExcludedApplicationConfig
+{
+    public string Name { get; set; } = "";
+
+    public string DisplayName { get; set; } = "";
+
+    public string Path { get; set; } = "";
+
+    public bool DisableEdgeActions { get; set; }
 }
 
 public sealed class WebDavUiSettings

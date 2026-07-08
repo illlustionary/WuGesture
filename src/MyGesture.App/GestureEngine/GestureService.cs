@@ -20,6 +20,7 @@ public sealed class GestureService : IDisposable
     private GestureMatcher matcher;
     private readonly IGestureScopeContextProvider scopeContextProvider;
     private readonly ActionExecutor actionExecutor = new();
+    private readonly ApplicationExclusionMatcher exclusionMatcher = new();
     private readonly List<Point> points = [];
     private string? recordingRequestId;
     private IReadOnlyList<GestureDirection> lastProgressPattern = [];
@@ -55,6 +56,15 @@ public sealed class GestureService : IDisposable
     public void UpdateMatcher(GestureMatcher newMatcher)
     {
         matcher = newMatcher;
+    }
+
+    public void UpdateExcludedApplications(IEnumerable<ExcludedApplicationConfig>? applications)
+    {
+        exclusionMatcher.Update(applications);
+        if (exclusionMatcher.IsGestureExcluded())
+        {
+            CancelTracking();
+        }
     }
 
     public void SetPaused(bool paused)
@@ -168,6 +178,11 @@ public sealed class GestureService : IDisposable
     private void StartTracking(MouseHookEventArgs e, ActiveMouseButton button, bool swallowInput)
     {
         if (disposed || isTracking || (isPaused && recordingRequestId is null))
+        {
+            return;
+        }
+
+        if (recordingRequestId is null && exclusionMatcher.IsGestureExcluded())
         {
             return;
         }

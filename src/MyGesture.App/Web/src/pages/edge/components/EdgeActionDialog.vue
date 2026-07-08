@@ -1,4 +1,5 @@
 <script setup>
+import CustomSelect from '../../../components/CustomSelect.vue'
 import IconActionButton from '../../../components/IconActionButton.vue'
 import ToggleCheckbox from '../../../components/ToggleCheckbox.vue'
 import EdgeActionCommandFields from './EdgeActionCommandFields.vue'
@@ -13,6 +14,13 @@ defineProps({
 })
 
 const emit = defineEmits(['close', 'record-hotkey', 'update-operation'])
+
+const actionTypeOptions = [
+  { value: 'hotkey', label: '快捷键' },
+  { value: 'window', label: '窗口控制' },
+  { value: 'volume', label: '音量控制' },
+  { value: 'brightness', label: '亮度控制' }
+]
 </script>
 
 <template>
@@ -64,15 +72,11 @@ const emit = defineEmits(['close', 'record-hotkey', 'update-operation'])
 
         <label class="edge-field">
           <span>命令类型</span>
-          <select
+          <CustomSelect
             v-model="draft.actionType"
-            class="scope-input"
-          >
-            <option value="hotkey">快捷键</option>
-            <option value="window">窗口控制</option>
-            <option value="volume">音量控制</option>
-            <option value="brightness">亮度控制</option>
-          </select>
+            :options="actionTypeOptions"
+            placeholder="选择命令类型"
+          />
         </label>
       </div>
 
