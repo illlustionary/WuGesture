@@ -7,64 +7,64 @@ public static class DefaultGestureConfig
         var config = GestureConfigMapper.FromRules(DefaultGestureRules.Create());
         config.EdgeActions =
         [
-            CreateEdgeAction("corner", "top-left", "", new GestureActionConfig
+            CreateEdgeAction(GestureConfigContract.EdgeTriggerTypes.Corner, GestureConfigContract.EdgeLocations.TopLeft, "", new GestureActionConfig
             {
-                Type = "hotkey",
+                Type = GestureConfigContract.ActionTypes.Hotkey,
                 Keys = ["Win", "Tab"]
             }),
-            CreateEdgeAction("corner", "top-right", "", new GestureActionConfig
+            CreateEdgeAction(GestureConfigContract.EdgeTriggerTypes.Corner, GestureConfigContract.EdgeLocations.TopRight, "", new GestureActionConfig
             {
-                Type = "hotkey",
+                Type = GestureConfigContract.ActionTypes.Hotkey,
                 Keys = ["Win", "Tab"]
             }),
-            CreateEdgeAction("corner", "bottom-left", "", new GestureActionConfig
+            CreateEdgeAction(GestureConfigContract.EdgeTriggerTypes.Corner, GestureConfigContract.EdgeLocations.BottomLeft, "", new GestureActionConfig
             {
-                Type = "hotkey",
+                Type = GestureConfigContract.ActionTypes.Hotkey,
                 Keys = ["Win"]
             }),
-            CreateEdgeAction("corner", "bottom-right", "", new GestureActionConfig
+            CreateEdgeAction(GestureConfigContract.EdgeTriggerTypes.Corner, GestureConfigContract.EdgeLocations.BottomRight, "", new GestureActionConfig
             {
-                Type = "hotkey",
+                Type = GestureConfigContract.ActionTypes.Hotkey,
                 Keys = ["Win", "D"]
             }),
-            CreateEdgeAction("friction", "left", "", new GestureActionConfig
+            CreateEdgeAction(GestureConfigContract.EdgeTriggerTypes.Friction, GestureConfigContract.EdgeLocations.Left, "", new GestureActionConfig
             {
-                Type = "hotkey",
+                Type = GestureConfigContract.ActionTypes.Hotkey,
                 Keys = ["Control", "Shift", "Escape"]
             }),
-            CreateEdgeAction("friction", "right", "", new GestureActionConfig()),
-            CreateEdgeAction("friction", "top", "", new GestureActionConfig
+            CreateEdgeAction(GestureConfigContract.EdgeTriggerTypes.Friction, GestureConfigContract.EdgeLocations.Right, "", new GestureActionConfig()),
+            CreateEdgeAction(GestureConfigContract.EdgeTriggerTypes.Friction, GestureConfigContract.EdgeLocations.Top, "", new GestureActionConfig
             {
-                Type = "hotkey",
+                Type = GestureConfigContract.ActionTypes.Hotkey,
                 Keys = ["M", "I", "K", "U"]
             }),
-            CreateEdgeAction("friction", "bottom", "", new GestureActionConfig()),
-            CreateEdgeAction("wheel", "left", "up", new GestureActionConfig()),
-            CreateEdgeAction("wheel", "left", "down", new GestureActionConfig()),
-            CreateEdgeAction("wheel", "right", "up", new GestureActionConfig
+            CreateEdgeAction(GestureConfigContract.EdgeTriggerTypes.Friction, GestureConfigContract.EdgeLocations.Bottom, "", new GestureActionConfig()),
+            CreateEdgeAction(GestureConfigContract.EdgeTriggerTypes.Wheel, GestureConfigContract.EdgeLocations.Left, GestureConfigContract.WheelDirections.Up, new GestureActionConfig()),
+            CreateEdgeAction(GestureConfigContract.EdgeTriggerTypes.Wheel, GestureConfigContract.EdgeLocations.Left, GestureConfigContract.WheelDirections.Down, new GestureActionConfig()),
+            CreateEdgeAction(GestureConfigContract.EdgeTriggerTypes.Wheel, GestureConfigContract.EdgeLocations.Right, GestureConfigContract.WheelDirections.Up, new GestureActionConfig
             {
-                Type = "volume",
-                Operation = "increase",
+                Type = GestureConfigContract.ActionTypes.Volume,
+                Operation = GestureConfigContract.Operations.Increase,
                 Amount = 2
             }),
-            CreateEdgeAction("wheel", "right", "down", new GestureActionConfig
+            CreateEdgeAction(GestureConfigContract.EdgeTriggerTypes.Wheel, GestureConfigContract.EdgeLocations.Right, GestureConfigContract.WheelDirections.Down, new GestureActionConfig
             {
-                Type = "volume",
-                Operation = "decrease",
+                Type = GestureConfigContract.ActionTypes.Volume,
+                Operation = GestureConfigContract.Operations.Decrease,
                 Amount = 2
             }),
-            CreateEdgeAction("wheel", "top", "up", new GestureActionConfig
+            CreateEdgeAction(GestureConfigContract.EdgeTriggerTypes.Wheel, GestureConfigContract.EdgeLocations.Top, GestureConfigContract.WheelDirections.Up, new GestureActionConfig
             {
-                Type = "brightness",
-                Operation = "increase"
+                Type = GestureConfigContract.ActionTypes.Brightness,
+                Operation = GestureConfigContract.Operations.Increase
             }),
-            CreateEdgeAction("wheel", "top", "down", new GestureActionConfig
+            CreateEdgeAction(GestureConfigContract.EdgeTriggerTypes.Wheel, GestureConfigContract.EdgeLocations.Top, GestureConfigContract.WheelDirections.Down, new GestureActionConfig
             {
-                Type = "brightness",
-                Operation = "decrease"
+                Type = GestureConfigContract.ActionTypes.Brightness,
+                Operation = GestureConfigContract.Operations.Decrease
             }),
-            CreateEdgeAction("wheel", "bottom", "up", new GestureActionConfig()),
-            CreateEdgeAction("wheel", "bottom", "down", new GestureActionConfig())
+            CreateEdgeAction(GestureConfigContract.EdgeTriggerTypes.Wheel, GestureConfigContract.EdgeLocations.Bottom, GestureConfigContract.WheelDirections.Up, new GestureActionConfig()),
+            CreateEdgeAction(GestureConfigContract.EdgeTriggerTypes.Wheel, GestureConfigContract.EdgeLocations.Bottom, GestureConfigContract.WheelDirections.Down, new GestureActionConfig())
         ];
 
         return config;

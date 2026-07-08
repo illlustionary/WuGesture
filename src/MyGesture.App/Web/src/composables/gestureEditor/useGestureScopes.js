@@ -1,3 +1,5 @@
+import { SCOPE_KINDS } from "../../constants/gestureEditorOptions";
+
 export function useGestureScopes({
   activeScope,
   collectAppItems,
@@ -22,8 +24,8 @@ export function useGestureScopes({
   }
 
   function getRulesForScope(kind, name = "") {
-    if (kind === "global") {
-      return getRulesByKind("global");
+    if (kind === SCOPE_KINDS.global) {
+      return getRulesByKind(SCOPE_KINDS.global);
     }
 
     const scopeName = String(name || getSelectedName(kind)).trim();
@@ -43,7 +45,7 @@ export function useGestureScopes({
   }
 
   function getScopeItems(kind) {
-    return kind === "category" ? collectCategoryItems() : collectAppItems();
+    return kind === SCOPE_KINDS.category ? collectCategoryItems() : collectAppItems();
   }
 
   function createScopeTarget(kind, name) {

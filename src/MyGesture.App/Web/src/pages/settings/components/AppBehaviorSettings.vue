@@ -4,6 +4,7 @@ import ToggleCheckbox from '../../../components/ToggleCheckbox.vue'
 import SettingsField from './SettingsField.vue'
 import SettingsFormGrid from './SettingsFormGrid.vue'
 import SettingsSectionCard from './SettingsSectionCard.vue'
+import { CLOSE_BUTTON_BEHAVIOR_OPTIONS } from '../../../constants/gestureEditorOptions'
 
 defineProps({
   draft: { type: Object, required: true }
@@ -11,11 +12,7 @@ defineProps({
 
 const emit = defineEmits(['queue-persist', 'flush-persist'])
 
-const closeButtonOptions = [
-  { value: 'minimize-to-tray', label: '最小化到托盘' },
-  { value: 'minimize-to-taskbar', label: '最小化到任务栏' },
-  { value: 'exit', label: '直接关闭' }
-]
+const closeButtonOptions = CLOSE_BUTTON_BEHAVIOR_OPTIONS
 
 function commit() {
   emit('queue-persist')

@@ -3,6 +3,7 @@ import CustomSelect from '../../../components/CustomSelect.vue'
 import IconActionButton from '../../../components/IconActionButton.vue'
 import ToggleCheckbox from '../../../components/ToggleCheckbox.vue'
 import EdgeActionCommandFields from './EdgeActionCommandFields.vue'
+import { ACTION_TYPE_OPTIONS, EDGE_TRIGGER_TYPES } from '../../../constants/gestureEditorOptions'
 
 defineProps({
   action: { type: Object, required: true },
@@ -15,12 +16,7 @@ defineProps({
 
 const emit = defineEmits(['close', 'record-hotkey', 'update-operation'])
 
-const actionTypeOptions = [
-  { value: 'hotkey', label: '快捷键' },
-  { value: 'window', label: '窗口控制' },
-  { value: 'volume', label: '音量控制' },
-  { value: 'brightness', label: '亮度控制' }
-]
+const actionTypeOptions = ACTION_TYPE_OPTIONS
 </script>
 
 <template>
@@ -57,7 +53,7 @@ const actionTypeOptions = [
         />
 
         <label
-          v-if="draft.triggerType === 'friction'"
+          v-if="draft.triggerType === EDGE_TRIGGER_TYPES.friction"
           class="edge-field"
         >
           <span>摩擦次数</span>

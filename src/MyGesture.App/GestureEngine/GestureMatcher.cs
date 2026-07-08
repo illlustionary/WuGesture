@@ -53,13 +53,14 @@ public sealed class GestureMatcher
         priority = int.MinValue;
 
         var normalizedScope = scope.Trim();
-        if (normalizedScope.Length == 0 || normalizedScope.Equals("global", StringComparison.OrdinalIgnoreCase))
+        if (normalizedScope.Length == 0 ||
+            normalizedScope.Equals(GestureConfigContract.Scopes.Global, StringComparison.OrdinalIgnoreCase))
         {
             priority = 0;
             return true;
         }
 
-        if (TryGetPrefixedScopeValue(normalizedScope, "app", out var appScopeValue))
+        if (TryGetPrefixedScopeValue(normalizedScope, GestureConfigContract.Scopes.App, out var appScopeValue))
         {
             if (MatchesScopeValue(appScopeValue, context.AppName))
             {
@@ -70,7 +71,7 @@ public sealed class GestureMatcher
             return false;
         }
 
-        if (TryGetPrefixedScopeValue(normalizedScope, "category", out var categoryScopeValue))
+        if (TryGetPrefixedScopeValue(normalizedScope, GestureConfigContract.Scopes.Category, out var categoryScopeValue))
         {
             if (MatchesScopeValue(categoryScopeValue, context.CategoryName))
             {

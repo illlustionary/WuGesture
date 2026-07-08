@@ -1,4 +1,9 @@
 import { computed, reactive, ref } from 'vue'
+import {
+  ACTION_TYPES,
+  EDGE_TRIGGER_TYPES,
+  OPERATIONS
+} from '../../../constants/gestureEditorOptions'
 
 export function useEdgeActionDraft(editor) {
   const editingKey = ref('')
@@ -47,15 +52,15 @@ export function actionKey(action) {
 function createEmptyDraft() {
   return {
     enabled: false,
-    triggerType: 'corner',
+    triggerType: EDGE_TRIGGER_TYPES.corner,
     location: 'top-left',
     wheelDirection: '',
     frictionCount: 4,
     keysText: '',
-    actionType: 'hotkey',
-    windowOperation: 'toggle-maximize',
-    volumeOperation: 'increase',
-    brightnessOperation: 'increase',
+    actionType: ACTION_TYPES.hotkey,
+    windowOperation: OPERATIONS.toggleMaximize,
+    volumeOperation: OPERATIONS.increase,
+    brightnessOperation: OPERATIONS.increase,
     amount: 5
   }
 }

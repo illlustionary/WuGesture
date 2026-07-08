@@ -1,9 +1,13 @@
 import {
+  ACTION_TYPES,
   BRIGHTNESS_OPERATIONS,
   DIRECTION_SYMBOLS,
   EDGE_LOCATIONS,
+  EDGE_TRIGGER_TYPES,
   MOUSE_BUTTON_SYMBOLS,
+  OPERATIONS,
   VOLUME_OPERATIONS,
+  WHEEL_DIRECTIONS,
   WINDOW_OPERATIONS
 } from "../constants/gestureEditorOptions";
 import {
@@ -34,17 +38,17 @@ export function getGestureMnemonic(source) {
 
 export function getActionLabel(rule) {
   const actionType = normalizeActionType(rule?.actionType);
-  if (actionType === "window") {
+  if (actionType === ACTION_TYPES.window) {
     const operation = WINDOW_OPERATIONS.find((item) => item.value === normalizeWindowOperation(rule?.windowOperation));
     return operation ? `窗口控制：${operation.label}` : "窗口控制";
   }
 
-  if (actionType === "volume") {
+  if (actionType === ACTION_TYPES.volume) {
     const operation = VOLUME_OPERATIONS.find((item) => item.value === normalizeVolumeOperation(rule?.volumeOperation));
-    return operation?.value === "mute" ? "音量控制：静音" : `音量控制：${operation?.label ?? "音量 +" } ${normalizeAmount(rule?.amount)}`;
+    return operation?.value === OPERATIONS.mute ? "音量控制：静音" : `音量控制：${operation?.label ?? "音量 +" } ${normalizeAmount(rule?.amount)}`;
   }
 
-  if (actionType === "brightness") {
+  if (actionType === ACTION_TYPES.brightness) {
     const operation = BRIGHTNESS_OPERATIONS.find((item) => item.value === normalizeBrightnessOperation(rule?.brightnessOperation));
     return `亮度控制：${operation?.label ?? "亮度 +" } ${normalizeAmount(rule?.amount)}`;
   }
@@ -54,12 +58,12 @@ export function getActionLabel(rule) {
 
 export function getEdgeActionLabel(action) {
   const triggerLabel = {
-    corner: "触发角",
-    friction: "摩擦边",
-    wheel: "边缘滚动"
+    [EDGE_TRIGGER_TYPES.corner]: "触发角",
+    [EDGE_TRIGGER_TYPES.friction]: "摩擦边",
+    [EDGE_TRIGGER_TYPES.wheel]: "边缘滚动"
   }[normalizeEdgeTriggerType(action?.triggerType)];
   const allLocations = [...EDGE_LOCATIONS.corner, ...EDGE_LOCATIONS.edge];
   const location = allLocations.find((item) => item.value === action?.location)?.label ?? "";
-  const wheel = action?.wheelDirection ? (action.wheelDirection === "down" ? "滚轮下" : "滚轮上") : "";
+  const wheel = action?.wheelDirection ? (action.wheelDirection === WHEEL_DIRECTIONS.down ? "滚轮下" : "滚轮上") : "";
   return [triggerLabel, location, wheel].filter(Boolean).join(" ");
 }

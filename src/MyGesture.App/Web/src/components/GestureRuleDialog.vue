@@ -4,6 +4,7 @@ import CustomSelect from './CustomSelect.vue'
 import IconActionButton from './IconActionButton.vue'
 import KeyboardIcon from '../assets/keyboard.svg'
 import RecordIcon from '../assets/record.svg'
+import { ACTION_TYPE_OPTIONS, ACTION_TYPES, OPERATIONS } from '../constants/gestureEditorOptions'
 
 const props = defineProps({
   open: { type: Boolean, required: true },
@@ -23,12 +24,7 @@ const patternLabel = computed(
   () => props.getGestureMnemonic?.(props.draft) || '尚未录制'
 )
 
-const actionTypeOptions = [
-  { value: 'hotkey', label: '快捷键' },
-  { value: 'window', label: '窗口控制' },
-  { value: 'volume', label: '音量控制' },
-  { value: 'brightness', label: '亮度控制' }
-]
+const actionTypeOptions = ACTION_TYPE_OPTIONS
 </script>
 
 <template>
@@ -80,7 +76,7 @@ const actionTypeOptions = [
         </div>
 
         <div class="gesture-dialog__command">
-          <label v-if="draft.actionType === 'window'">
+          <label v-if="draft.actionType === ACTION_TYPES.window">
             <span>操作</span>
             <CustomSelect
               v-model="draft.windowOperation"
@@ -90,7 +86,7 @@ const actionTypeOptions = [
             />
           </label>
 
-          <template v-else-if="draft.actionType === 'volume'">
+          <template v-else-if="draft.actionType === ACTION_TYPES.volume">
             <label>
               <span>操作</span>
               <CustomSelect
@@ -100,7 +96,7 @@ const actionTypeOptions = [
                 @change="$emit('persist')"
               />
             </label>
-            <label v-if="draft.volumeOperation !== 'mute'">
+            <label v-if="draft.volumeOperation !== OPERATIONS.mute">
               <span>数值</span>
               <input
                 v-model.number="draft.amount"
@@ -113,7 +109,7 @@ const actionTypeOptions = [
             </label>
           </template>
 
-          <template v-else-if="draft.actionType === 'brightness'">
+          <template v-else-if="draft.actionType === ACTION_TYPES.brightness">
             <label>
               <span>操作</span>
               <CustomSelect

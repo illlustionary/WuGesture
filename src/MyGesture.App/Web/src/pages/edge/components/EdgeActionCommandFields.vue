@@ -1,6 +1,7 @@
 <script setup>
 import KeyboardIcon from '../../../assets/keyboard.svg'
 import CustomSelect from '../../../components/CustomSelect.vue'
+import { ACTION_TYPES, OPERATIONS } from '../../../constants/gestureEditorOptions'
 
 defineProps({
   draft: { type: Object, required: true },
@@ -15,7 +16,7 @@ const emit = defineEmits(['record-hotkey', 'update-operation'])
 <template>
   <div class="edge-dialog__command">
     <label
-      v-if="draft.actionType === 'hotkey'"
+      v-if="draft.actionType === ACTION_TYPES.hotkey"
       class="edge-field"
     >
       <span>操作</span>
@@ -53,7 +54,7 @@ const emit = defineEmits(['record-hotkey', 'update-operation'])
     </label>
 
     <label
-      v-if="draft.actionType === 'volume' && draft.volumeOperation !== 'mute'"
+      v-if="draft.actionType === ACTION_TYPES.volume && draft.volumeOperation !== OPERATIONS.mute"
       class="edge-field"
     >
       <span>数值</span>
@@ -67,7 +68,7 @@ const emit = defineEmits(['record-hotkey', 'update-operation'])
     </label>
 
     <label
-      v-if="draft.actionType === 'brightness'"
+      v-if="draft.actionType === ACTION_TYPES.brightness"
       class="edge-field"
     >
       <span>数值</span>

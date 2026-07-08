@@ -6,9 +6,10 @@ import CodeIcon from '../../../assets/code.svg'
 import FolderIcon from '../../../assets/folder.svg'
 import MediaIcon from '../../../assets/media.svg'
 import SparkleIcon from '../../../assets/sparkle.svg'
+import { SCOPE_KINDS } from '../../../constants/gestureEditorOptions'
 
 export function useCategoryPage(editor) {
-  const scopeKind = 'category'
+  const scopeKind = SCOPE_KINDS.category
   editor.setActiveScope(scopeKind)
 
   const categoryDraft = ref('')

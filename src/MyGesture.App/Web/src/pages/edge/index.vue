@@ -5,32 +5,38 @@ import { useGestureEditorStore } from '../../composables/gestureEditorStore'
 import EdgeActionDialog from './components/EdgeActionDialog.vue'
 import EdgeActionSection from './components/EdgeActionSection.vue'
 import { useEdgeActionDraft } from './composables/useEdgeActionDraft'
+import {
+  ACTION_TYPES,
+  EDGE_TRIGGER_TYPES,
+  OPERATIONS,
+  WHEEL_DIRECTIONS
+} from '../../constants/gestureEditorOptions'
 
 const editor = useGestureEditorStore()
 const { draft, editingAction, openEditor, closeEditor } = useEdgeActionDraft(editor)
 
 const groups = [
   {
-    type: 'corner',
+    type: EDGE_TRIGGER_TYPES.corner,
     title: '触发角',
     description: '鼠标进入角落时触发一次，离开后再次进入才会再次触发。'
   },
   {
-    type: 'friction',
+    type: EDGE_TRIGGER_TYPES.friction,
     title: '摩擦边',
     description: '贴近屏幕边缘后沿边反复移动，达到次数后触发。'
   },
   {
-    type: 'wheel',
+    type: EDGE_TRIGGER_TYPES.wheel,
     title: '边缘滚动',
     description: '鼠标停在屏幕边缘滚动时触发，并吞掉原始滚轮事件。'
   }
 ]
 
 const triggerLabels = {
-  corner: '触发角',
-  friction: '摩擦边',
-  wheel: '边缘滚动'
+  [EDGE_TRIGGER_TYPES.corner]: '触发角',
+  [EDGE_TRIGGER_TYPES.friction]: '摩擦边',
+  [EDGE_TRIGGER_TYPES.wheel]: '边缘滚动'
 }
 
 const dialogTitle = computed(() => {
@@ -50,26 +56,26 @@ function groupActions(type) {
 
 function locationLabel(action) {
   const locations =
-    action.triggerType === 'corner'
+    action.triggerType === EDGE_TRIGGER_TYPES.corner
       ? editor.edgeLocations.corner
       : editor.edgeLocations.edge
   return locations.find(item => item.value === action.location)?.label ?? action.location
 }
 
 function wheelLabel(action) {
-  if (action.triggerType !== 'wheel') {
+  if (action.triggerType !== EDGE_TRIGGER_TYPES.wheel) {
     return ''
   }
 
-  return action.wheelDirection === 'down' ? '滚轮下' : '滚轮上'
+  return action.wheelDirection === WHEEL_DIRECTIONS.down ? '滚轮下' : '滚轮上'
 }
 
 function operationOptions(action) {
-  if (action.actionType === 'volume') {
+  if (action.actionType === ACTION_TYPES.volume) {
     return editor.volumeOperations
   }
 
-  if (action.actionType === 'brightness') {
+  if (action.actionType === ACTION_TYPES.brightness) {
     return editor.brightnessOperations
   }
 
@@ -77,11 +83,11 @@ function operationOptions(action) {
 }
 
 function operationModel(action) {
-  if (action.actionType === 'volume') {
+  if (action.actionType === ACTION_TYPES.volume) {
     return action.volumeOperation
   }
 
-  if (action.actionType === 'brightness') {
+  if (action.actionType === ACTION_TYPES.brightness) {
     return action.brightnessOperation
   }
 
@@ -89,23 +95,23 @@ function operationModel(action) {
 }
 
 function actionSummary(action) {
-  if (action.actionType === 'window') {
+  if (action.actionType === ACTION_TYPES.window) {
     const operation = editor.windowOperations.find(
       item => item.value === action.windowOperation
     )
     return operation?.label ?? '窗口控制'
   }
 
-  if (action.actionType === 'volume') {
+  if (action.actionType === ACTION_TYPES.volume) {
     const operation = editor.volumeOperations.find(
       item => item.value === action.volumeOperation
     )
-    return action.volumeOperation === 'mute'
+    return action.volumeOperation === OPERATIONS.mute
       ? operation?.label ?? '静音'
       : `${operation?.label ?? '音量 +'} ${action.amount}`
   }
 
-  if (action.actionType === 'brightness') {
+  if (action.actionType === ACTION_TYPES.brightness) {
     const operation = editor.brightnessOperations.find(
       item => item.value === action.brightnessOperation
     )
@@ -116,12 +122,12 @@ function actionSummary(action) {
 }
 
 function updateDraftOperation(value) {
-  if (draft.actionType === 'volume') {
+  if (draft.actionType === ACTION_TYPES.volume) {
     draft.volumeOperation = value
     return
   }
 
-  if (draft.actionType === 'brightness') {
+  if (draft.actionType === ACTION_TYPES.brightness) {
     draft.brightnessOperation = value
     return
   }

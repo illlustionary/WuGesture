@@ -141,9 +141,12 @@ public sealed class GestureConfigStore
 
     private static string NormalizeCloseButtonBehavior(string? value)
     {
-        return value is "minimize-to-tray" or "minimize-to-taskbar" or "exit"
+        return value is
+            GestureConfigContract.CloseButtonBehaviors.MinimizeToTray or
+            GestureConfigContract.CloseButtonBehaviors.MinimizeToTaskbar or
+            GestureConfigContract.CloseButtonBehaviors.Exit
             ? value
-            : "minimize-to-tray";
+            : GestureConfigContract.CloseButtonBehaviors.MinimizeToTray;
     }
 
     private static List<ExcludedApplicationConfig> NormalizeExcludedApplications(IEnumerable<ExcludedApplicationConfig>? applications)

@@ -14,6 +14,7 @@ import {
   parsePattern
 } from "./gestureEditorNormalizers";
 import { getGestureMnemonic } from "./gestureEditorFormatters";
+import { ACTION_TYPES } from "../constants/gestureEditorOptions";
 
 export function toPayloadRule(rule) {
   return {
@@ -26,31 +27,31 @@ export function toPayloadRule(rule) {
 }
 
 export function toPayloadAction(rule) {
-  if (normalizeActionType(rule.actionType) === "window") {
+  if (normalizeActionType(rule.actionType) === ACTION_TYPES.window) {
     return {
-      type: "window",
+      type: ACTION_TYPES.window,
       operation: normalizeWindowOperation(rule.windowOperation)
     };
   }
 
-  if (normalizeActionType(rule.actionType) === "volume") {
+  if (normalizeActionType(rule.actionType) === ACTION_TYPES.volume) {
     return {
-      type: "volume",
+      type: ACTION_TYPES.volume,
       operation: normalizeVolumeOperation(rule.volumeOperation),
       amount: normalizeAmount(rule.amount)
     };
   }
 
-  if (normalizeActionType(rule.actionType) === "brightness") {
+  if (normalizeActionType(rule.actionType) === ACTION_TYPES.brightness) {
     return {
-      type: "brightness",
+      type: ACTION_TYPES.brightness,
       operation: normalizeBrightnessOperation(rule.brightnessOperation),
       amount: normalizeAmount(rule.amount)
     };
   }
 
   return {
-    type: "hotkey",
+    type: ACTION_TYPES.hotkey,
     keys: parseKeys(rule.keysText)
   };
 }

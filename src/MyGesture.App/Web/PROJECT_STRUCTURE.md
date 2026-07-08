@@ -133,7 +133,7 @@ src\composables
 src\constants
 ```
 
-- `gestureEditorOptions.js`：手势编辑器使用的鼠标按键符号、方向符号、动作操作选项和边缘位置选项。
+- `gestureEditorOptions.js`：手势编辑器使用的契约常量和 UI 选项，包括 scope、鼠标按键、动作类型、操作名、边缘触发、关闭行为、WebView 消息类型、方向符号和选项 label。
 - `gestureEditorDefaults.js`：浏览器预览默认规则、默认应用、默认 UI 设置和默认边缘操作模板。
 
 ## Utils

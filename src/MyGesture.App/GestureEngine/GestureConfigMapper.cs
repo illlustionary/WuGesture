@@ -21,7 +21,9 @@ public static class GestureConfigMapper
             Rules = rules.Select(rule => new GestureRuleConfig
             {
                 Scope = NormalizeScope(rule.Scope),
-                MouseButton = rule.MouseButton == GestureMouseButton.Middle ? "middle" : "right",
+                MouseButton = rule.MouseButton == GestureMouseButton.Middle
+                    ? GestureConfigContract.MouseButtons.Middle
+                    : GestureConfigContract.MouseButtons.Right,
                 ActionName = rule.ActionName,
                 Pattern = rule.Pattern.Select(direction => direction.ToString()).ToList(),
                 Action = ToConfigAction(rule.Action)
@@ -64,26 +66,26 @@ public static class GestureConfigMapper
     public static GestureAction? ToAction(GestureActionConfig config)
     {
         var actionType = config.Type.Trim();
-        if (string.Equals(actionType, "hotkey", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(actionType, GestureConfigContract.ActionTypes.Hotkey, StringComparison.OrdinalIgnoreCase))
         {
             return ToHotkeyAction(config);
         }
 
-        if (string.Equals(actionType, "window", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(actionType, GestureConfigContract.ActionTypes.Window, StringComparison.OrdinalIgnoreCase))
         {
             return TryParseWindowOperation(config.Operation, out var operation)
                 ? new WindowControlAction(operation)
                 : null;
         }
 
-        if (string.Equals(actionType, "volume", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(actionType, GestureConfigContract.ActionTypes.Volume, StringComparison.OrdinalIgnoreCase))
         {
             return TryParseVolumeOperation(config.Operation, out var operation)
                 ? new VolumeControlAction(operation, NormalizeAmount(config.Amount))
                 : null;
         }
 
-        if (string.Equals(actionType, "brightness", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(actionType, GestureConfigContract.ActionTypes.Brightness, StringComparison.OrdinalIgnoreCase))
         {
             return TryParseBrightnessOperation(config.Operation, out var operation)
                 ? new BrightnessControlAction(operation, NormalizeAmount(config.Amount))
@@ -99,23 +101,23 @@ public static class GestureConfigMapper
         {
             HotkeyAction hotkey => new GestureActionConfig
             {
-                Type = "hotkey",
+                Type = GestureConfigContract.ActionTypes.Hotkey,
                 Keys = hotkey.Keys.Select(ToConfigKeyName).ToList()
             },
             WindowControlAction window => new GestureActionConfig
             {
-                Type = "window",
+                Type = GestureConfigContract.ActionTypes.Window,
                 Operation = ToConfigOperationName(window.Operation)
             },
             VolumeControlAction volume => new GestureActionConfig
             {
-                Type = "volume",
+                Type = GestureConfigContract.ActionTypes.Volume,
                 Operation = ToConfigOperationName(volume.Operation),
                 Amount = NormalizeAmount(volume.Amount)
             },
             BrightnessControlAction brightness => new GestureActionConfig
             {
-                Type = "brightness",
+                Type = GestureConfigContract.ActionTypes.Brightness,
                 Operation = ToConfigOperationName(brightness.Operation),
                 Amount = NormalizeAmount(brightness.Amount)
             },
@@ -145,20 +147,20 @@ public static class GestureConfigMapper
         {
             HotkeyAction => string.Join(" + ", config.Keys),
             WindowControlAction window => ToConfigOperationName(window.Operation),
-            VolumeControlAction volume => $"volume-{ToConfigOperationName(volume.Operation)}",
-            BrightnessControlAction brightness => $"brightness-{ToConfigOperationName(brightness.Operation)}",
+            VolumeControlAction volume => $"{GestureConfigContract.ActionTypes.Volume}-{ToConfigOperationName(volume.Operation)}",
+            BrightnessControlAction brightness => $"{GestureConfigContract.ActionTypes.Brightness}-{ToConfigOperationName(brightness.Operation)}",
             _ => ""
         };
     }
 
     private static string NormalizeScope(string scope)
     {
-        return string.IsNullOrWhiteSpace(scope) ? "global" : scope.Trim();
+        return string.IsNullOrWhiteSpace(scope) ? GestureConfigContract.Scopes.Global : scope.Trim();
     }
 
     private static GestureMouseButton ParseMouseButton(string? mouseButton)
     {
-        return string.Equals(mouseButton, "middle", StringComparison.OrdinalIgnoreCase)
+        return string.Equals(mouseButton, GestureConfigContract.MouseButtons.Middle, StringComparison.OrdinalIgnoreCase)
             ? GestureMouseButton.Middle
             : GestureMouseButton.Right;
     }
@@ -216,13 +218,13 @@ public static class GestureConfigMapper
             return true;
         }
 
-        if (normalized.Equals("minimize", StringComparison.OrdinalIgnoreCase))
+        if (normalized.Equals(GestureConfigContract.Operations.Minimize, StringComparison.OrdinalIgnoreCase))
         {
             operation = WindowControlOperation.Minimize;
             return true;
         }
 
-        if (normalized.Equals("close", StringComparison.OrdinalIgnoreCase))
+        if (normalized.Equals(GestureConfigContract.Operations.Close, StringComparison.OrdinalIgnoreCase))
         {
             operation = WindowControlOperation.Close;
             return true;
@@ -236,7 +238,7 @@ public static class GestureConfigMapper
         operation = VolumeControlOperation.Increase;
         var normalized = value.Trim().Replace("-", "", StringComparison.Ordinal).Replace("_", "", StringComparison.Ordinal);
 
-        if (normalized.Equals("increase", StringComparison.OrdinalIgnoreCase) ||
+        if (normalized.Equals(GestureConfigContract.Operations.Increase, StringComparison.OrdinalIgnoreCase) ||
             normalized.Equals("up", StringComparison.OrdinalIgnoreCase) ||
             normalized.Equals("plus", StringComparison.OrdinalIgnoreCase))
         {
@@ -244,7 +246,7 @@ public static class GestureConfigMapper
             return true;
         }
 
-        if (normalized.Equals("decrease", StringComparison.OrdinalIgnoreCase) ||
+        if (normalized.Equals(GestureConfigContract.Operations.Decrease, StringComparison.OrdinalIgnoreCase) ||
             normalized.Equals("down", StringComparison.OrdinalIgnoreCase) ||
             normalized.Equals("minus", StringComparison.OrdinalIgnoreCase))
         {
@@ -252,7 +254,7 @@ public static class GestureConfigMapper
             return true;
         }
 
-        if (normalized.Equals("mute", StringComparison.OrdinalIgnoreCase))
+        if (normalized.Equals(GestureConfigContract.Operations.Mute, StringComparison.OrdinalIgnoreCase))
         {
             operation = VolumeControlOperation.Mute;
             return true;
@@ -266,7 +268,7 @@ public static class GestureConfigMapper
         operation = BrightnessControlOperation.Increase;
         var normalized = value.Trim().Replace("-", "", StringComparison.Ordinal).Replace("_", "", StringComparison.Ordinal);
 
-        if (normalized.Equals("increase", StringComparison.OrdinalIgnoreCase) ||
+        if (normalized.Equals(GestureConfigContract.Operations.Increase, StringComparison.OrdinalIgnoreCase) ||
             normalized.Equals("up", StringComparison.OrdinalIgnoreCase) ||
             normalized.Equals("plus", StringComparison.OrdinalIgnoreCase))
         {
@@ -274,7 +276,7 @@ public static class GestureConfigMapper
             return true;
         }
 
-        if (normalized.Equals("decrease", StringComparison.OrdinalIgnoreCase) ||
+        if (normalized.Equals(GestureConfigContract.Operations.Decrease, StringComparison.OrdinalIgnoreCase) ||
             normalized.Equals("down", StringComparison.OrdinalIgnoreCase) ||
             normalized.Equals("minus", StringComparison.OrdinalIgnoreCase))
         {
@@ -289,11 +291,11 @@ public static class GestureConfigMapper
     {
         return operation switch
         {
-            WindowControlOperation.ToggleTopMost => "toggle-topmost",
-            WindowControlOperation.ToggleMaximize => "toggle-maximize",
-            WindowControlOperation.Minimize => "minimize",
-            WindowControlOperation.Close => "close",
-            _ => "toggle-maximize"
+            WindowControlOperation.ToggleTopMost => GestureConfigContract.Operations.ToggleTopMost,
+            WindowControlOperation.ToggleMaximize => GestureConfigContract.Operations.ToggleMaximize,
+            WindowControlOperation.Minimize => GestureConfigContract.Operations.Minimize,
+            WindowControlOperation.Close => GestureConfigContract.Operations.Close,
+            _ => GestureConfigContract.Operations.ToggleMaximize
         };
     }
 
@@ -301,10 +303,10 @@ public static class GestureConfigMapper
     {
         return operation switch
         {
-            VolumeControlOperation.Increase => "increase",
-            VolumeControlOperation.Decrease => "decrease",
-            VolumeControlOperation.Mute => "mute",
-            _ => "increase"
+            VolumeControlOperation.Increase => GestureConfigContract.Operations.Increase,
+            VolumeControlOperation.Decrease => GestureConfigContract.Operations.Decrease,
+            VolumeControlOperation.Mute => GestureConfigContract.Operations.Mute,
+            _ => GestureConfigContract.Operations.Increase
         };
     }
 
@@ -312,9 +314,9 @@ public static class GestureConfigMapper
     {
         return operation switch
         {
-            BrightnessControlOperation.Increase => "increase",
-            BrightnessControlOperation.Decrease => "decrease",
-            _ => "increase"
+            BrightnessControlOperation.Increase => GestureConfigContract.Operations.Increase,
+            BrightnessControlOperation.Decrease => GestureConfigContract.Operations.Decrease,
+            _ => GestureConfigContract.Operations.Increase
         };
     }
 

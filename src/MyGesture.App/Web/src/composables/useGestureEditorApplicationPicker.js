@@ -1,3 +1,8 @@
+import {
+  SCOPE_KINDS,
+  WEBVIEW_MESSAGE_TYPES
+} from "../constants/gestureEditorOptions";
+
 export function useGestureEditorApplicationPicker({
   state,
   addExcludedApplication,
@@ -13,9 +18,9 @@ export function useGestureEditorApplicationPicker({
 }) {
   const pendingRequests = new Map();
 
-  function openApplicationPicker(categoryName = "", scopeKind = "category") {
+  function openApplicationPicker(categoryName = "", scopeKind = SCOPE_KINDS.category) {
     state.applicationPickerCategory = String(categoryName ?? "").trim();
-    state.applicationPickerScopeKind = scopeKind === "app" ? "app" : "category";
+    state.applicationPickerScopeKind = scopeKind === SCOPE_KINDS.app ? SCOPE_KINDS.app : SCOPE_KINDS.category;
     state.applicationPickerTarget = "scope";
     state.applicationPickerOpen = true;
   }
@@ -32,11 +37,11 @@ export function useGestureEditorApplicationPicker({
   }
 
   function selectApplication(categoryName = "") {
-    requestApplication("select-application", categoryName);
+    requestApplication(WEBVIEW_MESSAGE_TYPES.selectApplication, categoryName);
   }
 
   function pickApplicationWindow(categoryName = "") {
-    requestApplication("pick-application-window", categoryName);
+    requestApplication(WEBVIEW_MESSAGE_TYPES.pickApplicationWindow, categoryName);
   }
 
   function requestApplication(type, categoryName) {
@@ -72,18 +77,19 @@ export function useGestureEditorApplicationPicker({
     application.displayName = String(message.displayName ?? application.displayName ?? name).trim();
     application.path = String(message.path ?? "").trim();
     const selectedCategory = String(message.category ?? "").trim();
-    if (selectedCategory || requestContext?.scopeKind !== "app") {
+    if (selectedCategory || requestContext?.scopeKind !== SCOPE_KINDS.app) {
       application.category = selectedCategory;
     }
     application.icon = String(message.icon ?? application.icon ?? "").trim();
 
-    if (requestContext?.scopeKind === "app" && !getScopeItems("app").some((item) => item.name === application.name)) {
-      state.rules.push(createRule("app", application.name));
+    if (requestContext?.scopeKind === SCOPE_KINDS.app &&
+        !getScopeItems(SCOPE_KINDS.app).some((item) => item.name === application.name)) {
+      state.rules.push(createRule(SCOPE_KINDS.app, application.name));
     }
 
-    setSelectedName("app", application.name);
+    setSelectedName(SCOPE_KINDS.app, application.name);
     if (application.category) {
-      setSelectedName("category", application.category);
+      setSelectedName(SCOPE_KINDS.category, application.category);
     }
 
     notifications.show("已添加程序。", "success");

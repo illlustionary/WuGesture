@@ -1,9 +1,12 @@
 import { computed, proxyRefs, reactive, ref } from "vue";
 import { useToast } from "vue-toastification";
 import {
+  ACTION_TYPES,
   BRIGHTNESS_OPERATIONS,
   EDGE_LOCATIONS,
+  SCOPE_KINDS,
   VOLUME_OPERATIONS,
+  WEBVIEW_MESSAGE_TYPES,
   WINDOW_OPERATIONS
 } from "../constants/gestureEditorOptions";
 import {
@@ -78,7 +81,7 @@ const state = reactive({
   gestureEditorOpen: false,
   gestureEditorMode: "add",
   gestureEditorRuleId: "",
-  gestureEditorScopeKind: "global",
+  gestureEditorScopeKind: SCOPE_KINDS.global,
   gestureEditorScopeName: "",
   gestureDraft: createEmptyGestureDraft(),
   gestureRecognitionMessage: "",
@@ -88,7 +91,7 @@ const state = reactive({
   webDavTestedSignature: ""
 });
 
-const activeScope = ref("global");
+const activeScope = ref(SCOPE_KINDS.global);
 const initialized = ref(false);
 let autoSaveTimer = 0;
 let pendingAutoSaveOptions = {};
@@ -110,9 +113,9 @@ export function useGestureEditorStore() {
     toast = useToast();
   }
 
-  const globalRules = computed(() => getRulesForScope("global"));
-  const categoryRules = computed(() => getRulesByKind("category"));
-  const appRules = computed(() => getRulesByKind("app"));
+  const globalRules = computed(() => getRulesForScope(SCOPE_KINDS.global));
+  const categoryRules = computed(() => getRulesByKind(SCOPE_KINDS.category));
+  const appRules = computed(() => getRulesByKind(SCOPE_KINDS.app));
   const categoryItems = computed(() => collectCategoryItems());
   const appItems = computed(() => collectAppItems());
 
@@ -204,17 +207,17 @@ function initialize() {
   webView.addMessageListener((event) => {
     handleMessage(event.data);
   });
-  webView.postSilent("get-status");
+  webView.postSilent(WEBVIEW_MESSAGE_TYPES.getStatus);
 }
 
 function handleMessage(message) {
-  if (message.type === "status") {
+  if (message.type === WEBVIEW_MESSAGE_TYPES.status) {
     state.statusText = message.status === "running" ? "运行中" : message.status;
     state.statusState = message.status === "running" ? "running" : "idle";
     return;
   }
 
-  if (message.type === "rules") {
+  if (message.type === WEBVIEW_MESSAGE_TYPES.rules) {
     state.configPath = message.configPath;
     replaceConfig(
       message.rules ?? [],
@@ -226,7 +229,7 @@ function handleMessage(message) {
     return;
   }
 
-  if (message.type === "config-result") {
+  if (message.type === WEBVIEW_MESSAGE_TYPES.configResult) {
     const notify = !suppressNextConfigResultToast || !message.success;
     suppressNextConfigResultToast = false;
     if (message.success) {
@@ -240,22 +243,22 @@ function handleMessage(message) {
     return;
   }
 
-  if (message.type === "webdav-result") {
+  if (message.type === WEBVIEW_MESSAGE_TYPES.webDavResult) {
     handleWebDavResult(message);
     return;
   }
 
-  if (message.type === "application-selected") {
+  if (message.type === WEBVIEW_MESSAGE_TYPES.applicationSelected) {
     addSelectedApplication(message);
     return;
   }
 
-  if (message.type === "gesture-recorded") {
+  if (message.type === WEBVIEW_MESSAGE_TYPES.gestureRecorded) {
     applyRecordedGesture(message);
     return;
   }
 
-  if (message.type === "hotkey-recorded") {
+  if (message.type === WEBVIEW_MESSAGE_TYPES.hotkeyRecorded) {
     applyRecordedHotkey(message);
   }
 }
@@ -268,8 +271,8 @@ function replaceConfig(rules, applications, uiSettings = DEFAULT_UI_SETTINGS, ed
   }
   state.uiSettings = normalizeUiSettings(uiSettings);
   setGesturePaused(state.uiSettings.appBehavior.gesturePaused);
-  ensureSelection("category");
-  ensureSelection("app");
+  ensureSelection(SCOPE_KINDS.category);
+  ensureSelection(SCOPE_KINDS.app);
 }
 
 let scopeActions;
@@ -284,8 +287,8 @@ const applicationActions = useGestureApplications({
 scopeActions = useGestureScopes({
   state,
   activeScope,
-  collectAppItems: () => collectAppItemsFromState(scopeActions.getRulesByKind("app"), state.applications),
-  collectCategoryItems: () => collectCategoryItemsFromState(scopeActions.getRulesByKind("category"), state.applications),
+  collectAppItems: () => collectAppItemsFromState(scopeActions.getRulesByKind(SCOPE_KINDS.app), state.applications),
+  collectCategoryItems: () => collectCategoryItemsFromState(scopeActions.getRulesByKind(SCOPE_KINDS.category), state.applications),
   createRule,
   notifications,
   scheduleSaveRules
@@ -329,22 +332,22 @@ const {
   removeAppFromCategory
 } = categoryApplicationActions;
 
-const collectCategoryItems = () => getScopeItems("category");
-const collectAppItems = () => getScopeItems("app");
+const collectCategoryItems = () => getScopeItems(SCOPE_KINDS.category);
+const collectAppItems = () => getScopeItems(SCOPE_KINDS.app);
 
 function addRule(kind = activeScope.value, name = getSelectedName(kind)) {
   openAddRule(kind, name);
 }
 
 function openAddRule(kind = activeScope.value, name = getSelectedName(kind)) {
-  if (kind === "global") {
-    openGestureEditor("add", null, "global", "");
+  if (kind === SCOPE_KINDS.global) {
+    openGestureEditor("add", null, SCOPE_KINDS.global, "");
     return;
   }
 
   const scopeName = String(name || getFirstScopeName(kind)).trim();
   if (!scopeName) {
-    setMessage(kind === "category" ? "先新增或选择一个分类。" : "先新增或选择一个程序。", "error");
+    setMessage(kind === SCOPE_KINDS.category ? "先新增或选择一个分类。" : "先新增或选择一个程序。", "error");
     return;
   }
 
@@ -391,14 +394,14 @@ function commitGestureEditor(closeAfterSave) {
     return false;
   }
 
-  if (actionType === "hotkey" && parseKeys(draft.keysText).length === 0) {
+  if (actionType === ACTION_TYPES.hotkey && parseKeys(draft.keysText).length === 0) {
     if (closeAfterSave) {
       state.gestureRecognitionMessage = "请先录入快捷键。";
     }
     return false;
   }
 
-  if (actionType === "window" && !normalizeWindowOperation(draft.windowOperation)) {
+  if (actionType === ACTION_TYPES.window && !normalizeWindowOperation(draft.windowOperation)) {
     if (closeAfterSave) {
       state.gestureRecognitionMessage = "请选择窗口控制操作。";
     }
@@ -455,8 +458,8 @@ function commitGestureEditor(closeAfterSave) {
 
 function removeRule(id) {
   state.rules = state.rules.filter((rule) => rule.id !== id);
-  ensureSelection("category");
-  ensureSelection("app");
+  ensureSelection(SCOPE_KINDS.category);
+  ensureSelection(SCOPE_KINDS.app);
   scheduleSaveRules();
 }
 
@@ -483,7 +486,7 @@ const applicationPicker = useGestureEditorApplicationPicker({
   webView
 });
 
-function openApplicationPicker(categoryName = "", scopeKind = "category") {
+function openApplicationPicker(categoryName = "", scopeKind = SCOPE_KINDS.category) {
   applicationPicker.openApplicationPicker(categoryName, scopeKind);
 }
 
@@ -578,7 +581,7 @@ function saveRules(options = {}) {
 
   postWebMessage(
     {
-      type: "save-rules",
+      type: WEBVIEW_MESSAGE_TYPES.saveRules,
       ...payload
     },
     { notifyPreview: options.notifyPreview !== false }
@@ -615,12 +618,12 @@ function scheduleSaveRules(options = {}) {
 
 function reloadRules() {
   preserveLocalEdgeActions = false;
-  postWebMessage({ type: "reload-rules" });
+  postWebMessage({ type: WEBVIEW_MESSAGE_TYPES.reloadRules });
 }
 
 function resetRules() {
   preserveLocalEdgeActions = false;
-  postWebMessage({ type: "reset-rules" });
+  postWebMessage({ type: WEBVIEW_MESSAGE_TYPES.resetRules });
 }
 
 function getUiSettingsSnapshot() {
@@ -669,7 +672,7 @@ function testWebDavConnection() {
   state.webDavTestedSignature = "";
   pendingWebDavTestSignature = signature;
   postWebMessage({
-    type: "webdav-test",
+    type: WEBVIEW_MESSAGE_TYPES.webDavTest,
     ...payload
   });
 }
@@ -687,7 +690,7 @@ function saveConfigToWebDav() {
   }
 
   postWebMessage({
-    type: "webdav-save",
+    type: WEBVIEW_MESSAGE_TYPES.webDavSave,
     ...payload
   });
 }
@@ -700,7 +703,7 @@ function restoreConfigFromWebDav() {
   }
 
   postWebMessage({
-    type: "webdav-restore",
+    type: WEBVIEW_MESSAGE_TYPES.webDavRestore,
     ...payload
   });
 }
@@ -717,7 +720,7 @@ function updateEdgeAction(action, patch = {}, options = {}) {
 }
 
 function startRecording(target) {
-  if (normalizeActionType(target?.actionType) !== "hotkey") {
+  if (normalizeActionType(target?.actionType) !== ACTION_TYPES.hotkey) {
     setMessage("只有快捷键命令需要录入快捷键。", "error");
     return;
   }
@@ -733,7 +736,7 @@ function startRecording(target) {
   state.recordingHotkeyTarget = target;
   state.recordingHotkeyRequestId = requestId;
   postWebMessageSilently({
-    type: "start-hotkey-recording",
+    type: WEBVIEW_MESSAGE_TYPES.startHotkeyRecording,
     requestId
   });
   setMessage("正在录制快捷键，松开所有按键后完成。");
@@ -757,7 +760,7 @@ function startGestureRecording() {
   state.gestureDraft.patternText = "";
   state.gestureRecognitionMessage = "录制中，再点一次停止。按住右键或中键绘制手势。";
   webView.postSilent({
-    type: "start-gesture-recording",
+    type: WEBVIEW_MESSAGE_TYPES.startGestureRecording,
     requestId
   });
 }
@@ -769,7 +772,7 @@ function stopGestureRecording() {
 
   state.gestureRecordingActive = false;
   state.gestureRecordingRequestId = "";
-  postWebMessageSilently({ type: "stop-gesture-recording" });
+  postWebMessageSilently({ type: WEBVIEW_MESSAGE_TYPES.stopGestureRecording });
 }
 
 function stopRecording() {
@@ -777,7 +780,7 @@ function stopRecording() {
     return;
   }
 
-  postWebMessageSilently({ type: "stop-hotkey-recording" });
+  postWebMessageSilently({ type: WEBVIEW_MESSAGE_TYPES.stopHotkeyRecording });
   state.recordingHotkeyTarget = null;
   state.recordingHotkeyRequestId = "";
 }
@@ -808,7 +811,7 @@ function postWebMessageSilently(message) {
 
 function setGesturePaused(paused) {
   postWebMessageSilently({
-    type: "set-gesture-paused",
+    type: WEBVIEW_MESSAGE_TYPES.setGesturePaused,
     paused
   });
 }
@@ -818,7 +821,7 @@ function toViewRule(rule) {
 }
 
 function createRule(scopeKind, scopeName, values = {}) {
-  if (scopeKind === "app") {
+  if (scopeKind === SCOPE_KINDS.app) {
     ensureApplication(scopeName);
   }
 
