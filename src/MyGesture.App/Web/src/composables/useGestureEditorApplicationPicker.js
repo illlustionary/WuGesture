@@ -6,9 +6,9 @@ export function useGestureEditorApplicationPicker({
   createRule,
   ensureApplication,
   getScopeItems,
-  postWebMessage,
+  notifications,
+  webView,
   scheduleSaveRules,
-  setMessage,
   setSelectedName
 }) {
   const pendingRequests = new Map();
@@ -48,7 +48,7 @@ export function useGestureEditorApplicationPicker({
       category
     });
     closeApplicationPicker();
-    postWebMessage({
+    webView.post({
       type,
       requestId,
       category
@@ -86,7 +86,7 @@ export function useGestureEditorApplicationPicker({
       setSelectedName("category", application.category);
     }
 
-    setMessage("已添加程序。", "success");
+    notifications.show("已添加程序。", "success");
     scheduleSaveRules();
   }
 

@@ -122,6 +122,8 @@ src\composables
 - `gestureEditor\useGestureScopes.js`：分类/程序 scope 选择、新增、重命名、删除和规则查询。
 - `gestureEditor\useGestureApplications.js`：应用程序视图数据读取、创建、显示名和分类字段更新。
 - `gestureEditor\useCategoryApplications.js`：分类与应用程序之间的关联和移除。
+- `gestureEditor\useGestureEditorNotifications.js`：配置状态消息和 toast 的统一通知入口。
+- `gestureEditor\useGestureEditorWebViewBridge.js`：WebView 消息发送、静默发送、可用性判断和消息监听入口。
 
 ## Constants
 

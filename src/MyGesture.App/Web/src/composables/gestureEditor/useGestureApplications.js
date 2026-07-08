@@ -1,7 +1,7 @@
 export function useGestureApplications({
   getSelectedName,
+  notifications,
   scheduleSaveRules,
-  setMessage,
   state
 }) {
   function getApplicationsForCategory(categoryName = getSelectedName("category")) {
@@ -25,7 +25,7 @@ export function useGestureApplications({
   function updateApplicationDisplayName(appName = getSelectedName("app"), displayName = "") {
     const name = String(appName ?? "").trim();
     if (!name) {
-      setMessage("请先选择一个程序。", "error");
+      notifications.show("请先选择一个程序。", "error");
       return;
     }
 
@@ -37,13 +37,13 @@ export function useGestureApplications({
   function updateApplicationCategory(appName = getSelectedName("app"), categoryName = "") {
     const name = String(appName ?? "").trim();
     if (!name) {
-      setMessage("请先选择一个程序。", "error");
+      notifications.show("请先选择一个程序。", "error");
       return;
     }
 
     const application = ensureApplication(name);
     application.category = String(categoryName ?? "").trim();
-    setMessage(application.category ? "已设置程序分类。" : "已清除程序分类。", "success");
+    notifications.show(application.category ? "已设置程序分类。" : "已清除程序分类。", "success");
     scheduleSaveRules();
   }
 
