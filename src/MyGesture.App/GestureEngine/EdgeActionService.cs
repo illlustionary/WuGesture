@@ -138,7 +138,7 @@ public sealed class EdgeActionService : IDisposable
         if (corner != EdgeLocation.None && activeCorner != corner)
         {
             activeCorner = corner;
-            ExecuteFirst("corner", corner);
+            ExecuteFirst(GestureConfigContract.EdgeTriggerTypes.Corner, corner);
         }
 
         if (frictionEdge == EdgeLocation.None)
@@ -197,7 +197,7 @@ public sealed class EdgeActionService : IDisposable
         lastFrictionDirection = direction;
         frictionCount++;
 
-        foreach (var action in GetActions("friction", edge))
+        foreach (var action in GetActions(GestureConfigContract.EdgeTriggerTypes.Friction, edge))
         {
             if (frictionCount >= Math.Max(1, action.FrictionCount))
             {
@@ -229,8 +229,10 @@ public sealed class EdgeActionService : IDisposable
             return;
         }
 
-        var wheelDirection = e.Delta > 0 ? "up" : "down";
-        var matched = GetActions("wheel", edge)
+        var wheelDirection = e.Delta > 0
+            ? GestureConfigContract.WheelDirections.Up
+            : GestureConfigContract.WheelDirections.Down;
+        var matched = GetActions(GestureConfigContract.EdgeTriggerTypes.Wheel, edge)
             .FirstOrDefault(action => string.Equals(action.WheelDirection, wheelDirection, StringComparison.OrdinalIgnoreCase));
         if (matched is null)
         {
@@ -278,7 +280,7 @@ public sealed class EdgeActionService : IDisposable
             try
             {
                 var actionName = GetActionName(config);
-                actionExecutor.Execute(new GestureRule([], "global", actionName, action), IntPtr.Zero);
+                actionExecutor.Execute(new GestureRule([], GestureConfigContract.Scopes.Global, actionName, action), IntPtr.Zero);
             }
             catch (Exception exception)
             {
@@ -446,18 +448,18 @@ public sealed class EdgeActionService : IDisposable
 
     private static EdgeActionConfig NormalizeAction(EdgeActionConfig action)
     {
-        if (string.Equals(action.TriggerType, "friction", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(action.TriggerType, GestureConfigContract.EdgeTriggerTypes.Friction, StringComparison.OrdinalIgnoreCase))
         {
             action.Location = MigrateLegacyFrictionLocation(action.Location);
             if (!IsEdgeLocation(action.Location))
             {
-                action.Location = "left";
+                action.Location = GestureConfigContract.EdgeLocations.Left;
             }
         }
-        else if (string.Equals(action.TriggerType, "wheel", StringComparison.OrdinalIgnoreCase) &&
+        else if (string.Equals(action.TriggerType, GestureConfigContract.EdgeTriggerTypes.Wheel, StringComparison.OrdinalIgnoreCase) &&
             !IsEdgeLocation(action.Location))
         {
-            action.Location = "left";
+            action.Location = GestureConfigContract.EdgeLocations.Left;
         }
 
         return action;
@@ -465,17 +467,21 @@ public sealed class EdgeActionService : IDisposable
 
     private static bool IsEdgeLocation(string location)
     {
-        return location.Trim().ToLowerInvariant() is "left" or "right" or "top" or "bottom";
+        return location.Trim().ToLowerInvariant() is
+            GestureConfigContract.EdgeLocations.Left or
+            GestureConfigContract.EdgeLocations.Right or
+            GestureConfigContract.EdgeLocations.Top or
+            GestureConfigContract.EdgeLocations.Bottom;
     }
 
     private static string MigrateLegacyFrictionLocation(string location)
     {
         return location.Trim().ToLowerInvariant() switch
         {
-            "top-left" => "left",
-            "top-right" => "top",
-            "bottom-left" => "bottom",
-            "bottom-right" => "right",
+            GestureConfigContract.EdgeLocations.TopLeft => GestureConfigContract.EdgeLocations.Left,
+            GestureConfigContract.EdgeLocations.TopRight => GestureConfigContract.EdgeLocations.Top,
+            GestureConfigContract.EdgeLocations.BottomLeft => GestureConfigContract.EdgeLocations.Bottom,
+            GestureConfigContract.EdgeLocations.BottomRight => GestureConfigContract.EdgeLocations.Right,
             _ => location
         };
     }
@@ -484,14 +490,14 @@ public sealed class EdgeActionService : IDisposable
     {
         return location switch
         {
-            EdgeLocation.TopLeft => "top-left",
-            EdgeLocation.TopRight => "top-right",
-            EdgeLocation.BottomLeft => "bottom-left",
-            EdgeLocation.BottomRight => "bottom-right",
-            EdgeLocation.Left => "left",
-            EdgeLocation.Right => "right",
-            EdgeLocation.Top => "top",
-            EdgeLocation.Bottom => "bottom",
+            EdgeLocation.TopLeft => GestureConfigContract.EdgeLocations.TopLeft,
+            EdgeLocation.TopRight => GestureConfigContract.EdgeLocations.TopRight,
+            EdgeLocation.BottomLeft => GestureConfigContract.EdgeLocations.BottomLeft,
+            EdgeLocation.BottomRight => GestureConfigContract.EdgeLocations.BottomRight,
+            EdgeLocation.Left => GestureConfigContract.EdgeLocations.Left,
+            EdgeLocation.Right => GestureConfigContract.EdgeLocations.Right,
+            EdgeLocation.Top => GestureConfigContract.EdgeLocations.Top,
+            EdgeLocation.Bottom => GestureConfigContract.EdgeLocations.Bottom,
             _ => ""
         };
     }
@@ -500,26 +506,26 @@ public sealed class EdgeActionService : IDisposable
     {
         var triggerLabel = (config.TriggerType ?? "").Trim().ToLowerInvariant() switch
         {
-            "corner" => "触发角",
-            "friction" => "摩擦边",
-            "wheel" => "边缘滚动",
+            GestureConfigContract.EdgeTriggerTypes.Corner => "触发角",
+            GestureConfigContract.EdgeTriggerTypes.Friction => "摩擦边",
+            GestureConfigContract.EdgeTriggerTypes.Wheel => "边缘滚动",
             _ => "边缘操作"
         };
         var locationLabel = (config.Location ?? "").Trim().ToLowerInvariant() switch
         {
-            "top-left" => "左上角",
-            "top-right" => "右上角",
-            "bottom-left" => "左下角",
-            "bottom-right" => "右下角",
-            "left" => "左边",
-            "right" => "右边",
-            "top" => "上边",
-            "bottom" => "下边",
+            GestureConfigContract.EdgeLocations.TopLeft => "左上角",
+            GestureConfigContract.EdgeLocations.TopRight => "右上角",
+            GestureConfigContract.EdgeLocations.BottomLeft => "左下角",
+            GestureConfigContract.EdgeLocations.BottomRight => "右下角",
+            GestureConfigContract.EdgeLocations.Left => "左边",
+            GestureConfigContract.EdgeLocations.Right => "右边",
+            GestureConfigContract.EdgeLocations.Top => "上边",
+            GestureConfigContract.EdgeLocations.Bottom => "下边",
             _ => ""
         };
-        var wheelLabel = string.Equals(config.WheelDirection, "down", StringComparison.OrdinalIgnoreCase)
+        var wheelLabel = string.Equals(config.WheelDirection, GestureConfigContract.WheelDirections.Down, StringComparison.OrdinalIgnoreCase)
             ? "滚轮下"
-            : string.Equals(config.WheelDirection, "up", StringComparison.OrdinalIgnoreCase)
+            : string.Equals(config.WheelDirection, GestureConfigContract.WheelDirections.Up, StringComparison.OrdinalIgnoreCase)
                 ? "滚轮上"
                 : "";
 

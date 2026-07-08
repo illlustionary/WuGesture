@@ -1,7 +1,8 @@
 import { ref } from 'vue'
+import { SCOPE_KINDS } from '../../../constants/gestureEditorOptions'
 
 export function useAppPage(editor) {
-  const scopeKind = 'app'
+  const scopeKind = SCOPE_KINDS.app
   editor.setActiveScope(scopeKind)
 
   const appRenameDialogOpen = ref(false)

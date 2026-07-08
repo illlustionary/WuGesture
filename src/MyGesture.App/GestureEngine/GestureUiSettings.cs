@@ -19,7 +19,7 @@ public sealed class AppBehaviorUiSettings
 
     public bool RunAsAdministrator { get; set; }
 
-    public string CloseButtonBehavior { get; set; } = "minimize-to-tray";
+    public string CloseButtonBehavior { get; set; } = GestureConfigContract.CloseButtonBehaviors.MinimizeToTray;
 
     public bool GesturePaused { get; set; }
 

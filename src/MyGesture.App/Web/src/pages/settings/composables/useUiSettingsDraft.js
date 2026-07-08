@@ -1,4 +1,5 @@
 import { computed, onBeforeUnmount, reactive, watch } from 'vue'
+import { CLOSE_BUTTON_BEHAVIORS } from '../../../constants/gestureEditorOptions'
 
 export function useUiSettingsDraft(editor) {
   const draft = reactive(createDraft(editor.getUiSettingsSnapshot()))
@@ -178,9 +179,9 @@ function createDraft(settings) {
 }
 
 function normalizeCloseButtonBehavior(value) {
-  return ['minimize-to-tray', 'minimize-to-taskbar', 'exit'].includes(value)
+  return Object.values(CLOSE_BUTTON_BEHAVIORS).includes(value)
     ? value
-    : 'minimize-to-tray'
+    : CLOSE_BUTTON_BEHAVIORS.minimizeToTray
 }
 
 function normalizeExcludedApplications(applications) {

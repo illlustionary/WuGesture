@@ -1,4 +1,6 @@
 <script setup>
+import { EDGE_TRIGGER_TYPES } from '../../../constants/gestureEditorOptions'
+
 defineProps({
   action: { type: Object, required: true },
   title: { type: String, required: true },
@@ -33,7 +35,7 @@ const emit = defineEmits(['open'])
     <div class="edge-card__summary">
       <span>{{ name }}</span>
       <strong>{{ summary }}</strong>
-      <small v-if="action.triggerType === 'friction'">
+      <small v-if="action.triggerType === EDGE_TRIGGER_TYPES.friction">
         摩擦 {{ action.frictionCount }} 次
       </small>
     </div>

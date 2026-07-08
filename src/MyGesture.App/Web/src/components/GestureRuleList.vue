@@ -108,6 +108,7 @@
 <script setup>
 import IconActionButton from './IconActionButton.vue'
 import MouseIcon from '../assets/mouse.svg'
+import { ACTION_TYPES } from '../constants/gestureEditorOptions'
 const DIRECTION_LABELS = {
   Up: '↑',
   Down: '↓',
@@ -155,7 +156,7 @@ function actionKeys(rule) {
 }
 
 function isWindowAction(rule) {
-  return String(rule?.actionType ?? '').toLowerCase() === 'window'
+  return String(rule?.actionType ?? '').toLowerCase() === ACTION_TYPES.window
 }
 </script>
 

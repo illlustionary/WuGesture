@@ -1,4 +1,9 @@
 import {
+  ACTION_TYPES,
+  MOUSE_BUTTONS,
+  OPERATIONS
+} from "../constants/gestureEditorOptions";
+import {
   normalizeActionType,
   normalizeAmount,
   normalizeBrightnessOperation,
@@ -62,12 +67,12 @@ export function createEmptyGestureDraft() {
   return {
     actionName: "",
     patternText: "",
-    mouseButton: "right",
+    mouseButton: MOUSE_BUTTONS.right,
     keysText: "",
-    actionType: "hotkey",
-    windowOperation: "toggle-maximize",
-    volumeOperation: "increase",
-    brightnessOperation: "increase",
+    actionType: ACTION_TYPES.hotkey,
+    windowOperation: OPERATIONS.toggleMaximize,
+    volumeOperation: OPERATIONS.increase,
+    brightnessOperation: OPERATIONS.increase,
     amount: 5
   };
 }

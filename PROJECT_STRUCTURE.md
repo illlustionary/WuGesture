@@ -142,10 +142,12 @@ MouseHook
 配置相关文件：
 
 - `GestureConfig.cs`：JSON DTO。
+- `GestureConfigContract.cs`：配置和运行时共享的字符串契约常量，包括 scope、鼠标按键、动作类型、操作名、边缘触发类型/位置、滚轮方向和关闭按钮行为。
 - `GestureConfigStore.cs`：加载、保存、重置默认配置。
 - `GestureConfigMapper.cs`：把配置 DTO 映射为运行时 `GestureRule`。
 - `DefaultGestureConfig.cs`：完整默认初始配置，包含默认全局规则、默认 UI/应用行为设置和默认关闭的边缘操作。
 - `DefaultGestureRules.cs`：默认全局规则。
+- `WebViewMessageTypes.cs`：桌面宿主侧 WebView 入站/出站消息类型常量。
 
 当前支持的配置：
 

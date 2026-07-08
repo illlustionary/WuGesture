@@ -24,9 +24,9 @@ public sealed class GestureApplicationConfig
 
 public sealed class GestureRuleConfig
 {
-    public string Scope { get; set; } = "global";
+    public string Scope { get; set; } = GestureConfigContract.Scopes.Global;
 
-    public string MouseButton { get; set; } = "right";
+    public string MouseButton { get; set; } = GestureConfigContract.MouseButtons.Right;
 
     public List<string> Pattern { get; set; } = [];
 
@@ -37,7 +37,7 @@ public sealed class GestureRuleConfig
 
 public sealed class GestureActionConfig
 {
-    public string Type { get; set; } = "hotkey";
+    public string Type { get; set; } = GestureConfigContract.ActionTypes.Hotkey;
 
     public List<string> Keys { get; set; } = [];
 
@@ -50,9 +50,9 @@ public sealed class EdgeActionConfig
 {
     public bool Enabled { get; set; } = true;
 
-    public string TriggerType { get; set; } = "corner";
+    public string TriggerType { get; set; } = GestureConfigContract.EdgeTriggerTypes.Corner;
 
-    public string Location { get; set; } = "top-left";
+    public string Location { get; set; } = GestureConfigContract.EdgeLocations.TopLeft;
 
     public string WheelDirection { get; set; } = "";
 

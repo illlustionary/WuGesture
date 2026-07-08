@@ -1,7 +1,14 @@
 import {
+  ACTION_TYPES,
   BRIGHTNESS_OPERATIONS,
+  CLOSE_BUTTON_BEHAVIORS,
   EDGE_LOCATIONS,
+  EDGE_TRIGGER_TYPES,
+  MOUSE_BUTTONS,
+  OPERATIONS,
+  SCOPE_KINDS,
   VOLUME_OPERATIONS,
+  WHEEL_DIRECTIONS,
   WINDOW_OPERATIONS
 } from "../constants/gestureEditorOptions";
 import {
@@ -123,7 +130,7 @@ export function normalizeWebDavSettings(settings) {
 
 export function normalizeCloseButtonBehavior(value) {
   const normalized = String(value ?? "").trim();
-  return ["minimize-to-tray", "minimize-to-taskbar", "exit"].includes(normalized)
+  return Object.values(CLOSE_BUTTON_BEHAVIORS).includes(normalized)
     ? normalized
     : DEFAULT_UI_SETTINGS.appBehavior.closeButtonBehavior;
 }
@@ -161,33 +168,35 @@ export function clampFloat(value, min, max, fallback) {
 }
 
 export function normalizeMouseButton(button) {
-  return String(button ?? "").toLowerCase() === "middle" ? "middle" : "right";
+  return String(button ?? "").toLowerCase() === MOUSE_BUTTONS.middle
+    ? MOUSE_BUTTONS.middle
+    : MOUSE_BUTTONS.right;
 }
 
 export function normalizeActionType(actionType) {
   const normalized = String(actionType ?? "").toLowerCase();
-  return ["hotkey", "window", "volume", "brightness"].includes(normalized) ? normalized : "hotkey";
+  return Object.values(ACTION_TYPES).includes(normalized) ? normalized : ACTION_TYPES.hotkey;
 }
 
 export function normalizeWindowOperation(operation) {
   const normalized = String(operation ?? "").trim();
   return WINDOW_OPERATIONS.some((item) => item.value === normalized)
     ? normalized
-    : "toggle-maximize";
+    : OPERATIONS.toggleMaximize;
 }
 
 export function normalizeVolumeOperation(operation) {
   const normalized = String(operation ?? "").trim();
   return VOLUME_OPERATIONS.some((item) => item.value === normalized)
     ? normalized
-    : "increase";
+    : OPERATIONS.increase;
 }
 
 export function normalizeBrightnessOperation(operation) {
   const normalized = String(operation ?? "").trim();
   return BRIGHTNESS_OPERATIONS.some((item) => item.value === normalized)
     ? normalized
-    : "increase";
+    : OPERATIONS.increase;
 }
 
 export function normalizeAmount(value) {
@@ -227,7 +236,7 @@ export function normalizeEdgeAction(action) {
     amount: normalizeAmount(action?.action?.amount ?? action?.amount)
   };
   normalized.location = normalizeEdgeLocation(action?.location, normalized.triggerType);
-  normalized.wheelDirection = normalized.triggerType === "wheel" ? normalizeWheelDirection(action?.wheelDirection) : "";
+  normalized.wheelDirection = normalized.triggerType === EDGE_TRIGGER_TYPES.wheel ? normalizeWheelDirection(action?.wheelDirection) : "";
   return normalized;
 }
 
@@ -237,13 +246,13 @@ export function normalizeEdgeActionInPlace(action) {
 
 export function normalizeEdgeTriggerType(triggerType) {
   const normalized = String(triggerType ?? "").toLowerCase();
-  return ["corner", "friction", "wheel"].includes(normalized) ? normalized : "corner";
+  return Object.values(EDGE_TRIGGER_TYPES).includes(normalized) ? normalized : EDGE_TRIGGER_TYPES.corner;
 }
 
 export function normalizeEdgeLocation(location, triggerType) {
-  const locations = triggerType === "corner" ? EDGE_LOCATIONS.corner : EDGE_LOCATIONS.edge;
+  const locations = triggerType === EDGE_TRIGGER_TYPES.corner ? EDGE_LOCATIONS.corner : EDGE_LOCATIONS.edge;
   const normalized = String(location ?? "").trim();
-  if (triggerType === "friction") {
+  if (triggerType === EDGE_TRIGGER_TYPES.friction) {
     const migratedLocation = migrateLegacyFrictionLocation(normalized);
     if (migratedLocation) {
       return migratedLocation;
@@ -265,7 +274,9 @@ export function migrateLegacyFrictionLocation(location) {
 }
 
 export function normalizeWheelDirection(direction) {
-  return String(direction ?? "").toLowerCase() === "down" ? "down" : "up";
+  return String(direction ?? "").toLowerCase() === WHEEL_DIRECTIONS.down
+    ? WHEEL_DIRECTIONS.down
+    : WHEEL_DIRECTIONS.up;
 }
 
 export function getEdgeActionKey(action) {
@@ -274,31 +285,31 @@ export function getEdgeActionKey(action) {
 
 export function parseScope(scope) {
   const normalized = String(scope ?? "").trim();
-  if (normalized.length === 0 || normalized.toLowerCase() === "global") {
-    return { kind: "global", name: "" };
+  if (normalized.length === 0 || normalized.toLowerCase() === SCOPE_KINDS.global) {
+    return { kind: SCOPE_KINDS.global, name: "" };
   }
 
   const colonIndex = normalized.indexOf(":");
   if (colonIndex === -1) {
-    return { kind: "global", name: "" };
+    return { kind: SCOPE_KINDS.global, name: "" };
   }
 
   const kind = normalized.slice(0, colonIndex).trim().toLowerCase();
   const name = normalized.slice(colonIndex + 1).trim();
-  if ((kind === "category" || kind === "app") && name.length > 0) {
+  if ((kind === SCOPE_KINDS.category || kind === SCOPE_KINDS.app) && name.length > 0) {
     return { kind, name };
   }
 
-  return { kind: "global", name: "" };
+  return { kind: SCOPE_KINDS.global, name: "" };
 }
 
 export function buildScope(kind, name) {
-  if (kind === "category" || kind === "app") {
+  if (kind === SCOPE_KINDS.category || kind === SCOPE_KINDS.app) {
     const trimmed = String(name ?? "").trim();
     return trimmed ? `${kind}:${trimmed}` : "";
   }
 
-  return "global";
+  return SCOPE_KINDS.global;
 }
 
 export function parsePattern(text) {

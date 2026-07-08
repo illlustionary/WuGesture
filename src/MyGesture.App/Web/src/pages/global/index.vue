@@ -5,9 +5,10 @@ import IconActionButton from '../../components/IconActionButton.vue'
 import ScopeSidebar from '../../components/ScopeSidebar.vue'
 import RulesSection from '../../components/rules/RulesSection.vue'
 import { useGestureEditorStore } from '../../composables/gestureEditorStore'
+import { SCOPE_KINDS } from '../../constants/gestureEditorOptions'
 
 const editor = useGestureEditorStore()
-const scopeKind = 'global'
+const scopeKind = SCOPE_KINDS.global
 editor.setActiveScope(scopeKind)
 </script>
 

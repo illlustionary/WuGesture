@@ -168,14 +168,14 @@ public sealed class MainForm : Form
         if (!isExiting && e.CloseReason == CloseReason.UserClosing)
         {
             var closeButtonBehavior = GetCloseButtonBehavior();
-            if (closeButtonBehavior == "exit")
+            if (closeButtonBehavior == GestureConfigContract.CloseButtonBehaviors.Exit)
             {
                 isExiting = true;
             }
             else
             {
                 e.Cancel = true;
-                if (closeButtonBehavior == "minimize-to-taskbar")
+                if (closeButtonBehavior == GestureConfigContract.CloseButtonBehaviors.MinimizeToTaskbar)
                 {
                     MinimizeToTaskbar();
                 }
@@ -310,9 +310,11 @@ public sealed class MainForm : Form
     private string GetCloseButtonBehavior()
     {
         return loadedConfig?.Config.UiSettings.AppBehavior.CloseButtonBehavior is
-            "minimize-to-tray" or "minimize-to-taskbar" or "exit"
+            GestureConfigContract.CloseButtonBehaviors.MinimizeToTray or
+            GestureConfigContract.CloseButtonBehaviors.MinimizeToTaskbar or
+            GestureConfigContract.CloseButtonBehaviors.Exit
             ? loadedConfig.Config.UiSettings.AppBehavior.CloseButtonBehavior
-            : "minimize-to-tray";
+            : GestureConfigContract.CloseButtonBehaviors.MinimizeToTray;
     }
 
     private void ApplyAppBehaviorSettings(AppBehaviorUiSettings settings)
@@ -533,7 +535,7 @@ public sealed class MainForm : Form
 
         var payload = JsonSerializer.Serialize(new
         {
-            type = "gesture",
+            type = WebViewMessageTypes.Gesture,
             pattern = e.Pattern.Select(x => x.ToString()).ToArray(),
             action = e.ActionName
         });
@@ -557,7 +559,7 @@ public sealed class MainForm : Form
 
         var payload = JsonSerializer.Serialize(new
         {
-            type = "gesture-recorded",
+            type = WebViewMessageTypes.GestureRecorded,
             requestId = e.RequestId,
             button = e.Button.ToString().ToLowerInvariant(),
             pattern = e.Pattern.Select(x => x.ToString()).ToArray()
@@ -583,7 +585,7 @@ public sealed class MainForm : Form
         var message = e.Exception.Message;
         var payload = JsonSerializer.Serialize(new
         {
-            type = "gesture-action-failed",
+            type = WebViewMessageTypes.GestureActionFailed,
             pattern = e.Pattern.Select(x => x.ToString()).ToArray(),
             action = e.ActionName,
             error = message
@@ -607,7 +609,7 @@ public sealed class MainForm : Form
 
         var payload = JsonSerializer.Serialize(new
         {
-            type = "edge-action-failed",
+            type = WebViewMessageTypes.EdgeActionFailed,
             action = e.ActionName,
             error = e.Exception.Message
         });
@@ -652,7 +654,7 @@ public sealed class MainForm : Form
 
         var payload = JsonSerializer.Serialize(new
         {
-            type = "hotkey-recorded",
+            type = WebViewMessageTypes.HotkeyRecorded,
             requestId = e.RequestId,
             keys = e.Keys
         });
@@ -664,7 +666,7 @@ public sealed class MainForm : Form
     {
         var payload = JsonSerializer.Serialize(new
         {
-            type = "status",
+            type = WebViewMessageTypes.Status,
             status
         });
 
@@ -680,16 +682,16 @@ public sealed class MainForm : Form
 
         var payload = JsonSerializer.Serialize(new
         {
-            type = "rules",
+            type = WebViewMessageTypes.Rules,
             configPath = loadedConfig.FilePath,
             uiSettings = CreateUiSettingsPayload(loadedConfig.Config.UiSettings),
             rules = loadedConfig.Config.Rules.Select(rule => new
             {
                 scope = rule.Scope,
-                mouseButton = string.IsNullOrWhiteSpace(rule.MouseButton) ? "right" : rule.MouseButton,
+                mouseButton = string.IsNullOrWhiteSpace(rule.MouseButton) ? GestureConfigContract.MouseButtons.Right : rule.MouseButton,
                 pattern = rule.Pattern,
                 actionName = rule.ActionName,
-                actionType = string.IsNullOrWhiteSpace(rule.Action.Type) ? "hotkey" : rule.Action.Type,
+                actionType = string.IsNullOrWhiteSpace(rule.Action.Type) ? GestureConfigContract.ActionTypes.Hotkey : rule.Action.Type,
                 keys = rule.Action.Keys,
                 operation = rule.Action.Operation,
                 amount = rule.Action.Amount
@@ -703,7 +705,7 @@ public sealed class MainForm : Form
                 frictionCount = action.FrictionCount,
                 action = new
                 {
-                    type = string.IsNullOrWhiteSpace(action.Action.Type) ? "hotkey" : action.Action.Type,
+                    type = string.IsNullOrWhiteSpace(action.Action.Type) ? GestureConfigContract.ActionTypes.Hotkey : action.Action.Type,
                     keys = action.Action.Keys,
                     operation = action.Action.Operation,
                     amount = action.Action.Amount
@@ -758,7 +760,7 @@ public sealed class MainForm : Form
         var root = document.RootElement;
 
         if (root.ValueKind == JsonValueKind.String &&
-            root.GetString() == "get-status")
+            root.GetString() == WebViewMessageTypes.GetStatus)
         {
             PostStatus("running");
             PostRules();
@@ -773,43 +775,43 @@ public sealed class MainForm : Form
 
         switch (typeElement.GetString())
         {
-            case "select-application":
+            case WebViewMessageTypes.SelectApplication:
                 SelectApplication(json);
                 break;
-            case "pick-application-window":
+            case WebViewMessageTypes.PickApplicationWindow:
                 PickApplicationWindow(json);
                 break;
-            case "start-gesture-recording":
+            case WebViewMessageTypes.StartGestureRecording:
                 StartGestureRecording(json);
                 break;
-            case "stop-gesture-recording":
+            case WebViewMessageTypes.StopGestureRecording:
                 StopGestureRecording();
                 break;
-            case "set-gesture-paused":
+            case WebViewMessageTypes.SetGesturePaused:
                 SetGesturePaused(json);
                 break;
-            case "start-hotkey-recording":
+            case WebViewMessageTypes.StartHotkeyRecording:
                 StartHotkeyRecording(json);
                 break;
-            case "stop-hotkey-recording":
+            case WebViewMessageTypes.StopHotkeyRecording:
                 hotkeyRecorder.Stop();
                 break;
-            case "save-rules":
+            case WebViewMessageTypes.SaveRules:
                 SaveRules(json);
                 break;
-            case "webdav-test":
+            case WebViewMessageTypes.WebDavTest:
                 TestWebDavConnection(json);
                 break;
-            case "webdav-save":
+            case WebViewMessageTypes.WebDavSave:
                 SaveConfigToWebDav(json);
                 break;
-            case "webdav-restore":
+            case WebViewMessageTypes.WebDavRestore:
                 RestoreConfigFromWebDav(json);
                 break;
-            case "reload-rules":
+            case WebViewMessageTypes.ReloadRules:
                 ReloadRules();
                 break;
-            case "reset-rules":
+            case WebViewMessageTypes.ResetRules:
                 ResetRules();
                 break;
         }
@@ -934,7 +936,7 @@ public sealed class MainForm : Form
     {
         var payload = JsonSerializer.Serialize(new
         {
-            type = "application-selected",
+            type = WebViewMessageTypes.ApplicationSelected,
             requestId,
             name,
             displayName,
@@ -1118,7 +1120,7 @@ public sealed class MainForm : Form
     {
         var payload = JsonSerializer.Serialize(new
         {
-            type = "config-result",
+            type = WebViewMessageTypes.ConfigResult,
             success,
             message
         });
@@ -1130,7 +1132,7 @@ public sealed class MainForm : Form
     {
         var payload = JsonSerializer.Serialize(new
         {
-            type = "webdav-result",
+            type = WebViewMessageTypes.WebDavResult,
             operation,
             success,
             message

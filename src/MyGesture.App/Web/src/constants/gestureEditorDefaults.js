@@ -1,25 +1,33 @@
-import { EDGE_LOCATIONS } from "./gestureEditorOptions";
+import {
+  ACTION_TYPES,
+  CLOSE_BUTTON_BEHAVIORS,
+  EDGE_LOCATIONS,
+  EDGE_TRIGGER_TYPES,
+  OPERATIONS,
+  SCOPE_KINDS,
+  WHEEL_DIRECTIONS
+} from "./gestureEditorOptions";
 
 export const DEFAULT_RULES = [
   {
-    scope: "global",
+    scope: SCOPE_KINDS.global,
     pattern: ["Left"],
     actionName: "Back",
-    actionType: "hotkey",
+    actionType: ACTION_TYPES.hotkey,
     keys: ["Alt", "Left"]
   },
   {
-    scope: "global",
+    scope: SCOPE_KINDS.global,
     pattern: ["Right"],
     actionName: "Forward",
-    actionType: "hotkey",
+    actionType: ACTION_TYPES.hotkey,
     keys: ["Alt", "Right"]
   },
   {
-    scope: "global",
+    scope: SCOPE_KINDS.global,
     pattern: ["Down", "Right"],
     actionName: "Close Tab",
-    actionType: "hotkey",
+    actionType: ACTION_TYPES.hotkey,
     keys: ["Control", "W"]
   }
 ];
@@ -57,7 +65,7 @@ export const DEFAULT_UI_SETTINGS = {
   appBehavior: {
     launchAtStartup: false,
     runAsAdministrator: false,
-    closeButtonBehavior: "minimize-to-tray",
+    closeButtonBehavior: CLOSE_BUTTON_BEHAVIORS.minimizeToTray,
     gesturePaused: false,
     excludedApplications: []
   },
@@ -70,14 +78,14 @@ export const DEFAULT_UI_SETTINGS = {
 };
 
 export const DEFAULT_EDGE_ACTIONS = [
-  createDefaultEdgeAction("corner", "top-left"),
-  createDefaultEdgeAction("corner", "top-right"),
-  createDefaultEdgeAction("corner", "bottom-left"),
-  createDefaultEdgeAction("corner", "bottom-right"),
-  ...EDGE_LOCATIONS.edge.map((edge) => createDefaultEdgeAction("friction", edge.value)),
+  createDefaultEdgeAction(EDGE_TRIGGER_TYPES.corner, "top-left"),
+  createDefaultEdgeAction(EDGE_TRIGGER_TYPES.corner, "top-right"),
+  createDefaultEdgeAction(EDGE_TRIGGER_TYPES.corner, "bottom-left"),
+  createDefaultEdgeAction(EDGE_TRIGGER_TYPES.corner, "bottom-right"),
+  ...EDGE_LOCATIONS.edge.map((edge) => createDefaultEdgeAction(EDGE_TRIGGER_TYPES.friction, edge.value)),
   ...EDGE_LOCATIONS.edge.flatMap((edge) => [
-    createDefaultEdgeAction("wheel", edge.value, "up"),
-    createDefaultEdgeAction("wheel", edge.value, "down")
+    createDefaultEdgeAction(EDGE_TRIGGER_TYPES.wheel, edge.value, WHEEL_DIRECTIONS.up),
+    createDefaultEdgeAction(EDGE_TRIGGER_TYPES.wheel, edge.value, WHEEL_DIRECTIONS.down)
   ])
 ];
 
@@ -89,10 +97,10 @@ export function createDefaultEdgeAction(triggerType, location, wheelDirection = 
     wheelDirection,
     frictionCount: 4,
     keysText: "",
-    actionType: "hotkey",
-    windowOperation: "toggle-maximize",
-    volumeOperation: "increase",
-    brightnessOperation: "increase",
+    actionType: ACTION_TYPES.hotkey,
+    windowOperation: OPERATIONS.toggleMaximize,
+    volumeOperation: OPERATIONS.increase,
+    brightnessOperation: OPERATIONS.increase,
     amount: 5
   };
 }
