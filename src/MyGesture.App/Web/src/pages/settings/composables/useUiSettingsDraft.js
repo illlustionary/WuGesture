@@ -7,11 +7,13 @@ export function useUiSettingsDraft(editor) {
   let lastLocalPersistAt = 0
 
   const trailPreviewStyle = computed(() => ({
+    '--trail-inactive-color': draft.mouseTrail.inactiveColor,
     '--trail-inactive-stroke': hexToRgba(
       draft.mouseTrail.inactiveColor,
       draft.mouseTrail.inactiveOpacity / 100
     ),
     '--trail-inactive-width': `${draft.mouseTrail.inactiveThickness}px`,
+    '--trail-active-color': draft.mouseTrail.activeColor,
     '--trail-active-stroke': hexToRgba(
       draft.mouseTrail.activeColor,
       draft.mouseTrail.activeOpacity / 100
@@ -39,15 +41,23 @@ export function useUiSettingsDraft(editor) {
   watch(
     () => editor.state.uiSettings,
     () => {
+      const nextDraft = createDraft(editor.getUiSettingsSnapshot())
       if (
         hasPendingPersist ||
         persistTimer ||
         Date.now() - lastLocalPersistAt < 600
       ) {
+        if (
+          getExclusionSignature(draft.appBehavior.excludedApplications) !==
+          getExclusionSignature(nextDraft.appBehavior.excludedApplications)
+        ) {
+          draft.appBehavior.excludedApplications =
+            nextDraft.appBehavior.excludedApplications
+        }
         return
       }
 
-      Object.assign(draft, createDraft(editor.getUiSettingsSnapshot()))
+      Object.assign(draft, nextDraft)
     },
     { deep: true, immediate: true }
   )
@@ -152,6 +162,10 @@ function createDraft(settings) {
       runAsAdministrator: Boolean(appBehavior.runAsAdministrator ?? false),
       closeButtonBehavior: normalizeCloseButtonBehavior(
         appBehavior.closeButtonBehavior
+      ),
+      gesturePaused: Boolean(appBehavior.gesturePaused ?? false),
+      excludedApplications: normalizeExcludedApplications(
+        appBehavior.excludedApplications
       )
     },
     webDav: {
@@ -167,6 +181,57 @@ function normalizeCloseButtonBehavior(value) {
   return ['minimize-to-tray', 'minimize-to-taskbar', 'exit'].includes(value)
     ? value
     : 'minimize-to-tray'
+}
+
+function normalizeExcludedApplications(applications) {
+  const normalized = []
+  for (const application of Array.isArray(applications) ? applications : []) {
+    const exclusion = normalizeExcludedApplication(application)
+    if (!exclusion.name && !exclusion.path) {
+      continue
+    }
+
+    if (!normalized.some(item => isSameApplicationIdentity(item, exclusion))) {
+      normalized.push(exclusion)
+    }
+  }
+
+  return normalized
+}
+
+function normalizeExcludedApplication(application) {
+  application = normalizeObjectKeys(application)
+  const name = String(application.name ?? '').trim()
+  const path = String(application.path ?? '').trim()
+  return {
+    name,
+    displayName: String(application.displayName ?? name).trim() || name || path,
+    path,
+    disableEdgeActions: Boolean(application.disableEdgeActions ?? false)
+  }
+}
+
+function isSameApplicationIdentity(left, right) {
+  const leftPath = String(left.path ?? '').trim().toLowerCase()
+  const rightPath = String(right.path ?? '').trim().toLowerCase()
+  if (leftPath && rightPath) {
+    return leftPath === rightPath
+  }
+
+  return (
+    String(left.name ?? '').trim().toLowerCase() ===
+    String(right.name ?? '').trim().toLowerCase()
+  )
+}
+
+function getExclusionSignature(applications) {
+  return JSON.stringify(
+    (Array.isArray(applications) ? applications : []).map(application => ({
+      name: String(application.name ?? '').trim().toLowerCase(),
+      path: String(application.path ?? '').trim().toLowerCase(),
+      disableEdgeActions: Boolean(application.disableEdgeActions)
+    }))
+  )
 }
 
 function normalizeObjectKeys(source) {

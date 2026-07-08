@@ -119,7 +119,9 @@ const DEFAULT_UI_SETTINGS = {
   appBehavior: {
     launchAtStartup: false,
     runAsAdministrator: false,
-    closeButtonBehavior: "minimize-to-tray"
+    closeButtonBehavior: "minimize-to-tray",
+    gesturePaused: false,
+    excludedApplications: []
   },
   webDav: {
     address: "",
@@ -145,6 +147,7 @@ const state = reactive({
   applicationPickerOpen: false,
   applicationPickerCategory: "",
   applicationPickerScopeKind: "",
+  applicationPickerTarget: "scope",
   recordingHotkeyTarget: null,
   recordingHotkeyRequestId: "",
   gestureEditorOpen: false,
@@ -219,12 +222,15 @@ export function useGestureEditorStore() {
     deleteSelectedScope,
     openApplicationPicker,
     closeApplicationPicker,
+    openExcludedApplicationPicker,
     selectApplication,
     pickApplicationWindow,
     saveRules,
     reloadRules,
     resetRules,
     updateEdgeAction,
+    updateExcludedApplication,
+    removeExcludedApplication,
     startGestureRecording,
     stopGestureRecording,
     startRecording,
@@ -329,6 +335,7 @@ function replaceConfig(rules, applications, uiSettings = DEFAULT_UI_SETTINGS, ed
     state.edgeActions = normalizeEdgeActions(edgeActions);
   }
   state.uiSettings = normalizeUiSettings(uiSettings);
+  setGesturePaused(state.uiSettings.appBehavior.gesturePaused);
   ensureSelection("category");
   ensureSelection("app");
 }
@@ -670,6 +677,14 @@ function removeAppFromCategory(appName, categoryName = getSelectedName("category
 function openApplicationPicker(categoryName = "", scopeKind = "category") {
   state.applicationPickerCategory = String(categoryName ?? "").trim();
   state.applicationPickerScopeKind = scopeKind === "app" ? "app" : "category";
+  state.applicationPickerTarget = "scope";
+  state.applicationPickerOpen = true;
+}
+
+function openExcludedApplicationPicker() {
+  state.applicationPickerCategory = "";
+  state.applicationPickerScopeKind = "";
+  state.applicationPickerTarget = "exclusion";
   state.applicationPickerOpen = true;
 }
 
@@ -677,12 +692,14 @@ function closeApplicationPicker() {
   state.applicationPickerOpen = false;
   state.applicationPickerCategory = "";
   state.applicationPickerScopeKind = "";
+  state.applicationPickerTarget = "scope";
 }
 
 function selectApplication(categoryName = "") {
   const category = String(categoryName || state.applicationPickerCategory || "").trim();
   const requestId = createRequestId();
   pendingApplicationPickerRequests.set(requestId, {
+    target: state.applicationPickerTarget,
     scopeKind: state.applicationPickerScopeKind,
     category
   });
@@ -698,6 +715,7 @@ function pickApplicationWindow(categoryName = "") {
   const category = String(categoryName || state.applicationPickerCategory || "").trim();
   const requestId = createRequestId();
   pendingApplicationPickerRequests.set(requestId, {
+    target: state.applicationPickerTarget,
     scopeKind: state.applicationPickerScopeKind,
     category
   });
@@ -717,6 +735,11 @@ function addSelectedApplication(message) {
 
   const requestContext = pendingApplicationPickerRequests.get(message.requestId) ?? null;
   pendingApplicationPickerRequests.delete(message.requestId);
+  if (requestContext?.target === "exclusion") {
+    addExcludedApplication(message);
+    return;
+  }
+
   const application = ensureApplication(name);
   application.displayName = String(message.displayName ?? application.displayName ?? name).trim();
   application.path = String(message.path ?? "").trim();
@@ -737,6 +760,47 @@ function addSelectedApplication(message) {
 
   setMessage("已添加程序。", "success");
   scheduleSaveRules();
+}
+
+function addExcludedApplication(message) {
+  const exclusion = normalizeExcludedApplication(message);
+  if (!exclusion.name && !exclusion.path) {
+    return;
+  }
+
+  const excludedApplications = state.uiSettings.appBehavior.excludedApplications;
+  const existing = excludedApplications.find((item) => isSameApplicationIdentity(item, exclusion));
+  if (existing) {
+    existing.name = exclusion.name || existing.name;
+    existing.displayName = exclusion.displayName || existing.displayName;
+    existing.path = exclusion.path || existing.path;
+  } else {
+    excludedApplications.push(exclusion);
+  }
+
+  saveRules({ notifyPreview: false, notifyResult: false });
+  setMessage("已添加排除项。", "success");
+}
+
+function updateExcludedApplication(application, patch = {}) {
+  if (!application) {
+    return;
+  }
+
+  Object.assign(application, patch);
+  const normalized = normalizeExcludedApplications(state.uiSettings.appBehavior.excludedApplications);
+  state.uiSettings.appBehavior.excludedApplications = normalized;
+  saveRules({ notifyPreview: false, notifyResult: false });
+}
+
+function removeExcludedApplication(index) {
+  if (index < 0 || index >= state.uiSettings.appBehavior.excludedApplications.length) {
+    return;
+  }
+
+  state.uiSettings.appBehavior.excludedApplications.splice(index, 1);
+  saveRules({ notifyPreview: false, notifyResult: false });
+  setMessage("已删除排除项。", "success");
 }
 
 function saveRules(options = {}) {
@@ -807,7 +871,12 @@ function getUiSettingsSnapshot() {
 }
 
 function saveUiSettings(nextSettings, options = {}) {
+  const previousPaused = Boolean(state.uiSettings.appBehavior.gesturePaused);
   state.uiSettings = normalizeUiSettings(nextSettings);
+  const nextPaused = Boolean(state.uiSettings.appBehavior.gesturePaused);
+  if (previousPaused !== nextPaused) {
+    setGesturePaused(nextPaused);
+  }
   saveRules({
     notifyPreview: Boolean(options.notify),
     notifyResult: Boolean(options.notify)
@@ -819,6 +888,7 @@ function saveUiSettings(nextSettings, options = {}) {
 
 function resetUiSettings() {
   state.uiSettings = createDefaultUiSettings();
+  setGesturePaused(false);
   state.webDavTestedSignature = "";
   pendingWebDavTestSignature = "";
   saveRules({ notifyPreview: false, notifyResult: false });
@@ -1457,8 +1527,48 @@ function normalizeAppBehaviorSettings(settings) {
   return {
     launchAtStartup: Boolean(settings?.launchAtStartup ?? DEFAULT_UI_SETTINGS.appBehavior.launchAtStartup),
     runAsAdministrator: Boolean(settings?.runAsAdministrator ?? DEFAULT_UI_SETTINGS.appBehavior.runAsAdministrator),
-    closeButtonBehavior: normalizeCloseButtonBehavior(settings?.closeButtonBehavior)
+    closeButtonBehavior: normalizeCloseButtonBehavior(settings?.closeButtonBehavior),
+    gesturePaused: Boolean(settings?.gesturePaused ?? DEFAULT_UI_SETTINGS.appBehavior.gesturePaused),
+    excludedApplications: normalizeExcludedApplications(settings?.excludedApplications)
   };
+}
+
+function normalizeExcludedApplications(applications) {
+  const normalized = [];
+  for (const application of Array.isArray(applications) ? applications : []) {
+    const exclusion = normalizeExcludedApplication(application);
+    if (!exclusion.name && !exclusion.path) {
+      continue;
+    }
+
+    if (!normalized.some((item) => isSameApplicationIdentity(item, exclusion))) {
+      normalized.push(exclusion);
+    }
+  }
+
+  return normalized;
+}
+
+function normalizeExcludedApplication(application) {
+  application = normalizeObjectKeys(application);
+  const name = String(application?.name ?? "").trim();
+  const path = String(application?.path ?? "").trim();
+  return {
+    name,
+    displayName: String(application?.displayName ?? name).trim() || name || path,
+    path,
+    disableEdgeActions: Boolean(application?.disableEdgeActions ?? false)
+  };
+}
+
+function isSameApplicationIdentity(left, right) {
+  const leftPath = String(left?.path ?? "").trim().toLowerCase();
+  const rightPath = String(right?.path ?? "").trim().toLowerCase();
+  if (leftPath && rightPath) {
+    return leftPath === rightPath;
+  }
+
+  return String(left?.name ?? "").trim().toLowerCase() === String(right?.name ?? "").trim().toLowerCase();
 }
 
 function normalizeWebDavSettings(settings) {

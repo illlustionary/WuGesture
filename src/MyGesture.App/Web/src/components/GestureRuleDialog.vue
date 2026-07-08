@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue'
+import CustomSelect from './CustomSelect.vue'
 import IconActionButton from './IconActionButton.vue'
 import KeyboardIcon from '../assets/keyboard.svg'
 import RecordIcon from '../assets/record.svg'
@@ -21,6 +22,13 @@ defineEmits(['close', 'persist', 'record', 'record-hotkey'])
 const patternLabel = computed(
   () => props.getGestureMnemonic?.(props.draft) || '尚未录制'
 )
+
+const actionTypeOptions = [
+  { value: 'hotkey', label: '快捷键' },
+  { value: 'window', label: '窗口控制' },
+  { value: 'volume', label: '音量控制' },
+  { value: 'brightness', label: '亮度控制' }
+]
 </script>
 
 <template>
@@ -62,53 +70,35 @@ const patternLabel = computed(
 
           <label>
             <span>命令类型</span>
-            <select
+            <CustomSelect
               v-model="draft.actionType"
-              class="scope-input"
+              :options="actionTypeOptions"
+              placeholder="选择命令类型"
               @change="$emit('persist')"
-            >
-              <option value="hotkey">快捷键</option>
-              <option value="window">窗口控制</option>
-              <option value="volume">音量控制</option>
-              <option value="brightness">亮度控制</option>
-            </select>
+            />
           </label>
         </div>
 
         <div class="gesture-dialog__command">
           <label v-if="draft.actionType === 'window'">
             <span>操作</span>
-            <select
+            <CustomSelect
               v-model="draft.windowOperation"
-              class="scope-input"
+              :options="windowOperations"
+              placeholder="选择窗口操作"
               @change="$emit('persist')"
-            >
-              <option
-                v-for="operation in windowOperations"
-                :key="operation.value"
-                :value="operation.value"
-              >
-                {{ operation.label }}
-              </option>
-            </select>
+            />
           </label>
 
           <template v-else-if="draft.actionType === 'volume'">
             <label>
               <span>操作</span>
-              <select
+              <CustomSelect
                 v-model="draft.volumeOperation"
-                class="scope-input"
+                :options="volumeOperations"
+                placeholder="选择音量操作"
                 @change="$emit('persist')"
-              >
-                <option
-                  v-for="operation in volumeOperations"
-                  :key="operation.value"
-                  :value="operation.value"
-                >
-                  {{ operation.label }}
-                </option>
-              </select>
+              />
             </label>
             <label v-if="draft.volumeOperation !== 'mute'">
               <span>数值</span>
@@ -126,19 +116,12 @@ const patternLabel = computed(
           <template v-else-if="draft.actionType === 'brightness'">
             <label>
               <span>操作</span>
-              <select
+              <CustomSelect
                 v-model="draft.brightnessOperation"
-                class="scope-input"
+                :options="brightnessOperations"
+                placeholder="选择亮度操作"
                 @change="$emit('persist')"
-              >
-                <option
-                  v-for="operation in brightnessOperations"
-                  :key="operation.value"
-                  :value="operation.value"
-                >
-                  {{ operation.label }}
-                </option>
-              </select>
+              />
             </label>
             <label>
               <span>数值</span>

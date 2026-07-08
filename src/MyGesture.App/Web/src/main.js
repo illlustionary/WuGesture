@@ -6,6 +6,7 @@ import GlobalRulesPage from './pages/global/index.vue'
 import CategoryRulesPage from './pages/category/index.vue'
 import AppRulesPage from './pages/app/index.vue'
 import EdgeActionsPage from './pages/edge/index.vue'
+import ExclusionsPage from './pages/exclusions/index.vue'
 import SettingsPage from './pages/settings/index.vue'
 import 'vue-toastification/dist/index.css'
 import 'virtual:uno.css'
@@ -19,6 +20,7 @@ const router = createRouter({
     { path: '/category', component: CategoryRulesPage },
     { path: '/app', component: AppRulesPage },
     { path: '/edge', component: EdgeActionsPage },
+    { path: '/exclusions', component: ExclusionsPage },
     { path: '/settings', component: SettingsPage }
   ]
 })

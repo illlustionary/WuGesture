@@ -130,6 +130,7 @@ public sealed class GestureConfigStore
 
         var appBehavior = settings.AppBehavior;
         appBehavior.CloseButtonBehavior = NormalizeCloseButtonBehavior(appBehavior.CloseButtonBehavior);
+        appBehavior.ExcludedApplications = NormalizeExcludedApplications(appBehavior.ExcludedApplications);
 
         var webDav = settings.WebDav;
         webDav.Address = (webDav.Address ?? "").Trim();
@@ -143,6 +144,62 @@ public sealed class GestureConfigStore
         return value is "minimize-to-tray" or "minimize-to-taskbar" or "exit"
             ? value
             : "minimize-to-tray";
+    }
+
+    private static List<ExcludedApplicationConfig> NormalizeExcludedApplications(IEnumerable<ExcludedApplicationConfig>? applications)
+    {
+        var result = new List<ExcludedApplicationConfig>();
+
+        foreach (var application in applications ?? [])
+        {
+            var normalized = NormalizeExcludedApplication(application);
+            if (string.IsNullOrWhiteSpace(normalized.Name) && string.IsNullOrWhiteSpace(normalized.Path))
+            {
+                continue;
+            }
+
+            if (!result.Any(existing => IsSameApplicationIdentity(existing, normalized)))
+            {
+                result.Add(normalized);
+            }
+        }
+
+        return result;
+    }
+
+    private static ExcludedApplicationConfig NormalizeExcludedApplication(ExcludedApplicationConfig application)
+    {
+        var name = NormalizeAppName(application.Name);
+        var path = (application.Path ?? "").Trim();
+        var displayName = (application.DisplayName ?? "").Trim();
+
+        return new ExcludedApplicationConfig
+        {
+            Name = name,
+            DisplayName = string.IsNullOrWhiteSpace(displayName) ? name : displayName,
+            Path = path,
+            DisableEdgeActions = application.DisableEdgeActions
+        };
+    }
+
+    private static bool IsSameApplicationIdentity(ExcludedApplicationConfig left, ExcludedApplicationConfig right)
+    {
+        if (!string.IsNullOrWhiteSpace(left.Path) && !string.IsNullOrWhiteSpace(right.Path))
+        {
+            return string.Equals(left.Path.Trim(), right.Path.Trim(), StringComparison.OrdinalIgnoreCase);
+        }
+
+        return string.Equals(
+            NormalizeAppName(left.Name),
+            NormalizeAppName(right.Name),
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string NormalizeAppName(string? value)
+    {
+        var trimmed = (value ?? "").Trim();
+        var name = Path.GetFileNameWithoutExtension(trimmed);
+        return string.IsNullOrWhiteSpace(name) ? trimmed : name;
     }
 
     private static bool IsEmptyWebDavSettings(WebDavUiSettings settings)

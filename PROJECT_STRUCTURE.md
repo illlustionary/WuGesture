@@ -125,6 +125,7 @@ MouseHook
 - 动作仍在右键抬起时执行；窗口控制动作会在执行时重新解析当前目标窗口。
 - 窗口控制动作在执行时会先按鼠标当前位置重新解析顶层窗口，避免沿用上一轮手势的句柄；当无法解析时才回退到缓存目标窗口。
 - `GestureService` 支持暂停；暂停时保留全局 hook，但不识别、不吞掉中/右键输入，并清理当前轨迹与预览提示，供配置界面录制手势使用。
+- `GestureService` 会读取应用行为里的排除项；当前前台程序命中排除项时，不启动手势跟踪，也不吞掉原始鼠标输入。
 - 托盘暂停和配置界面录制暂停是两个独立暂停来源，运行时按二者合并后的状态控制 `GestureService` 和 `EdgeActionService`。
 - 快捷键录制由后端低级键盘 hook 完成；录制期间会阻止 `Win` 等系统级按键继续传递，松开所有按键后回传组合键。
 - 钩子回调必须保持快速；动作会切回 WinForms 消息线程执行。
@@ -160,7 +161,7 @@ MouseHook
 - `applications`：应用程序归属列表，每项包含 `name`、`displayName`、`path`、`category`，运行时通过前台进程名匹配 `name` 后得到分类；`displayName` 只用于 UI 展示和编辑。
 - `uiSettings.mouseTrail`：轨迹窗设置，包含 `inactiveColor`、`activeColor`、`inactiveThickness`、`activeThickness`、`thickness`、`inactiveOpacity`、`activeOpacity`；`thickness` 保留用于兼容旧配置。
 - `uiSettings.gestureHint`：提示泡泡设置，包含 `fontFamily`、`fontSize`、`textColor`、`backgroundColor`、`backgroundOpacity`、`width`、`widthPercent`、`autoWidth`、`height`、`heightPercent`、`cornerRadius`、`bottomOffset`、`bottomOffsetPercent`；百分比字段按当前屏幕工作区宽高换算，像素字段保留用于兼容旧配置。
-- `uiSettings.appBehavior`：应用行为设置，包含 `launchAtStartup`、`runAsAdministrator` 和 `closeButtonBehavior`；关闭按钮行为支持 `minimize-to-tray`、`minimize-to-taskbar`、`exit`。
+- `uiSettings.appBehavior`：应用行为设置，包含 `launchAtStartup`、`runAsAdministrator`、`gesturePaused`、`closeButtonBehavior` 和 `excludedApplications`；关闭按钮行为支持 `minimize-to-tray`、`minimize-to-taskbar`、`exit`。排除项包含 `name`、`displayName`、`path` 和 `disableEdgeActions`；命中的程序不执行鼠标手势，勾选 `disableEdgeActions` 时也会禁用边缘操作。
 - `uiSettings.webDav`：WebDAV 备份设置，包含 `address`、`userName`、`password` 和 `remotePath`。设置页可测试 WebDAV 连接；测试当前配置成功后，才允许把当前完整配置保存到 WebDAV，或从 WebDAV 下载配置并覆盖本地配置；恢复后会刷新规则匹配、边缘操作、应用行为和 UI 设置。
 
 默认初始配置只包含全局规则和边缘操作，不包含应用程序归属或分类规则。边缘操作会预置触发角、摩擦边和边缘滚动项，但默认全部关闭。

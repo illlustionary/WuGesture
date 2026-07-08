@@ -99,6 +99,7 @@ src\components
 - `HoverBubble.vue`：悬浮提示气泡。
 - `IconActionButton.vue`：共享图标按钮，集中导入 `src\assets` 下的 SVG，并通过 `icon` key 映射到按钮图标。
 - `ConfirmDialog.vue`：重大操作确认弹窗，带缩放进入/退出动画。
+- `CustomSelect.vue`：共享自定义单选下拉控件，用于替代浏览器默认 select。
 - `ToggleCheckbox.vue`：共享自定义复选控件，用于替代浏览器默认 checkbox。
 - `ScopeCreateDialog.vue`：分类或作用域名称创建/编辑弹窗。
 - `ScopeSidebar.vue`：分类和程序等作用域列表侧栏。
@@ -135,15 +136,15 @@ src\pages
   - `edge\components\EdgeActionDialog.vue`：边缘操作编辑弹窗。
   - `edge\components\EdgeActionCommandFields.vue`：快捷键、窗口、音量、亮度命令字段。
   - `edge\composables\useEdgeActionDraft.js`：边缘操作编辑草稿、打开、关闭和保存逻辑。
+- `exclusions\index.vue`：排除项页，用于维护不执行鼠标手势的程序列表，并可对单个排除项禁用边缘操作。
 - `settings\index.vue`：设置页，用于组合轨迹线、底部提示窗、应用行为和 WebDAV 配置区块。
   - `settings\components\SettingsSectionCard.vue`：设置页大项标题、说明、操作区和内容布局。
   - `settings\components\SettingsFormGrid.vue`：设置项双列表单布局。
   - `settings\components\SettingsField.vue`：设置项卡片。
-  - `settings\components\SettingsPreviewPanel.vue`：轨迹线和底部提示窗实时预览。
-  - `settings\components\MouseTrailSettings.vue`：轨迹线配置。
-  - `settings\components\AppBehaviorSettings.vue`：应用行为配置。
+  - `settings\components\MouseTrailSettings.vue`：轨迹线配置，顶部内置轨迹线实时预览。
+  - `settings\components\AppBehaviorSettings.vue`：应用行为配置，包括开机启动、管理员启动、暂停 Wu Gesture 和关闭按钮行为。
   - `settings\components\WebDavSettings.vue`：WebDAV 配置、测试、恢复和保存操作。
-  - `settings\components\GestureHintSettings.vue`：底部提示窗配置。
+  - `settings\components\GestureHintSettings.vue`：底部提示窗配置，顶部内置提示窗实时预览。
   - `settings\composables\useUiSettingsDraft.js`：设置草稿归一化、debounce 保存、重置和预览样式计算。
 
 ## Routing
@@ -154,9 +155,10 @@ src\pages
 - `category`
 - `app`
 - `edge`
+- `exclusions`
 - `settings`
 
-顶部规则 tab 包含 `全局`、`分类`、`程序`、`边缘操作`。顶部 `...` 按钮打开独立的 `settings` 页面。
+顶部规则 tab 包含 `全局`、`分类`、`程序`、`边缘操作`、`排除项`。顶部 `...` 按钮打开独立的 `settings` 页面。
 
 ## 当前 UI
 
@@ -165,9 +167,10 @@ src\pages
 - `分类` 页右侧包含“应用程序”和“手势列表”两个区块，分类页可管理当前分类下的 App。
 - `程序` 页右侧只展示手势列表；程序页左侧会列出已保存的全部程序，程序规则仍按 app 作用域单独维护。
 - `边缘操作` 页按触发角、摩擦边、边缘滚动三组展示配置；点击卡片打开独立弹窗编辑启用状态、命令和参数，名称由触发类型、位置与滚轮方向自动生成，关闭弹窗后自动保存。
-- `设置` 页右上角提供恢复默认按钮，点击后通过确认弹窗二次确认；页面中的调整会在输入变化时 debounce 自动保存，并在控件变更结束或离开页面时强制提交最后一次修改；本地编辑期间会避免宿主回传覆盖当前滑块值。设置页也包含开机自启动、以管理员身份打开、关闭按钮行为，以及 WebDAV 地址、账号、密码和远程路径。开机自启动、以管理员身份打开等布尔项使用共享自定义复选控件。WebDAV 区域提供测试、恢复和保存按钮；当前 WebDAV 参数测试成功后，才允许把当前配置保存到远程或从远程恢复本地配置。
+- `排除项` 页维护不执行鼠标手势的程序列表；可通过拖动准星或浏览 exe 添加程序，也可为单个排除项勾选“同时禁用边缘操作”。
+- `设置` 页右上角提供恢复默认按钮，点击后通过确认弹窗二次确认；页面中的调整会在输入变化时 debounce 自动保存，并在控件变更结束或离开页面时强制提交最后一次修改；本地编辑期间会避免宿主回传覆盖当前滑块值。设置页也包含开机自启动、以管理员身份打开、暂停 Wu Gesture、关闭按钮行为，以及 WebDAV 地址、账号、密码和远程路径。开机自启动、以管理员身份打开和暂停 Wu Gesture 等布尔项使用共享自定义复选控件，单选下拉使用共享自定义 `CustomSelect`。轨迹线和底部提示窗预览分别内置在对应设置区块顶部。WebDAV 区域提供测试、恢复和保存按钮；当前 WebDAV 参数测试成功后，才允许把当前配置保存到远程或从远程恢复本地配置。
 - 分类新增通过名称弹窗完成，不再使用左侧内联输入框；分类和程序名称都通过双击列表项后在弹窗里重命名。
-- 分类页和程序页添加程序时都会先显示前端弹窗，用户可按住“拖动准星选择窗口”拖到目标窗口松开，或选择“浏览 exe 文件”作为备用方式。
+- 分类页、程序页和排除项页添加程序时都会先显示前端弹窗，用户可按住“拖动准星选择窗口”拖到目标窗口松开，或选择“浏览 exe 文件”作为备用方式。
 - 程序列表和详情会展示从 exe 路径动态提取的应用图标；图标通过 WebView 消息传递，不写入配置文件。
 - 规则表列为 `名称`、`手势`、`命令`，删除按钮默认隐藏、在行悬浮时才显示；双击规则行、点击手势列或点击命令列都会打开规则编辑弹窗。
 - 添加/编辑手势通过弹窗完成：弹窗里可选择命令类型，快捷键命令显示录制按钮，窗口控制命令显示操作下拉框。
@@ -206,6 +209,14 @@ src\pages
 - `{ type: "edge-action-failed", ... }`
 - `{ type: "config-result", ... }`
 - `{ type: "webdav-result", operation: "test|save|restore", success: true/false, message: "..." }`
+
+`uiSettings.appBehavior` 当前包含：
+
+- `launchAtStartup`
+- `runAsAdministrator`
+- `closeButtonBehavior`
+- `gesturePaused`
+- `excludedApplications: [{ name, displayName, path, disableEdgeActions }]`
 
 ## 构建
 

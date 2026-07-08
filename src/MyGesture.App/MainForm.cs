@@ -42,6 +42,7 @@ public sealed class MainForm : Form
     private bool isExiting;
     private bool isWebViewInitializing;
     private bool isUserPaused;
+    private bool isConfigPaused;
     private bool isEditorPaused;
 
     private static readonly JsonSerializerOptions WebMessageJsonOptions = new()
@@ -94,6 +95,7 @@ public sealed class MainForm : Form
         }
 
         loadedConfig = configStore.LoadOrCreate();
+        isConfigPaused = loadedConfig.Config.UiSettings.AppBehavior.GesturePaused;
         ApplyAppBehaviorSettings(loadedConfig.Config.UiSettings.AppBehavior);
         if (TryRelaunchAsAdministrator(loadedConfig.Config.UiSettings.AppBehavior))
         {
@@ -102,7 +104,9 @@ public sealed class MainForm : Form
 
         scopeContextProvider = new ConfiguredScopeContextProvider(loadedConfig.Config.Applications);
         gestureService = new GestureService(new GestureMatcher(loadedConfig.Rules), scopeContextProvider);
+        gestureService.UpdateExcludedApplications(loadedConfig.Config.UiSettings.AppBehavior.ExcludedApplications);
         edgeActionService = new EdgeActionService(loadedConfig.Config.EdgeActions);
+        edgeActionService.UpdateExcludedApplications(loadedConfig.Config.UiSettings.AppBehavior.ExcludedApplications);
         ApplyUiSettings(loadedConfig.Config.UiSettings);
 
         if (!startHiddenToTray)
@@ -293,7 +297,7 @@ public sealed class MainForm : Form
 
     private void ApplyGesturePauseState()
     {
-        var paused = isUserPaused || isEditorPaused;
+        var paused = isUserPaused || isConfigPaused || isEditorPaused;
         gestureService?.SetPaused(paused);
         edgeActionService?.SetPaused(paused);
         if (paused)
@@ -1076,9 +1080,13 @@ public sealed class MainForm : Form
 
         scopeContextProvider?.UpdateApplications(loadedConfig.Config.Applications);
         gestureService?.UpdateMatcher(new GestureMatcher(loadedConfig.Rules));
+        gestureService?.UpdateExcludedApplications(loadedConfig.Config.UiSettings.AppBehavior.ExcludedApplications);
         edgeActionService?.UpdateActions(loadedConfig.Config.EdgeActions);
+        edgeActionService?.UpdateExcludedApplications(loadedConfig.Config.UiSettings.AppBehavior.ExcludedApplications);
+        isConfigPaused = loadedConfig.Config.UiSettings.AppBehavior.GesturePaused;
         ApplyAppBehaviorSettings(loadedConfig.Config.UiSettings.AppBehavior);
         ApplyUiSettings(loadedConfig.Config.UiSettings);
+        ApplyGesturePauseState();
     }
 
     private void PostConfigResult(bool success, string message)

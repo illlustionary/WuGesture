@@ -4,7 +4,8 @@ import SettingsFormGrid from './SettingsFormGrid.vue'
 import SettingsSectionCard from './SettingsSectionCard.vue'
 
 defineProps({
-  draft: { type: Object, required: true }
+  draft: { type: Object, required: true },
+  previewStyle: { type: Object, required: true }
 })
 
 const emit = defineEmits(['queue-persist', 'flush-persist'])
@@ -15,6 +16,24 @@ const emit = defineEmits(['queue-persist', 'flush-persist'])
     title="轨迹线"
     description="手势拖动时显示的路径样式。"
   >
+    <div
+      class="mouse-trail-preview"
+      :style="previewStyle"
+    >
+      <div class="mouse-trail-preview__row">
+        <span class="mouse-trail-preview__key mouse-trail-preview__key--inactive">
+          未激活
+        </span>
+        <div class="mouse-trail-preview__path mouse-trail-preview__path--inactive" />
+      </div>
+      <div class="mouse-trail-preview__row">
+        <span class="mouse-trail-preview__key mouse-trail-preview__key--active">
+          激活
+        </span>
+        <div class="mouse-trail-preview__path mouse-trail-preview__path--active" />
+      </div>
+    </div>
+
     <SettingsFormGrid>
       <SettingsField label="未激活颜色">
         <input
@@ -89,3 +108,58 @@ const emit = defineEmits(['queue-persist', 'flush-persist'])
     </SettingsFormGrid>
   </SettingsSectionCard>
 </template>
+
+<style scoped lang="scss">
+.mouse-trail-preview {
+  display: grid;
+  gap: 18px;
+  min-height: 150px;
+  margin-bottom: 14px;
+  padding: 24px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 18px;
+  background: var(--panel-inset);
+}
+
+.mouse-trail-preview__row {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.mouse-trail-preview__key {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  flex-basis: 80px;
+  padding: 0 10px;
+  border-radius: 999px;
+  color: var(--text-preview);
+  font-size: 12px;
+  font-weight: 700;
+
+  &--inactive {
+    background: var(--trail-inactive-color);
+    opacity: 0.8;
+  }
+
+  &--active {
+    background: var(--trail-active-color);
+  }
+}
+
+.mouse-trail-preview__path {
+  height: 0;
+  border-radius: 999px;
+
+  &--inactive {
+    width: 72%;
+    border-top: var(--trail-inactive-width) solid var(--trail-inactive-stroke);
+  }
+
+  &--active {
+    width: 72%;
+    border-top: var(--trail-active-width) solid var(--trail-active-stroke);
+  }
+}
+</style>
