@@ -3,8 +3,8 @@ export function useGestureScopes({
   collectAppItems,
   collectCategoryItems,
   createRule,
+  notifications,
   scheduleSaveRules,
-  setMessage,
   state
 }) {
   function setActiveScope(scope) {
@@ -49,7 +49,7 @@ export function useGestureScopes({
   function createScopeTarget(kind, name) {
     const trimmed = String(name ?? "").trim();
     if (!trimmed) {
-      setMessage("请输入名称后再新增。", "error");
+      notifications.show("请输入名称后再新增。", "error");
       return false;
     }
 
@@ -58,7 +58,7 @@ export function useGestureScopes({
     }
 
     setSelectedName(kind, trimmed);
-    setMessage("已新增。", "success");
+    notifications.show("已新增。", "success");
     scheduleSaveRules();
     return true;
   }
@@ -72,7 +72,7 @@ export function useGestureScopes({
 
     const scopeItems = getScopeItems(kind);
     if (scopeItems.some((item) => item.name === name && item.name !== currentName)) {
-      setMessage("名称已存在，请换一个分类名称。", "error");
+      notifications.show("名称已存在，请换一个分类名称。", "error");
       return false;
     }
 
@@ -97,7 +97,7 @@ export function useGestureScopes({
 
     setSelectedName(kind, name);
     scheduleSaveRules();
-    setMessage(kind === "category" ? "已更新分类名称。" : "已更新程序名称。", "success");
+    notifications.show(kind === "category" ? "已更新分类名称。" : "已更新程序名称。", "success");
     return true;
   }
 
@@ -119,7 +119,7 @@ export function useGestureScopes({
     }
 
     ensureSelection(kind);
-    setMessage("已删除当前项。", "success");
+    notifications.show("已删除当前项。", "success");
     scheduleSaveRules();
   }
 

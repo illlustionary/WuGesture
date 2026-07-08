@@ -51,6 +51,8 @@ import {
 } from "../utils/gestureEditorViewModels";
 import { useGestureEditorApplicationPicker } from "./useGestureEditorApplicationPicker";
 import { useCategoryApplications } from "./gestureEditor/useCategoryApplications";
+import { useGestureEditorNotifications } from "./gestureEditor/useGestureEditorNotifications";
+import { useGestureEditorWebViewBridge } from "./gestureEditor/useGestureEditorWebViewBridge";
 import { useGestureApplications } from "./gestureEditor/useGestureApplications";
 import { useGestureScopes } from "./gestureEditor/useGestureScopes";
 
@@ -94,8 +96,14 @@ let toast = null;
 let suppressNextConfigResultToast = false;
 let preserveLocalEdgeActions = false;
 let pendingWebDavTestSignature = "";
-let pendingConfigResultToastTimer = 0;
-let saveActivityVersion = 0;
+
+const notifications = useGestureEditorNotifications({
+  state,
+  getAutoSaveTimer: () => autoSaveTimer,
+  getToast: () => toast
+});
+
+const webView = useGestureEditorWebViewBridge({ notifications });
 
 export function useGestureEditorStore() {
   if (!toast) {
@@ -185,7 +193,7 @@ function initialize() {
 
   initialized.value = true;
 
-  if (!window.chrome?.webview) {
+  if (!webView.isAvailable()) {
     state.statusText = "浏览器预览";
     state.statusState = "idle";
     state.configPath = "内置默认规则";
@@ -193,10 +201,10 @@ function initialize() {
     return;
   }
 
-  window.chrome.webview.addEventListener("message", (event) => {
+  webView.addMessageListener((event) => {
     handleMessage(event.data);
   });
-  window.chrome.webview.postMessage("get-status");
+  webView.postSilent("get-status");
 }
 
 function handleMessage(message) {
@@ -269,8 +277,8 @@ let scopeActions;
 const applicationActions = useGestureApplications({
   state,
   getSelectedName: (kind) => scopeActions.getSelectedName(kind),
-  scheduleSaveRules,
-  setMessage
+  notifications,
+  scheduleSaveRules
 });
 
 scopeActions = useGestureScopes({
@@ -279,16 +287,16 @@ scopeActions = useGestureScopes({
   collectAppItems: () => collectAppItemsFromState(scopeActions.getRulesByKind("app"), state.applications),
   collectCategoryItems: () => collectCategoryItemsFromState(scopeActions.getRulesByKind("category"), state.applications),
   createRule,
-  scheduleSaveRules,
-  setMessage
+  notifications,
+  scheduleSaveRules
 });
 
 const categoryApplicationActions = useCategoryApplications({
   state,
   ensureApplication: applicationActions.ensureApplication,
   getSelectedName: (kind) => scopeActions.getSelectedName(kind),
+  notifications,
   scheduleSaveRules,
-  setMessage,
   setSelectedName: (kind, name) => scopeActions.setSelectedName(kind, name)
 });
 
@@ -469,10 +477,10 @@ const applicationPicker = useGestureEditorApplicationPicker({
   createRule,
   ensureApplication,
   getScopeItems,
-  postWebMessage,
+  notifications,
   scheduleSaveRules,
-  setMessage,
-  setSelectedName
+  setSelectedName,
+  webView
 });
 
 function openApplicationPicker(categoryName = "", scopeKind = "category") {
@@ -584,7 +592,7 @@ function scheduleSaveRules(options = {}) {
     return;
   }
 
-  if (!window.chrome?.webview) {
+  if (!webView.isAvailable()) {
     return;
   }
 
@@ -652,7 +660,7 @@ function testWebDavConnection() {
     return;
   }
 
-  if (!window.chrome?.webview) {
+  if (!webView.isAvailable()) {
     setMessage("浏览器预览中无法测试 WebDAV。", "error");
     return;
   }
@@ -716,7 +724,7 @@ function startRecording(target) {
 
   stopRecording();
 
-  if (!window.chrome?.webview) {
+  if (!webView.isAvailable()) {
     setMessage("浏览器预览无法拦截系统快捷键，请在桌面应用中录制。", "error");
     return;
   }
@@ -738,7 +746,7 @@ function startGestureRecording() {
     return;
   }
 
-  if (!window.chrome?.webview) {
+  if (!webView.isAvailable()) {
     setMessage("浏览器预览无法录制系统鼠标手势，请在桌面应用中录制。", "error");
     return;
   }
@@ -748,7 +756,7 @@ function startGestureRecording() {
   state.gestureRecordingRequestId = requestId;
   state.gestureDraft.patternText = "";
   state.gestureRecognitionMessage = "录制中，再点一次停止。按住右键或中键绘制手势。";
-  window.chrome.webview.postMessage({
+  webView.postSilent({
     type: "start-gesture-recording",
     requestId
   });
@@ -779,84 +787,23 @@ function isRecordingHotkey(target) {
 }
 
 function setMessage(message, stateName = "idle", options = {}) {
-  state.configMessage = message;
-  state.configMessageState = stateName;
-  if (options.notify !== false) {
-    showToast(message, stateName);
-  }
+  notifications.show(message, stateName, options);
 }
 
 function setConfigResultMessage(message, success, notify) {
-  const stateName = success ? "success" : "error";
-  if (!success || !notify) {
-    setMessage(message, stateName, { notify });
-    return;
-  }
-
-  state.configMessage = message;
-  state.configMessageState = stateName;
-  scheduleConfigResultToast(message, stateName);
+  notifications.showConfigResult(message, success, notify);
 }
 
 function markSaveActivity() {
-  saveActivityVersion += 1;
-  cancelPendingConfigResultToast();
-}
-
-function scheduleConfigResultToast(message, stateName) {
-  const version = saveActivityVersion;
-  cancelPendingConfigResultToast();
-  pendingConfigResultToastTimer = window.setTimeout(() => {
-    pendingConfigResultToastTimer = 0;
-    if (version === saveActivityVersion && !autoSaveTimer) {
-      showToast(message, stateName);
-    }
-  }, 1000);
-}
-
-function cancelPendingConfigResultToast() {
-  if (!pendingConfigResultToastTimer) {
-    return;
-  }
-
-  clearTimeout(pendingConfigResultToastTimer);
-  pendingConfigResultToastTimer = 0;
-}
-
-function showToast(message, stateName = "idle") {
-  const content = String(message ?? "").trim();
-  if (!content || !toast) {
-    return;
-  }
-
-  if (stateName === "success") {
-    toast.success(content);
-    return;
-  }
-
-  if (stateName === "error") {
-    toast.error(content);
-    return;
-  }
-
-  toast.info(content);
+  notifications.markSaveActivity();
 }
 
 function postWebMessage(message, options = {}) {
-  if (window.chrome?.webview) {
-    window.chrome.webview.postMessage(message);
-    return;
-  }
-
-  setMessage("浏览器预览中不会写入本机配置。", "idle", {
-    notify: options.notifyPreview !== false
-  });
+  webView.post(message, options);
 }
 
 function postWebMessageSilently(message) {
-  if (window.chrome?.webview) {
-    window.chrome.webview.postMessage(message);
-  }
+  webView.postSilent(message);
 }
 
 function setGesturePaused(paused) {
