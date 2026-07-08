@@ -172,6 +172,8 @@ let toast = null;
 let suppressNextConfigResultToast = false;
 let preserveLocalEdgeActions = false;
 let pendingWebDavTestSignature = "";
+let pendingConfigResultToastTimer = 0;
+let saveActivityVersion = 0;
 
 export function useGestureEditorStore() {
   if (!toast) {
@@ -304,7 +306,7 @@ function handleMessage(message) {
     } else {
       preserveLocalEdgeActions = false;
     }
-    setMessage(message.message, message.success ? "success" : "error", { notify });
+    setConfigResultMessage(message.message, message.success, notify);
     return;
   }
 
@@ -774,6 +776,7 @@ function addExcludedApplication(message) {
     existing.name = exclusion.name || existing.name;
     existing.displayName = exclusion.displayName || existing.displayName;
     existing.path = exclusion.path || existing.path;
+    existing.icon = exclusion.icon || existing.icon || "";
   } else {
     excludedApplications.push(exclusion);
   }
@@ -804,6 +807,8 @@ function removeExcludedApplication(index) {
 }
 
 function saveRules(options = {}) {
+  markSaveActivity();
+
   if (autoSaveTimer) {
     clearTimeout(autoSaveTimer);
     autoSaveTimer = 0;
@@ -831,6 +836,8 @@ function saveRules(options = {}) {
 }
 
 function scheduleSaveRules(options = {}) {
+  markSaveActivity();
+
   if (!initialized.value) {
     return;
   }
@@ -1073,6 +1080,43 @@ function setMessage(message, stateName = "idle", options = {}) {
   }
 }
 
+function setConfigResultMessage(message, success, notify) {
+  const stateName = success ? "success" : "error";
+  if (!success || !notify) {
+    setMessage(message, stateName, { notify });
+    return;
+  }
+
+  state.configMessage = message;
+  state.configMessageState = stateName;
+  scheduleConfigResultToast(message, stateName);
+}
+
+function markSaveActivity() {
+  saveActivityVersion += 1;
+  cancelPendingConfigResultToast();
+}
+
+function scheduleConfigResultToast(message, stateName) {
+  const version = saveActivityVersion;
+  cancelPendingConfigResultToast();
+  pendingConfigResultToastTimer = window.setTimeout(() => {
+    pendingConfigResultToastTimer = 0;
+    if (version === saveActivityVersion && !autoSaveTimer) {
+      showToast(message, stateName);
+    }
+  }, 1000);
+}
+
+function cancelPendingConfigResultToast() {
+  if (!pendingConfigResultToastTimer) {
+    return;
+  }
+
+  clearTimeout(pendingConfigResultToastTimer);
+  pendingConfigResultToastTimer = 0;
+}
+
 function showToast(message, stateName = "idle") {
   const content = String(message ?? "").trim();
   if (!content || !toast) {
@@ -1241,7 +1285,14 @@ function toPayloadEdgeAction(action) {
 }
 
 function toPayloadUiSettings(settings) {
-  return normalizeUiSettings(settings);
+  const payload = normalizeUiSettings(settings);
+  payload.appBehavior.excludedApplications = payload.appBehavior.excludedApplications.map((application) => ({
+    name: application.name,
+    displayName: application.displayName,
+    path: application.path,
+    disableEdgeActions: application.disableEdgeActions
+  }));
+  return payload;
 }
 
 function getConfigPayload() {
@@ -1557,6 +1608,7 @@ function normalizeExcludedApplication(application) {
     name,
     displayName: String(application?.displayName ?? name).trim() || name || path,
     path,
+    icon: String(application?.icon ?? "").trim(),
     disableEdgeActions: Boolean(application?.disableEdgeActions ?? false)
   };
 }
