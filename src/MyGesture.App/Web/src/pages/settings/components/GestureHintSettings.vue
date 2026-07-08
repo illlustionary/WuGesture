@@ -3,6 +3,7 @@ import SettingsField from './SettingsField.vue'
 import SettingsFormGrid from './SettingsFormGrid.vue'
 import SettingsSectionCard from './SettingsSectionCard.vue'
 import ToggleCheckbox from '../../../components/ToggleCheckbox.vue'
+import { GESTURE_EDITOR_LIMITS } from '../../../constants/gestureEditorLimits'
 
 defineProps({
   draft: { type: Object, required: true },
@@ -40,8 +41,8 @@ function commit() {
         <input
           v-model.number="draft.gestureHint.fontSize"
           type="range"
-          min="10"
-          max="48"
+          :min="GESTURE_EDITOR_LIMITS.hintFontSize.min"
+          :max="GESTURE_EDITOR_LIMITS.hintFontSize.max"
           @input="emit('queue-persist')"
           @change="emit('flush-persist')"
         />
@@ -71,8 +72,8 @@ function commit() {
         <input
           v-model.number="draft.gestureHint.backgroundOpacity"
           type="range"
-          min="0"
-          max="100"
+          :min="GESTURE_EDITOR_LIMITS.opacityPercent.min"
+          :max="GESTURE_EDITOR_LIMITS.opacityPercent.max"
           @input="emit('queue-persist')"
           @change="emit('flush-persist')"
         />
@@ -84,8 +85,8 @@ function commit() {
         <input
           v-model.number="draft.gestureHint.widthPercent"
           type="range"
-          min="10"
-          max="90"
+          :min="GESTURE_EDITOR_LIMITS.hintWidthPercent.min"
+          :max="GESTURE_EDITOR_LIMITS.hintWidthPercent.max"
           :disabled="draft.gestureHint.autoWidth"
           @input="emit('queue-persist')"
           @change="emit('flush-persist')"
@@ -105,8 +106,8 @@ function commit() {
         <input
           v-model.number="draft.gestureHint.heightPercent"
           type="range"
-          min="5"
-          max="40"
+          :min="GESTURE_EDITOR_LIMITS.hintHeightPercent.min"
+          :max="GESTURE_EDITOR_LIMITS.hintHeightPercent.max"
           @input="emit('queue-persist')"
           @change="emit('flush-persist')"
         />
@@ -118,8 +119,8 @@ function commit() {
         <input
           v-model.number="draft.gestureHint.cornerRadius"
           type="range"
-          min="0"
-          max="80"
+          :min="GESTURE_EDITOR_LIMITS.hintCornerRadius.min"
+          :max="GESTURE_EDITOR_LIMITS.hintCornerRadius.max"
           @input="emit('queue-persist')"
           @change="emit('flush-persist')"
         />
@@ -131,8 +132,8 @@ function commit() {
         <input
           v-model.number="draft.gestureHint.bottomOffsetPercent"
           type="range"
-          min="0"
-          max="100"
+          :min="GESTURE_EDITOR_LIMITS.hintBottomOffsetPercent.min"
+          :max="GESTURE_EDITOR_LIMITS.hintBottomOffsetPercent.max"
           @input="emit('queue-persist')"
           @change="emit('flush-persist')"
         />

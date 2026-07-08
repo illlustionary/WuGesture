@@ -2,6 +2,7 @@
 import SettingsField from './SettingsField.vue'
 import SettingsFormGrid from './SettingsFormGrid.vue'
 import SettingsSectionCard from './SettingsSectionCard.vue'
+import { GESTURE_EDITOR_LIMITS } from '../../../constants/gestureEditorLimits'
 
 defineProps({
   draft: { type: Object, required: true },
@@ -51,8 +52,8 @@ const emit = defineEmits(['queue-persist', 'flush-persist'])
         <input
           v-model.number="draft.mouseTrail.inactiveOpacity"
           type="range"
-          min="0"
-          max="100"
+          :min="GESTURE_EDITOR_LIMITS.opacityPercent.min"
+          :max="GESTURE_EDITOR_LIMITS.opacityPercent.max"
           @input="emit('queue-persist')"
           @change="emit('flush-persist')"
         />
@@ -64,8 +65,8 @@ const emit = defineEmits(['queue-persist', 'flush-persist'])
         <input
           v-model.number="draft.mouseTrail.inactiveThickness"
           type="range"
-          min="1"
-          max="20"
+          :min="GESTURE_EDITOR_LIMITS.mouseTrailThickness.min"
+          :max="GESTURE_EDITOR_LIMITS.mouseTrailThickness.max"
           @input="emit('queue-persist')"
           @change="emit('flush-persist')"
         />
@@ -86,8 +87,8 @@ const emit = defineEmits(['queue-persist', 'flush-persist'])
         <input
           v-model.number="draft.mouseTrail.activeOpacity"
           type="range"
-          min="0"
-          max="100"
+          :min="GESTURE_EDITOR_LIMITS.opacityPercent.min"
+          :max="GESTURE_EDITOR_LIMITS.opacityPercent.max"
           @input="emit('queue-persist')"
           @change="emit('flush-persist')"
         />
@@ -99,8 +100,8 @@ const emit = defineEmits(['queue-persist', 'flush-persist'])
         <input
           v-model.number="draft.mouseTrail.activeThickness"
           type="range"
-          min="1"
-          max="20"
+          :min="GESTURE_EDITOR_LIMITS.mouseTrailThickness.min"
+          :max="GESTURE_EDITOR_LIMITS.mouseTrailThickness.max"
           @input="emit('queue-persist')"
           @change="emit('flush-persist')"
         />

@@ -5,6 +5,7 @@ import IconActionButton from './IconActionButton.vue'
 import KeyboardIcon from '../assets/keyboard.svg'
 import RecordIcon from '../assets/record.svg'
 import { ACTION_TYPE_OPTIONS, ACTION_TYPES, OPERATIONS } from '../constants/gestureEditorOptions'
+import { GESTURE_EDITOR_LIMITS } from '../constants/gestureEditorLimits'
 
 const props = defineProps({
   open: { type: Boolean, required: true },
@@ -102,8 +103,8 @@ const actionTypeOptions = ACTION_TYPE_OPTIONS
                 v-model.number="draft.amount"
                 class="scope-input"
                 type="number"
-                min="1"
-                max="100"
+                :min="GESTURE_EDITOR_LIMITS.amount.min"
+                :max="GESTURE_EDITOR_LIMITS.amount.max"
                 @blur="$emit('persist')"
               />
             </label>
@@ -125,8 +126,8 @@ const actionTypeOptions = ACTION_TYPE_OPTIONS
                 v-model.number="draft.amount"
                 class="scope-input"
                 type="number"
-                min="1"
-                max="100"
+                :min="GESTURE_EDITOR_LIMITS.amount.min"
+                :max="GESTURE_EDITOR_LIMITS.amount.max"
                 @blur="$emit('persist')"
               />
             </label>

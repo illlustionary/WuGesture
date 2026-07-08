@@ -2,19 +2,14 @@ namespace MyGesture.App;
 
 static class Program
 {
-    private const string SingleInstanceMutexName = @"Local\WuGesture.SingleInstance";
-    private const string ShowExistingInstanceEventName = @"Local\WuGesture.ShowExistingInstance";
-    private const string ElevatedRelaunchArgument = "--elevated-relaunch";
-    private const string StartupLaunchArgument = "--startup";
-
     [STAThread]
     static void Main(string[] args)
     {
         var isElevatedRelaunch = args.Any(arg =>
-            string.Equals(arg, ElevatedRelaunchArgument, StringComparison.OrdinalIgnoreCase));
+            string.Equals(arg, AppIdentity.ElevatedRelaunchArgument, StringComparison.OrdinalIgnoreCase));
         var isStartupLaunch = args.Any(arg =>
-            string.Equals(arg, StartupLaunchArgument, StringComparison.OrdinalIgnoreCase));
-        using var mutex = new Mutex(initiallyOwned: false, SingleInstanceMutexName);
+            string.Equals(arg, AppIdentity.StartupLaunchArgument, StringComparison.OrdinalIgnoreCase));
+        using var mutex = new Mutex(initiallyOwned: false, AppIdentity.SingleInstanceMutexName);
         var ownsMutex = mutex.WaitOne(isElevatedRelaunch ? TimeSpan.FromSeconds(15) : TimeSpan.Zero);
         if (!ownsMutex)
         {
@@ -28,7 +23,7 @@ static class Program
             using var showExistingInstanceEvent = new EventWaitHandle(
                 initialState: false,
                 mode: EventResetMode.AutoReset,
-                name: ShowExistingInstanceEventName);
+                name: AppIdentity.ShowExistingInstanceEventName);
             using var form = new MainForm(isStartupLaunch);
             using var listenerCancellation = new CancellationTokenSource();
             var listener = Task.Run(() => ListenForExistingInstanceRequests(
@@ -60,7 +55,7 @@ static class Program
         {
             try
             {
-                using var showExistingInstanceEvent = EventWaitHandle.OpenExisting(ShowExistingInstanceEventName);
+                using var showExistingInstanceEvent = EventWaitHandle.OpenExisting(AppIdentity.ShowExistingInstanceEventName);
                 showExistingInstanceEvent.Set();
                 return;
             }

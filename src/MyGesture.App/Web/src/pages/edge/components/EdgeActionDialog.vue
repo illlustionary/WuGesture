@@ -4,6 +4,7 @@ import IconActionButton from '../../../components/IconActionButton.vue'
 import ToggleCheckbox from '../../../components/ToggleCheckbox.vue'
 import EdgeActionCommandFields from './EdgeActionCommandFields.vue'
 import { ACTION_TYPE_OPTIONS, EDGE_TRIGGER_TYPES } from '../../../constants/gestureEditorOptions'
+import { GESTURE_EDITOR_LIMITS } from '../../../constants/gestureEditorLimits'
 
 defineProps({
   action: { type: Object, required: true },
@@ -61,8 +62,8 @@ const actionTypeOptions = ACTION_TYPE_OPTIONS
             v-model.number="draft.frictionCount"
             class="scope-input"
             type="number"
-            min="1"
-            max="20"
+            :min="GESTURE_EDITOR_LIMITS.frictionCount.min"
+            :max="GESTURE_EDITOR_LIMITS.frictionCount.max"
           />
         </label>
 

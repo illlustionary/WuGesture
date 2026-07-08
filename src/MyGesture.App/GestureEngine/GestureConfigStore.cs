@@ -1,4 +1,5 @@
 using System.Text.Json;
+using MyGesture.App;
 
 namespace MyGesture.App.GestureEngine;
 
@@ -20,7 +21,7 @@ public sealed class GestureConfigStore
     private static string GetDefaultConfigPath()
     {
         var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        return Path.Combine(appData, "MyGesture", "gestures.json");
+        return Path.Combine(appData, AppIdentity.AppDataFolderName, ConfigStorageContract.ConfigFileName);
     }
 
     public LoadedGestureConfig LoadOrCreate()

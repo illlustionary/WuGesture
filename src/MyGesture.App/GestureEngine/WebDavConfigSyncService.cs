@@ -1,12 +1,12 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
+using MyGesture.App;
 
 namespace MyGesture.App.GestureEngine;
 
 public sealed class WebDavConfigSyncService
 {
-    private const string ConfigFileName = "gestures.json";
     private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(30);
 
     public async Task UploadAsync(string configPath, WebDavUiSettings settings, CancellationToken cancellationToken = default)
@@ -85,15 +85,15 @@ public sealed class WebDavConfigSyncService
         var remotePath = (settings.RemotePath ?? "").Trim().Replace('\\', '/').TrimStart('/');
         if (string.IsNullOrWhiteSpace(remotePath))
         {
-            remotePath = ConfigFileName;
+            remotePath = ConfigStorageContract.ConfigFileName;
         }
         else if (remotePath.EndsWith('/'))
         {
-            remotePath += ConfigFileName;
+            remotePath += ConfigStorageContract.ConfigFileName;
         }
         else if (!Path.HasExtension(remotePath))
         {
-            remotePath += "/" + ConfigFileName;
+            remotePath += "/" + ConfigStorageContract.ConfigFileName;
         }
 
         var baseText = baseUri.ToString();

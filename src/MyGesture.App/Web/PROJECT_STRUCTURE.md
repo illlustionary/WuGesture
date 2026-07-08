@@ -135,6 +135,7 @@ src\constants
 
 - `gestureEditorOptions.js`：手势编辑器使用的契约常量和 UI 选项，包括 scope、鼠标按键、动作类型、操作名、边缘触发、关闭行为、WebView 消息类型、方向符号和选项 label。
 - `gestureEditorDefaults.js`：浏览器预览默认规则、默认应用、默认 UI 设置和默认边缘操作模板。
+- `gestureEditorLimits.js`：手势编辑器输入限制常量，供表单控件和归一化逻辑共用。
 
 ## Utils
 
