@@ -153,7 +153,9 @@ src\pages
 
 - `global\index.vue`：全局规则页，直接编辑全局规则表。
 - `category\index.vue`：分类规则页，左侧分类列表，右侧包含分类下应用程序和手势列表。
+  - `category\composables\useCategoryPage.js`：分类页私有弹窗草稿、分类新增/重命名/删除编排和分类图标选择。
 - `app\index.vue`：程序规则页，左侧程序列表，右侧展示当前程序的手势列表。
+  - `app\composables\useAppPage.js`：程序页私有重命名弹窗、删除编排和程序图标 fallback 文本。
 - `edge\index.vue`：边缘操作页，按触发角、摩擦边、边缘滚动三组展示配置。
   - `edge\components\EdgeActionSection.vue`：边缘操作大项区块。
   - `edge\components\EdgeActionCard.vue`：单个边缘操作卡片。
