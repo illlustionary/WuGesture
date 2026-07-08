@@ -7,8 +7,6 @@ namespace MyGesture.App.GestureEngine;
 
 public sealed class WebDavConfigSyncService
 {
-    private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(30);
-
     public async Task UploadAsync(string configPath, WebDavUiSettings settings, CancellationToken cancellationToken = default)
     {
         if (!File.Exists(configPath))
@@ -22,7 +20,7 @@ public sealed class WebDavConfigSyncService
 
         await using var stream = File.OpenRead(configPath);
         using var content = new StreamContent(stream);
-        content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+        content.Headers.ContentType = WebDavProtocolContract.JsonMediaType;
 
         using var request = new HttpRequestMessage(HttpMethod.Put, targetUri)
         {
@@ -47,8 +45,8 @@ public sealed class WebDavConfigSyncService
         using var client = CreateHttpClient(settings);
         await EnsureRemoteCollectionsAsync(client, targetUri, cancellationToken);
 
-        using var request = new HttpRequestMessage(new HttpMethod("PROPFIND"), GetCollectionUri(targetUri));
-        request.Headers.Add("Depth", "0");
+        using var request = new HttpRequestMessage(WebDavProtocolContract.PropFindMethod, GetCollectionUri(targetUri));
+        request.Headers.Add(WebDavProtocolContract.DepthHeaderName, WebDavProtocolContract.ZeroDepth);
         using var response = await client.SendAsync(request, cancellationToken);
         EnsureSuccess(response, "WebDAV 连接测试失败");
     }
@@ -62,13 +60,13 @@ public sealed class WebDavConfigSyncService
 
         var client = new HttpClient(handler)
         {
-            Timeout = RequestTimeout
+            Timeout = WebDavProtocolContract.RequestTimeout
         };
 
         if (!string.IsNullOrWhiteSpace(settings.UserName) || !string.IsNullOrWhiteSpace(settings.Password))
         {
             var token = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{settings.UserName}:{settings.Password}"));
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", token);
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(WebDavProtocolContract.BasicAuthenticationScheme, token);
         }
 
         return client;
@@ -77,7 +75,7 @@ public sealed class WebDavConfigSyncService
     private static Uri BuildTargetUri(WebDavUiSettings settings)
     {
         if (!Uri.TryCreate(settings.Address, UriKind.Absolute, out var baseUri) ||
-            baseUri.Scheme is not ("http" or "https"))
+            baseUri.Scheme is not (WebDavProtocolContract.HttpScheme or WebDavProtocolContract.HttpsScheme))
         {
             throw new InvalidOperationException("WebDAV 地址必须是有效的 http 或 https 地址。");
         }
@@ -129,7 +127,7 @@ public sealed class WebDavConfigSyncService
             path += "/" + Uri.EscapeDataString(segments[index]);
             builder.Path = path + "/";
 
-            using var request = new HttpRequestMessage(new HttpMethod("MKCOL"), builder.Uri);
+            using var request = new HttpRequestMessage(WebDavProtocolContract.MkColMethod, builder.Uri);
             using var response = await client.SendAsync(request, cancellationToken);
             if (response.IsSuccessStatusCode ||
                 response.StatusCode is HttpStatusCode.MethodNotAllowed or HttpStatusCode.Conflict)

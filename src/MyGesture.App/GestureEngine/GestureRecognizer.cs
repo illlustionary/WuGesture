@@ -4,10 +4,6 @@ namespace MyGesture.App.GestureEngine;
 
 public sealed class GestureRecognizer
 {
-    private const double EffectiveMove = 24.0;
-    private const double DiagonalTolerance = 22.5;
-    private const int MaxGestureSteps = 12;
-
     public IReadOnlyList<GestureDirection> Recognize(IReadOnlyList<Point> points)
     {
         if (points.Count < 2)
@@ -21,7 +17,7 @@ public sealed class GestureRecognizer
         for (var i = 1; i < points.Count; i++)
         {
             var current = points[i];
-            if (Distance(lastEffectivePoint, current) < EffectiveMove)
+            if (Distance(lastEffectivePoint, current) < GestureRuntimeDefaults.EffectiveMove)
             {
                 continue;
             }
@@ -33,7 +29,7 @@ public sealed class GestureRecognizer
             if (directions.Count == 0 || directions[^1] != direction)
             {
                 directions.Add(direction);
-                if (directions.Count >= MaxGestureSteps)
+                if (directions.Count >= GestureRuntimeDefaults.MaxGestureSteps)
                 {
                     break;
                 }
@@ -104,7 +100,7 @@ public sealed class GestureRecognizer
 
     private static bool IsNearAngle(double angle, double expected)
     {
-        return Math.Abs(NormalizeAngle(angle - expected)) <= DiagonalTolerance;
+        return Math.Abs(NormalizeAngle(angle - expected)) <= GestureRuntimeDefaults.DiagonalTolerance;
     }
 
     private static double NormalizeAngle(double angle)

@@ -5,9 +5,6 @@ namespace MyGesture.App.GestureEngine;
 
 public sealed class GestureService : IDisposable
 {
-    private const int MinimumPointDistance = 3;
-    private const int MinimumGestureDistance = 45;
-
     private enum ActiveMouseButton
     {
         None,
@@ -210,7 +207,7 @@ public sealed class GestureService : IDisposable
         }
 
         var lastPoint = points[^1];
-        if (Distance(lastPoint, e.Location) < MinimumPointDistance)
+        if (Distance(lastPoint, e.Location) < GestureRuntimeDefaults.MinimumPointDistance)
         {
             return;
         }
@@ -283,7 +280,7 @@ public sealed class GestureService : IDisposable
             return;
         }
 
-        if (points.Count < 2 || PathLength(points) < MinimumGestureDistance)
+        if (points.Count < 2 || PathLength(points) < GestureRuntimeDefaults.MinimumGestureDistance)
         {
             RaiseProgress(path, [], false, ToPublicButton(button), force: true);
             if (button == ActiveMouseButton.Right)

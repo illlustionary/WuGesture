@@ -47,8 +47,8 @@ internal sealed class LevelOsdForm : Form
         hideTimer.Tick += OnHideTimerTick;
         fadeTimer.Interval = 20;
         fadeTimer.Tick += OnFadeTimerTick;
-        volumeIcon = LoadResourceBitmap("MyGesture.App.Resources.volume.png");
-        brightnessIcon = LoadResourceBitmap("MyGesture.App.Resources.sun.png");
+        volumeIcon = LoadResourceBitmap(ResourceNames.VolumeIcon);
+        brightnessIcon = LoadResourceBitmap(ResourceNames.BrightnessIcon);
         UpdateWindowRegion();
     }
 
