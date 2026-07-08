@@ -44,6 +44,8 @@ src
 ├─ assets
 ├─ components
 ├─ composables
+├─ constants
+├─ utils
 └─ pages
 ```
 
@@ -115,7 +117,29 @@ src\components
 src\composables
 ```
 
-- `gestureEditorStore.js`：共享编辑状态、规则加载保存、作用域选择、应用/分类状态、WebView 消息、快捷键监听、手势录制状态和 UI 设置同步。
+- `gestureEditorStore.js`：共享编辑状态、规则加载保存、作用域选择、应用/分类状态、WebView 消息、快捷键监听、手势录制状态和 UI 设置同步；静态选项、默认值和纯格式化/归一化逻辑放在 `constants` / `utils`。
+
+## Constants
+
+路径：
+
+```text
+src\constants
+```
+
+- `gestureEditorOptions.js`：手势编辑器使用的鼠标按键符号、方向符号、动作操作选项和边缘位置选项。
+- `gestureEditorDefaults.js`：浏览器预览默认规则、默认应用、默认 UI 设置和默认边缘操作模板。
+
+## Utils
+
+路径：
+
+```text
+src\utils
+```
+
+- `gestureEditorNormalizers.js`：规则 scope、手势文本、快捷键、动作类型、边缘操作和 UI 设置的解析与归一化工具。
+- `gestureEditorFormatters.js`：手势助记符、动作展示文案和边缘操作展示文案。
 
 ## Pages
 
