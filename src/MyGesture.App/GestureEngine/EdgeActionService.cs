@@ -6,19 +6,10 @@ namespace MyGesture.App.GestureEngine;
 
 public sealed class EdgeActionService : IDisposable
 {
-    private const int EdgeThickness = 3;
-    private const int CornerSize = 18;
-    private const int FrictionEdgeThickness = 16;
-    private const int FrictionCornerExcludeSize = 100;
-    private const int FrictionStepPixels = 60;
-    private const int FrictionResetDistance = 50;
-    private static readonly TimeSpan FrictionMoveTimeout = TimeSpan.FromMilliseconds(1200);
-    private static readonly TimeSpan FrictionTriggerResetTimeout = TimeSpan.FromMilliseconds(1500);
-
     private readonly MouseHook mouseHook = new();
     private readonly ActionExecutor actionExecutor = new();
     private readonly ApplicationExclusionMatcher exclusionMatcher = new();
-    private readonly System.Windows.Forms.Timer mousePollTimer = new() { Interval = 16 };
+    private readonly System.Windows.Forms.Timer mousePollTimer = new() { Interval = EdgeActionRuntimeDefaults.MousePollIntervalMs };
     private IReadOnlyList<EdgeActionConfig> actions;
     private SynchronizationContext? synchronizationContext;
     private EdgeLocation activeCorner = EdgeLocation.None;
@@ -161,8 +152,8 @@ public sealed class EdgeActionService : IDisposable
     {
         if (frictionTriggered)
         {
-            if (GetFrictionDistanceToEdge(edge, location) >= FrictionResetDistance ||
-                DateTime.UtcNow - lastFrictionMoveTime > FrictionTriggerResetTimeout)
+            if (GetFrictionDistanceToEdge(edge, location) >= EdgeActionRuntimeDefaults.FrictionResetDistance ||
+                DateTime.UtcNow - lastFrictionMoveTime > EdgeActionRuntimeDefaults.FrictionTriggerResetTimeout)
             {
                 activeFrictionEdge = EdgeLocation.None;
                 ResetFriction();
@@ -180,13 +171,13 @@ public sealed class EdgeActionService : IDisposable
             return;
         }
 
-        if (Math.Abs(delta) < FrictionStepPixels)
+        if (Math.Abs(delta) < EdgeActionRuntimeDefaults.FrictionStepPixels)
         {
             return;
         }
 
         var now = DateTime.UtcNow;
-        if (lastFrictionDirection != FrictionAxisDirection.None && now - lastFrictionMoveTime > FrictionMoveTimeout)
+        if (lastFrictionDirection != FrictionAxisDirection.None && now - lastFrictionMoveTime > EdgeActionRuntimeDefaults.FrictionMoveTimeout)
         {
             BeginFriction(edge, location);
             return;
@@ -306,10 +297,10 @@ public sealed class EdgeActionService : IDisposable
         foreach (var screen in Screen.AllScreens)
         {
             var area = screen.Bounds;
-            var left = location.X <= area.Left + CornerSize;
-            var right = location.X >= area.Right - CornerSize;
-            var top = location.Y <= area.Top + CornerSize;
-            var bottom = location.Y >= area.Bottom - CornerSize;
+            var left = location.X <= area.Left + EdgeActionRuntimeDefaults.CornerSize;
+            var right = location.X >= area.Right - EdgeActionRuntimeDefaults.CornerSize;
+            var top = location.Y <= area.Top + EdgeActionRuntimeDefaults.CornerSize;
+            var bottom = location.Y >= area.Bottom - EdgeActionRuntimeDefaults.CornerSize;
 
             if (left && top)
             {
@@ -345,22 +336,22 @@ public sealed class EdgeActionService : IDisposable
                 continue;
             }
 
-            if (location.X <= area.Left + EdgeThickness)
+            if (location.X <= area.Left + EdgeActionRuntimeDefaults.EdgeThickness)
             {
                 return EdgeLocation.Left;
             }
 
-            if (location.X >= area.Right - EdgeThickness)
+            if (location.X >= area.Right - EdgeActionRuntimeDefaults.EdgeThickness)
             {
                 return EdgeLocation.Right;
             }
 
-            if (location.Y <= area.Top + EdgeThickness)
+            if (location.Y <= area.Top + EdgeActionRuntimeDefaults.EdgeThickness)
             {
                 return EdgeLocation.Top;
             }
 
-            if (location.Y >= area.Bottom - EdgeThickness)
+            if (location.Y >= area.Bottom - EdgeActionRuntimeDefaults.EdgeThickness)
             {
                 return EdgeLocation.Bottom;
             }
@@ -384,22 +375,30 @@ public sealed class EdgeActionService : IDisposable
             var width = area.Width;
             var height = area.Height;
 
-            if (x <= FrictionEdgeThickness && y > FrictionCornerExcludeSize && y < height - FrictionCornerExcludeSize)
+            if (x <= EdgeActionRuntimeDefaults.FrictionEdgeThickness &&
+                y > EdgeActionRuntimeDefaults.FrictionCornerExcludeSize &&
+                y < height - EdgeActionRuntimeDefaults.FrictionCornerExcludeSize)
             {
                 return EdgeLocation.Left;
             }
 
-            if (x >= width - FrictionEdgeThickness && y > FrictionCornerExcludeSize && y < height - FrictionCornerExcludeSize)
+            if (x >= width - EdgeActionRuntimeDefaults.FrictionEdgeThickness &&
+                y > EdgeActionRuntimeDefaults.FrictionCornerExcludeSize &&
+                y < height - EdgeActionRuntimeDefaults.FrictionCornerExcludeSize)
             {
                 return EdgeLocation.Right;
             }
 
-            if (y <= FrictionEdgeThickness && x > FrictionCornerExcludeSize && x < width - FrictionCornerExcludeSize)
+            if (y <= EdgeActionRuntimeDefaults.FrictionEdgeThickness &&
+                x > EdgeActionRuntimeDefaults.FrictionCornerExcludeSize &&
+                x < width - EdgeActionRuntimeDefaults.FrictionCornerExcludeSize)
             {
                 return EdgeLocation.Top;
             }
 
-            if (y >= height - FrictionEdgeThickness && x > FrictionCornerExcludeSize && x < width - FrictionCornerExcludeSize)
+            if (y >= height - EdgeActionRuntimeDefaults.FrictionEdgeThickness &&
+                x > EdgeActionRuntimeDefaults.FrictionCornerExcludeSize &&
+                x < width - EdgeActionRuntimeDefaults.FrictionCornerExcludeSize)
             {
                 return EdgeLocation.Bottom;
             }

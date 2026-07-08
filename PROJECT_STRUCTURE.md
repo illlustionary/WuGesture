@@ -90,6 +90,7 @@ src\MyGesture.App\GestureEngine
 - `GestureService.cs`：跟踪右键和中键轨迹生命周期，调用识别器、匹配器和执行器，并向 UI 发送事件；也支持录制会话，把识别结果回传给前端。
 - `EdgeActionService.cs`：轮询真实光标位置并监听滚轮，处理屏幕四角触发、四边摩擦计数和四边滚轮触发；摩擦边会排除角落区域，按沿边方向的反向位移计数并在触发后防重复，滚轮边命中时会吞掉原始滚轮事件。
 - `GestureRecognizer.cs`：把鼠标轨迹转换为稳定的 8 方向模式。
+- `GestureRuntimeDefaults.cs`：手势识别和边缘操作运行时阈值常量，包括最小移动距离、识别步数、边缘厚度、摩擦距离和超时。
 - `GestureMatcher.cs`：将识别出的鼠标键和方向模式与已加载规则进行匹配，并按作用域优先级选择命中项。
 - `GestureScopeContext.cs`：当前前台窗口的 app/category 上下文模型。
 - `ForegroundWindowScopeContextProvider.cs`：读取前台窗口进程名。
@@ -99,6 +100,7 @@ src\MyGesture.App\GestureEngine
 - `BrightnessController.cs`：通过 DDC/CI、WMI、Gamma 三段回退读取和设置显示亮度。
 - `BrightnessAdjustmentQueue.cs`：把亮度调节放到后台串行队列执行，并合并连续滚轮输入，避免 DDC/CI 等慢调用阻塞鼠标钩子或主 UI。
 - `LevelOsdForm.cs`：音量和亮度调节后的置顶非激活弹窗提示。
+- `ResourceNames.cs`：后端嵌入资源 manifest 名常量。
 - `MouseInput.cs`：当移动距离太小，不足以构成手势时，重放一次普通右键或中键。
 - `GestureDirection.cs`：8 方向枚举。
 - `GestureRule.cs`：运行时规则和热键动作模型。
@@ -151,6 +153,8 @@ MouseHook
 - `GestureConfigMapper.cs`：把配置 DTO 映射为运行时 `GestureRule`。
 - `DefaultGestureConfig.cs`：完整默认初始配置，包含默认全局规则、默认 UI/应用行为设置和默认关闭的边缘操作。
 - `DefaultGestureRules.cs`：默认全局规则。
+- `WebDavConfigSyncService.cs`：WebDAV 配置备份/恢复服务，负责测试连接、上传本地完整配置、下载远端配置并按远程路径规则创建目录。
+- `WebDavProtocolContract.cs`：WebDAV 协议方法、请求头、认证 scheme、媒体类型和超时常量。
 - `WebViewMessageTypes.cs`：桌面宿主侧 WebView 入站/出站消息类型常量。
 
 当前支持的配置：
