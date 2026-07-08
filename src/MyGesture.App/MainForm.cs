@@ -14,12 +14,7 @@ public sealed class MainForm : Form
 {
     private const int SwShow = 5;
     private const int SwRestore = 9;
-    private const string ApplicationDisplayName = "Wu Gesture";
-    private const string ElevatedRelaunchArgument = "--elevated-relaunch";
-    private const string StartupLaunchArgument = "--startup";
     private const string StartupRegistryPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
-    private const string LegacyStartupRegistryValueName = "MyGesture";
-    private const string StartupRegistryValueName = "WuGesture";
     private readonly GestureHintForm gestureHintForm = new();
     private readonly GestureConfigStore configStore = new();
     private readonly WebDavConfigSyncService webDavConfigSyncService = new();
@@ -59,7 +54,7 @@ public sealed class MainForm : Form
     public MainForm(bool startHiddenToTray = false)
     {
         this.startHiddenToTray = startHiddenToTray;
-        Text = ApplicationDisplayName;
+        Text = AppIdentity.DisplayName;
         Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? SystemIcons.Application;
         StartPosition = FormStartPosition.Manual;
         ApplyInitialWindowState();
@@ -143,7 +138,7 @@ public sealed class MainForm : Form
     private void InitializeTrayIcon()
     {
         var openItem = new ToolStripMenuItem("打开配置", null, (_, _) => RestoreFromTray());
-        pauseItem = new ToolStripMenuItem("暂停 Wu Gesture")
+        pauseItem = new ToolStripMenuItem($"暂停 {AppIdentity.DisplayName}")
         {
             CheckOnClick = true
         };
@@ -156,7 +151,7 @@ public sealed class MainForm : Form
 
         normalTrayIcon = Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? (Icon)SystemIcons.Application.Clone();
         pausedTrayIcon = CreateGrayscaleIcon(normalTrayIcon);
-        trayIcon.Text = ApplicationDisplayName;
+        trayIcon.Text = AppIdentity.DisplayName;
         trayIcon.Icon = normalTrayIcon;
         trayIcon.ContextMenuStrip = trayMenu;
         trayIcon.Visible = true;
@@ -286,10 +281,10 @@ public sealed class MainForm : Form
     {
         if (pauseItem is not null)
         {
-            pauseItem.Text = isUserPaused ? "恢复 Wu Gesture" : "暂停 Wu Gesture";
+            pauseItem.Text = isUserPaused ? $"恢复 {AppIdentity.DisplayName}" : $"暂停 {AppIdentity.DisplayName}";
         }
 
-        trayIcon.Text = isUserPaused ? $"{ApplicationDisplayName}（已暂停）" : ApplicationDisplayName;
+        trayIcon.Text = isUserPaused ? $"{AppIdentity.DisplayName}（已暂停）" : AppIdentity.DisplayName;
         trayIcon.Icon = isUserPaused && pausedTrayIcon is not null
             ? pausedTrayIcon
             : normalTrayIcon;
@@ -335,13 +330,13 @@ public sealed class MainForm : Form
 
             if (enabled)
             {
-                key.SetValue(StartupRegistryValueName, $"\"{Application.ExecutablePath}\" {StartupLaunchArgument}");
-                key.DeleteValue(LegacyStartupRegistryValueName, throwOnMissingValue: false);
+                key.SetValue(AppIdentity.StartupRegistryValueName, $"\"{Application.ExecutablePath}\" {AppIdentity.StartupLaunchArgument}");
+                key.DeleteValue(AppIdentity.LegacyStartupRegistryValueName, throwOnMissingValue: false);
             }
             else
             {
-                key.DeleteValue(StartupRegistryValueName, throwOnMissingValue: false);
-                key.DeleteValue(LegacyStartupRegistryValueName, throwOnMissingValue: false);
+                key.DeleteValue(AppIdentity.StartupRegistryValueName, throwOnMissingValue: false);
+                key.DeleteValue(AppIdentity.LegacyStartupRegistryValueName, throwOnMissingValue: false);
             }
         }
         catch
@@ -362,8 +357,8 @@ public sealed class MainForm : Form
             {
                 FileName = Application.ExecutablePath,
                 Arguments = startHiddenToTray
-                    ? $"{ElevatedRelaunchArgument} {StartupLaunchArgument}"
-                    : ElevatedRelaunchArgument,
+                    ? $"{AppIdentity.ElevatedRelaunchArgument} {AppIdentity.StartupLaunchArgument}"
+                    : AppIdentity.ElevatedRelaunchArgument,
                 UseShellExecute = true,
                 Verb = "runas"
             });
@@ -411,7 +406,7 @@ public sealed class MainForm : Form
 
             createdWebView.CoreWebView2.WebMessageReceived += OnWebMessageReceived;
             ConfigureWebViewHostMapping();
-            createdWebView.Source = new Uri("https://appassets.local/index.html");
+            createdWebView.Source = WebViewHostContract.EntryUri;
         }
         catch (ObjectDisposedException)
         {
@@ -473,7 +468,10 @@ public sealed class MainForm : Form
             return;
         }
 
-        var webDistPath = Path.Combine(AppContext.BaseDirectory, "Web", "dist");
+        var webDistPath = Path.Combine(
+            AppContext.BaseDirectory,
+            WebViewHostContract.OutputRootFolder,
+            WebViewHostContract.OutputDistFolder);
         if (!Directory.Exists(webDistPath))
         {
             throw new DirectoryNotFoundException(
@@ -481,7 +479,7 @@ public sealed class MainForm : Form
         }
 
         webView.CoreWebView2.SetVirtualHostNameToFolderMapping(
-            "appassets.local",
+            WebViewHostContract.HostName,
             webDistPath,
             CoreWebView2HostResourceAccessKind.Allow);
     }
@@ -1285,7 +1283,7 @@ public sealed class MainForm : Form
     private static string GetWindowStatePath()
     {
         var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        return Path.Combine(appData, "MyGesture", "window-state.json");
+        return Path.Combine(appData, AppIdentity.AppDataFolderName, ConfigStorageContract.WindowStateFileName);
     }
 
     private static Icon CreateGrayscaleIcon(Icon source)

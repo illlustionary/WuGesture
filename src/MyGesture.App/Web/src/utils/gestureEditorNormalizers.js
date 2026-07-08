@@ -15,6 +15,7 @@ import {
   DEFAULT_EDGE_ACTIONS,
   DEFAULT_UI_SETTINGS
 } from "../constants/gestureEditorDefaults";
+import { GESTURE_EDITOR_LIMITS } from "../constants/gestureEditorLimits";
 
 export function createDefaultUiSettings() {
   return cloneUiSettings(DEFAULT_UI_SETTINGS);
@@ -41,11 +42,11 @@ export function normalizeMouseTrailSettings(settings) {
   return {
     inactiveColor: String(settings?.inactiveColor ?? DEFAULT_UI_SETTINGS.mouseTrail.inactiveColor).trim() || DEFAULT_UI_SETTINGS.mouseTrail.inactiveColor,
     activeColor: String(settings?.activeColor ?? DEFAULT_UI_SETTINGS.mouseTrail.activeColor).trim() || DEFAULT_UI_SETTINGS.mouseTrail.activeColor,
-    inactiveThickness: clampFloat(settings?.inactiveThickness ?? legacyThickness, 1, 20, DEFAULT_UI_SETTINGS.mouseTrail.inactiveThickness),
-    activeThickness: clampFloat(settings?.activeThickness ?? legacyThickness, 1, 20, DEFAULT_UI_SETTINGS.mouseTrail.activeThickness),
-    thickness: clampFloat(legacyThickness ?? settings?.inactiveThickness, 1, 20, DEFAULT_UI_SETTINGS.mouseTrail.thickness),
-    inactiveOpacity: clampInteger(settings?.inactiveOpacity ?? legacyOpacity, 0, 100, DEFAULT_UI_SETTINGS.mouseTrail.inactiveOpacity),
-    activeOpacity: clampInteger(settings?.activeOpacity ?? legacyOpacity, 0, 100, DEFAULT_UI_SETTINGS.mouseTrail.activeOpacity)
+    inactiveThickness: clampFloat(settings?.inactiveThickness ?? legacyThickness, GESTURE_EDITOR_LIMITS.mouseTrailThickness.min, GESTURE_EDITOR_LIMITS.mouseTrailThickness.max, DEFAULT_UI_SETTINGS.mouseTrail.inactiveThickness),
+    activeThickness: clampFloat(settings?.activeThickness ?? legacyThickness, GESTURE_EDITOR_LIMITS.mouseTrailThickness.min, GESTURE_EDITOR_LIMITS.mouseTrailThickness.max, DEFAULT_UI_SETTINGS.mouseTrail.activeThickness),
+    thickness: clampFloat(legacyThickness ?? settings?.inactiveThickness, GESTURE_EDITOR_LIMITS.mouseTrailThickness.min, GESTURE_EDITOR_LIMITS.mouseTrailThickness.max, DEFAULT_UI_SETTINGS.mouseTrail.thickness),
+    inactiveOpacity: clampInteger(settings?.inactiveOpacity ?? legacyOpacity, GESTURE_EDITOR_LIMITS.opacityPercent.min, GESTURE_EDITOR_LIMITS.opacityPercent.max, DEFAULT_UI_SETTINGS.mouseTrail.inactiveOpacity),
+    activeOpacity: clampInteger(settings?.activeOpacity ?? legacyOpacity, GESTURE_EDITOR_LIMITS.opacityPercent.min, GESTURE_EDITOR_LIMITS.opacityPercent.max, DEFAULT_UI_SETTINGS.mouseTrail.activeOpacity)
   };
 }
 
@@ -53,18 +54,18 @@ export function normalizeGestureHintSettings(settings) {
   settings = normalizeObjectKeys(settings);
   return {
     fontFamily: String(settings?.fontFamily ?? DEFAULT_UI_SETTINGS.gestureHint.fontFamily).trim() || DEFAULT_UI_SETTINGS.gestureHint.fontFamily,
-    fontSize: clampFloat(settings?.fontSize, 10, 48, DEFAULT_UI_SETTINGS.gestureHint.fontSize),
+    fontSize: clampFloat(settings?.fontSize, GESTURE_EDITOR_LIMITS.hintFontSize.min, GESTURE_EDITOR_LIMITS.hintFontSize.max, DEFAULT_UI_SETTINGS.gestureHint.fontSize),
     textColor: String(settings?.textColor ?? DEFAULT_UI_SETTINGS.gestureHint.textColor).trim() || DEFAULT_UI_SETTINGS.gestureHint.textColor,
     backgroundColor: String(settings?.backgroundColor ?? DEFAULT_UI_SETTINGS.gestureHint.backgroundColor).trim() || DEFAULT_UI_SETTINGS.gestureHint.backgroundColor,
-    backgroundOpacity: clampInteger(settings?.backgroundOpacity, 0, 100, DEFAULT_UI_SETTINGS.gestureHint.backgroundOpacity),
-    width: clampInteger(settings?.width, 240, 960, DEFAULT_UI_SETTINGS.gestureHint.width),
-    widthPercent: clampInteger(settings?.widthPercent, 10, 90, DEFAULT_UI_SETTINGS.gestureHint.widthPercent),
+    backgroundOpacity: clampInteger(settings?.backgroundOpacity, GESTURE_EDITOR_LIMITS.opacityPercent.min, GESTURE_EDITOR_LIMITS.opacityPercent.max, DEFAULT_UI_SETTINGS.gestureHint.backgroundOpacity),
+    width: clampInteger(settings?.width, GESTURE_EDITOR_LIMITS.hintWidth.min, GESTURE_EDITOR_LIMITS.hintWidth.max, DEFAULT_UI_SETTINGS.gestureHint.width),
+    widthPercent: clampInteger(settings?.widthPercent, GESTURE_EDITOR_LIMITS.hintWidthPercent.min, GESTURE_EDITOR_LIMITS.hintWidthPercent.max, DEFAULT_UI_SETTINGS.gestureHint.widthPercent),
     autoWidth: Boolean(settings?.autoWidth ?? DEFAULT_UI_SETTINGS.gestureHint.autoWidth),
-    height: clampInteger(settings?.height, 80, 260, DEFAULT_UI_SETTINGS.gestureHint.height),
-    heightPercent: clampInteger(settings?.heightPercent, 5, 40, DEFAULT_UI_SETTINGS.gestureHint.heightPercent),
-    cornerRadius: clampFloat(settings?.cornerRadius, 0, 80, DEFAULT_UI_SETTINGS.gestureHint.cornerRadius),
-    bottomOffset: clampInteger(settings?.bottomOffset, 0, 1200, DEFAULT_UI_SETTINGS.gestureHint.bottomOffset),
-    bottomOffsetPercent: clampInteger(settings?.bottomOffsetPercent, 0, 100, DEFAULT_UI_SETTINGS.gestureHint.bottomOffsetPercent)
+    height: clampInteger(settings?.height, GESTURE_EDITOR_LIMITS.hintHeight.min, GESTURE_EDITOR_LIMITS.hintHeight.max, DEFAULT_UI_SETTINGS.gestureHint.height),
+    heightPercent: clampInteger(settings?.heightPercent, GESTURE_EDITOR_LIMITS.hintHeightPercent.min, GESTURE_EDITOR_LIMITS.hintHeightPercent.max, DEFAULT_UI_SETTINGS.gestureHint.heightPercent),
+    cornerRadius: clampFloat(settings?.cornerRadius, GESTURE_EDITOR_LIMITS.hintCornerRadius.min, GESTURE_EDITOR_LIMITS.hintCornerRadius.max, DEFAULT_UI_SETTINGS.gestureHint.cornerRadius),
+    bottomOffset: clampInteger(settings?.bottomOffset, GESTURE_EDITOR_LIMITS.hintBottomOffset.min, GESTURE_EDITOR_LIMITS.hintBottomOffset.max, DEFAULT_UI_SETTINGS.gestureHint.bottomOffset),
+    bottomOffsetPercent: clampInteger(settings?.bottomOffsetPercent, GESTURE_EDITOR_LIMITS.hintBottomOffsetPercent.min, GESTURE_EDITOR_LIMITS.hintBottomOffsetPercent.max, DEFAULT_UI_SETTINGS.gestureHint.bottomOffsetPercent)
   };
 }
 
@@ -200,11 +201,11 @@ export function normalizeBrightnessOperation(operation) {
 }
 
 export function normalizeAmount(value) {
-  return clampInteger(value, 1, 100, 5);
+  return clampInteger(value, GESTURE_EDITOR_LIMITS.amount.min, GESTURE_EDITOR_LIMITS.amount.max, GESTURE_EDITOR_LIMITS.amount.fallback);
 }
 
 export function normalizeFrictionCount(value) {
-  return clampInteger(value, 1, 20, 4);
+  return clampInteger(value, GESTURE_EDITOR_LIMITS.frictionCount.min, GESTURE_EDITOR_LIMITS.frictionCount.max, GESTURE_EDITOR_LIMITS.frictionCount.fallback);
 }
 
 export function normalizeEdgeActions(edgeActions) {

@@ -2,6 +2,7 @@
 import KeyboardIcon from '../../../assets/keyboard.svg'
 import CustomSelect from '../../../components/CustomSelect.vue'
 import { ACTION_TYPES, OPERATIONS } from '../../../constants/gestureEditorOptions'
+import { GESTURE_EDITOR_LIMITS } from '../../../constants/gestureEditorLimits'
 
 defineProps({
   draft: { type: Object, required: true },
@@ -62,8 +63,8 @@ const emit = defineEmits(['record-hotkey', 'update-operation'])
         v-model.number="draft.amount"
         class="scope-input"
         type="number"
-        min="1"
-        max="100"
+        :min="GESTURE_EDITOR_LIMITS.amount.min"
+        :max="GESTURE_EDITOR_LIMITS.amount.max"
       />
     </label>
 
@@ -76,8 +77,8 @@ const emit = defineEmits(['record-hotkey', 'update-operation'])
         v-model.number="draft.amount"
         class="scope-input"
         type="number"
-        min="1"
-        max="100"
+        :min="GESTURE_EDITOR_LIMITS.amount.min"
+        :max="GESTURE_EDITOR_LIMITS.amount.max"
       />
     </label>
   </div>
