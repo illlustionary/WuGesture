@@ -682,7 +682,7 @@ public sealed class MainForm : Form
         {
             type = "rules",
             configPath = loadedConfig.FilePath,
-            uiSettings = loadedConfig.Config.UiSettings,
+            uiSettings = CreateUiSettingsPayload(loadedConfig.Config.UiSettings),
             rules = loadedConfig.Config.Rules.Select(rule => new
             {
                 scope = rule.Scope,
@@ -720,6 +720,31 @@ public sealed class MainForm : Form
         });
 
         TryPostWebMessage(payload);
+    }
+
+    private static object CreateUiSettingsPayload(GestureUiSettings uiSettings)
+    {
+        return new
+        {
+            mouseTrail = uiSettings.MouseTrail,
+            gestureHint = uiSettings.GestureHint,
+            appBehavior = new
+            {
+                launchAtStartup = uiSettings.AppBehavior.LaunchAtStartup,
+                runAsAdministrator = uiSettings.AppBehavior.RunAsAdministrator,
+                closeButtonBehavior = uiSettings.AppBehavior.CloseButtonBehavior,
+                gesturePaused = uiSettings.AppBehavior.GesturePaused,
+                excludedApplications = uiSettings.AppBehavior.ExcludedApplications.Select(application => new
+                {
+                    name = application.Name,
+                    displayName = application.DisplayName,
+                    path = application.Path,
+                    disableEdgeActions = application.DisableEdgeActions,
+                    icon = GetApplicationIconDataUrl(application.Path)
+                }).ToArray()
+            },
+            webDav = uiSettings.WebDav
+        };
     }
 
     private void HandleWebMessage(string json)

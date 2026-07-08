@@ -99,7 +99,7 @@ src\components
 - `HoverBubble.vue`：悬浮提示气泡。
 - `IconActionButton.vue`：共享图标按钮，集中导入 `src\assets` 下的 SVG，并通过 `icon` key 映射到按钮图标。
 - `ConfirmDialog.vue`：重大操作确认弹窗，带缩放进入/退出动画。
-- `CustomSelect.vue`：共享自定义单选下拉控件，用于替代浏览器默认 select。
+- `CustomSelect.vue`：共享弹层式自定义单选下拉控件，不复用浏览器默认 select。
 - `ToggleCheckbox.vue`：共享自定义复选控件，用于替代浏览器默认 checkbox。
 - `ScopeCreateDialog.vue`：分类或作用域名称创建/编辑弹窗。
 - `ScopeSidebar.vue`：分类和程序等作用域列表侧栏。
@@ -167,8 +167,8 @@ src\pages
 - `分类` 页右侧包含“应用程序”和“手势列表”两个区块，分类页可管理当前分类下的 App。
 - `程序` 页右侧只展示手势列表；程序页左侧会列出已保存的全部程序，程序规则仍按 app 作用域单独维护。
 - `边缘操作` 页按触发角、摩擦边、边缘滚动三组展示配置；点击卡片打开独立弹窗编辑启用状态、命令和参数，名称由触发类型、位置与滚轮方向自动生成，关闭弹窗后自动保存。
-- `排除项` 页维护不执行鼠标手势的程序列表；可通过拖动准星或浏览 exe 添加程序，也可为单个排除项勾选“同时禁用边缘操作”。
-- `设置` 页右上角提供恢复默认按钮，点击后通过确认弹窗二次确认；页面中的调整会在输入变化时 debounce 自动保存，并在控件变更结束或离开页面时强制提交最后一次修改；本地编辑期间会避免宿主回传覆盖当前滑块值。设置页也包含开机自启动、以管理员身份打开、暂停 Wu Gesture、关闭按钮行为，以及 WebDAV 地址、账号、密码和远程路径。开机自启动、以管理员身份打开和暂停 Wu Gesture 等布尔项使用共享自定义复选控件，单选下拉使用共享自定义 `CustomSelect`。轨迹线和底部提示窗预览分别内置在对应设置区块顶部。WebDAV 区域提供测试、恢复和保存按钮；当前 WebDAV 参数测试成功后，才允许把当前配置保存到远程或从远程恢复本地配置。
+- `排除项` 页维护不执行鼠标手势的程序列表；可通过拖动准星或浏览 exe 添加程序，也可为单个排除项勾选“同时禁用边缘操作”，列表会展示从 exe 路径动态提取的应用图标。
+- `设置` 页右上角提供恢复默认按钮，点击后通过确认弹窗二次确认；页面中的调整会在输入变化时 debounce 自动保存，并在控件变更结束或离开页面时强制提交最后一次修改；本地编辑期间会避免宿主回传覆盖当前滑块值。设置页也包含开机自启动、以管理员身份打开、暂停 Wu Gesture、关闭按钮行为，以及 WebDAV 地址、账号、密码和远程路径。开机自启动、以管理员身份打开和暂停 Wu Gesture 等布尔项使用共享自定义复选控件，单选下拉使用共享弹层式 `CustomSelect`。轨迹线和底部提示窗预览分别内置在对应设置区块顶部。WebDAV 区域提供测试、恢复和保存按钮；当前 WebDAV 参数测试成功后，才允许把当前配置保存到远程或从远程恢复本地配置。
 - 分类新增通过名称弹窗完成，不再使用左侧内联输入框；分类和程序名称都通过双击列表项后在弹窗里重命名。
 - 分类页、程序页和排除项页添加程序时都会先显示前端弹窗，用户可按住“拖动准星选择窗口”拖到目标窗口松开，或选择“浏览 exe 文件”作为备用方式。
 - 程序列表和详情会展示从 exe 路径动态提取的应用图标；图标通过 WebView 消息传递，不写入配置文件。
@@ -200,7 +200,7 @@ src\pages
 后端发送：
 
 - `{ type: "status", ... }`
-- `{ type: "rules", rules: [...], applications: [{ name, displayName, path, category, icon }, ...], edgeActions: [...], uiSettings: {...}, ... }`
+- `{ type: "rules", rules: [...], applications: [{ name, displayName, path, category, icon }, ...], edgeActions: [...], uiSettings: {...}, ... }`；其中 `uiSettings.appBehavior.excludedApplications` 的运行态消息项会额外带 `icon`，不写入配置文件。
 - `{ type: "application-selected", requestId: "...", name: "...", displayName: "...", path: "...", category: "...", icon: "..." }`
 - `{ type: "gesture-recorded", requestId: "...", button: "right|middle", pattern: ["Down", "Right"] }`
 - `{ type: "hotkey-recorded", requestId: "...", keys: ["Control", "W"] }`

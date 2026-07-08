@@ -1,10 +1,49 @@
 <script setup>
+import { computed } from 'vue'
 import AppShell from '../../components/AppShell.vue'
 import IconActionButton from '../../components/IconActionButton.vue'
 import ToggleCheckbox from '../../components/ToggleCheckbox.vue'
 import { useGestureEditorStore } from '../../composables/gestureEditorStore'
 
 const editor = useGestureEditorStore()
+
+const exclusionsWithIcons = computed(() =>
+  editor.state.uiSettings.appBehavior.excludedApplications.map(application => {
+    const matchedApplication = editor.state.applications.find(item => {
+      const applicationPath = String(application.path ?? '')
+        .trim()
+        .toLowerCase()
+      const itemPath = String(item.path ?? '')
+        .trim()
+        .toLowerCase()
+      if (applicationPath && itemPath) {
+        return applicationPath === itemPath
+      }
+
+      return (
+        String(item.name ?? '')
+          .trim()
+          .toLowerCase() ===
+        String(application.name ?? '')
+          .trim()
+          .toLowerCase()
+      )
+    })
+
+    return {
+      application,
+      icon: application.icon || matchedApplication?.icon || '',
+      fallbackGlyph: (
+        application.displayName ||
+        application.name ||
+        application.path ||
+        '?'
+      )
+        .slice(0, 1)
+        .toUpperCase()
+    }
+  })
+)
 
 function toggleDisableEdgeActions(application) {
   editor.updateExcludedApplication(application, {
@@ -20,13 +59,13 @@ function toggleDisableEdgeActions(application) {
     layout-class="page-shell__grid--single"
   >
     <template #actions>
-      <button
-        type="button"
-        class="primary-button"
+      <IconActionButton
+        icon="add"
+        label="添加程序"
+        color="var(--accent-strong)"
+        class="exclusion-add-button"
         @click="editor.openExcludedApplicationPicker()"
-      >
-        添加程序
-      </button>
+      />
     </template>
 
     <template #right>
@@ -35,12 +74,28 @@ function toggleDisableEdgeActions(application) {
         class="exclusion-list"
       >
         <article
-          v-for="(application, index) in editor.state.uiSettings.appBehavior.excludedApplications"
+          v-for="(
+            { application, icon, fallbackGlyph }, index
+          ) in exclusionsWithIcons"
           :key="application.path || application.name || index"
           class="exclusion-item"
         >
+          <span
+            class="exclusion-item__icon"
+            aria-hidden="true"
+          >
+            <img
+              v-if="icon"
+              class="app-icon app-icon--small"
+              :src="icon"
+              alt=""
+            />
+            <span v-else>{{ fallbackGlyph }}</span>
+          </span>
           <div class="exclusion-item__main">
-            <strong>{{ application.displayName || application.name || application.path }}</strong>
+            <strong>{{
+              application.displayName || application.name || application.path
+            }}</strong>
             <span>{{ application.path || application.name }}</span>
           </div>
           <ToggleCheckbox
@@ -74,15 +129,34 @@ function toggleDisableEdgeActions(application) {
   gap: 10px;
 }
 
+.exclusion-add-button {
+  width: 36px;
+  height: 36px;
+  border-radius: 14px;
+}
+
 .exclusion-item {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   padding: 12px;
   border: 1px solid var(--border-subtle);
   border-radius: 16px;
   background: var(--panel-inset);
+}
+
+.exclusion-item__icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: var(--interactive-icon-bg);
+  color: var(--accent-strong);
+  font-size: 14px;
+  font-weight: 700;
+  overflow: hidden;
 }
 
 .exclusion-item__main {
@@ -120,7 +194,12 @@ function toggleDisableEdgeActions(application) {
 
 @media (max-width: 720px) {
   .exclusion-item {
-    grid-template-columns: 1fr;
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .exclusion-item :deep(.toggle-checkbox),
+  .exclusion-item .icon-action-button {
+    grid-column: 2;
   }
 }
 </style>

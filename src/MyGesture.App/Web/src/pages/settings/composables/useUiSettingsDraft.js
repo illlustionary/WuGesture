@@ -207,6 +207,7 @@ function normalizeExcludedApplication(application) {
     name,
     displayName: String(application.displayName ?? name).trim() || name || path,
     path,
+    icon: String(application.icon ?? '').trim(),
     disableEdgeActions: Boolean(application.disableEdgeActions ?? false)
   }
 }
