@@ -12,22 +12,22 @@ import {
   DEFAULT_UI_SETTINGS
 } from "../constants/gestureEditorDefaults";
 import {
-  buildScope,
+  cloneUiSettings,
   createDefaultUiSettings,
+  isSameApplicationIdentity,
+  normalizeExcludedApplication,
+  normalizeExcludedApplications,
   normalizeActionType,
   normalizeAmount,
   normalizeBrightnessOperation,
   normalizeEdgeActionInPlace,
   normalizeEdgeActions,
-  normalizeFrictionCount,
   normalizeMouseButton,
   normalizeUiSettings,
   normalizeVolumeOperation,
-  normalizeWebDavSettings,
   normalizeWindowOperation,
   parseKeys,
   parsePattern,
-  parseScope,
   toPatternText
 } from "../utils/gestureEditorNormalizers";
 import {
@@ -35,6 +35,21 @@ import {
   getEdgeActionLabel,
   getGestureMnemonic
 } from "../utils/gestureEditorFormatters";
+import {
+  collectAppItems as collectAppItemsFromState,
+  collectCategoryItems as collectCategoryItemsFromState
+} from "../utils/gestureEditorCollections";
+import {
+  buildConfigPayload,
+  getWebDavSignature as createWebDavSignature
+} from "../utils/gestureEditorPayloads";
+import {
+  createEmptyGestureDraft,
+  createRuleModel,
+  toViewApplication,
+  toViewRule as toViewRuleModel
+} from "../utils/gestureEditorViewModels";
+import { useGestureEditorApplicationPicker } from "./useGestureEditorApplicationPicker";
 
 const state = reactive({
   statusText: "启动中",
@@ -70,7 +85,6 @@ const state = reactive({
 
 const activeScope = ref("global");
 const initialized = ref(false);
-const pendingApplicationPickerRequests = new Map();
 let autoSaveTimer = 0;
 let pendingAutoSaveOptions = {};
 let toast = null;
@@ -581,21 +595,33 @@ function removeAppFromCategory(appName, categoryName = getSelectedName("category
   }
 }
 
+const applicationPicker = useGestureEditorApplicationPicker({
+  state,
+  addExcludedApplication,
+  closeApplicationPickerState,
+  createRequestId,
+  createRule,
+  ensureApplication,
+  getScopeItems,
+  postWebMessage,
+  scheduleSaveRules,
+  setMessage,
+  setSelectedName
+});
+
 function openApplicationPicker(categoryName = "", scopeKind = "category") {
-  state.applicationPickerCategory = String(categoryName ?? "").trim();
-  state.applicationPickerScopeKind = scopeKind === "app" ? "app" : "category";
-  state.applicationPickerTarget = "scope";
-  state.applicationPickerOpen = true;
+  applicationPicker.openApplicationPicker(categoryName, scopeKind);
 }
 
 function openExcludedApplicationPicker() {
-  state.applicationPickerCategory = "";
-  state.applicationPickerScopeKind = "";
-  state.applicationPickerTarget = "exclusion";
-  state.applicationPickerOpen = true;
+  applicationPicker.openExcludedApplicationPicker();
 }
 
 function closeApplicationPicker() {
+  applicationPicker.closeApplicationPicker();
+}
+
+function closeApplicationPickerState() {
   state.applicationPickerOpen = false;
   state.applicationPickerCategory = "";
   state.applicationPickerScopeKind = "";
@@ -603,70 +629,15 @@ function closeApplicationPicker() {
 }
 
 function selectApplication(categoryName = "") {
-  const category = String(categoryName || state.applicationPickerCategory || "").trim();
-  const requestId = createRequestId();
-  pendingApplicationPickerRequests.set(requestId, {
-    target: state.applicationPickerTarget,
-    scopeKind: state.applicationPickerScopeKind,
-    category
-  });
-  closeApplicationPicker();
-  postWebMessage({
-    type: "select-application",
-    requestId,
-    category
-  });
+  applicationPicker.selectApplication(categoryName);
 }
 
 function pickApplicationWindow(categoryName = "") {
-  const category = String(categoryName || state.applicationPickerCategory || "").trim();
-  const requestId = createRequestId();
-  pendingApplicationPickerRequests.set(requestId, {
-    target: state.applicationPickerTarget,
-    scopeKind: state.applicationPickerScopeKind,
-    category
-  });
-  closeApplicationPicker();
-  postWebMessage({
-    type: "pick-application-window",
-    requestId,
-    category
-  });
+  applicationPicker.pickApplicationWindow(categoryName);
 }
 
 function addSelectedApplication(message) {
-  const name = String(message.name ?? "").trim();
-  if (!name) {
-    return;
-  }
-
-  const requestContext = pendingApplicationPickerRequests.get(message.requestId) ?? null;
-  pendingApplicationPickerRequests.delete(message.requestId);
-  if (requestContext?.target === "exclusion") {
-    addExcludedApplication(message);
-    return;
-  }
-
-  const application = ensureApplication(name);
-  application.displayName = String(message.displayName ?? application.displayName ?? name).trim();
-  application.path = String(message.path ?? "").trim();
-  const selectedCategory = String(message.category ?? "").trim();
-  if (selectedCategory || requestContext?.scopeKind !== "app") {
-    application.category = selectedCategory;
-  }
-  application.icon = String(message.icon ?? application.icon ?? "").trim();
-
-  if (requestContext?.scopeKind === "app" && !getScopeItems("app").some((item) => item.name === application.name)) {
-    state.rules.push(createRule("app", application.name));
-  }
-
-  setSelectedName("app", application.name);
-  if (application.category) {
-    setSelectedName("category", application.category);
-  }
-
-  setMessage("已添加程序。", "success");
-  scheduleSaveRules();
+  applicationPicker.addSelectedApplication(message);
 }
 
 function addExcludedApplication(message) {
@@ -1066,31 +1037,7 @@ function setGesturePaused(paused) {
 }
 
 function toViewRule(rule) {
-  const scope = parseScope(rule.scope);
-  return {
-    id: createRuleId(state.nextId++),
-    scopeKind: scope.kind,
-    scopeName: scope.name,
-    patternText: toPatternText(rule.pattern),
-    mouseButton: normalizeMouseButton(rule.mouseButton),
-    actionName: rule.actionName ?? "",
-    keysText: Array.isArray(rule.keys) ? rule.keys.join(" + ") : "",
-    actionType: normalizeActionType(rule.actionType),
-    windowOperation: normalizeWindowOperation(rule.operation),
-    volumeOperation: normalizeVolumeOperation(rule.operation),
-    brightnessOperation: normalizeBrightnessOperation(rule.operation),
-    amount: normalizeAmount(rule.amount)
-  };
-}
-
-function toViewApplication(application) {
-  return {
-    name: String(application.name ?? "").trim(),
-    displayName: String(application.displayName ?? application.name ?? "").trim(),
-    path: String(application.path ?? "").trim(),
-    category: String(application.category ?? "").trim(),
-    icon: String(application.icon ?? "").trim()
-  };
+  return toViewRuleModel(rule, createRuleId(state.nextId++));
 }
 
 function createRule(scopeKind, scopeName, values = {}) {
@@ -1098,23 +1045,7 @@ function createRule(scopeKind, scopeName, values = {}) {
     ensureApplication(scopeName);
   }
 
-  return {
-    id: createRuleId(state.nextId++),
-    scopeKind,
-    scopeName,
-    patternText: values.patternText ?? "Left",
-    mouseButton: normalizeMouseButton(values.mouseButton),
-    actionName: values.actionName ?? getGestureMnemonic({
-      patternText: values.patternText ?? "Left",
-      mouseButton: values.mouseButton
-    }),
-    keysText: values.keysText ?? "",
-    actionType: normalizeActionType(values.actionType),
-    windowOperation: normalizeWindowOperation(values.windowOperation),
-    volumeOperation: normalizeVolumeOperation(values.volumeOperation),
-    brightnessOperation: normalizeBrightnessOperation(values.brightnessOperation),
-    amount: normalizeAmount(values.amount)
-  };
+  return createRuleModel(scopeKind, scopeName, values, createRuleId(state.nextId++));
 }
 
 function ensureApplication(name) {
@@ -1128,85 +1059,8 @@ function ensureApplication(name) {
   return application;
 }
 
-function toPayloadRule(rule) {
-  return {
-    scope: buildScope(rule.scopeKind, rule.scopeName),
-    mouseButton: normalizeMouseButton(rule.mouseButton),
-    pattern: parsePattern(rule.patternText),
-    actionName: String(rule.actionName ?? "").trim() || getGestureMnemonic(rule),
-    action: toPayloadAction(rule)
-  };
-}
-
-function toPayloadAction(rule) {
-  if (normalizeActionType(rule.actionType) === "window") {
-    return {
-      type: "window",
-      operation: normalizeWindowOperation(rule.windowOperation)
-    };
-  }
-
-  if (normalizeActionType(rule.actionType) === "volume") {
-    return {
-      type: "volume",
-      operation: normalizeVolumeOperation(rule.volumeOperation),
-      amount: normalizeAmount(rule.amount)
-    };
-  }
-
-  if (normalizeActionType(rule.actionType) === "brightness") {
-    return {
-      type: "brightness",
-      operation: normalizeBrightnessOperation(rule.brightnessOperation),
-      amount: normalizeAmount(rule.amount)
-    };
-  }
-
-  return {
-    type: "hotkey",
-    keys: parseKeys(rule.keysText)
-  };
-}
-
-function toPayloadApplication(application) {
-  return {
-    name: application.name.trim(),
-    displayName: String(application.displayName || application.name || "").trim(),
-    path: application.path.trim(),
-    category: application.category.trim()
-  };
-}
-
-function toPayloadEdgeAction(action) {
-  normalizeEdgeActionInPlace(action);
-  return {
-    enabled: Boolean(action.enabled),
-    triggerType: action.triggerType,
-    location: action.location,
-    wheelDirection: action.wheelDirection,
-    frictionCount: normalizeFrictionCount(action.frictionCount),
-    action: toPayloadAction(action)
-  };
-}
-
-function toPayloadUiSettings(settings) {
-  const payload = normalizeUiSettings(settings);
-  payload.appBehavior.excludedApplications = payload.appBehavior.excludedApplications.map((application) => ({
-    name: application.name,
-    displayName: application.displayName,
-    path: application.path,
-    disableEdgeActions: application.disableEdgeActions
-  }));
-  return payload;
-}
-
 function getConfigPayload() {
-  return {
-    rules: state.rules.map(toPayloadRule),
-    applications: state.applications.map(toPayloadApplication),
-    edgeActions: state.edgeActions.map(toPayloadEdgeAction),
-    uiSettings: toPayloadUiSettings(state.uiSettings)
-  };
+  return buildConfigPayload(state);
 }
 
 function handleWebDavResult(message) {
@@ -1229,64 +1083,15 @@ function isWebDavTested(settings = state.uiSettings.webDav) {
 }
 
 function getWebDavSignature(settings = state.uiSettings.webDav) {
-  const normalized = normalizeWebDavSettings(settings);
-  return JSON.stringify(normalized);
+  return createWebDavSignature(settings);
 }
 
 function collectCategoryItems() {
-  const counts = new Map();
-
-  for (const rule of categoryRulesSnapshot()) {
-    if (rule.scopeName) {
-      counts.set(rule.scopeName, (counts.get(rule.scopeName) ?? 0) + 1);
-    }
-  }
-
-  for (const application of state.applications) {
-    if (application.category) {
-      counts.set(application.category, counts.get(application.category) ?? 0);
-    }
-  }
-
-  return [...counts.entries()]
-    .map(([name, count]) => {
-      const application = state.applications.find((item) => item.name === name);
-      return {
-        name,
-        count,
-        displayName: application?.displayName || name,
-        icon: application?.icon || ""
-      };
-    })
-    .sort((left, right) => left.name.localeCompare(right.name, "zh-Hans-CN"));
+  return collectCategoryItemsFromState(categoryRulesSnapshot(), state.applications);
 }
 
 function collectAppItems() {
-  const counts = new Map();
-
-  for (const rule of appRulesSnapshot()) {
-    if (rule.scopeName) {
-      counts.set(rule.scopeName, (counts.get(rule.scopeName) ?? 0) + 1);
-    }
-  }
-
-  for (const application of state.applications) {
-    if (application.name) {
-      counts.set(application.name, counts.get(application.name) ?? 0);
-    }
-  }
-
-  return [...counts.entries()]
-    .map(([name, count]) => {
-      const application = state.applications.find((item) => item.name === name);
-      return {
-        name,
-        count,
-        displayName: application?.displayName || name,
-        icon: application?.icon || ""
-      };
-    })
-    .sort((left, right) => left.name.localeCompare(right.name, "zh-Hans-CN"));
+  return collectAppItemsFromState(appRulesSnapshot(), state.applications);
 }
 
 function openGestureEditor(mode, rule, scopeKind, scopeName) {
@@ -1367,20 +1172,6 @@ function applyRecordedHotkey(message) {
   } else {
     scheduleSaveRules();
   }
-}
-
-function createEmptyGestureDraft() {
-  return {
-    actionName: "",
-    patternText: "",
-    mouseButton: "right",
-    keysText: "",
-    actionType: "hotkey",
-    windowOperation: "toggle-maximize",
-    volumeOperation: "increase",
-    brightnessOperation: "increase",
-    amount: 5
-  };
 }
 
 function createRuleId(seed) {
