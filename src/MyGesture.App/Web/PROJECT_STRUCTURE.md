@@ -119,6 +119,9 @@ src\composables
 
 - `gestureEditorStore.js`：共享编辑状态、规则加载保存、作用域选择、应用/分类状态、WebView 消息、快捷键监听、手势录制状态和 UI 设置同步；静态选项、默认值和纯格式化/归一化逻辑放在 `constants` / `utils`。
 - `useGestureEditorApplicationPicker.js`：共享 store 内部使用的应用选择器流程，包括打开选择器、发起窗口/文件选择请求，以及处理宿主返回的程序信息。
+- `gestureEditor\useGestureScopes.js`：分类/程序 scope 选择、新增、重命名、删除和规则查询。
+- `gestureEditor\useGestureApplications.js`：应用程序视图数据读取、创建、显示名和分类字段更新。
+- `gestureEditor\useCategoryApplications.js`：分类与应用程序之间的关联和移除。
 
 ## Constants
 

@@ -50,6 +50,9 @@ import {
   toViewRule as toViewRuleModel
 } from "../utils/gestureEditorViewModels";
 import { useGestureEditorApplicationPicker } from "./useGestureEditorApplicationPicker";
+import { useCategoryApplications } from "./gestureEditor/useCategoryApplications";
+import { useGestureApplications } from "./gestureEditor/useGestureApplications";
+import { useGestureScopes } from "./gestureEditor/useGestureScopes";
 
 const state = reactive({
   statusText: "启动中",
@@ -261,52 +264,65 @@ function replaceConfig(rules, applications, uiSettings = DEFAULT_UI_SETTINGS, ed
   ensureSelection("app");
 }
 
-function setActiveScope(scope) {
-  activeScope.value = scope;
-  ensureSelection(scope);
-}
+let scopeActions;
 
-function selectScope(kind, name) {
-  const trimmed = String(name ?? "").trim();
-  if (!trimmed) {
-    return;
-  }
+const applicationActions = useGestureApplications({
+  state,
+  getSelectedName: (kind) => scopeActions.getSelectedName(kind),
+  scheduleSaveRules,
+  setMessage
+});
 
-  setSelectedName(kind, trimmed);
-}
+scopeActions = useGestureScopes({
+  state,
+  activeScope,
+  collectAppItems: () => collectAppItemsFromState(scopeActions.getRulesByKind("app"), state.applications),
+  collectCategoryItems: () => collectCategoryItemsFromState(scopeActions.getRulesByKind("category"), state.applications),
+  createRule,
+  scheduleSaveRules,
+  setMessage
+});
 
-function getRulesForScope(kind, name = "") {
-  if (kind === "global") {
-    return getRulesByKind("global");
-  }
+const categoryApplicationActions = useCategoryApplications({
+  state,
+  ensureApplication: applicationActions.ensureApplication,
+  getSelectedName: (kind) => scopeActions.getSelectedName(kind),
+  scheduleSaveRules,
+  setMessage,
+  setSelectedName: (kind, name) => scopeActions.setSelectedName(kind, name)
+});
 
-  const scopeName = String(name || getSelectedName(kind)).trim();
-  if (!scopeName) {
-    return [];
-  }
+const {
+  createScopeTarget,
+  deleteSelectedScope,
+  ensureSelection,
+  getFirstScopeName,
+  getRulesByKind,
+  getRulesForScope,
+  getScopeItems,
+  getSelectedName,
+  getVisibleRules,
+  renameSelectedScope,
+  selectScope,
+  setActiveScope,
+  setSelectedName
+} = scopeActions;
 
-  return state.rules.filter((rule) => rule.scopeKind === kind && rule.scopeName === scopeName);
-}
+const {
+  ensureApplication,
+  getApplication,
+  getApplicationsForCategory,
+  updateApplicationCategory,
+  updateApplicationDisplayName
+} = applicationActions;
 
-function getVisibleRules(scope) {
-  return getRulesForScope(scope, getSelectedName(scope));
-}
+const {
+  assignSelectedAppToCategory,
+  removeAppFromCategory
+} = categoryApplicationActions;
 
-function getRulesByKind(kind) {
-  return state.rules.filter((rule) => rule.scopeKind === kind);
-}
-
-function getScopeItems(kind) {
-  return kind === "category" ? collectCategoryItems() : collectAppItems();
-}
-
-function categoryRulesSnapshot() {
-  return getRulesByKind("category");
-}
-
-function appRulesSnapshot() {
-  return getRulesByKind("app");
-}
+const collectCategoryItems = () => getScopeItems("category");
+const collectAppItems = () => getScopeItems("app");
 
 function addRule(kind = activeScope.value, name = getSelectedName(kind)) {
   openAddRule(kind, name);
@@ -443,156 +459,6 @@ function updateRuleActionName(rule, actionName) {
 
   rule.actionName = String(actionName ?? "").trim();
   scheduleSaveRules();
-}
-
-function createScopeTarget(kind, name) {
-  const trimmed = String(name ?? "").trim();
-  if (!trimmed) {
-    setMessage("请输入名称后再新增。", "error");
-    return false;
-  }
-
-  if (!getScopeItems(kind).some((item) => item.name === trimmed)) {
-    state.rules.push(createRule(kind, trimmed));
-  }
-
-  setSelectedName(kind, trimmed);
-  setMessage("已新增。", "success");
-  scheduleSaveRules();
-  return true;
-}
-
-function renameSelectedScope(kind, nextName, sourceName = getSelectedName(kind)) {
-  const name = String(nextName ?? "").trim();
-  const currentName = String(sourceName ?? "").trim() || getSelectedName(kind);
-  if (!name || !currentName || currentName === name) {
-    return false;
-  }
-
-  const scopeItems = getScopeItems(kind);
-  if (scopeItems.some((item) => item.name === name && item.name !== currentName)) {
-    setMessage("名称已存在，请换一个分类名称。", "error");
-    return false;
-  }
-
-  for (const rule of state.rules) {
-    if (rule.scopeKind === kind && rule.scopeName === currentName) {
-      rule.scopeName = name;
-    }
-  }
-
-  if (kind === "category") {
-    for (const application of state.applications) {
-      if (application.category === currentName) {
-        application.category = name;
-      }
-    }
-  } else if (kind === "app") {
-    const application = state.applications.find((item) => item.name === currentName);
-    if (application) {
-      application.name = name;
-    }
-  }
-
-  setSelectedName(kind, name);
-  scheduleSaveRules();
-  setMessage(kind === "category" ? "已更新分类名称。" : "已更新程序名称。", "success");
-  return true;
-}
-
-function deleteSelectedScope(kind = activeScope.value) {
-  const name = getSelectedName(kind);
-  if (!name) {
-    return;
-  }
-
-  state.rules = state.rules.filter((rule) => !(rule.scopeKind === kind && rule.scopeName === name));
-  if (kind === "category") {
-    for (const application of state.applications) {
-      if (application.category === name) {
-        application.category = "";
-      }
-    }
-  } else if (kind === "app") {
-    state.applications = state.applications.filter((application) => application.name !== name);
-  }
-
-  ensureSelection(kind);
-  setMessage("已删除当前项。", "success");
-  scheduleSaveRules();
-}
-
-function getApplicationsForCategory(categoryName = getSelectedName("category")) {
-  const trimmed = String(categoryName ?? "").trim();
-  if (!trimmed) {
-    return [];
-  }
-
-  return state.applications.filter((application) => application.category === trimmed);
-}
-
-function getApplication(appName = getSelectedName("app")) {
-  const name = String(appName ?? "").trim();
-  if (!name) {
-    return null;
-  }
-
-  return state.applications.find((application) => application.name === name) ?? null;
-}
-
-function updateApplicationDisplayName(appName = getSelectedName("app"), displayName = "") {
-  const name = String(appName ?? "").trim();
-  if (!name) {
-    setMessage("请先选择一个程序。", "error");
-    return;
-  }
-
-  const application = ensureApplication(name);
-  application.displayName = String(displayName ?? "").trim();
-  scheduleSaveRules();
-}
-
-function updateApplicationCategory(appName = getSelectedName("app"), categoryName = "") {
-  const name = String(appName ?? "").trim();
-  if (!name) {
-    setMessage("请先选择一个程序。", "error");
-    return;
-  }
-
-  const application = ensureApplication(name);
-  application.category = String(categoryName ?? "").trim();
-  setMessage(application.category ? "已设置程序分类。" : "已清除程序分类。", "success");
-  scheduleSaveRules();
-}
-
-function assignSelectedAppToCategory(categoryName = getSelectedName("category"), appName = getSelectedName("app")) {
-  const category = String(categoryName ?? "").trim();
-  const name = String(appName ?? "").trim();
-  if (!category || !name) {
-    setMessage("请先选择分类和程序。", "error");
-    return;
-  }
-
-  const application = ensureApplication(name);
-  application.category = category;
-  setSelectedName("category", category);
-  setMessage("已关联程序到分类。", "success");
-  scheduleSaveRules();
-}
-
-function removeAppFromCategory(appName, categoryName = getSelectedName("category")) {
-  const category = String(categoryName ?? "").trim();
-  const name = String(appName ?? "").trim();
-  if (!category || !name) {
-    return;
-  }
-
-  const application = state.applications.find((item) => item.name === name && item.category === category);
-  if (application) {
-    application.category = "";
-    setMessage("已移除分类关联。", "success");
-    scheduleSaveRules();
-  }
 }
 
 const applicationPicker = useGestureEditorApplicationPicker({
@@ -912,42 +778,6 @@ function isRecordingHotkey(target) {
   return state.recordingHotkeyTarget === target;
 }
 
-function ensureSelection(kind) {
-  if (kind !== "category" && kind !== "app") {
-    return;
-  }
-
-  const selectedName = getSelectedName(kind);
-  const items = getScopeItems(kind);
-  if (!items.some((item) => item.name === selectedName)) {
-    setSelectedName(kind, items[0]?.name ?? "");
-  }
-}
-
-function getSelectedName(kind) {
-  if (kind === "category") {
-    return state.selectedCategory;
-  }
-
-  if (kind === "app") {
-    return state.selectedApp;
-  }
-
-  return "";
-}
-
-function setSelectedName(kind, name) {
-  if (kind === "category") {
-    state.selectedCategory = name;
-  } else if (kind === "app") {
-    state.selectedApp = name;
-  }
-}
-
-function getFirstScopeName(kind) {
-  return getScopeItems(kind)[0]?.name ?? "";
-}
-
 function setMessage(message, stateName = "idle", options = {}) {
   state.configMessage = message;
   state.configMessageState = stateName;
@@ -1048,17 +878,6 @@ function createRule(scopeKind, scopeName, values = {}) {
   return createRuleModel(scopeKind, scopeName, values, createRuleId(state.nextId++));
 }
 
-function ensureApplication(name) {
-  const trimmed = String(name ?? "").trim();
-  let application = state.applications.find((item) => item.name === trimmed);
-  if (!application) {
-    application = { name: trimmed, displayName: trimmed, path: "", category: "", icon: "" };
-    state.applications.push(application);
-  }
-
-  return application;
-}
-
 function getConfigPayload() {
   return buildConfigPayload(state);
 }
@@ -1084,14 +903,6 @@ function isWebDavTested(settings = state.uiSettings.webDav) {
 
 function getWebDavSignature(settings = state.uiSettings.webDav) {
   return createWebDavSignature(settings);
-}
-
-function collectCategoryItems() {
-  return collectCategoryItemsFromState(categoryRulesSnapshot(), state.applications);
-}
-
-function collectAppItems() {
-  return collectAppItemsFromState(appRulesSnapshot(), state.applications);
 }
 
 function openGestureEditor(mode, rule, scopeKind, scopeName) {
