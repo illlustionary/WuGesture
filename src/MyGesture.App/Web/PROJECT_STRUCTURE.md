@@ -118,6 +118,7 @@ src\composables
 ```
 
 - `gestureEditorStore.js`：共享编辑状态、规则加载保存、作用域选择、应用/分类状态、WebView 消息、快捷键监听、手势录制状态和 UI 设置同步；静态选项、默认值和纯格式化/归一化逻辑放在 `constants` / `utils`。
+- `useGestureEditorApplicationPicker.js`：共享 store 内部使用的应用选择器流程，包括打开选择器、发起窗口/文件选择请求，以及处理宿主返回的程序信息。
 
 ## Constants
 
@@ -140,6 +141,9 @@ src\utils
 
 - `gestureEditorNormalizers.js`：规则 scope、手势文本、快捷键、动作类型、边缘操作和 UI 设置的解析与归一化工具。
 - `gestureEditorFormatters.js`：手势助记符、动作展示文案和边缘操作展示文案。
+- `gestureEditorPayloads.js`：把编辑器内存模型转换成 WebView 保存、WebDAV 测试/备份使用的配置 payload。
+- `gestureEditorViewModels.js`：把宿主配置消息转换成编辑器视图模型，并提供规则和手势草稿模板。
+- `gestureEditorCollections.js`：按规则和应用程序列表聚合分类/程序侧栏条目。
 
 ## Pages
 
