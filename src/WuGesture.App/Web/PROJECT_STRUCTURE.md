@@ -119,11 +119,13 @@ src\components
 src\composables
 ```
 
-- `gestureEditorStore.js`：共享编辑状态、规则加载保存、作用域选择、应用/分类状态、WebView 消息、快捷键监听、手势录制状态和 UI 设置同步；静态选项、默认值和纯格式化/归一化逻辑放在 `constants` / `utils`。
+- `gestureEditorStore.js`：共享编辑状态和编辑器 API facade，负责组装作用域、应用、规则编辑、持久化、WebView 桥接和通知等 composable；静态选项、默认值和纯格式化/归一化逻辑放在 `constants` / `utils`。
 - `useGestureEditorApplicationPicker.js`：共享 store 内部使用的应用选择器流程，包括打开选择器、发起窗口/文件选择请求，以及处理宿主返回的程序信息。
 - `gestureEditor\useGestureScopes.js`：分类/程序 scope 选择、新增、重命名、删除和规则查询。
 - `gestureEditor\useGestureApplications.js`：应用程序视图数据读取、创建、显示名和分类字段更新。
 - `gestureEditor\useCategoryApplications.js`：分类与应用程序之间的关联和移除。
+- `gestureEditor\useGestureRuleEditor.js`：规则新增/编辑弹窗、规则草稿提交、手势录制和快捷键录制流程。
+- `gestureEditor\useGestureConfigPersistence.js`：规则保存节流、配置重载/重置、本地导入导出、WebDAV 备份恢复、UI 设置保存和边缘操作保存流程。
 - `gestureEditor\useGestureEditorNotifications.js`：配置状态消息和 toast 的统一通知入口。
 - `gestureEditor\useGestureEditorWebViewBridge.js`：WebView 消息发送、静默发送、可用性判断和消息监听入口。
 

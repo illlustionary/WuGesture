@@ -1,7 +1,6 @@
 import { computed, proxyRefs, reactive, ref } from "vue";
 import { useToast } from "vue-toastification";
 import {
-  ACTION_TYPES,
   BRIGHTNESS_OPERATIONS,
   EDGE_LOCATIONS,
   SCOPE_KINDS,
@@ -15,23 +14,12 @@ import {
   DEFAULT_UI_SETTINGS
 } from "../constants/gestureEditorDefaults";
 import {
-  cloneUiSettings,
   createDefaultUiSettings,
   isSameApplicationIdentity,
   normalizeExcludedApplication,
   normalizeExcludedApplications,
-  normalizeActionType,
-  normalizeAmount,
-  normalizeBrightnessOperation,
-  normalizeEdgeActionInPlace,
   normalizeEdgeActions,
-  normalizeMouseButton,
-  normalizeUiSettings,
-  normalizeVolumeOperation,
-  normalizeWindowOperation,
-  parseKeys,
-  parsePattern,
-  toPatternText
+  normalizeUiSettings
 } from "../utils/gestureEditorNormalizers";
 import {
   getActionLabel,
@@ -42,10 +30,6 @@ import {
   collectAppItems as collectAppItemsFromState,
   collectCategoryItems as collectCategoryItemsFromState
 } from "../utils/gestureEditorCollections";
-import {
-  buildConfigPayload,
-  getWebDavSignature as createWebDavSignature
-} from "../utils/gestureEditorPayloads";
 import {
   createEmptyGestureDraft,
   createRuleModel,
@@ -58,6 +42,8 @@ import { useGestureEditorNotifications } from "./gestureEditor/useGestureEditorN
 import { useGestureEditorWebViewBridge } from "./gestureEditor/useGestureEditorWebViewBridge";
 import { useGestureApplications } from "./gestureEditor/useGestureApplications";
 import { useGestureScopes } from "./gestureEditor/useGestureScopes";
+import { useGestureConfigPersistence } from "./gestureEditor/useGestureConfigPersistence";
+import { useGestureRuleEditor } from "./gestureEditor/useGestureRuleEditor";
 
 const state = reactive({
   statusText: "启动中",
@@ -95,11 +81,7 @@ const state = reactive({
 const activeScope = ref(SCOPE_KINDS.global);
 const initialized = ref(false);
 let autoSaveTimer = 0;
-let pendingAutoSaveOptions = {};
 let toast = null;
-let suppressNextConfigResultToast = false;
-let preserveLocalEdgeActions = false;
-let pendingWebDavTestSignature = "";
 
 const notifications = useGestureEditorNotifications({
   state,
@@ -108,6 +90,41 @@ const notifications = useGestureEditorNotifications({
 });
 
 const webView = useGestureEditorWebViewBridge({ notifications });
+
+const persistenceActions = useGestureConfigPersistence({
+  getAutoSaveTimer: () => autoSaveTimer,
+  initialized,
+  notifications,
+  setAutoSaveTimer: (timer) => {
+    autoSaveTimer = timer;
+  },
+  setConfigResultMessage,
+  setGesturePaused,
+  setMessage,
+  state,
+  webView
+});
+
+const {
+  exportConfigToLocal,
+  getUiSettingsSnapshot,
+  getWebDavSignature,
+  handleConfigResult,
+  handleWebDavResult,
+  importConfigFromLocal,
+  isWebDavTested,
+  reloadRules,
+  resetRules,
+  resetUiSettings,
+  restoreConfigFromWebDav,
+  saveConfigToWebDav,
+  saveRules,
+  saveUiSettings,
+  scheduleSaveRules,
+  shouldPreserveLocalEdgeActions,
+  testWebDavConnection,
+  updateEdgeAction
+} = persistenceActions;
 
 export function useGestureEditorStore() {
   if (!toast) {
@@ -227,22 +244,13 @@ function handleMessage(message) {
       message.applications ?? [],
       message.uiSettings ?? DEFAULT_UI_SETTINGS,
       message.edgeActions ?? [],
-      { preserveEdgeActions: preserveLocalEdgeActions }
+      { preserveEdgeActions: shouldPreserveLocalEdgeActions() }
     );
     return;
   }
 
   if (message.type === WEBVIEW_MESSAGE_TYPES.configResult) {
-    const notify = !suppressNextConfigResultToast || !message.success;
-    suppressNextConfigResultToast = false;
-    if (message.success) {
-      window.setTimeout(() => {
-        preserveLocalEdgeActions = false;
-      }, 500);
-    } else {
-      preserveLocalEdgeActions = false;
-    }
-    setConfigResultMessage(message.message, message.success, notify);
+    handleConfigResult(message);
     return;
   }
 
@@ -338,144 +346,38 @@ const {
 const collectCategoryItems = () => getScopeItems(SCOPE_KINDS.category);
 const collectAppItems = () => getScopeItems(SCOPE_KINDS.app);
 
-function addRule(kind = activeScope.value, name = getSelectedName(kind)) {
-  openAddRule(kind, name);
-}
+const ruleEditorActions = useGestureRuleEditor({
+  activeScope,
+  createRequestId,
+  createRule,
+  ensureSelection,
+  getFirstScopeName,
+  getSelectedName,
+  scheduleSaveRules,
+  setGesturePaused,
+  setMessage,
+  setSelectedName,
+  state,
+  webView
+});
 
-function openAddRule(kind = activeScope.value, name = getSelectedName(kind)) {
-  if (kind === SCOPE_KINDS.global) {
-    openGestureEditor("add", null, SCOPE_KINDS.global, "");
-    return;
-  }
-
-  const scopeName = String(name || getFirstScopeName(kind)).trim();
-  if (!scopeName) {
-    setMessage(kind === SCOPE_KINDS.category ? "先新增或选择一个分类。" : "先新增或选择一个程序。", "error");
-    return;
-  }
-
-  setSelectedName(kind, scopeName);
-  openGestureEditor("add", null, kind, scopeName);
-}
-
-function openEditRule(ruleId) {
-  const rule = state.rules.find((item) => item.id === ruleId);
-  if (!rule) {
-    return;
-  }
-
-  openGestureEditor("edit", rule, rule.scopeKind, rule.scopeName);
-}
-
-function closeGestureEditor() {
-  stopGestureRecording();
-  stopRecording();
-  state.gestureEditorOpen = false;
-  state.gestureRecognitionMessage = "";
-  state.gestureDraft = createEmptyGestureDraft();
-  setGesturePaused(false);
-}
-
-function persistGestureEditor() {
-  return commitGestureEditor(false);
-}
-
-function saveGestureEditor() {
-  return commitGestureEditor(true);
-}
-
-function commitGestureEditor(closeAfterSave) {
-  const draft = state.gestureDraft;
-  const pattern = parsePattern(draft.patternText);
-  const actionType = normalizeActionType(draft.actionType);
-
-  if (pattern.length === 0) {
-    if (closeAfterSave) {
-      state.gestureRecognitionMessage = "请先录制手势。";
-    }
-    return false;
-  }
-
-  if (actionType === ACTION_TYPES.hotkey && parseKeys(draft.keysText).length === 0) {
-    if (closeAfterSave) {
-      state.gestureRecognitionMessage = "请先录入快捷键。";
-    }
-    return false;
-  }
-
-  if (actionType === ACTION_TYPES.window && !normalizeWindowOperation(draft.windowOperation)) {
-    if (closeAfterSave) {
-      state.gestureRecognitionMessage = "请选择窗口控制操作。";
-    }
-    return false;
-  }
-
-  const actionName = getCommandActionName(draft);
-  draft.actionName = actionName;
-
-  let rule = null;
-  if (state.gestureEditorMode === "edit") {
-    rule = state.rules.find((item) => item.id === state.gestureEditorRuleId);
-    if (!rule) {
-      if (closeAfterSave) {
-        closeGestureEditor();
-      }
-      return false;
-    }
-  } else {
-    rule = createRule(
-      state.gestureEditorScopeKind,
-      state.gestureEditorScopeName,
-      {
-        actionName,
-        patternText: toPatternText(pattern),
-        mouseButton: normalizeMouseButton(draft.mouseButton),
-        keysText: draft.keysText,
-        actionType,
-        windowOperation: normalizeWindowOperation(draft.windowOperation),
-        volumeOperation: normalizeVolumeOperation(draft.volumeOperation),
-        brightnessOperation: normalizeBrightnessOperation(draft.brightnessOperation),
-        amount: normalizeAmount(draft.amount)
-      }
-    );
-    state.rules.push(rule);
-    state.gestureEditorRuleId = rule.id;
-    state.gestureEditorMode = "edit";
-  }
-
-  rule.actionName = actionName;
-  rule.patternText = toPatternText(pattern);
-  rule.mouseButton = normalizeMouseButton(draft.mouseButton);
-  rule.keysText = draft.keysText;
-  rule.actionType = actionType;
-  rule.windowOperation = normalizeWindowOperation(draft.windowOperation);
-  rule.volumeOperation = normalizeVolumeOperation(draft.volumeOperation);
-  rule.brightnessOperation = normalizeBrightnessOperation(draft.brightnessOperation);
-  rule.amount = normalizeAmount(draft.amount);
-  scheduleSaveRules();
-
-  if (closeAfterSave) {
-    closeGestureEditor();
-  }
-
-  return true;
-}
-
-function removeRule(id) {
-  state.rules = state.rules.filter((rule) => rule.id !== id);
-  ensureSelection(SCOPE_KINDS.category);
-  ensureSelection(SCOPE_KINDS.app);
-  scheduleSaveRules();
-}
-
-function updateRuleActionName(rule, actionName) {
-  if (!rule) {
-    return;
-  }
-
-  rule.actionName = String(actionName ?? "").trim();
-  scheduleSaveRules();
-}
+const {
+  addRule,
+  applyRecordedGesture,
+  applyRecordedHotkey,
+  closeGestureEditor,
+  isRecordingHotkey,
+  openAddRule,
+  openEditRule,
+  persistGestureEditor,
+  removeRule,
+  saveGestureEditor,
+  startGestureRecording,
+  startRecording,
+  stopGestureRecording,
+  stopRecording,
+  updateRuleActionName
+} = ruleEditorActions;
 
 const applicationPicker = useGestureEditorApplicationPicker({
   state,
@@ -564,280 +466,12 @@ function removeExcludedApplication(index) {
   setMessage("已删除排除项。", "success");
 }
 
-function saveRules(options = {}) {
-  markSaveActivity();
-
-  if (autoSaveTimer) {
-    clearTimeout(autoSaveTimer);
-    autoSaveTimer = 0;
-    pendingAutoSaveOptions = {};
-  }
-
-  const payload = getConfigPayload();
-
-  if (payload.rules.length === 0) {
-    setMessage("至少保留一条规则。", "error");
-    return;
-  }
-
-  if (options.notifyResult === false) {
-    suppressNextConfigResultToast = true;
-  }
-
-  postWebMessage(
-    {
-      type: WEBVIEW_MESSAGE_TYPES.saveRules,
-      ...payload
-    },
-    { notifyPreview: options.notifyPreview !== false }
-  );
-}
-
-function scheduleSaveRules(options = {}) {
-  markSaveActivity();
-
-  if (!initialized.value) {
-    return;
-  }
-
-  if (!webView.isAvailable()) {
-    return;
-  }
-
-  pendingAutoSaveOptions = {
-    ...pendingAutoSaveOptions,
-    ...options
-  };
-
-  if (autoSaveTimer) {
-    clearTimeout(autoSaveTimer);
-  }
-
-  autoSaveTimer = window.setTimeout(() => {
-    const options = pendingAutoSaveOptions;
-    autoSaveTimer = 0;
-    pendingAutoSaveOptions = {};
-    saveRules(options);
-  }, 250);
-}
-
-function reloadRules() {
-  preserveLocalEdgeActions = false;
-  postWebMessage({ type: WEBVIEW_MESSAGE_TYPES.reloadRules });
-}
-
-function resetRules() {
-  preserveLocalEdgeActions = false;
-  postWebMessage({ type: WEBVIEW_MESSAGE_TYPES.resetRules });
-}
-
-function exportConfigToLocal() {
-  const payload = getConfigPayload();
-  if (payload.rules.length === 0) {
-    setMessage("至少保留一条规则。", "error");
-    return;
-  }
-
-  if (!webView.isAvailable()) {
-    setMessage("浏览器预览中无法导出本地配置。", "error");
-    return;
-  }
-
-  postWebMessage({
-    type: WEBVIEW_MESSAGE_TYPES.exportConfig,
-    ...payload
-  });
-}
-
-function importConfigFromLocal() {
-  if (!webView.isAvailable()) {
-    setMessage("浏览器预览中无法导入本地配置。", "error");
-    return;
-  }
-
-  preserveLocalEdgeActions = false;
-  postWebMessage({ type: WEBVIEW_MESSAGE_TYPES.importConfig });
-}
-
-function getUiSettingsSnapshot() {
-  return cloneUiSettings(state.uiSettings);
-}
-
-function saveUiSettings(nextSettings, options = {}) {
-  const previousPaused = Boolean(state.uiSettings.appBehavior.gesturePaused);
-  state.uiSettings = normalizeUiSettings(nextSettings);
-  const nextPaused = Boolean(state.uiSettings.appBehavior.gesturePaused);
-  if (previousPaused !== nextPaused) {
-    setGesturePaused(nextPaused);
-  }
-  saveRules({
-    notifyPreview: Boolean(options.notify),
-    notifyResult: Boolean(options.notify)
-  });
-  if (options.notify) {
-    setMessage("已保存设置。", "success");
-  }
-}
-
-function resetUiSettings() {
-  state.uiSettings = createDefaultUiSettings();
-  setGesturePaused(false);
-  state.webDavTestState = "idle";
-  state.webDavTestedSignature = "";
-  pendingWebDavTestSignature = "";
-  saveRules({ notifyPreview: false, notifyResult: false });
-  setMessage("已恢复默认设置。", "success");
-}
-
-function testWebDavConnection() {
-  const payload = getConfigPayload();
-  const signature = getWebDavSignature(payload.uiSettings.webDav);
-  if (!payload.uiSettings.webDav.address) {
-    setMessage("请先填写 WebDAV 地址。", "error");
-    return;
-  }
-
-  if (!webView.isAvailable()) {
-    setMessage("浏览器预览中无法测试 WebDAV。", "error");
-    return;
-  }
-
-  state.webDavTesting = true;
-  state.webDavTestState = "idle";
-  state.webDavTestedSignature = "";
-  pendingWebDavTestSignature = signature;
-  postWebMessage({
-    type: WEBVIEW_MESSAGE_TYPES.webDavTest,
-    ...payload
-  });
-}
-
-function saveConfigToWebDav() {
-  const payload = getConfigPayload();
-  if (payload.rules.length === 0) {
-    setMessage("至少保留一条规则。", "error");
-    return;
-  }
-
-  if (!isWebDavTested(payload.uiSettings.webDav)) {
-    setMessage("请先测试 WebDAV 连接。", "error");
-    return;
-  }
-
-  postWebMessage({
-    type: WEBVIEW_MESSAGE_TYPES.webDavSave,
-    ...payload
-  });
-}
-
-function restoreConfigFromWebDav() {
-  const payload = getConfigPayload();
-  if (!isWebDavTested(payload.uiSettings.webDav)) {
-    setMessage("请先测试 WebDAV 连接。", "error");
-    return;
-  }
-
-  postWebMessage({
-    type: WEBVIEW_MESSAGE_TYPES.webDavRestore,
-    ...payload
-  });
-}
-
-function updateEdgeAction(action, patch = {}, options = {}) {
-  if (!action) {
-    return;
-  }
-
-  preserveLocalEdgeActions = true;
-  Object.assign(action, patch);
-  normalizeEdgeActionInPlace(action);
-  scheduleSaveRules(options);
-}
-
-function startRecording(target) {
-  if (normalizeActionType(target?.actionType) !== ACTION_TYPES.hotkey) {
-    setMessage("只有快捷键命令需要录入快捷键。", "error");
-    return;
-  }
-
-  stopRecording();
-
-  if (!webView.isAvailable()) {
-    setMessage("浏览器预览无法拦截系统快捷键，请在桌面应用中录制。", "error");
-    return;
-  }
-
-  const requestId = createRequestId();
-  state.recordingHotkeyTarget = target;
-  state.recordingHotkeyRequestId = requestId;
-  postWebMessageSilently({
-    type: WEBVIEW_MESSAGE_TYPES.startHotkeyRecording,
-    requestId
-  });
-  setMessage("正在录制快捷键，松开所有按键后完成。");
-}
-
-function startGestureRecording() {
-  if (state.gestureRecordingActive) {
-    stopGestureRecording();
-    state.gestureRecognitionMessage = "已停止录制。";
-    return;
-  }
-
-  if (!webView.isAvailable()) {
-    setMessage("浏览器预览无法录制系统鼠标手势，请在桌面应用中录制。", "error");
-    return;
-  }
-
-  const requestId = createRequestId();
-  state.gestureRecordingActive = true;
-  state.gestureRecordingRequestId = requestId;
-  state.gestureDraft.patternText = "";
-  state.gestureRecognitionMessage = "录制中，再点一次停止。按住右键或中键绘制手势。";
-  webView.postSilent({
-    type: WEBVIEW_MESSAGE_TYPES.startGestureRecording,
-    requestId
-  });
-}
-
-function stopGestureRecording() {
-  if (!state.gestureRecordingActive) {
-    return;
-  }
-
-  state.gestureRecordingActive = false;
-  state.gestureRecordingRequestId = "";
-  postWebMessageSilently({ type: WEBVIEW_MESSAGE_TYPES.stopGestureRecording });
-}
-
-function stopRecording() {
-  if (!state.recordingHotkeyRequestId) {
-    return;
-  }
-
-  postWebMessageSilently({ type: WEBVIEW_MESSAGE_TYPES.stopHotkeyRecording });
-  state.recordingHotkeyTarget = null;
-  state.recordingHotkeyRequestId = "";
-}
-
-function isRecordingHotkey(target) {
-  return state.recordingHotkeyTarget === target;
-}
-
 function setMessage(message, stateName = "idle", options = {}) {
   notifications.show(message, stateName, options);
 }
 
 function setConfigResultMessage(message, success, notify) {
   notifications.showConfigResult(message, success, notify);
-}
-
-function markSaveActivity() {
-  notifications.markSaveActivity();
-}
-
-function postWebMessage(message, options = {}) {
-  webView.post(message, options);
 }
 
 function postWebMessageSilently(message) {
@@ -861,117 +495,6 @@ function createRule(scopeKind, scopeName, values = {}) {
   }
 
   return createRuleModel(scopeKind, scopeName, values, createRuleId(state.nextId++));
-}
-
-function getConfigPayload() {
-  return buildConfigPayload(state);
-}
-
-function handleWebDavResult(message) {
-  if (message.operation === "test") {
-    state.webDavTesting = false;
-    if (message.success) {
-      state.webDavTestedSignature = pendingWebDavTestSignature;
-      state.webDavTestState = "success";
-    } else {
-      state.webDavTestedSignature = "";
-      state.webDavTestState = "error";
-    }
-    pendingWebDavTestSignature = "";
-  }
-
-  setMessage(message.message, message.success ? "success" : "error");
-}
-
-function isWebDavTested(settings = state.uiSettings.webDav) {
-  const signature = getWebDavSignature(settings);
-  return Boolean(signature && signature === state.webDavTestedSignature);
-}
-
-function getWebDavSignature(settings = state.uiSettings.webDav) {
-  return createWebDavSignature(settings);
-}
-
-function openGestureEditor(mode, rule, scopeKind, scopeName) {
-  setGesturePaused(true);
-  state.gestureEditorMode = mode;
-  state.gestureEditorRuleId = rule?.id ?? "";
-  state.gestureEditorScopeKind = scopeKind;
-  state.gestureEditorScopeName = scopeName;
-  state.gestureRecordingActive = false;
-  state.gestureRecordingRequestId = "";
-  state.gestureDraft = {
-    actionName: rule?.actionName ?? "",
-    patternText: rule?.patternText ?? "",
-    mouseButton: normalizeMouseButton(rule?.mouseButton),
-    keysText: rule?.keysText ?? "",
-    actionType: normalizeActionType(rule?.actionType),
-    windowOperation: normalizeWindowOperation(rule?.windowOperation),
-    volumeOperation: normalizeVolumeOperation(rule?.volumeOperation),
-    brightnessOperation: normalizeBrightnessOperation(rule?.brightnessOperation),
-    amount: normalizeAmount(rule?.amount)
-  };
-  state.gestureRecognitionMessage = "点击开始录制。再次点击可停止。";
-  state.gestureEditorOpen = true;
-}
-
-function applyRecordedGesture(message) {
-  if (!state.gestureRecordingActive || message.requestId !== state.gestureRecordingRequestId) {
-    return;
-  }
-
-  const pattern = Array.isArray(message.pattern) ? message.pattern.filter(Boolean) : [];
-  state.gestureDraft.patternText = toPatternText(pattern);
-  state.gestureDraft.mouseButton = normalizeMouseButton(message.button);
-  state.gestureRecognitionMessage = pattern.length > 0 ? "已识别手势。" : "未识别到有效手势。";
-  state.gestureRecordingActive = false;
-  state.gestureRecordingRequestId = "";
-  persistGestureEditor();
-}
-
-function applyRecordedHotkey(message) {
-  if (message.requestId !== state.recordingHotkeyRequestId) {
-    return;
-  }
-
-  const target = state.recordingHotkeyTarget;
-  state.recordingHotkeyTarget = null;
-  state.recordingHotkeyRequestId = "";
-
-  if (!target) {
-    return;
-  }
-
-  const keys = Array.isArray(message.keys) ? message.keys.filter(Boolean) : [];
-  if (keys.length === 0) {
-    setMessage("未录制到有效快捷键。", "error");
-    return;
-  }
-
-  const keysText = keys.join(" + ");
-  target.keysText = keysText;
-  if (target === state.gestureDraft) {
-    state.gestureDraft.keysText = keysText;
-    state.gestureDraft.actionName = getCommandActionName(state.gestureDraft);
-  }
-
-  if (state.gestureEditorMode === "edit") {
-    const rule = state.rules.find((item) => item.id === state.gestureEditorRuleId);
-    if (rule) {
-      rule.keysText = keysText;
-    }
-  }
-
-  setMessage("已录制快捷键。", "success");
-  if (state.gestureEditorOpen) {
-    persistGestureEditor();
-  } else {
-    scheduleSaveRules();
-  }
-}
-
-function getCommandActionName(source) {
-  return String(getActionLabel(source) || getGestureMnemonic(source)).trim();
 }
 
 function createRuleId(seed) {
