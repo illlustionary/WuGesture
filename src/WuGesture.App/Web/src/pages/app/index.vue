@@ -25,14 +25,11 @@ const {
 <template>
   <AppShell
     title="程序规则"
-    description="左边选择具体程序，右边只保留手势列表。"
+    description="为每个程序单独设置独有的手势"
     layout-class="page-shell__grid--split page-shell__grid--editor"
   >
     <template #left>
-      <ScopeSidebar
-        title="程序名称"
-        description="选择一个程序，或点击右侧 + 新增。"
-      >
+      <ScopeSidebar title="程序名称">
         <template #actions>
           <IconActionButton
             icon="add"
