@@ -7,10 +7,10 @@ import ScopeSidebar from '../../components/ScopeSidebar.vue'
 import ApplicationListItem from '../../components/applications/ApplicationListItem.vue'
 import RulesSection from '../../components/rules/RulesSection.vue'
 import ScopeListItem from '../../components/scope/ScopeListItem.vue'
-import { useGestureEditorStore } from '../../composables/gestureEditorStore'
+import { useGestureRulesStore } from '../../composables/gestureEditor/useGestureRulesStore'
 import { useCategoryPage } from './composables/useCategoryPage'
 
-const editor = useGestureEditorStore()
+const rulesStore = useGestureRulesStore()
 const {
   scopeKind,
   categoryDraft,
@@ -25,7 +25,7 @@ const {
   confirmCategoryRenameDialog,
   getCategoryIcon,
   deleteCategoryItem
-} = useCategoryPage(editor)
+} = useCategoryPage(rulesStore)
 </script>
 
 <template>
@@ -46,19 +46,19 @@ const {
         </template>
 
         <div
-          v-if="editor.categoryItems.length > 0"
+          v-if="rulesStore.categoryItems.length > 0"
           class="list-stack"
         >
           <ScopeListItem
-            v-for="item in editor.categoryItems"
+            v-for="item in rulesStore.categoryItems"
             :key="item.name"
             :item="item"
-            :active="item.name === editor.getSelectedName(scopeKind)"
+            :active="item.name === rulesStore.getSelectedName(scopeKind)"
             :label="item.name"
             :icon-component="getCategoryIcon(item.name)"
             delete-label="删除分类"
             icon-mode="category"
-            @select="editor.selectScope(scopeKind, $event.name)"
+            @select="rulesStore.selectScope(scopeKind, $event.name)"
             @rename="openCategoryRenameDialog"
             @delete="deleteCategoryItem($event.name)"
           />
@@ -85,13 +85,13 @@ const {
               label="添加程序"
               class="secondary-button"
               @click="
-                editor.openApplicationPicker(editor.getSelectedName(scopeKind))
+                rulesStore.openApplicationPicker(rulesStore.getSelectedName(scopeKind))
               "
             />
           </template>
 
           <div
-            v-if="editor.getApplicationsForCategory().length === 0"
+            v-if="rulesStore.getApplicationsForCategory().length === 0"
             class="empty-state empty-state--compact"
           >
             当前分类还没有关联程序。
@@ -101,10 +101,10 @@ const {
             class="list-stack"
           >
             <ApplicationListItem
-              v-for="app in editor.getApplicationsForCategory()"
+              v-for="app in rulesStore.getApplicationsForCategory()"
               :key="app.name"
               :app="app"
-              @remove="editor.removeAppFromCategory($event.name)"
+              @remove="rulesStore.removeAppFromCategory($event.name)"
             />
           </div>
         </RulesSection>
@@ -119,17 +119,17 @@ const {
               icon="add"
               label="添加手势"
               class="primary-button"
-              @click="editor.openAddRule(scopeKind)"
+              @click="rulesStore.openAddRule(scopeKind)"
             />
           </template>
 
           <GestureRuleList
-            :rules="editor.getRulesForScope(scopeKind)"
-            :get-gesture-mnemonic="editor.getGestureMnemonic"
-            :get-action-label="editor.getActionLabel"
-            @remove="editor.removeRule"
-            @edit="editor.openEditRule"
-            @rename="editor.updateRuleActionName"
+            :rules="rulesStore.getRulesForScope(scopeKind)"
+            :get-gesture-mnemonic="rulesStore.getGestureMnemonic"
+            :get-action-label="rulesStore.getActionLabel"
+            @remove="rulesStore.removeRule"
+            @edit="rulesStore.openEditRule"
+            @rename="rulesStore.updateRuleActionName"
           />
         </RulesSection>
       </section>

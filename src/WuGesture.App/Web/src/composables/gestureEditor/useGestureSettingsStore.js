@@ -1,8 +1,8 @@
 import { computed, proxyRefs } from "vue";
-import { useGestureEditorStore } from "../gestureEditorStore";
+import { useGestureEditorContext } from "./gestureEditorContext";
 
 export function useGestureSettingsStore() {
-  const editor = useGestureEditorStore();
+  const editor = useGestureEditorContext();
 
   return proxyRefs({
     uiSettings: computed(() => editor.state.uiSettings),

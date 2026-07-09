@@ -119,13 +119,17 @@ src\components
 src\composables
 ```
 
-- `gestureEditorStore.js`：共享编辑状态和编辑器 API facade，负责组装作用域、应用、规则编辑、持久化、WebView 桥接和通知等 composable；静态选项、默认值和纯格式化/归一化逻辑放在 `constants` / `utils`。
+- `gestureEditorStore.js`：历史兼容 facade，当前只转发到 `gestureEditor\gestureEditorContext.js`；新页面优先使用对应窄 store。
 - `useGestureEditorApplicationPicker.js`：共享 store 内部使用的应用选择器流程，包括打开选择器、发起窗口/文件选择请求，以及处理宿主返回的程序信息。
+- `gestureEditor\gestureEditorContext.js`：手势编辑器共享单例上下文，集中组装状态、WebView 桥接、通知、作用域、应用、规则编辑、持久化和应用选择器能力。
 - `gestureEditor\useGestureScopes.js`：分类/程序 scope 选择、新增、重命名、删除和规则查询。
 - `gestureEditor\useGestureApplications.js`：应用程序视图数据读取、创建、显示名和分类字段更新。
 - `gestureEditor\useCategoryApplications.js`：分类与应用程序之间的关联和移除。
 - `gestureEditor\useGestureRuleEditor.js`：规则新增/编辑弹窗、规则草稿提交、手势录制和快捷键录制流程。
 - `gestureEditor\useGestureConfigPersistence.js`：规则保存节流、配置重载/重置、本地导入导出、WebDAV 备份恢复、UI 设置保存和边缘操作保存流程。
+- `gestureEditor\useGestureEditorLifecycleStore.js`：应用根组件使用的窄 store，只暴露初始化和运行状态栏字段。
+- `gestureEditor\useGestureEditorOverlayStore.js`：应用根组件使用的窄 store，只暴露全局应用选择弹窗和规则编辑弹窗所需状态与动作。
+- `gestureEditor\useGestureRulesStore.js`：全局、分类和程序规则页使用的窄 store，只暴露规则列表、作用域管理、应用关联和规则编辑入口。
 - `gestureEditor\useGestureEdgeActionsStore.js`：边缘操作页使用的窄 store，只暴露边缘动作列表、边缘动作保存、快捷键录制和边缘操作选项。
 - `gestureEditor\useGestureSettingsStore.js`：设置页使用的窄 store，只暴露 UI 设置草稿保存、恢复默认、本地导入导出和 WebDAV 状态/操作。
 - `gestureEditor\useGestureExclusionsStore.js`：排除项页使用的窄 store，只暴露排除项列表、应用图标匹配和排除项增删改入口。

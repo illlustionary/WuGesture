@@ -6,10 +6,10 @@ import {
   WINDOW_OPERATIONS
 } from "../../constants/gestureEditorOptions";
 import { getEdgeActionLabel } from "../../utils/gestureEditorFormatters";
-import { useGestureEditorStore } from "../gestureEditorStore";
+import { useGestureEditorContext } from "./gestureEditorContext";
 
 export function useGestureEdgeActionsStore() {
-  const editor = useGestureEditorStore();
+  const editor = useGestureEditorContext();
 
   return proxyRefs({
     edgeActions: computed(() => editor.state.edgeActions),

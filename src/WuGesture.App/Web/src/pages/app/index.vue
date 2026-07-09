@@ -6,10 +6,10 @@ import ScopeCreateDialog from '../../components/ScopeCreateDialog.vue'
 import ScopeSidebar from '../../components/ScopeSidebar.vue'
 import RulesSection from '../../components/rules/RulesSection.vue'
 import ScopeListItem from '../../components/scope/ScopeListItem.vue'
-import { useGestureEditorStore } from '../../composables/gestureEditorStore'
+import { useGestureRulesStore } from '../../composables/gestureEditor/useGestureRulesStore'
 import { useAppPage } from './composables/useAppPage'
 
-const editor = useGestureEditorStore()
+const rulesStore = useGestureRulesStore()
 const {
   scopeKind,
   appRenameDialogOpen,
@@ -19,7 +19,7 @@ const {
   openAppRenameDialog,
   closeAppRenameDialog,
   confirmAppRenameDialog
-} = useAppPage(editor)
+} = useAppPage(rulesStore)
 </script>
 
 <template>
@@ -35,25 +35,25 @@ const {
             icon="add"
             label="添加程序"
             class="secondary-button"
-            @click="editor.openApplicationPicker('', scopeKind)"
+            @click="rulesStore.openApplicationPicker('', scopeKind)"
           />
         </template>
 
         <div
-          v-if="editor.appItems.length > 0"
+          v-if="rulesStore.appItems.length > 0"
           class="list-stack"
         >
           <ScopeListItem
-            v-for="item in editor.appItems"
+            v-for="item in rulesStore.appItems"
             :key="item.name"
             :item="item"
-            :active="item.name === editor.getSelectedName(scopeKind)"
+            :active="item.name === rulesStore.getSelectedName(scopeKind)"
             :label="item.displayName || item.name"
             :icon="item.icon"
             :fallback-glyph="getAppFallbackGlyph(item)"
             delete-label="删除程序"
             icon-mode="app"
-            @select="editor.selectScope(scopeKind, $event.name)"
+            @select="rulesStore.selectScope(scopeKind, $event.name)"
             @rename="openAppRenameDialog"
             @delete="deleteAppItem($event.name)"
           />
@@ -79,17 +79,17 @@ const {
               icon="add"
               label="添加手势"
               class="primary-button"
-              @click="editor.openAddRule(scopeKind)"
+              @click="rulesStore.openAddRule(scopeKind)"
             />
           </template>
 
           <GestureRuleList
-            :rules="editor.getRulesForScope(scopeKind)"
-            :get-gesture-mnemonic="editor.getGestureMnemonic"
-            :get-action-label="editor.getActionLabel"
-            @remove="editor.removeRule"
-            @edit="editor.openEditRule"
-            @rename="editor.updateRuleActionName"
+            :rules="rulesStore.getRulesForScope(scopeKind)"
+            :get-gesture-mnemonic="rulesStore.getGestureMnemonic"
+            :get-action-label="rulesStore.getActionLabel"
+            @remove="rulesStore.removeRule"
+            @edit="rulesStore.openEditRule"
+            @rename="rulesStore.updateRuleActionName"
           />
         </RulesSection>
       </section>

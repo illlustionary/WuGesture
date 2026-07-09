@@ -4,12 +4,12 @@ import GestureRuleList from '../../components/GestureRuleList.vue'
 import IconActionButton from '../../components/IconActionButton.vue'
 import ScopeSidebar from '../../components/ScopeSidebar.vue'
 import RulesSection from '../../components/rules/RulesSection.vue'
-import { useGestureEditorStore } from '../../composables/gestureEditorStore'
+import { useGestureRulesStore } from '../../composables/gestureEditor/useGestureRulesStore'
 import { SCOPE_KINDS } from '../../constants/gestureEditorOptions'
 
-const editor = useGestureEditorStore()
+const rulesStore = useGestureRulesStore()
 const scopeKind = SCOPE_KINDS.global
-editor.setActiveScope(scopeKind)
+rulesStore.setActiveScope(scopeKind)
 </script>
 
 <template>
@@ -29,7 +29,7 @@ editor.setActiveScope(scopeKind)
         </div>
         <div class="scope-summary">
           <strong>规则数量</strong>
-          <span>{{ editor.globalRules.length }} 条</span>
+          <span>{{ rulesStore.globalRules.length }} 条</span>
         </div>
       </ScopeSidebar>
     </template>
@@ -46,17 +46,17 @@ editor.setActiveScope(scopeKind)
               icon="add"
               label="添加规则"
               class="primary-button"
-              @click="editor.openAddRule(scopeKind)"
+              @click="rulesStore.openAddRule(scopeKind)"
             />
           </template>
 
           <GestureRuleList
-            :rules="editor.globalRules"
-            :get-gesture-mnemonic="editor.getGestureMnemonic"
-            :get-action-label="editor.getActionLabel"
-            @remove="editor.removeRule"
-            @edit="editor.openEditRule"
-            @rename="editor.updateRuleActionName"
+            :rules="rulesStore.globalRules"
+            :get-gesture-mnemonic="rulesStore.getGestureMnemonic"
+            :get-action-label="rulesStore.getActionLabel"
+            @remove="rulesStore.removeRule"
+            @edit="rulesStore.openEditRule"
+            @rename="rulesStore.updateRuleActionName"
           />
         </RulesSection>
       </section>
