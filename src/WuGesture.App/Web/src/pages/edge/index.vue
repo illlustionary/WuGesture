@@ -13,7 +13,8 @@ import {
 } from '../../constants/gestureEditorOptions'
 
 const editor = useGestureEditorStore()
-const { draft, editingAction, openEditor, closeEditor } = useEdgeActionDraft(editor)
+const { draft, editingAction, openEditor, closeEditor } =
+  useEdgeActionDraft(editor)
 
 const groups = [
   {
@@ -45,7 +46,10 @@ const dialogTitle = computed(() => {
     return '边缘操作'
   }
 
-  return [locationLabel(action), wheelLabel(action) || triggerLabels[action.triggerType]]
+  return [
+    locationLabel(action),
+    wheelLabel(action) || triggerLabels[action.triggerType]
+  ]
     .filter(Boolean)
     .join(' · ')
 })
@@ -59,7 +63,10 @@ function locationLabel(action) {
     action.triggerType === EDGE_TRIGGER_TYPES.corner
       ? editor.edgeLocations.corner
       : editor.edgeLocations.edge
-  return locations.find(item => item.value === action.location)?.label ?? action.location
+  return (
+    locations.find(item => item.value === action.location)?.label ??
+    action.location
+  )
 }
 
 function wheelLabel(action) {
@@ -107,7 +114,7 @@ function actionSummary(action) {
       item => item.value === action.volumeOperation
     )
     return action.volumeOperation === OPERATIONS.mute
-      ? operation?.label ?? '静音'
+      ? (operation?.label ?? '静音')
       : `${operation?.label ?? '音量 +'} ${action.amount}`
   }
 
