@@ -1,10 +1,11 @@
 <script setup>
+import { computed } from 'vue'
 import IconActionButton from '../../../components/IconActionButton.vue'
 import SettingsField from './SettingsField.vue'
 import SettingsFormGrid from './SettingsFormGrid.vue'
 import SettingsSectionCard from './SettingsSectionCard.vue'
 
-defineProps({
+const props = defineProps({
   draft: { type: Object, required: true },
   editor: { type: Object, required: true },
   ready: { type: Boolean, required: true }
@@ -17,6 +18,18 @@ const emit = defineEmits([
   'restore',
   'save'
 ])
+
+const webDavTestState = computed(() => {
+  if (props.ready && props.editor.state.webDavTestState === 'success') {
+    return 'success'
+  }
+
+  if (props.editor.state.webDavTestState === 'error') {
+    return 'error'
+  }
+
+  return 'idle'
+})
 </script>
 
 <template>
@@ -29,7 +42,9 @@ const emit = defineEmits([
       <IconActionButton
         icon="test"
         :label="editor.state.webDavTesting ? '测试中' : '测试'"
-        class="secondary-button"
+        class="secondary-button webdav-test-button"
+        :class="`webdav-test-button--${webDavTestState}`"
+        color="var(--accent-strong)"
         :disabled="editor.state.webDavTesting"
         @click="emit('test')"
       />
@@ -99,6 +114,19 @@ const emit = defineEmits([
 :deep(button:disabled) {
   cursor: not-allowed;
   box-shadow: none;
+}
+
+:deep(.webdav-test-button) {
+  border: 1px solid var(--accent-border-strong);
+  border-radius: 14px;
+}
+
+:deep(.webdav-test-button--success) {
+  border-color: var(--success-border);
+}
+
+:deep(.webdav-test-button--error) {
+  border-color: var(--danger-border);
 }
 
 :deep(.webdav-action-button) {

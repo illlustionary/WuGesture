@@ -61,6 +61,8 @@ export const WEBVIEW_MESSAGE_TYPES = {
   webDavTest: "webdav-test",
   webDavSave: "webdav-save",
   webDavRestore: "webdav-restore",
+  exportConfig: "export-config",
+  importConfig: "import-config",
   reloadRules: "reload-rules",
   resetRules: "reset-rules",
   status: "status",

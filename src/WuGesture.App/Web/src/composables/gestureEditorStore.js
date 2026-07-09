@@ -88,6 +88,7 @@ const state = reactive({
   gestureRecordingActive: false,
   gestureRecordingRequestId: "",
   webDavTesting: false,
+  webDavTestState: "idle",
   webDavTestedSignature: ""
 });
 
@@ -180,6 +181,8 @@ export function useGestureEditorStore() {
     testWebDavConnection,
     saveConfigToWebDav,
     restoreConfigFromWebDav,
+    exportConfigToLocal,
+    importConfigFromLocal,
     getWebDavSignature,
     isWebDavTested,
     windowOperations: WINDOW_OPERATIONS,
@@ -628,6 +631,34 @@ function resetRules() {
   postWebMessage({ type: WEBVIEW_MESSAGE_TYPES.resetRules });
 }
 
+function exportConfigToLocal() {
+  const payload = getConfigPayload();
+  if (payload.rules.length === 0) {
+    setMessage("至少保留一条规则。", "error");
+    return;
+  }
+
+  if (!webView.isAvailable()) {
+    setMessage("浏览器预览中无法导出本地配置。", "error");
+    return;
+  }
+
+  postWebMessage({
+    type: WEBVIEW_MESSAGE_TYPES.exportConfig,
+    ...payload
+  });
+}
+
+function importConfigFromLocal() {
+  if (!webView.isAvailable()) {
+    setMessage("浏览器预览中无法导入本地配置。", "error");
+    return;
+  }
+
+  preserveLocalEdgeActions = false;
+  postWebMessage({ type: WEBVIEW_MESSAGE_TYPES.importConfig });
+}
+
 function getUiSettingsSnapshot() {
   return cloneUiSettings(state.uiSettings);
 }
@@ -651,6 +682,7 @@ function saveUiSettings(nextSettings, options = {}) {
 function resetUiSettings() {
   state.uiSettings = createDefaultUiSettings();
   setGesturePaused(false);
+  state.webDavTestState = "idle";
   state.webDavTestedSignature = "";
   pendingWebDavTestSignature = "";
   saveRules({ notifyPreview: false, notifyResult: false });
@@ -671,6 +703,7 @@ function testWebDavConnection() {
   }
 
   state.webDavTesting = true;
+  state.webDavTestState = "idle";
   state.webDavTestedSignature = "";
   pendingWebDavTestSignature = signature;
   postWebMessage({
@@ -839,8 +872,10 @@ function handleWebDavResult(message) {
     state.webDavTesting = false;
     if (message.success) {
       state.webDavTestedSignature = pendingWebDavTestSignature;
+      state.webDavTestState = "success";
     } else {
       state.webDavTestedSignature = "";
+      state.webDavTestState = "error";
     }
     pendingWebDavTestSignature = "";
   }

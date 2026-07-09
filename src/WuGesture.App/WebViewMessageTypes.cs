@@ -14,6 +14,8 @@ internal static class WebViewMessageTypes
     public const string WebDavTest = "webdav-test";
     public const string WebDavSave = "webdav-save";
     public const string WebDavRestore = "webdav-restore";
+    public const string ExportConfig = "export-config";
+    public const string ImportConfig = "import-config";
     public const string ReloadRules = "reload-rules";
     public const string ResetRules = "reset-rules";
 
