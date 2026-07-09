@@ -1,52 +1,13 @@
 <script setup>
-import { computed } from 'vue'
 import AppShell from '../../components/AppShell.vue'
 import IconActionButton from '../../components/IconActionButton.vue'
 import ToggleCheckbox from '../../components/ToggleCheckbox.vue'
-import { useGestureEditorStore } from '../../composables/gestureEditorStore'
+import { useGestureExclusionsStore } from '../../composables/gestureEditor/useGestureExclusionsStore'
 
-const editor = useGestureEditorStore()
-
-const exclusionsWithIcons = computed(() =>
-  editor.state.uiSettings.appBehavior.excludedApplications.map(application => {
-    const matchedApplication = editor.state.applications.find(item => {
-      const applicationPath = String(application.path ?? '')
-        .trim()
-        .toLowerCase()
-      const itemPath = String(item.path ?? '')
-        .trim()
-        .toLowerCase()
-      if (applicationPath && itemPath) {
-        return applicationPath === itemPath
-      }
-
-      return (
-        String(item.name ?? '')
-          .trim()
-          .toLowerCase() ===
-        String(application.name ?? '')
-          .trim()
-          .toLowerCase()
-      )
-    })
-
-    return {
-      application,
-      icon: application.icon || matchedApplication?.icon || '',
-      fallbackGlyph: (
-        application.displayName ||
-        application.name ||
-        application.path ||
-        '?'
-      )
-        .slice(0, 1)
-        .toUpperCase()
-    }
-  })
-)
+const exclusionsStore = useGestureExclusionsStore()
 
 function toggleDisableEdgeActions(application) {
-  editor.updateExcludedApplication(application, {
+  exclusionsStore.updateExcludedApplication(application, {
     disableEdgeActions: Boolean(application.disableEdgeActions)
   })
 }
@@ -64,19 +25,19 @@ function toggleDisableEdgeActions(application) {
         label="添加程序"
         color="var(--accent-strong)"
         class="exclusion-add-button"
-        @click="editor.openExcludedApplicationPicker()"
+        @click="exclusionsStore.openExcludedApplicationPicker()"
       />
     </template>
 
     <template #right>
       <section
-        v-if="editor.state.uiSettings.appBehavior.excludedApplications.length"
+        v-if="exclusionsStore.hasExclusions"
         class="exclusion-list"
       >
         <article
           v-for="(
             { application, icon, fallbackGlyph }, index
-          ) in exclusionsWithIcons"
+          ) in exclusionsStore.exclusionsWithIcons"
           :key="application.path || application.name || index"
           class="exclusion-item"
         >
@@ -108,7 +69,7 @@ function toggleDisableEdgeActions(application) {
             label="删除排除项"
             class="ghost-button"
             tone="danger"
-            @click="editor.removeExcludedApplication(index)"
+            @click="exclusionsStore.removeExcludedApplication(index)"
           />
         </article>
       </section>

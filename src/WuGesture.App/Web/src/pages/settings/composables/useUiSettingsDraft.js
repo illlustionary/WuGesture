@@ -40,7 +40,7 @@ export function useUiSettingsDraft(editor) {
   }))
 
   watch(
-    () => editor.state.uiSettings,
+    () => editor.uiSettings,
     () => {
       const nextDraft = createDraft(editor.getUiSettingsSnapshot())
       if (

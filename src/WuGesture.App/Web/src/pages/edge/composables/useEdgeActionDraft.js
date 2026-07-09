@@ -5,13 +5,13 @@ import {
   OPERATIONS
 } from '../../../constants/gestureEditorOptions'
 
-export function useEdgeActionDraft(editor) {
+export function useEdgeActionDraft(edgeActionsStore) {
   const editingKey = ref('')
   const draft = reactive(createEmptyDraft())
 
   const editingAction = computed(
     () =>
-      editor.state.edgeActions.find(action => actionKey(action) === editingKey.value) ??
+      edgeActionsStore.edgeActions.find(action => actionKey(action) === editingKey.value) ??
       null
   )
 
@@ -31,7 +31,7 @@ export function useEdgeActionDraft(editor) {
       return
     }
 
-    editor.updateEdgeAction(action, toCommitPatch(draft), {
+    edgeActionsStore.updateEdgeAction(action, toCommitPatch(draft), {
       notifyResult: false,
       notifyPreview: false
     })

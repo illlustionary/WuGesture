@@ -9,7 +9,7 @@ import { GESTURE_EDITOR_LIMITS } from '../../../constants/gestureEditorLimits'
 defineProps({
   action: { type: Object, required: true },
   draft: { type: Object, required: true },
-  editor: { type: Object, required: true },
+  isRecordingHotkey: { type: Function, required: true },
   title: { type: String, required: true },
   operationOptions: { type: Function, required: true },
   operationModel: { type: Function, required: true }
@@ -79,7 +79,7 @@ const actionTypeOptions = ACTION_TYPE_OPTIONS
 
       <EdgeActionCommandFields
         :draft="draft"
-        :editor="editor"
+        :is-recording-hotkey="isRecordingHotkey"
         :operation-options="operationOptions"
         :operation-model="operationModel"
         @record-hotkey="emit('record-hotkey')"
