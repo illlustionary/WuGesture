@@ -85,6 +85,7 @@ function testWebDav() {
           :draft="draft"
           @queue-persist="queuePersistDraft"
           @flush-persist="flushPersistDraft"
+          class="app-behavior-card"
         />
         <WebDavSettings
           :draft="draft"
@@ -119,6 +120,12 @@ function testWebDav() {
 </template>
 
 <style scoped lang="scss">
+.section-card {
+  position: relative;
+}
+.section-card:has(.custom-select) {
+  z-index: 114;
+}
 :deep(.settings-color) {
   width: 100%;
   min-height: 44px;
