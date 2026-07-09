@@ -1,0 +1,68 @@
+namespace WuGesture.App.GestureEngine;
+
+public static class GestureConfigContract
+{
+    public static class Scopes
+    {
+        public const string Global = "global";
+        public const string App = "app";
+        public const string Category = "category";
+    }
+
+    public static class MouseButtons
+    {
+        public const string Right = "right";
+        public const string Middle = "middle";
+    }
+
+    public static class ActionTypes
+    {
+        public const string Hotkey = "hotkey";
+        public const string Window = "window";
+        public const string Volume = "volume";
+        public const string Brightness = "brightness";
+    }
+
+    public static class Operations
+    {
+        public const string ToggleTopMost = "toggle-topmost";
+        public const string ToggleMaximize = "toggle-maximize";
+        public const string Minimize = "minimize";
+        public const string Close = "close";
+        public const string Increase = "increase";
+        public const string Decrease = "decrease";
+        public const string Mute = "mute";
+    }
+
+    public static class EdgeTriggerTypes
+    {
+        public const string Corner = "corner";
+        public const string Friction = "friction";
+        public const string Wheel = "wheel";
+    }
+
+    public static class EdgeLocations
+    {
+        public const string TopLeft = "top-left";
+        public const string TopRight = "top-right";
+        public const string BottomLeft = "bottom-left";
+        public const string BottomRight = "bottom-right";
+        public const string Left = "left";
+        public const string Right = "right";
+        public const string Top = "top";
+        public const string Bottom = "bottom";
+    }
+
+    public static class WheelDirections
+    {
+        public const string Up = "up";
+        public const string Down = "down";
+    }
+
+    public static class CloseButtonBehaviors
+    {
+        public const string MinimizeToTray = "minimize-to-tray";
+        public const string MinimizeToTaskbar = "minimize-to-taskbar";
+        public const string Exit = "exit";
+    }
+}

@@ -4,7 +4,7 @@
 
 ## 产品方向
 
-`Wu Gesture` 是一个 Windows 鼠标手势应用；仓库和工程目录仍沿用 `my-gesture` / `MyGesture.App` 命名。
+`WuGesture` 是一个 Windows 鼠标手势应用；仓库和工程目录仍沿用 `my-gesture` / `WuGesture.App` 命名。
 
 当前目标：
 
@@ -21,7 +21,7 @@
 D:\workspace\my-gesture
 ├─ AGENTS.md
 ├─ PROJECT_STRUCTURE.md
-├─ MyGesture.slnx
+├─ WuGesture.slnx
 ├─ README.md
 ├─ gesture.ahk
 ├─ scripts
@@ -31,7 +31,7 @@ D:\workspace\my-gesture
 
 根目录重要文件：
 
-- `MyGesture.slnx`：.NET 解决方案。
+- `WuGesture.slnx`：.NET 解决方案。
 - `README.md`：面向用户的运行、构建和发布说明。
 - `PROJECT_STRUCTURE.md`：本项目地图。
 - `AGENTS.md`：后续会话的代理指令。
@@ -43,7 +43,7 @@ D:\workspace\my-gesture
 路径：
 
 ```text
-src\MyGesture.App
+src\WuGesture.App
 ```
 
 技术栈：
@@ -55,12 +55,12 @@ src\MyGesture.App
 启动流程：
 
 - `Program.cs` 通过命名互斥体保证单实例运行；再次启动时不会创建第二个实例，而是通知已运行实例弹出配置窗口。开机自启动会带 `--startup` 内部参数，默认只启动后台服务并驻留托盘，不打开配置窗口。
-- `MainForm.cs` 加载配置、应用开机自启动和管理员启动设置、创建 `GestureService` / `EdgeActionService`、按需初始化 WebView2 配置界面、创建托盘图标，并桥接 WebView 消息；也会把配置里的 `uiSettings` 应用到轨迹窗、提示窗和应用行为。主窗口和托盘显示名为 `Wu Gesture`。
+- `MainForm.cs` 加载配置、应用开机自启动和管理员启动设置、创建 `GestureService` / `EdgeActionService`、按需初始化 WebView2 配置界面、创建托盘图标，并桥接 WebView 消息；也会把配置里的 `uiSettings` 应用到轨迹窗、提示窗和应用行为。主窗口和托盘显示名为 `WuGesture`。
 - `AppIdentity.cs` 集中应用显示名、AppData 子目录、自启动注册表值、单实例 IPC 名和内部启动参数。
 - `ConfigStorageContract.cs` 集中本地配置文件名和窗口状态文件名。
 - `WebViewHostContract.cs` 集中 WebView2 虚拟主机、入口 URL 和宿主输出目录中的 Web 前端路径片段。
 - 配置窗口首次启动时默认占据主屏工作区的一半，并居中显示；关闭窗口时会保存窗口位置、大小和最大化状态，并按设置选择隐藏到托盘、最小化到任务栏或直接退出。隐藏到托盘会释放 WebView2 配置界面以降低后台内存占用，托盘恢复时重建 WebView2。通过托盘菜单“退出”始终会真正释放后台手势服务并结束进程。
-- 托盘菜单提供“打开配置”、“暂停 Wu Gesture”和“退出”；暂停项会暂停手势识别和边缘操作，但保留后台进程和配置界面。暂停时仅系统托盘图标切换为灰阶图标，并在托盘提示文字中标记“已暂停”，任务栏窗口图标不变。
+- 托盘菜单提供“打开配置”、“暂停 WuGesture”和“退出”；暂停项会暂停手势识别和边缘操作，但保留后台进程和配置界面。暂停时仅系统托盘图标切换为灰阶图标，并在托盘提示文字中标记“已暂停”，任务栏窗口图标不变。
 
 历史模板文件：
 
@@ -80,7 +80,7 @@ src\MyGesture.App
 路径：
 
 ```text
-src\MyGesture.App\GestureEngine
+src\WuGesture.App\GestureEngine
 ```
 
 关键文件：
@@ -141,7 +141,7 @@ MouseHook
 配置文件：
 
 ```text
-%AppData%\MyGesture\gestures.json
+%AppData%\WuGesture\gestures.json
 ```
 
 配置相关文件：
@@ -192,13 +192,13 @@ UpRight     -> 最大化
 路径：
 
 ```text
-src\MyGesture.App\Web
+src\WuGesture.App\Web
 ```
 
 Web 前端有独立项目地图：
 
 ```text
-src\MyGesture.App\Web\PROJECT_STRUCTURE.md
+src\WuGesture.App\Web\PROJECT_STRUCTURE.md
 ```
 
 根文档只记录桌面宿主和 Web 子项目之间的集成关系；页面、路由、组件、图标、前端状态模块和 WebView 消息细节以 Web 子项目文档为准。
@@ -206,14 +206,14 @@ src\MyGesture.App\Web\PROJECT_STRUCTURE.md
 宿主集成：
 
 - 前端使用 `pnpm build` 生成根目录下的 `dist\web`。
-- 前端 `pnpm` 构建脚本通过 `src\MyGesture.App\Web\pnpm-workspace.yaml` 放行 `@parcel/watcher` 的本地构建脚本，避免非交互环境下的依赖安装中断。
-- `MyGesture.App.csproj` 会在 `.NET` 构建前自动执行前端构建。
-- `MyGesture.App.csproj` 会在前端构建后把 `dist\web` 复制到宿主输出目录中的 `Web\dist`。
+- 前端 `pnpm` 构建脚本通过 `src\WuGesture.App\Web\pnpm-workspace.yaml` 放行 `@parcel/watcher` 的本地构建脚本，避免非交互环境下的依赖安装中断。
+- `WuGesture.App.csproj` 会在 `.NET` 构建前自动执行前端构建。
+- `WuGesture.App.csproj` 会在前端构建后把 `dist\web` 复制到宿主输出目录中的 `Web\dist`。
 - 桌面宿主通过 WebView2 虚拟主机 `https://appassets.local/` 加载宿主输出目录中的 `Web\dist`。
 
 ## 测试
 
-当前仓库没有独立的测试项目。`MyGesture.slnx` 目前只包含桌面应用工程。
+当前仓库没有独立的测试项目。`WuGesture.slnx` 目前只包含桌面应用工程。
 
 如果后续补回测试工程，可在此补充对应路径、覆盖范围和运行命令。
 
@@ -222,7 +222,7 @@ src\MyGesture.App\Web\PROJECT_STRUCTURE.md
 构建：
 
 ```powershell
-dotnet build MyGesture.slnx
+dotnet build WuGesture.slnx
 ```
 
 默认 Debug 构建输出：
@@ -240,7 +240,7 @@ WuGesture.exe
 测试：
 
 ```powershell
-dotnet test MyGesture.slnx
+dotnet test WuGesture.slnx
 ```
 
 当前会因没有测试项目而没有可执行测试目标。

@@ -1,13 +1,13 @@
-# Wu Gesture
+# WuGesture
 
 使用 C# WinForms、WebView2 和原生全局鼠标钩子的 Windows 鼠标手势应用。
 
 ## 当前状态
 
-- 桌面宿主：`src/MyGesture.App`
-- 前端宿主：`src/MyGesture.App/Web`
+- 桌面宿主：`src/WuGesture.App`
+- 前端宿主：`src/WuGesture.App/Web`
 - 现有 AutoHotkey 实验：`gesture.ahk`
-- 手势配置：`%AppData%\MyGesture\gestures.json`
+- 手势配置：`%AppData%\WuGesture\gestures.json`
 
 首个原型内置了 3 个全局手势：
 
@@ -22,13 +22,13 @@
 ## 运行
 
 ```powershell
-dotnet run --project src\MyGesture.App\MyGesture.App.csproj
+dotnet run --project src\WuGesture.App\WuGesture.App.csproj
 ```
 
 ## 构建
 
 ```powershell
-dotnet build MyGesture.slnx
+dotnet build WuGesture.slnx
 ```
 
 默认 Debug 输出会被 Git 忽略：

@@ -1,0 +1,5 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/WuGesture.App/WuGesture.App.csproj" />
+  </Folder>
+</Solution>
