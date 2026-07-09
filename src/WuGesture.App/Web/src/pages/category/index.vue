@@ -35,10 +35,7 @@ const {
     layout-class="page-shell__grid--split page-shell__grid--editor"
   >
     <template #left>
-      <ScopeSidebar
-        title="分类名称"
-        description="选择一个分类，或点击右侧 + 新增。"
-      >
+      <ScopeSidebar title="分类">
         <template #actions>
           <IconActionButton
             icon="add"
@@ -88,9 +85,7 @@ const {
               label="添加程序"
               class="secondary-button"
               @click="
-                editor.openApplicationPicker(
-                  editor.getSelectedName(scopeKind)
-                )
+                editor.openApplicationPicker(editor.getSelectedName(scopeKind))
               "
             />
           </template>
