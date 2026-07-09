@@ -7,8 +7,9 @@ import SettingsSectionCard from './SettingsSectionCard.vue'
 
 const props = defineProps({
   draft: { type: Object, required: true },
-  editor: { type: Object, required: true },
-  ready: { type: Boolean, required: true }
+  ready: { type: Boolean, required: true },
+  testState: { type: String, required: true },
+  testing: { type: Boolean, required: true }
 })
 
 const emit = defineEmits([
@@ -20,11 +21,11 @@ const emit = defineEmits([
 ])
 
 const webDavTestState = computed(() => {
-  if (props.ready && props.editor.state.webDavTestState === 'success') {
+  if (props.ready && props.testState === 'success') {
     return 'success'
   }
 
-  if (props.editor.state.webDavTestState === 'error') {
+  if (props.testState === 'error') {
     return 'error'
   }
 
@@ -41,11 +42,11 @@ const webDavTestState = computed(() => {
     <template #actions>
       <IconActionButton
         icon="test"
-        :label="editor.state.webDavTesting ? '测试中' : '测试'"
+        :label="testing ? '测试中' : '测试'"
         class="secondary-button webdav-test-button"
         :class="`webdav-test-button--${webDavTestState}`"
         color="var(--accent-strong)"
-        :disabled="editor.state.webDavTesting"
+        :disabled="testing"
         @click="emit('test')"
       />
       <IconActionButton
@@ -53,7 +54,7 @@ const webDavTestState = computed(() => {
         label="恢复"
         class="secondary-button webdav-action-button"
         :color="ready ? 'var(--accent-strong)' : 'var(--muted)'"
-        :disabled="!ready || editor.state.webDavTesting"
+        :disabled="!ready || testing"
         @click="emit('restore')"
       />
       <IconActionButton
@@ -61,7 +62,7 @@ const webDavTestState = computed(() => {
         label="保存"
         class="primary-button webdav-action-button"
         :color="ready ? 'var(--accent-strong)' : 'var(--muted)'"
-        :disabled="!ready || editor.state.webDavTesting"
+        :disabled="!ready || testing"
         @click="emit('save')"
       />
     </template>

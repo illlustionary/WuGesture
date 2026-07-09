@@ -6,7 +6,7 @@ import { GESTURE_EDITOR_LIMITS } from '../../../constants/gestureEditorLimits'
 
 defineProps({
   draft: { type: Object, required: true },
-  editor: { type: Object, required: true },
+  isRecordingHotkey: { type: Function, required: true },
   operationOptions: { type: Function, required: true },
   operationModel: { type: Function, required: true }
 })
@@ -24,7 +24,7 @@ const emit = defineEmits(['record-hotkey', 'update-operation'])
       <button
         type="button"
         class="scope-input hotkey-record-button"
-        :class="{ 'is-recording': editor.isRecordingHotkey(draft) }"
+        :class="{ 'is-recording': isRecordingHotkey(draft) }"
         @click="emit('record-hotkey')"
       >
         <KeyboardIcon
@@ -33,7 +33,7 @@ const emit = defineEmits(['record-hotkey', 'update-operation'])
         />
         <span>
           {{
-            editor.isRecordingHotkey(draft)
+            isRecordingHotkey(draft)
               ? '录制中...'
               : draft.keysText || '点击录制快捷键'
           }}

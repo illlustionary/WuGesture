@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import AppShell from '../../components/AppShell.vue'
-import { useGestureEditorStore } from '../../composables/gestureEditorStore'
+import { useGestureEdgeActionsStore } from '../../composables/gestureEditor/useGestureEdgeActionsStore'
 import EdgeActionDialog from './components/EdgeActionDialog.vue'
 import EdgeActionSection from './components/EdgeActionSection.vue'
 import { useEdgeActionDraft } from './composables/useEdgeActionDraft'
@@ -12,9 +12,9 @@ import {
   WHEEL_DIRECTIONS
 } from '../../constants/gestureEditorOptions'
 
-const editor = useGestureEditorStore()
+const edgeActionsStore = useGestureEdgeActionsStore()
 const { draft, editingAction, openEditor, closeEditor } =
-  useEdgeActionDraft(editor)
+  useEdgeActionDraft(edgeActionsStore)
 
 const groups = [
   {
@@ -55,14 +55,14 @@ const dialogTitle = computed(() => {
 })
 
 function groupActions(type) {
-  return editor.state.edgeActions.filter(action => action.triggerType === type)
+  return edgeActionsStore.edgeActions.filter(action => action.triggerType === type)
 }
 
 function locationLabel(action) {
   const locations =
     action.triggerType === EDGE_TRIGGER_TYPES.corner
-      ? editor.edgeLocations.corner
-      : editor.edgeLocations.edge
+      ? edgeActionsStore.edgeLocations.corner
+      : edgeActionsStore.edgeLocations.edge
   return (
     locations.find(item => item.value === action.location)?.label ??
     action.location
@@ -79,14 +79,14 @@ function wheelLabel(action) {
 
 function operationOptions(action) {
   if (action.actionType === ACTION_TYPES.volume) {
-    return editor.volumeOperations
+    return edgeActionsStore.volumeOperations
   }
 
   if (action.actionType === ACTION_TYPES.brightness) {
-    return editor.brightnessOperations
+    return edgeActionsStore.brightnessOperations
   }
 
-  return editor.windowOperations
+  return edgeActionsStore.windowOperations
 }
 
 function operationModel(action) {
@@ -103,14 +103,14 @@ function operationModel(action) {
 
 function actionSummary(action) {
   if (action.actionType === ACTION_TYPES.window) {
-    const operation = editor.windowOperations.find(
+    const operation = edgeActionsStore.windowOperations.find(
       item => item.value === action.windowOperation
     )
     return operation?.label ?? '窗口控制'
   }
 
   if (action.actionType === ACTION_TYPES.volume) {
-    const operation = editor.volumeOperations.find(
+    const operation = edgeActionsStore.volumeOperations.find(
       item => item.value === action.volumeOperation
     )
     return action.volumeOperation === OPERATIONS.mute
@@ -119,7 +119,7 @@ function actionSummary(action) {
   }
 
   if (action.actionType === ACTION_TYPES.brightness) {
-    const operation = editor.brightnessOperations.find(
+    const operation = edgeActionsStore.brightnessOperations.find(
       item => item.value === action.brightnessOperation
     )
     return `${operation?.label ?? '亮度 +'} ${action.amount}`
@@ -143,7 +143,7 @@ function updateDraftOperation(value) {
 }
 
 function recordHotkey() {
-  editor.startRecording(draft)
+  edgeActionsStore.startRecording(draft)
 }
 </script>
 
@@ -164,7 +164,7 @@ function recordHotkey() {
           :location-label="locationLabel"
           :wheel-label="wheelLabel"
           :action-summary="actionSummary"
-          :get-edge-action-label="editor.getEdgeActionLabel"
+          :get-edge-action-label="edgeActionsStore.getEdgeActionLabel"
           @open="openEditor"
         />
       </div>
@@ -175,7 +175,7 @@ function recordHotkey() {
     v-if="editingAction"
     :action="editingAction"
     :draft="draft"
-    :editor="editor"
+    :is-recording-hotkey="edgeActionsStore.isRecordingHotkey"
     :title="dialogTitle"
     :operation-options="operationOptions"
     :operation-model="operationModel"

@@ -126,6 +126,9 @@ src\composables
 - `gestureEditor\useCategoryApplications.js`：分类与应用程序之间的关联和移除。
 - `gestureEditor\useGestureRuleEditor.js`：规则新增/编辑弹窗、规则草稿提交、手势录制和快捷键录制流程。
 - `gestureEditor\useGestureConfigPersistence.js`：规则保存节流、配置重载/重置、本地导入导出、WebDAV 备份恢复、UI 设置保存和边缘操作保存流程。
+- `gestureEditor\useGestureEdgeActionsStore.js`：边缘操作页使用的窄 store，只暴露边缘动作列表、边缘动作保存、快捷键录制和边缘操作选项。
+- `gestureEditor\useGestureSettingsStore.js`：设置页使用的窄 store，只暴露 UI 设置草稿保存、恢复默认、本地导入导出和 WebDAV 状态/操作。
+- `gestureEditor\useGestureExclusionsStore.js`：排除项页使用的窄 store，只暴露排除项列表、应用图标匹配和排除项增删改入口。
 - `gestureEditor\useGestureEditorNotifications.js`：配置状态消息和 toast 的统一通知入口。
 - `gestureEditor\useGestureEditorWebViewBridge.js`：WebView 消息发送、静默发送、可用性判断和消息监听入口。
 

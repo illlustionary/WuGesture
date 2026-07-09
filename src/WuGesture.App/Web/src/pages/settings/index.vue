@@ -3,14 +3,14 @@ import { computed, ref } from 'vue'
 import AppShell from '../../components/AppShell.vue'
 import ConfirmDialog from '../../components/ConfirmDialog.vue'
 import IconActionButton from '../../components/IconActionButton.vue'
-import { useGestureEditorStore } from '../../composables/gestureEditorStore'
+import { useGestureSettingsStore } from '../../composables/gestureEditor/useGestureSettingsStore'
 import AppBehaviorSettings from './components/AppBehaviorSettings.vue'
 import GestureHintSettings from './components/GestureHintSettings.vue'
 import MouseTrailSettings from './components/MouseTrailSettings.vue'
 import WebDavSettings from './components/WebDavSettings.vue'
 import { useUiSettingsDraft } from './composables/useUiSettingsDraft'
 
-const editor = useGestureEditorStore()
+const settingsStore = useGestureSettingsStore()
 const {
   draft,
   trailPreviewStyle,
@@ -18,15 +18,15 @@ const {
   queuePersistDraft,
   flushPersistDraft,
   resetSettings
-} = useUiSettingsDraft(editor)
+} = useUiSettingsDraft(settingsStore)
 
 const webDavDraftSignature = computed(() =>
-  editor.getWebDavSignature(draft.webDav)
+  settingsStore.getWebDavSignature(draft.webDav)
 )
 const webDavReady = computed(
   () =>
     Boolean(draft.webDav.address) &&
-    editor.state.webDavTestedSignature === webDavDraftSignature.value
+    settingsStore.webDavTestedSignature === webDavDraftSignature.value
 )
 const resetConfirmOpen = ref(false)
 
@@ -45,26 +45,26 @@ function confirmResetSettings() {
 
 function saveToWebDav() {
   flushPersistDraft()
-  editor.saveConfigToWebDav()
+  settingsStore.saveConfigToWebDav()
 }
 
 function restoreFromWebDav() {
   flushPersistDraft()
-  editor.restoreConfigFromWebDav()
+  settingsStore.restoreConfigFromWebDav()
 }
 
 function testWebDav() {
   flushPersistDraft()
-  editor.testWebDavConnection()
+  settingsStore.testWebDavConnection()
 }
 
 function exportLocalConfig() {
   flushPersistDraft()
-  editor.exportConfigToLocal()
+  settingsStore.exportConfigToLocal()
 }
 
 function importLocalConfig() {
-  editor.importConfigFromLocal()
+  settingsStore.importConfigFromLocal()
 }
 </script>
 
@@ -114,8 +114,9 @@ function importLocalConfig() {
         />
         <WebDavSettings
           :draft="draft"
-          :editor="editor"
           :ready="webDavReady"
+          :test-state="settingsStore.webDavTestState"
+          :testing="settingsStore.webDavTesting"
           @queue-persist="queuePersistDraft"
           @flush-persist="flushPersistDraft"
           @test="testWebDav"
