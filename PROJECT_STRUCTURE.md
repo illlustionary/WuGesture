@@ -231,6 +231,12 @@ dotnet build MyGesture.slnx
 artifacts\debug\WuGesture
 ```
 
+默认 Debug 可执行文件名：
+
+```text
+WuGesture.exe
+```
+
 测试：
 
 ```powershell
@@ -249,6 +255,12 @@ dotnet test MyGesture.slnx
 
 ```text
 artifacts\publish\WuGesture
+```
+
+默认发布可执行文件名：
+
+```text
+WuGesture.exe
 ```
 
 `artifacts/` 已被 Git 忽略，用于统一存放 Debug 构建和发布产物。

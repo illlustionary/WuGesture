@@ -37,6 +37,12 @@ dotnet build MyGesture.slnx
 artifacts\debug\WuGesture
 ```
 
+默认 Debug 可执行文件：
+
+```text
+artifacts\debug\WuGesture\WuGesture.exe
+```
+
 ## 发布
 
 ```powershell
@@ -47,6 +53,12 @@ artifacts\debug\WuGesture
 
 ```text
 artifacts\publish\WuGesture
+```
+
+默认发布可执行文件：
+
+```text
+artifacts\publish\WuGesture\WuGesture.exe
 ```
 
 ## 架构

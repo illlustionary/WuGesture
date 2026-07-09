@@ -14,7 +14,7 @@ if ([string]::IsNullOrWhiteSpace($OutputPath)) {
 }
 
 $runningProcess = @(
-    Get-Process -Name "Wu Gesture" -ErrorAction SilentlyContinue
+    Get-Process -Name "WuGesture" -ErrorAction SilentlyContinue
     Get-Process -Name "MyGesture.App" -ErrorAction SilentlyContinue
 )
 if ($runningProcess) {
