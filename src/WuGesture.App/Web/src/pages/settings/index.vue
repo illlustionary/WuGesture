@@ -71,6 +71,7 @@ function importLocalConfig() {
 <template>
   <AppShell
     title="设置"
+    description="调整轨迹线、提示窗、应用行为和配置同步。"
     layout-class="page-shell__grid--single page-shell__grid--settings"
   >
     <template #actions>
