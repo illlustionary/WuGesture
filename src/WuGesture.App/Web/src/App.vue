@@ -1,5 +1,6 @@
 <script setup>
-import { useRouter, RouterView } from 'vue-router'
+import { computed, ref, watch } from 'vue'
+import { useRoute, useRouter, RouterView } from 'vue-router'
 import AppHeader from './components/AppHeader.vue'
 import IconActionButton from './components/IconActionButton.vue'
 import GestureRuleDialog from './components/GestureRuleDialog.vue'
@@ -8,6 +9,7 @@ import CrosshairIcon from './assets/crosshair.svg'
 import FolderIcon from './assets/folder.svg'
 
 const editor = useGestureEditorStore()
+const route = useRoute()
 const router = useRouter()
 const tabs = [
   { to: '/global', label: '全局' },
@@ -16,8 +18,35 @@ const tabs = [
   { to: '/edge', label: '边缘操作' },
   { to: '/exclusions', label: '排除项' }
 ]
+const routeOrder = [
+  '/global',
+  '/category',
+  '/app',
+  '/edge',
+  '/exclusions',
+  '/settings'
+]
+const transitionDirection = ref('right')
+const routeTransitionName = computed(() =>
+  transitionDirection.value === 'right' ? 'route-slide-right' : 'route-slide-left'
+)
 
 editor.initialize()
+
+watch(
+  () => route.path,
+  (nextPath, previousPath) => {
+    const nextIndex = routeOrder.indexOf(nextPath)
+    const previousIndex = routeOrder.indexOf(previousPath)
+
+    if (nextIndex === -1 || previousIndex === -1 || nextIndex === previousIndex) {
+      transitionDirection.value = 'right'
+      return
+    }
+
+    transitionDirection.value = nextIndex > previousIndex ? 'right' : 'left'
+  }
+)
 
 function openSettingsPage() {
   router.push('/settings')
@@ -33,7 +62,18 @@ function openSettingsPage() {
       @open-settings="openSettingsPage"
     />
 
-    <RouterView />
+    <RouterView v-slot="{ Component, route: viewRoute }">
+      <div class="route-transition-frame">
+        <Transition :name="routeTransitionName">
+          <div
+            :key="viewRoute.fullPath"
+            class="app-route-view"
+          >
+            <component :is="Component" />
+          </div>
+        </Transition>
+      </div>
+    </RouterView>
 
     <div
       v-if="editor.state.applicationPickerOpen"
@@ -128,6 +168,56 @@ function openSettingsPage() {
 <style scoped lang="scss">
 .app-shell {
   padding: 20px 50px 26px;
+}
+
+.route-transition-frame {
+  position: relative;
+}
+
+.app-route-view {
+  display: block;
+  width: 100%;
+}
+
+.route-slide-right-enter-active,
+.route-slide-left-enter-active {
+  position: relative;
+  z-index: 1;
+  transition:
+    opacity 190ms ease,
+    transform 190ms ease;
+}
+
+.route-slide-right-leave-active,
+.route-slide-left-leave-active {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  pointer-events: none;
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease;
+}
+
+.route-slide-right-enter-from {
+  opacity: 0;
+  transform: translateX(16px);
+}
+
+.route-slide-right-leave-to {
+  opacity: 0;
+  transform: translateX(-8px);
+}
+
+.route-slide-left-enter-from {
+  opacity: 0;
+  transform: translateX(-16px);
+}
+
+.route-slide-left-leave-to {
+  opacity: 0;
+  transform: translateX(8px);
 }
 
 .picker-options {
