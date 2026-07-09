@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue'
-import IconActionButton from '../../../components/IconActionButton.vue'
+import IconActionButton from '@/components/IconActionButton.vue'
 import SettingsField from './SettingsField.vue'
 import SettingsFormGrid from './SettingsFormGrid.vue'
 import SettingsSectionCard from './SettingsSectionCard.vue'

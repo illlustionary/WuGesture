@@ -17,8 +17,9 @@ This repository is a Vite + Vue 3 web frontend for the WuGesture application. It
 
 - `src/main.js`: app bootstrap, router setup, and global style import.
 - `src/App.vue`: top-level shell with the main navigation, status bar, and global dialogs.
-- `src/styles.css`: shared visual styling for the entire app.
-- `src/composables/gestureEditorStore.js`: central state and logic for rule editing, scope selection, persistence, and WebView message handling.
+- `src/styles.scss`: shared visual styling for the entire app.
+- `src/gestureEditor/`: gesture editor domain module, including context, narrow stores, and internal workflow modules for rule editing, scope selection, persistence, and WebView message handling.
+- `src/composables/gestureEditorStore.js`: compatibility facade that forwards to `src/gestureEditor/context/gestureEditorContext.js`.
 - `src/components/`: reusable UI pieces used by the shell and editors.
   - `AppShell.vue`: layout wrapper for the app experience.
   - `IconActionButton.vue`: shared icon-only button for add/close/delete actions.
@@ -35,7 +36,7 @@ This repository is a Vite + Vue 3 web frontend for the WuGesture application. It
 ## Functional Areas
 
 - Routing is hash-based and currently exposes `global`, `category`, and `app` rule scopes.
-- `gestureEditorStore.js` is the main coordination layer for:
+- `src/gestureEditor/context/gestureEditorContext.js` is the main coordination layer for:
   - loading and saving rules,
   - tracking selected scope and application/category state,
   - opening and closing gesture editors,

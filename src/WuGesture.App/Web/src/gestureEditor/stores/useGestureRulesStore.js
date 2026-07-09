@@ -1,6 +1,6 @@
 import { computed, proxyRefs } from "vue";
-import { getActionLabel, getGestureMnemonic } from "../../utils/gestureEditorFormatters";
-import { useGestureEditorContext } from "./gestureEditorContext";
+import { getActionLabel, getGestureMnemonic } from "@/utils/gestureEditorFormatters";
+import { useGestureEditorContext } from "@/gestureEditor/context/gestureEditorContext";
 
 export function useGestureRulesStore() {
   const editor = useGestureEditorContext();

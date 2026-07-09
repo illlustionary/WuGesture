@@ -1,14 +1,14 @@
 <script setup>
 import { computed, ref } from 'vue'
-import AppShell from '../../components/AppShell.vue'
-import ConfirmDialog from '../../components/ConfirmDialog.vue'
-import IconActionButton from '../../components/IconActionButton.vue'
-import { useGestureSettingsStore } from '../../composables/gestureEditor/useGestureSettingsStore'
-import AppBehaviorSettings from './components/AppBehaviorSettings.vue'
-import GestureHintSettings from './components/GestureHintSettings.vue'
-import MouseTrailSettings from './components/MouseTrailSettings.vue'
-import WebDavSettings from './components/WebDavSettings.vue'
-import { useUiSettingsDraft } from './composables/useUiSettingsDraft'
+import AppShell from '@/components/AppShell.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import IconActionButton from '@/components/IconActionButton.vue'
+import { useGestureSettingsStore } from '@/gestureEditor/stores/useGestureSettingsStore'
+import AppBehaviorSettings from '@/pages/settings/components/AppBehaviorSettings.vue'
+import GestureHintSettings from '@/pages/settings/components/GestureHintSettings.vue'
+import MouseTrailSettings from '@/pages/settings/components/MouseTrailSettings.vue'
+import WebDavSettings from '@/pages/settings/components/WebDavSettings.vue'
+import { useUiSettingsDraft } from '@/pages/settings/composables/useUiSettingsDraft'
 
 const settingsStore = useGestureSettingsStore()
 const {

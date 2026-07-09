@@ -3,9 +3,9 @@ import {
   BRIGHTNESS_OPERATIONS,
   VOLUME_OPERATIONS,
   WINDOW_OPERATIONS
-} from "../../constants/gestureEditorOptions";
-import { getGestureMnemonic } from "../../utils/gestureEditorFormatters";
-import { useGestureEditorContext } from "./gestureEditorContext";
+} from "@/constants/gestureEditorOptions";
+import { getGestureMnemonic } from "@/utils/gestureEditorFormatters";
+import { useGestureEditorContext } from "@/gestureEditor/context/gestureEditorContext";
 
 export function useGestureEditorOverlayStore() {
   const editor = useGestureEditorContext();

@@ -7,12 +7,12 @@ import {
   VOLUME_OPERATIONS,
   WEBVIEW_MESSAGE_TYPES,
   WINDOW_OPERATIONS
-} from "../../constants/gestureEditorOptions";
+} from "@/constants/gestureEditorOptions";
 import {
   DEFAULT_APPLICATIONS,
   DEFAULT_RULES,
   DEFAULT_UI_SETTINGS
-} from "../../constants/gestureEditorDefaults";
+} from "@/constants/gestureEditorDefaults";
 import {
   createDefaultUiSettings,
   isSameApplicationIdentity,
@@ -20,30 +20,30 @@ import {
   normalizeExcludedApplications,
   normalizeEdgeActions,
   normalizeUiSettings
-} from "../../utils/gestureEditorNormalizers";
+} from "@/utils/gestureEditorNormalizers";
 import {
   getActionLabel,
   getEdgeActionLabel,
   getGestureMnemonic
-} from "../../utils/gestureEditorFormatters";
+} from "@/utils/gestureEditorFormatters";
 import {
   collectAppItems as collectAppItemsFromState,
   collectCategoryItems as collectCategoryItemsFromState
-} from "../../utils/gestureEditorCollections";
+} from "@/utils/gestureEditorCollections";
 import {
   createEmptyGestureDraft,
   createRuleModel,
   toViewApplication,
   toViewRule as toViewRuleModel
-} from "../../utils/gestureEditorViewModels";
-import { useGestureEditorApplicationPicker } from "../useGestureEditorApplicationPicker";
-import { useCategoryApplications } from "./useCategoryApplications";
-import { useGestureApplications } from "./useGestureApplications";
-import { useGestureConfigPersistence } from "./useGestureConfigPersistence";
-import { useGestureEditorNotifications } from "./useGestureEditorNotifications";
-import { useGestureEditorWebViewBridge } from "./useGestureEditorWebViewBridge";
-import { useGestureRuleEditor } from "./useGestureRuleEditor";
-import { useGestureScopes } from "./useGestureScopes";
+} from "@/utils/gestureEditorViewModels";
+import { useGestureEditorApplicationPicker } from "@/gestureEditor/modules/useGestureEditorApplicationPicker";
+import { useCategoryApplications } from "@/gestureEditor/modules/useCategoryApplications";
+import { useGestureApplications } from "@/gestureEditor/modules/useGestureApplications";
+import { useGestureConfigPersistence } from "@/gestureEditor/modules/useGestureConfigPersistence";
+import { useGestureEditorNotifications } from "@/gestureEditor/modules/useGestureEditorNotifications";
+import { useGestureEditorWebViewBridge } from "@/gestureEditor/modules/useGestureEditorWebViewBridge";
+import { useGestureRuleEditor } from "@/gestureEditor/modules/useGestureRuleEditor";
+import { useGestureScopes } from "@/gestureEditor/modules/useGestureScopes";
 
 const state = reactive({
   statusText: "启动中",

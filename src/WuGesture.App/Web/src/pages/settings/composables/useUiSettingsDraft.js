@@ -1,5 +1,5 @@
 import { computed, onBeforeUnmount, reactive, watch } from 'vue'
-import { CLOSE_BUTTON_BEHAVIORS } from '../../../constants/gestureEditorOptions'
+import { CLOSE_BUTTON_BEHAVIORS } from '@/constants/gestureEditorOptions'
 
 export function useUiSettingsDraft(editor) {
   const draft = reactive(createDraft(editor.getUiSettingsSnapshot()))

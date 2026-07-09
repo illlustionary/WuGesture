@@ -14,7 +14,7 @@ import {
   parsePattern
 } from "./gestureEditorNormalizers";
 import { getGestureMnemonic } from "./gestureEditorFormatters";
-import { ACTION_TYPES } from "../constants/gestureEditorOptions";
+import { ACTION_TYPES } from "@/constants/gestureEditorOptions";
 
 export function toPayloadRule(rule) {
   return {

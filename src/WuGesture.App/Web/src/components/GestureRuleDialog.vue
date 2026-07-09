@@ -2,10 +2,10 @@
 import { computed } from 'vue'
 import CustomSelect from './CustomSelect.vue'
 import IconActionButton from './IconActionButton.vue'
-import KeyboardIcon from '../assets/keyboard.svg'
-import RecordIcon from '../assets/record.svg'
-import { ACTION_TYPE_OPTIONS, ACTION_TYPES, OPERATIONS } from '../constants/gestureEditorOptions'
-import { GESTURE_EDITOR_LIMITS } from '../constants/gestureEditorLimits'
+import KeyboardIcon from '@/assets/keyboard.svg'
+import RecordIcon from '@/assets/record.svg'
+import { ACTION_TYPE_OPTIONS, ACTION_TYPES, OPERATIONS } from '@/constants/gestureEditorOptions'
+import { GESTURE_EDITOR_LIMITS } from '@/constants/gestureEditorLimits'
 
 const props = defineProps({
   open: { type: Boolean, required: true },

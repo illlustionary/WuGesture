@@ -1,7 +1,7 @@
 import {
   SCOPE_KINDS,
   WEBVIEW_MESSAGE_TYPES
-} from "../constants/gestureEditorOptions";
+} from "@/constants/gestureEditorOptions";
 
 export function useGestureEditorApplicationPicker({
   state,

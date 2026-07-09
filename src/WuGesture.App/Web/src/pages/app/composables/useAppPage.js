@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { SCOPE_KINDS } from '../../../constants/gestureEditorOptions'
+import { SCOPE_KINDS } from '@/constants/gestureEditorOptions'
 
 export function useAppPage(editor) {
   const scopeKind = SCOPE_KINDS.app

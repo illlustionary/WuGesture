@@ -2,7 +2,7 @@ import {
   ACTION_TYPES,
   MOUSE_BUTTONS,
   OPERATIONS
-} from "../constants/gestureEditorOptions";
+} from "@/constants/gestureEditorOptions";
 import {
   normalizeActionType,
   normalizeAmount,

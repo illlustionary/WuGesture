@@ -1,5 +1,5 @@
 <script setup>
-import { actionKey } from '../composables/useEdgeActionDraft'
+import { actionKey } from '@/pages/edge/composables/useEdgeActionDraft'
 import EdgeActionCard from './EdgeActionCard.vue'
 
 defineProps({

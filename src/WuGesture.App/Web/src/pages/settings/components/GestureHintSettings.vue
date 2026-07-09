@@ -2,8 +2,8 @@
 import SettingsField from './SettingsField.vue'
 import SettingsFormGrid from './SettingsFormGrid.vue'
 import SettingsSectionCard from './SettingsSectionCard.vue'
-import ToggleCheckbox from '../../../components/ToggleCheckbox.vue'
-import { GESTURE_EDITOR_LIMITS } from '../../../constants/gestureEditorLimits'
+import ToggleCheckbox from '@/components/ToggleCheckbox.vue'
+import { GESTURE_EDITOR_LIMITS } from '@/constants/gestureEditorLimits'
 
 defineProps({
   draft: { type: Object, required: true },

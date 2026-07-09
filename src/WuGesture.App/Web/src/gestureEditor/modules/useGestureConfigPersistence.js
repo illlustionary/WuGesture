@@ -1,14 +1,14 @@
-import { WEBVIEW_MESSAGE_TYPES } from "../../constants/gestureEditorOptions";
+import { WEBVIEW_MESSAGE_TYPES } from "@/constants/gestureEditorOptions";
 import {
   cloneUiSettings,
   createDefaultUiSettings,
   normalizeEdgeActionInPlace,
   normalizeUiSettings
-} from "../../utils/gestureEditorNormalizers";
+} from "@/utils/gestureEditorNormalizers";
 import {
   buildConfigPayload,
   getWebDavSignature as createWebDavSignature
-} from "../../utils/gestureEditorPayloads";
+} from "@/utils/gestureEditorPayloads";
 
 export function useGestureConfigPersistence({
   getAutoSaveTimer,

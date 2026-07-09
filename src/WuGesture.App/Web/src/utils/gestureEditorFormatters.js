@@ -9,7 +9,7 @@ import {
   VOLUME_OPERATIONS,
   WHEEL_DIRECTIONS,
   WINDOW_OPERATIONS
-} from "../constants/gestureEditorOptions";
+} from "@/constants/gestureEditorOptions";
 import {
   normalizeActionType,
   normalizeAmount,

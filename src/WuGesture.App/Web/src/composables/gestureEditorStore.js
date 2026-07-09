@@ -1,4 +1,4 @@
-import { useGestureEditorContext } from "./gestureEditor/gestureEditorContext";
+import { useGestureEditorContext } from "@/gestureEditor/context/gestureEditorContext";
 
 export function useGestureEditorStore() {
   return useGestureEditorContext();

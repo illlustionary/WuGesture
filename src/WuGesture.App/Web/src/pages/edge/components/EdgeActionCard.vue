@@ -1,5 +1,5 @@
 <script setup>
-import { EDGE_TRIGGER_TYPES } from '../../../constants/gestureEditorOptions'
+import { EDGE_TRIGGER_TYPES } from '@/constants/gestureEditorOptions'
 
 defineProps({
   action: { type: Object, required: true },

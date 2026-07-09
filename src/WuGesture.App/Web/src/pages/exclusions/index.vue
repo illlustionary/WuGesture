@@ -1,8 +1,8 @@
 <script setup>
-import AppShell from '../../components/AppShell.vue'
-import IconActionButton from '../../components/IconActionButton.vue'
-import ToggleCheckbox from '../../components/ToggleCheckbox.vue'
-import { useGestureExclusionsStore } from '../../composables/gestureEditor/useGestureExclusionsStore'
+import AppShell from '@/components/AppShell.vue'
+import IconActionButton from '@/components/IconActionButton.vue'
+import ToggleCheckbox from '@/components/ToggleCheckbox.vue'
+import { useGestureExclusionsStore } from '@/gestureEditor/stores/useGestureExclusionsStore'
 
 const exclusionsStore = useGestureExclusionsStore()
 

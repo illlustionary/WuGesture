@@ -1,10 +1,10 @@
 <script setup>
-import CustomSelect from '../../../components/CustomSelect.vue'
-import IconActionButton from '../../../components/IconActionButton.vue'
-import ToggleCheckbox from '../../../components/ToggleCheckbox.vue'
+import CustomSelect from '@/components/CustomSelect.vue'
+import IconActionButton from '@/components/IconActionButton.vue'
+import ToggleCheckbox from '@/components/ToggleCheckbox.vue'
 import EdgeActionCommandFields from './EdgeActionCommandFields.vue'
-import { ACTION_TYPE_OPTIONS, EDGE_TRIGGER_TYPES } from '../../../constants/gestureEditorOptions'
-import { GESTURE_EDITOR_LIMITS } from '../../../constants/gestureEditorLimits'
+import { ACTION_TYPE_OPTIONS, EDGE_TRIGGER_TYPES } from '@/constants/gestureEditorOptions'
+import { GESTURE_EDITOR_LIMITS } from '@/constants/gestureEditorLimits'
 
 defineProps({
   action: { type: Object, required: true },

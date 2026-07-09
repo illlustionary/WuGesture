@@ -1,4 +1,4 @@
-import { ACTION_TYPES, SCOPE_KINDS, WEBVIEW_MESSAGE_TYPES } from "../../constants/gestureEditorOptions";
+import { ACTION_TYPES, SCOPE_KINDS, WEBVIEW_MESSAGE_TYPES } from "@/constants/gestureEditorOptions";
 import {
   normalizeActionType,
   normalizeAmount,
@@ -9,9 +9,9 @@ import {
   parseKeys,
   parsePattern,
   toPatternText
-} from "../../utils/gestureEditorNormalizers";
-import { getActionLabel, getGestureMnemonic } from "../../utils/gestureEditorFormatters";
-import { createEmptyGestureDraft } from "../../utils/gestureEditorViewModels";
+} from "@/utils/gestureEditorNormalizers";
+import { getActionLabel, getGestureMnemonic } from "@/utils/gestureEditorFormatters";
+import { createEmptyGestureDraft } from "@/utils/gestureEditorViewModels";
 
 export function useGestureRuleEditor({
   state,

@@ -4,9 +4,9 @@ import {
   EDGE_LOCATIONS,
   VOLUME_OPERATIONS,
   WINDOW_OPERATIONS
-} from "../../constants/gestureEditorOptions";
-import { getEdgeActionLabel } from "../../utils/gestureEditorFormatters";
-import { useGestureEditorContext } from "./gestureEditorContext";
+} from "@/constants/gestureEditorOptions";
+import { getEdgeActionLabel } from "@/utils/gestureEditorFormatters";
+import { useGestureEditorContext } from "@/gestureEditor/context/gestureEditorContext";
 
 export function useGestureEdgeActionsStore() {
   const editor = useGestureEditorContext();
