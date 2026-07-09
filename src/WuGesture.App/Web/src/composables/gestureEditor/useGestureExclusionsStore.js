@@ -1,8 +1,8 @@
 import { computed, proxyRefs } from "vue";
-import { useGestureEditorStore } from "../gestureEditorStore";
+import { useGestureEditorContext } from "./gestureEditorContext";
 
 export function useGestureExclusionsStore() {
-  const editor = useGestureEditorStore();
+  const editor = useGestureEditorContext();
   const applications = computed(() => editor.state.applications);
   const excludedApplications = computed(
     () => editor.state.uiSettings.appBehavior.excludedApplications

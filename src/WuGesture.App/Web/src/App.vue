@@ -4,11 +4,13 @@ import { useRoute, useRouter, RouterView } from 'vue-router'
 import AppHeader from './components/AppHeader.vue'
 import IconActionButton from './components/IconActionButton.vue'
 import GestureRuleDialog from './components/GestureRuleDialog.vue'
-import { useGestureEditorStore } from './composables/gestureEditorStore'
+import { useGestureEditorLifecycleStore } from './composables/gestureEditor/useGestureEditorLifecycleStore'
+import { useGestureEditorOverlayStore } from './composables/gestureEditor/useGestureEditorOverlayStore'
 import CrosshairIcon from './assets/crosshair.svg'
 import FolderIcon from './assets/folder.svg'
 
-const editor = useGestureEditorStore()
+const lifecycle = useGestureEditorLifecycleStore()
+const overlay = useGestureEditorOverlayStore()
 const route = useRoute()
 const router = useRouter()
 const tabs = [
@@ -31,7 +33,7 @@ const routeTransitionName = computed(() =>
   transitionDirection.value === 'right' ? 'route-slide-right' : 'route-slide-left'
 )
 
-editor.initialize()
+lifecycle.initialize()
 
 watch(
   () => route.path,
@@ -56,8 +58,8 @@ function openSettingsPage() {
 <template>
   <div class="app-shell">
     <AppHeader
-      :status-text="editor.state.statusText"
-      :status-state="editor.state.statusState"
+      :status-text="lifecycle.statusText"
+      :status-state="lifecycle.statusState"
       :tabs="tabs"
       @open-settings="openSettingsPage"
     />
@@ -76,9 +78,9 @@ function openSettingsPage() {
     </RouterView>
 
     <div
-      v-if="editor.state.applicationPickerOpen"
+      v-if="overlay.applicationPickerOpen"
       class="modal-backdrop"
-      @click.self="editor.closeApplicationPicker()"
+      @click.self="overlay.closeApplicationPicker()"
     >
       <section
         class="modal-panel"
@@ -90,14 +92,14 @@ function openSettingsPage() {
           <div>
             <h3 id="application-picker-title">
               {{
-                editor.state.applicationPickerTarget === 'exclusion'
+                overlay.applicationPickerTarget === 'exclusion'
                   ? '添加排除项'
                   : '添加程序'
               }}
             </h3>
             <!-- <p>
               {{
-                editor.state.applicationPickerScopeKind === 'app'
+                overlay.applicationPickerScopeKind === 'app'
                   ? '选择一种方式添加程序规则。'
                   : '选择一种方式把程序加入当前分类。'
               }}
@@ -108,7 +110,7 @@ function openSettingsPage() {
             label="关闭"
             class="ghost-button"
             tone="muted"
-            @click="editor.closeApplicationPicker()"
+            @click="overlay.closeApplicationPicker()"
           />
         </div>
 
@@ -116,7 +118,7 @@ function openSettingsPage() {
           <button
             type="button"
             class="picker-option"
-            @pointerdown.prevent="editor.pickApplicationWindow()"
+            @pointerdown.prevent="overlay.pickApplicationWindow()"
             @click.prevent
           >
             <CrosshairIcon
@@ -132,7 +134,7 @@ function openSettingsPage() {
           <button
             type="button"
             class="picker-option"
-            @click="editor.selectApplication()"
+            @click="overlay.selectApplication()"
           >
             <FolderIcon
               class="picker-option__icon"
@@ -148,19 +150,19 @@ function openSettingsPage() {
     </div>
 
     <GestureRuleDialog
-      :open="editor.state.gestureEditorOpen"
-      :draft="editor.state.gestureDraft"
-      :message="editor.state.gestureRecognitionMessage"
-      :is-recording-hotkey="editor.isRecordingHotkey"
-      :is-recording-gesture="editor.state.gestureRecordingActive"
-      :get-gesture-mnemonic="editor.getGestureMnemonic"
-      :window-operations="editor.windowOperations"
-      :volume-operations="editor.volumeOperations"
-      :brightness-operations="editor.brightnessOperations"
-      @close="editor.closeGestureEditor"
-      @persist="editor.persistGestureEditor"
-      @record="editor.startGestureRecording"
-      @record-hotkey="editor.startRecording"
+      :open="overlay.gestureEditorOpen"
+      :draft="overlay.gestureDraft"
+      :message="overlay.gestureRecognitionMessage"
+      :is-recording-hotkey="overlay.isRecordingHotkey"
+      :is-recording-gesture="overlay.gestureRecordingActive"
+      :get-gesture-mnemonic="overlay.getGestureMnemonic"
+      :window-operations="overlay.windowOperations"
+      :volume-operations="overlay.volumeOperations"
+      :brightness-operations="overlay.brightnessOperations"
+      @close="overlay.closeGestureEditor"
+      @persist="overlay.persistGestureEditor"
+      @record="overlay.startGestureRecording"
+      @record-hotkey="overlay.startRecording"
     />
   </div>
 </template>
