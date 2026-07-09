@@ -804,6 +804,12 @@ public sealed class MainForm : Form
             case WebViewMessageTypes.WebDavRestore:
                 RestoreConfigFromWebDav(json);
                 break;
+            case WebViewMessageTypes.ExportConfig:
+                ExportConfig(json);
+                break;
+            case WebViewMessageTypes.ImportConfig:
+                ImportConfig();
+                break;
             case WebViewMessageTypes.ReloadRules:
                 ReloadRules();
                 break;
@@ -1059,6 +1065,80 @@ public sealed class MainForm : Form
         catch (Exception exception)
         {
             PostWebDavResult("restore", false, exception.Message);
+        }
+    }
+
+    private void ExportConfig(string json)
+    {
+        try
+        {
+            var message = JsonSerializer.Deserialize<RulesWebMessage>(json, WebMessageJsonOptions);
+            var uiSettings = message?.UiSettings ?? loadedConfig?.Config.UiSettings ?? new GestureUiSettings();
+            var config = new GestureConfig
+            {
+                Rules = message?.Rules ?? [],
+                Applications = message?.Applications ?? [],
+                EdgeActions = message?.EdgeActions ?? [],
+                UiSettings = uiSettings
+            };
+
+            loadedConfig = configStore.SaveAndLoad(config);
+            ApplyLoadedConfig();
+
+            using var dialog = new SaveFileDialog
+            {
+                Title = "导出配置",
+                Filter = "JSON 配置 (*.json)|*.json|所有文件 (*.*)|*.*",
+                FileName = ConfigStorageContract.ConfigFileName,
+                DefaultExt = "json",
+                AddExtension = true,
+                OverwritePrompt = true
+            };
+
+            if (dialog.ShowDialog(this) != DialogResult.OK)
+            {
+                return;
+            }
+
+            var configJson = File.ReadAllText(loadedConfig.FilePath);
+            File.WriteAllText(dialog.FileName, configJson);
+
+            PostRules();
+            PostConfigResult(true, "已导出配置");
+        }
+        catch (Exception exception)
+        {
+            PostConfigResult(false, exception.Message);
+        }
+    }
+
+    private void ImportConfig()
+    {
+        try
+        {
+            using var dialog = new OpenFileDialog
+            {
+                Title = "导入配置",
+                Filter = "JSON 配置 (*.json)|*.json|所有文件 (*.*)|*.*",
+                CheckFileExists = true,
+                Multiselect = false
+            };
+
+            if (dialog.ShowDialog(this) != DialogResult.OK)
+            {
+                return;
+            }
+
+            var configJson = File.ReadAllText(dialog.FileName);
+            loadedConfig = configStore.SaveJsonAndLoad(configJson);
+            ApplyLoadedConfig();
+
+            PostRules();
+            PostConfigResult(true, "已导入配置");
+        }
+        catch (Exception exception)
+        {
+            PostConfigResult(false, exception.Message);
         }
     }
 

@@ -57,7 +57,7 @@ src\WuGesture.App
 - `Program.cs` 通过命名互斥体保证单实例运行；再次启动时不会创建第二个实例，而是通知已运行实例弹出配置窗口。开机自启动会带 `--startup` 内部参数，默认只启动后台服务并驻留托盘，不打开配置窗口。
 - `MainForm.cs` 加载配置、应用开机自启动和管理员启动设置、创建 `GestureService` / `EdgeActionService`、按需初始化 WebView2 配置界面、创建托盘图标，并桥接 WebView 消息；也会把配置里的 `uiSettings` 应用到轨迹窗、提示窗和应用行为。主窗口和托盘显示名为 `WuGesture`。
 - `AppIdentity.cs` 集中应用显示名、AppData 子目录、自启动注册表值、单实例 IPC 名和内部启动参数。
-- `ConfigStorageContract.cs` 集中本地配置文件名和窗口状态文件名。
+- `ConfigStorageContract.cs` 集中本地配置文件名和窗口状态文件名；本地导入/导出只处理主配置文件，不包含窗口状态文件。
 - `WebViewHostContract.cs` 集中 WebView2 虚拟主机、入口 URL 和宿主输出目录中的 Web 前端路径片段。
 - 配置窗口首次启动时默认占据主屏工作区的一半，并居中显示；关闭窗口时会保存窗口位置、大小和最大化状态，并按设置选择隐藏到托盘、最小化到任务栏或直接退出。隐藏到托盘会释放 WebView2 配置界面以降低后台内存占用，托盘恢复时重建 WebView2。通过托盘菜单“退出”始终会真正释放后台手势服务并结束进程。
 - 托盘菜单提供“打开配置”、“暂停 WuGesture”和“退出”；暂停项会暂停手势识别和边缘操作，但保留后台进程和配置界面。暂停时仅系统托盘图标切换为灰阶图标，并在托盘提示文字中标记“已暂停”，任务栏窗口图标不变。
@@ -148,7 +148,7 @@ MouseHook
 
 - `GestureConfig.cs`：JSON DTO。
 - `GestureConfigContract.cs`：配置和运行时共享的字符串契约常量，包括 scope、鼠标按键、动作类型、操作名、边缘触发类型/位置、滚轮方向和关闭按钮行为。
-- `GestureConfigStore.cs`：加载、保存、重置默认配置。
+- `GestureConfigStore.cs`：加载、保存、重置默认配置，并为本地/WebDAV 恢复提供 JSON 校验、规范化和写入。
 - `ConfigStorageContract.cs`：配置文件名和窗口状态文件名常量。
 - `GestureConfigMapper.cs`：把配置 DTO 映射为运行时 `GestureRule`。
 - `DefaultGestureConfig.cs`：完整默认初始配置，包含默认全局规则、默认 UI/应用行为设置和默认关闭的边缘操作。
@@ -172,7 +172,7 @@ MouseHook
 - `uiSettings.mouseTrail`：轨迹窗设置，包含 `inactiveColor`、`activeColor`、`inactiveThickness`、`activeThickness`、`thickness`、`inactiveOpacity`、`activeOpacity`；`thickness` 保留用于兼容旧配置。
 - `uiSettings.gestureHint`：提示泡泡设置，包含 `fontFamily`、`fontSize`、`textColor`、`backgroundColor`、`backgroundOpacity`、`width`、`widthPercent`、`autoWidth`、`height`、`heightPercent`、`cornerRadius`、`bottomOffset`、`bottomOffsetPercent`；百分比字段按当前屏幕工作区宽高换算，像素字段保留用于兼容旧配置。
 - `uiSettings.appBehavior`：应用行为设置，包含 `launchAtStartup`、`runAsAdministrator`、`gesturePaused`、`closeButtonBehavior` 和 `excludedApplications`；关闭按钮行为支持 `minimize-to-tray`、`minimize-to-taskbar`、`exit`。排除项包含 `name`、`displayName`、`path` 和 `disableEdgeActions`；命中的程序不执行鼠标手势，勾选 `disableEdgeActions` 时也会禁用边缘操作。
-- `uiSettings.webDav`：WebDAV 备份设置，包含 `address`、`userName`、`password` 和 `remotePath`。设置页可测试 WebDAV 连接；测试当前配置成功后，才允许把当前完整配置保存到 WebDAV，或从 WebDAV 下载配置并覆盖本地配置；恢复后会刷新规则匹配、边缘操作、应用行为和 UI 设置。
+- `uiSettings.webDav`：WebDAV 备份设置，包含 `address`、`userName`、`password` 和 `remotePath`。设置页可把当前完整配置导出到本地 JSON，或从本地 JSON 导入并覆盖主配置文件；本地导入/导出不包含窗口状态。设置页也可测试 WebDAV 连接；测试当前配置成功后，才允许把当前完整配置保存到 WebDAV，或从 WebDAV 下载配置并覆盖本地配置；恢复后会刷新规则匹配、边缘操作、应用行为和 UI 设置。
 
 默认初始配置只包含全局规则和边缘操作，不包含应用程序归属或分类规则。边缘操作会预置触发角、摩擦边和边缘滚动项，但默认全部关闭。
 

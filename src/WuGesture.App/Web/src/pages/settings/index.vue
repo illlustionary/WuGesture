@@ -57,6 +57,15 @@ function testWebDav() {
   flushPersistDraft()
   editor.testWebDavConnection()
 }
+
+function exportLocalConfig() {
+  flushPersistDraft()
+  editor.exportConfigToLocal()
+}
+
+function importLocalConfig() {
+  editor.importConfigFromLocal()
+}
 </script>
 
 <template>
@@ -66,9 +75,24 @@ function testWebDav() {
   >
     <template #actions>
       <IconActionButton
+        icon="download"
+        label="导出配置"
+        class="secondary-button settings-local-action"
+        color="var(--accent-strong)"
+        @click="exportLocalConfig"
+      />
+      <IconActionButton
+        icon="upload"
+        label="导入配置"
+        class="secondary-button settings-local-action"
+        color="var(--accent-strong)"
+        @click="importLocalConfig"
+      />
+      <IconActionButton
         icon="reset"
         label="恢复默认设置"
-        class="secondary-button"
+        class="secondary-button settings-reset-action"
+        color="var(--danger)"
         @click="openResetConfirm"
       />
     </template>
@@ -126,6 +150,17 @@ function testWebDav() {
 .section-card:has(.custom-select) {
   z-index: 114;
 }
+
+:deep(.settings-local-action .icon-action-button__icon) {
+  width: 22px;
+  height: 22px;
+}
+
+:deep(.settings-reset-action .icon-action-button__icon) {
+  width: 18px;
+  height: 18px;
+}
+
 :deep(.settings-color) {
   width: 100%;
   min-height: 44px;
