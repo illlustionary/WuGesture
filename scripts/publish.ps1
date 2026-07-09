@@ -7,7 +7,7 @@ $ErrorActionPreference = "Stop"
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $rootDir = Split-Path -Parent $scriptDir
-$projectPath = Join-Path $rootDir "src\MyGesture.App\MyGesture.App.csproj"
+$projectPath = Join-Path $rootDir "src\WuGesture.App\WuGesture.App.csproj"
 
 if ([string]::IsNullOrWhiteSpace($OutputPath)) {
     $OutputPath = Join-Path $rootDir "artifacts\publish\WuGesture"
@@ -15,14 +15,13 @@ if ([string]::IsNullOrWhiteSpace($OutputPath)) {
 
 $runningProcess = @(
     Get-Process -Name "WuGesture" -ErrorAction SilentlyContinue
-    Get-Process -Name "MyGesture.App" -ErrorAction SilentlyContinue
 )
 if ($runningProcess) {
     $ids = ($runningProcess | Select-Object -ExpandProperty Id) -join ", "
-    throw "Wu Gesture is still running. Close it before publishing. Process id(s): $ids"
+    throw "WuGesture is still running. Close it before publishing. Process id(s): $ids"
 }
 
-Write-Host "Publishing Wu Gesture"
+Write-Host "Publishing WuGesture"
 Write-Host "Configuration: $Configuration"
 Write-Host "Output: $OutputPath"
 
