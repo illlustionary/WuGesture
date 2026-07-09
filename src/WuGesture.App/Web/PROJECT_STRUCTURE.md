@@ -70,6 +70,8 @@ src\assets
 - `close.svg`
 - `close-alt.svg`
 - `code.svg`
+- `cloud-download.svg`
+- `cloud-upload.svg`
 - `crosshair.svg`
 - `delete.svg`
 - `download.svg`

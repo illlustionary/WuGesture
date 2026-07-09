@@ -34,7 +34,7 @@ const emit = defineEmits([
         @click="emit('test')"
       />
       <IconActionButton
-        icon="download"
+        icon="cloud-download"
         label="恢复"
         class="secondary-button webdav-action-button"
         :color="ready ? 'var(--accent-strong)' : 'var(--muted)'"
@@ -42,7 +42,7 @@ const emit = defineEmits([
         @click="emit('restore')"
       />
       <IconActionButton
-        icon="upload"
+        icon="cloud-upload"
         label="保存"
         class="primary-button webdav-action-button"
         :color="ready ? 'var(--accent-strong)' : 'var(--muted)'"

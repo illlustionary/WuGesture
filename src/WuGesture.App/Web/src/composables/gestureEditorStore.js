@@ -384,7 +384,6 @@ function saveGestureEditor() {
 function commitGestureEditor(closeAfterSave) {
   const draft = state.gestureDraft;
   const pattern = parsePattern(draft.patternText);
-  const actionName = String(draft.actionName ?? "").trim() || getGestureMnemonic(draft);
   const actionType = normalizeActionType(draft.actionType);
 
   if (pattern.length === 0) {
@@ -407,6 +406,9 @@ function commitGestureEditor(closeAfterSave) {
     }
     return false;
   }
+
+  const actionName = getCommandActionName(draft);
+  draft.actionName = actionName;
 
   let rule = null;
   if (state.gestureEditorMode === "edit") {
@@ -886,9 +888,6 @@ function applyRecordedGesture(message) {
   const pattern = Array.isArray(message.pattern) ? message.pattern.filter(Boolean) : [];
   state.gestureDraft.patternText = toPatternText(pattern);
   state.gestureDraft.mouseButton = normalizeMouseButton(message.button);
-  if (!String(state.gestureDraft.actionName ?? "").trim()) {
-    state.gestureDraft.actionName = getGestureMnemonic(state.gestureDraft);
-  }
   state.gestureRecognitionMessage = pattern.length > 0 ? "已识别手势。" : "未识别到有效手势。";
   state.gestureRecordingActive = false;
   state.gestureRecordingRequestId = "";
@@ -918,6 +917,7 @@ function applyRecordedHotkey(message) {
   target.keysText = keysText;
   if (target === state.gestureDraft) {
     state.gestureDraft.keysText = keysText;
+    state.gestureDraft.actionName = getCommandActionName(state.gestureDraft);
   }
 
   if (state.gestureEditorMode === "edit") {
@@ -933,6 +933,10 @@ function applyRecordedHotkey(message) {
   } else {
     scheduleSaveRules();
   }
+}
+
+function getCommandActionName(source) {
+  return String(getActionLabel(source) || getGestureMnemonic(source)).trim();
 }
 
 function createRuleId(seed) {

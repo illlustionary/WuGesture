@@ -7,6 +7,8 @@ import circleDashedIcon from '../assets/circle-dashed.svg'
 import closeIcon from '../assets/close.svg'
 import closeAltIcon from '../assets/close-alt.svg'
 import codeIcon from '../assets/code.svg'
+import cloudDownloadIcon from '../assets/cloud-download.svg'
+import cloudUploadIcon from '../assets/cloud-upload.svg'
 import crosshairIcon from '../assets/crosshair.svg'
 import deleteIcon from '../assets/delete.svg'
 import downloadIcon from '../assets/download.svg'
@@ -48,6 +50,8 @@ const iconMap = {
   close: closeIcon,
   'close-alt': closeAltIcon,
   code: codeIcon,
+  'cloud-download': cloudDownloadIcon,
+  'cloud-upload': cloudUploadIcon,
   crosshair: crosshairIcon,
   delete: deleteIcon,
   download: downloadIcon,
