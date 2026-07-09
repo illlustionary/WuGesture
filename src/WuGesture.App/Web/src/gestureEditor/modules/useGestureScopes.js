@@ -1,4 +1,4 @@
-import { SCOPE_KINDS } from "../../constants/gestureEditorOptions";
+import { SCOPE_KINDS } from "@/constants/gestureEditorOptions";
 
 export function useGestureScopes({
   activeScope,

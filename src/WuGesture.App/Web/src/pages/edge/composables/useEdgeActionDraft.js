@@ -3,7 +3,7 @@ import {
   ACTION_TYPES,
   EDGE_TRIGGER_TYPES,
   OPERATIONS
-} from '../../../constants/gestureEditorOptions'
+} from '@/constants/gestureEditorOptions'
 
 export function useEdgeActionDraft(edgeActionsStore) {
   const editingKey = ref('')

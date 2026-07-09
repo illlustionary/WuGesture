@@ -1,12 +1,12 @@
 import { ref } from 'vue'
-import BriefcaseIcon from '../../../assets/briefcase.svg'
-import BrowserIcon from '../../../assets/browser.svg'
-import CircleDashedIcon from '../../../assets/circle-dashed.svg'
-import CodeIcon from '../../../assets/code.svg'
-import FolderIcon from '../../../assets/folder.svg'
-import MediaIcon from '../../../assets/media.svg'
-import SparkleIcon from '../../../assets/sparkle.svg'
-import { SCOPE_KINDS } from '../../../constants/gestureEditorOptions'
+import BriefcaseIcon from '@/assets/briefcase.svg'
+import BrowserIcon from '@/assets/browser.svg'
+import CircleDashedIcon from '@/assets/circle-dashed.svg'
+import CodeIcon from '@/assets/code.svg'
+import FolderIcon from '@/assets/folder.svg'
+import MediaIcon from '@/assets/media.svg'
+import SparkleIcon from '@/assets/sparkle.svg'
+import { SCOPE_KINDS } from '@/constants/gestureEditorOptions'
 
 export function useCategoryPage(editor) {
   const scopeKind = SCOPE_KINDS.category

@@ -1,13 +1,13 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter, RouterView } from 'vue-router'
-import AppHeader from './components/AppHeader.vue'
-import IconActionButton from './components/IconActionButton.vue'
-import GestureRuleDialog from './components/GestureRuleDialog.vue'
-import { useGestureEditorLifecycleStore } from './composables/gestureEditor/useGestureEditorLifecycleStore'
-import { useGestureEditorOverlayStore } from './composables/gestureEditor/useGestureEditorOverlayStore'
-import CrosshairIcon from './assets/crosshair.svg'
-import FolderIcon from './assets/folder.svg'
+import AppHeader from '@/components/AppHeader.vue'
+import IconActionButton from '@/components/IconActionButton.vue'
+import GestureRuleDialog from '@/components/GestureRuleDialog.vue'
+import { useGestureEditorLifecycleStore } from '@/gestureEditor/stores/useGestureEditorLifecycleStore'
+import { useGestureEditorOverlayStore } from '@/gestureEditor/stores/useGestureEditorOverlayStore'
+import CrosshairIcon from '@/assets/crosshair.svg'
+import FolderIcon from '@/assets/folder.svg'
 
 const lifecycle = useGestureEditorLifecycleStore()
 const overlay = useGestureEditorOverlayStore()

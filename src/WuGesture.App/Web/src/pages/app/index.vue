@@ -1,13 +1,13 @@
 <script setup>
-import AppShell from '../../components/AppShell.vue'
-import GestureRuleList from '../../components/GestureRuleList.vue'
-import IconActionButton from '../../components/IconActionButton.vue'
-import ScopeCreateDialog from '../../components/ScopeCreateDialog.vue'
-import ScopeSidebar from '../../components/ScopeSidebar.vue'
-import RulesSection from '../../components/rules/RulesSection.vue'
-import ScopeListItem from '../../components/scope/ScopeListItem.vue'
-import { useGestureRulesStore } from '../../composables/gestureEditor/useGestureRulesStore'
-import { useAppPage } from './composables/useAppPage'
+import AppShell from '@/components/AppShell.vue'
+import GestureRuleList from '@/components/GestureRuleList.vue'
+import IconActionButton from '@/components/IconActionButton.vue'
+import ScopeCreateDialog from '@/components/ScopeCreateDialog.vue'
+import ScopeSidebar from '@/components/ScopeSidebar.vue'
+import RulesSection from '@/components/rules/RulesSection.vue'
+import ScopeListItem from '@/components/scope/ScopeListItem.vue'
+import { useGestureRulesStore } from '@/gestureEditor/stores/useGestureRulesStore'
+import { useAppPage } from '@/pages/app/composables/useAppPage'
 
 const rulesStore = useGestureRulesStore()
 const {

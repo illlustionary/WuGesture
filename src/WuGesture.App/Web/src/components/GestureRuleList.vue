@@ -107,8 +107,8 @@
 
 <script setup>
 import IconActionButton from './IconActionButton.vue'
-import MouseIcon from '../assets/mouse.svg'
-import { ACTION_TYPES } from '../constants/gestureEditorOptions'
+import MouseIcon from '@/assets/mouse.svg'
+import { ACTION_TYPES } from '@/constants/gestureEditorOptions'
 const DIRECTION_LABELS = {
   Up: '↑',
   Down: '↓',

@@ -15,6 +15,7 @@ src\WuGesture.App\Web
 ├─ package.json
 ├─ pnpm-lock.yaml
 ├─ pnpm-workspace.yaml
+├─ jsconfig.json
 ├─ uno.config.js
 ├─ vite.config.js
 ├─ PROJECT_STRUCTURE.md
@@ -29,8 +30,9 @@ src\WuGesture.App\Web
 - `package.json`：前端工程依赖与脚本。
 - `pnpm-lock.yaml`：锁定依赖树。
 - `pnpm-workspace.yaml`：工作区配置，并放行 `@parcel/watcher` 的本地构建脚本，避免非交互环境下依赖安装中断。
+- `jsconfig.json`：配置编辑器路径提示，`@/*` 指向 `src/*`。
 - `uno.config.js`：UnoCSS 配置，集中定义页面区块、表单、列表等常用 shortcuts。
-- `vite.config.js`：Vite 构建配置，包含 `vite-svg-loader` 和 UnoCSS Vite 插件。
+- `vite.config.js`：Vite 构建配置，包含 `vite-svg-loader`、UnoCSS Vite 插件和 `@` 到 `src` 的路径别名。
 - `PROJECT_STRUCTURE.md`：当前 Web 子项目地图。
 - `node_modules`：本地依赖目录，不纳入源码维护。
 
@@ -45,6 +47,7 @@ src
 ├─ components
 ├─ composables
 ├─ constants
+├─ gestureEditor
 ├─ utils
 └─ pages
 ```
@@ -119,22 +122,33 @@ src\components
 src\composables
 ```
 
-- `gestureEditorStore.js`：历史兼容 facade，当前只转发到 `gestureEditor\gestureEditorContext.js`；新页面优先使用对应窄 store。
-- `useGestureEditorApplicationPicker.js`：共享 store 内部使用的应用选择器流程，包括打开选择器、发起窗口/文件选择请求，以及处理宿主返回的程序信息。
-- `gestureEditor\gestureEditorContext.js`：手势编辑器共享单例上下文，集中组装状态、WebView 桥接、通知、作用域、应用、规则编辑、持久化和应用选择器能力。
-- `gestureEditor\useGestureScopes.js`：分类/程序 scope 选择、新增、重命名、删除和规则查询。
-- `gestureEditor\useGestureApplications.js`：应用程序视图数据读取、创建、显示名和分类字段更新。
-- `gestureEditor\useCategoryApplications.js`：分类与应用程序之间的关联和移除。
-- `gestureEditor\useGestureRuleEditor.js`：规则新增/编辑弹窗、规则草稿提交、手势录制和快捷键录制流程。
-- `gestureEditor\useGestureConfigPersistence.js`：规则保存节流、配置重载/重置、本地导入导出、WebDAV 备份恢复、UI 设置保存和边缘操作保存流程。
-- `gestureEditor\useGestureEditorLifecycleStore.js`：应用根组件使用的窄 store，只暴露初始化和运行状态栏字段。
-- `gestureEditor\useGestureEditorOverlayStore.js`：应用根组件使用的窄 store，只暴露全局应用选择弹窗和规则编辑弹窗所需状态与动作。
-- `gestureEditor\useGestureRulesStore.js`：全局、分类和程序规则页使用的窄 store，只暴露规则列表、作用域管理、应用关联和规则编辑入口。
-- `gestureEditor\useGestureEdgeActionsStore.js`：边缘操作页使用的窄 store，只暴露边缘动作列表、边缘动作保存、快捷键录制和边缘操作选项。
-- `gestureEditor\useGestureSettingsStore.js`：设置页使用的窄 store，只暴露 UI 设置草稿保存、恢复默认、本地导入导出和 WebDAV 状态/操作。
-- `gestureEditor\useGestureExclusionsStore.js`：排除项页使用的窄 store，只暴露排除项列表、应用图标匹配和排除项增删改入口。
-- `gestureEditor\useGestureEditorNotifications.js`：配置状态消息和 toast 的统一通知入口。
-- `gestureEditor\useGestureEditorWebViewBridge.js`：WebView 消息发送、静默发送、可用性判断和消息监听入口。
+- `gestureEditorStore.js`：历史兼容 facade，当前只转发到 `src\gestureEditor\context\gestureEditorContext.js`；新页面优先使用对应窄 store。
+
+## Gesture Editor
+
+路径：
+
+```text
+src\gestureEditor
+```
+
+手势编辑器领域模块集中放在这里；`composables` 只保留 Vue 组合式入口或历史兼容 facade。
+
+- `gestureEditor\context\gestureEditorContext.js`：手势编辑器共享单例上下文，集中组装状态、WebView 桥接、通知、作用域、应用、规则编辑、持久化和应用选择器能力。
+- `gestureEditor\stores\useGestureEditorLifecycleStore.js`：应用根组件使用的窄 store，只暴露初始化和运行状态栏字段。
+- `gestureEditor\stores\useGestureEditorOverlayStore.js`：应用根组件使用的窄 store，只暴露全局应用选择弹窗和规则编辑弹窗所需状态与动作。
+- `gestureEditor\stores\useGestureRulesStore.js`：全局、分类和程序规则页使用的窄 store，只暴露规则列表、作用域管理、应用关联和规则编辑入口。
+- `gestureEditor\stores\useGestureEdgeActionsStore.js`：边缘操作页使用的窄 store，只暴露边缘动作列表、边缘动作保存、快捷键录制和边缘操作选项。
+- `gestureEditor\stores\useGestureSettingsStore.js`：设置页使用的窄 store，只暴露 UI 设置草稿保存、恢复默认、本地导入导出和 WebDAV 状态/操作。
+- `gestureEditor\stores\useGestureExclusionsStore.js`：排除项页使用的窄 store，只暴露排除项列表、应用图标匹配和排除项增删改入口。
+- `gestureEditor\modules\useGestureEditorApplicationPicker.js`：共享 context 内部使用的应用选择器流程，包括打开选择器、发起窗口/文件选择请求，以及处理宿主返回的程序信息。
+- `gestureEditor\modules\useGestureScopes.js`：分类/程序 scope 选择、新增、重命名、删除和规则查询。
+- `gestureEditor\modules\useGestureApplications.js`：应用程序视图数据读取、创建、显示名和分类字段更新。
+- `gestureEditor\modules\useCategoryApplications.js`：分类与应用程序之间的关联和移除。
+- `gestureEditor\modules\useGestureRuleEditor.js`：规则新增/编辑弹窗、规则草稿提交、手势录制和快捷键录制流程。
+- `gestureEditor\modules\useGestureConfigPersistence.js`：规则保存节流、配置重载/重置、本地导入导出、WebDAV 备份恢复、UI 设置保存和边缘操作保存流程。
+- `gestureEditor\modules\useGestureEditorNotifications.js`：配置状态消息和 toast 的统一通知入口。
+- `gestureEditor\modules\useGestureEditorWebViewBridge.js`：WebView 消息发送、静默发送、可用性判断和消息监听入口。
 
 ## Constants
 

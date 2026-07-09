@@ -1,11 +1,11 @@
 <script setup>
-import AppShell from '../../components/AppShell.vue'
-import GestureRuleList from '../../components/GestureRuleList.vue'
-import IconActionButton from '../../components/IconActionButton.vue'
-import ScopeSidebar from '../../components/ScopeSidebar.vue'
-import RulesSection from '../../components/rules/RulesSection.vue'
-import { useGestureRulesStore } from '../../composables/gestureEditor/useGestureRulesStore'
-import { SCOPE_KINDS } from '../../constants/gestureEditorOptions'
+import AppShell from '@/components/AppShell.vue'
+import GestureRuleList from '@/components/GestureRuleList.vue'
+import IconActionButton from '@/components/IconActionButton.vue'
+import ScopeSidebar from '@/components/ScopeSidebar.vue'
+import RulesSection from '@/components/rules/RulesSection.vue'
+import { useGestureRulesStore } from '@/gestureEditor/stores/useGestureRulesStore'
+import { SCOPE_KINDS } from '@/constants/gestureEditorOptions'
 
 const rulesStore = useGestureRulesStore()
 const scopeKind = SCOPE_KINDS.global

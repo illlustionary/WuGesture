@@ -1,16 +1,16 @@
 <script setup>
 import { computed } from 'vue'
-import AppShell from '../../components/AppShell.vue'
-import { useGestureEdgeActionsStore } from '../../composables/gestureEditor/useGestureEdgeActionsStore'
-import EdgeActionDialog from './components/EdgeActionDialog.vue'
-import EdgeActionSection from './components/EdgeActionSection.vue'
-import { useEdgeActionDraft } from './composables/useEdgeActionDraft'
+import AppShell from '@/components/AppShell.vue'
+import { useGestureEdgeActionsStore } from '@/gestureEditor/stores/useGestureEdgeActionsStore'
+import EdgeActionDialog from '@/pages/edge/components/EdgeActionDialog.vue'
+import EdgeActionSection from '@/pages/edge/components/EdgeActionSection.vue'
+import { useEdgeActionDraft } from '@/pages/edge/composables/useEdgeActionDraft'
 import {
   ACTION_TYPES,
   EDGE_TRIGGER_TYPES,
   OPERATIONS,
   WHEEL_DIRECTIONS
-} from '../../constants/gestureEditorOptions'
+} from '@/constants/gestureEditorOptions'
 
 const edgeActionsStore = useGestureEdgeActionsStore()
 const { draft, editingAction, openEditor, closeEditor } =

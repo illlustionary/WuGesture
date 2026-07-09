@@ -1,10 +1,10 @@
 <script setup>
-import CustomSelect from '../../../components/CustomSelect.vue'
-import ToggleCheckbox from '../../../components/ToggleCheckbox.vue'
+import CustomSelect from '@/components/CustomSelect.vue'
+import ToggleCheckbox from '@/components/ToggleCheckbox.vue'
 import SettingsField from './SettingsField.vue'
 import SettingsFormGrid from './SettingsFormGrid.vue'
 import SettingsSectionCard from './SettingsSectionCard.vue'
-import { CLOSE_BUTTON_BEHAVIOR_OPTIONS } from '../../../constants/gestureEditorOptions'
+import { CLOSE_BUTTON_BEHAVIOR_OPTIONS } from '@/constants/gestureEditorOptions'
 
 defineProps({
   draft: { type: Object, required: true }

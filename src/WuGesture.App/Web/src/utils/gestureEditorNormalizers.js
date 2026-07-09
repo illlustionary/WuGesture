@@ -10,12 +10,12 @@ import {
   VOLUME_OPERATIONS,
   WHEEL_DIRECTIONS,
   WINDOW_OPERATIONS
-} from "../constants/gestureEditorOptions";
+} from "@/constants/gestureEditorOptions";
 import {
   DEFAULT_EDGE_ACTIONS,
   DEFAULT_UI_SETTINGS
-} from "../constants/gestureEditorDefaults";
-import { GESTURE_EDITOR_LIMITS } from "../constants/gestureEditorLimits";
+} from "@/constants/gestureEditorDefaults";
+import { GESTURE_EDITOR_LIMITS } from "@/constants/gestureEditorLimits";
 
 export function createDefaultUiSettings() {
   return cloneUiSettings(DEFAULT_UI_SETTINGS);

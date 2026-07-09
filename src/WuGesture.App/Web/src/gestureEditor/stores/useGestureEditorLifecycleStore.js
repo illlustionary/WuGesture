@@ -1,5 +1,5 @@
 import { computed, proxyRefs } from "vue";
-import { useGestureEditorContext } from "./gestureEditorContext";
+import { useGestureEditorContext } from "@/gestureEditor/context/gestureEditorContext";
 
 export function useGestureEditorLifecycleStore() {
   const editor = useGestureEditorContext();
