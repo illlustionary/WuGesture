@@ -6,6 +6,9 @@ internal static class GestureRuntimeDefaults
     public const int MinimumGestureDistance = 45;
     public const double EffectiveMove = 24.0;
     public const double DiagonalTolerance = 22.5;
+    public const double DirectionTolerance = 35.0;
+    public const double TurnAngle = 55.0;
+    public const double MinimumTurnDistance = 15.0;
     public const int MaxGestureSteps = 12;
 }
 

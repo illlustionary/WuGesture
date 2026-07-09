@@ -12,83 +12,109 @@ public sealed class GestureRecognizer
         }
 
         var directions = new List<GestureDirection>();
-        var lastEffectivePoint = points[0];
+        var segmentStart = points[0];
+        GestureDirection? activeDirection = null;
+        Point? turnStart = null;
 
         for (var i = 1; i < points.Count; i++)
         {
             var current = points[i];
-            if (Distance(lastEffectivePoint, current) < GestureRuntimeDefaults.EffectiveMove)
+            if (activeDirection is null)
+            {
+                if (Distance(segmentStart, current) < GestureRuntimeDefaults.EffectiveMove)
+                {
+                    continue;
+                }
+
+                activeDirection = ToDirection(current.X - segmentStart.X, current.Y - segmentStart.Y);
+                continue;
+            }
+
+            var activeAngle = DirectionToAngle(activeDirection.Value);
+            var segmentAngle = ToAngle(segmentStart, current);
+            if (AngleDistance(segmentAngle, activeAngle) <= GestureRuntimeDefaults.DirectionTolerance)
+            {
+                turnStart = null;
+                continue;
+            }
+
+            turnStart ??= points[i - 1];
+            if (Distance(turnStart.Value, current) < GestureRuntimeDefaults.MinimumTurnDistance)
             {
                 continue;
             }
 
-            var direction = ToCardinalDirection(
-                current.X - lastEffectivePoint.X,
-                current.Y - lastEffectivePoint.Y);
-
-            if (directions.Count == 0 || directions[^1] != direction)
+            var turnAngle = ToAngle(turnStart.Value, current);
+            if (AngleDistance(turnAngle, activeAngle) < GestureRuntimeDefaults.TurnAngle)
             {
-                directions.Add(direction);
-                if (directions.Count >= GestureRuntimeDefaults.MaxGestureSteps)
-                {
-                    break;
-                }
+                continue;
             }
 
-            lastEffectivePoint = current;
+            AddDirection(directions, activeDirection.Value);
+            if (directions.Count >= GestureRuntimeDefaults.MaxGestureSteps)
+            {
+                return directions.ToArray();
+            }
+
+            segmentStart = turnStart.Value;
+            activeDirection = ToDirection(current.X - segmentStart.X, current.Y - segmentStart.Y);
+            turnStart = null;
         }
 
-        if (directions.Count == 1 &&
-            TryGetSingleStrokeDiagonal(points[0], points[^1], out var diagonalDirection))
+        if (activeDirection is not null)
         {
-            directions[0] = diagonalDirection;
+            AddDirection(directions, activeDirection.Value);
         }
 
         return directions.ToArray();
     }
 
-    private static GestureDirection ToCardinalDirection(int dx, int dy)
+    private static void AddDirection(List<GestureDirection> directions, GestureDirection direction)
     {
-        if (Math.Abs(dx) > Math.Abs(dy))
+        if (directions.Count == 0 || directions[^1] != direction)
         {
-            return dx > 0 ? GestureDirection.Right : GestureDirection.Left;
+            directions.Add(direction);
         }
-
-        return dy > 0 ? GestureDirection.Down : GestureDirection.Up;
     }
 
-    private static bool TryGetSingleStrokeDiagonal(Point start, Point end, out GestureDirection direction)
+    private static GestureDirection ToDirection(int dx, int dy)
     {
-        var dx = end.X - start.X;
-        var dy = end.Y - start.Y;
         var angle = Math.Atan2(dy, dx) * 180.0 / Math.PI;
+        var normalized = NormalizePositiveAngle(angle + 22.5);
+        var sector = (int)(normalized / 45.0) % 8;
 
-        if (IsNearAngle(angle, -135.0) || IsNearAngle(angle, 225.0))
+        return sector switch
         {
-            direction = GestureDirection.UpLeft;
-            return true;
-        }
+            0 => GestureDirection.Right,
+            1 => GestureDirection.DownRight,
+            2 => GestureDirection.Down,
+            3 => GestureDirection.DownLeft,
+            4 => GestureDirection.Left,
+            5 => GestureDirection.UpLeft,
+            6 => GestureDirection.Up,
+            _ => GestureDirection.UpRight
+        };
+    }
 
-        if (IsNearAngle(angle, -45.0) || IsNearAngle(angle, 315.0))
+    private static double DirectionToAngle(GestureDirection direction)
+    {
+        return direction switch
         {
-            direction = GestureDirection.UpRight;
-            return true;
-        }
+            GestureDirection.Right => 0.0,
+            GestureDirection.DownRight => 45.0,
+            GestureDirection.Down => 90.0,
+            GestureDirection.DownLeft => 135.0,
+            GestureDirection.Left => 180.0,
+            GestureDirection.UpLeft => -135.0,
+            GestureDirection.Up => -90.0,
+            GestureDirection.UpRight => -45.0,
+            _ => 0.0
+        };
+    }
 
-        if (IsNearAngle(angle, 45.0))
-        {
-            direction = GestureDirection.DownRight;
-            return true;
-        }
-
-        if (IsNearAngle(angle, 135.0))
-        {
-            direction = GestureDirection.DownLeft;
-            return true;
-        }
-
-        direction = default;
-        return false;
+    private static double ToAngle(Point start, Point end)
+    {
+        return Math.Atan2(end.Y - start.Y, end.X - start.X) * 180.0 / Math.PI;
     }
 
     private static double Distance(Point a, Point b)
@@ -98,9 +124,9 @@ public sealed class GestureRecognizer
         return Math.Sqrt(dx * dx + dy * dy);
     }
 
-    private static bool IsNearAngle(double angle, double expected)
+    private static double AngleDistance(double angle, double expected)
     {
-        return Math.Abs(NormalizeAngle(angle - expected)) <= GestureRuntimeDefaults.DiagonalTolerance;
+        return Math.Abs(NormalizeAngle(angle - expected));
     }
 
     private static double NormalizeAngle(double angle)
@@ -111,6 +137,17 @@ public sealed class GestureRecognizer
             angle -= 360.0;
         }
         else if (angle < -180.0)
+        {
+            angle += 360.0;
+        }
+
+        return angle;
+    }
+
+    private static double NormalizePositiveAngle(double angle)
+    {
+        angle %= 360.0;
+        if (angle < 0.0)
         {
             angle += 360.0;
         }
