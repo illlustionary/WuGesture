@@ -25,6 +25,12 @@ Write-Host "Publishing WuGesture"
 Write-Host "Configuration: $Configuration"
 Write-Host "Output: $OutputPath"
 
+if (Test-Path $OutputPath) {
+    Get-ChildItem -Path $OutputPath -Force | Remove-Item -Recurse -Force
+} else {
+    New-Item -ItemType Directory -Path $OutputPath | Out-Null
+}
+
 dotnet publish $projectPath -c $Configuration -o $OutputPath --self-contained false
 
 Write-Host ""

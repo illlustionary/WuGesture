@@ -251,6 +251,8 @@ dotnet test WuGesture.slnx
 .\scripts\publish.ps1
 ```
 
+发布脚本会在执行 `dotnet publish` 前清空输出目录，再重新生成发布产物，避免发布目录里残留旧的 `Wu Gesture.*` 文件。
+
 默认发布输出：
 
 ```text
