@@ -89,7 +89,7 @@ src\WuGesture.App\GestureEngine
 - `KeyboardShortcutRecorder.cs`：低级键盘 hook，用于配置界面录制快捷键并吞掉录制期间的原生键盘事件。
 - `GestureService.cs`：跟踪右键和中键轨迹生命周期，调用识别器、匹配器和执行器，并向 UI 发送事件；也支持录制会话，把识别结果回传给前端。
 - `EdgeActionService.cs`：轮询真实光标位置并监听滚轮，处理屏幕四角触发、四边摩擦计数和四边滚轮触发；摩擦边会排除角落区域，按沿边方向的反向位移计数并在触发后防重复，滚轮边命中时会吞掉原始滚轮事件。
-- `GestureRecognizer.cs`：把鼠标轨迹转换为稳定的 8 方向模式。
+- `GestureRecognizer.cs`：把鼠标轨迹转换为稳定的方向模式；识别前按有效移动距离抽样，单笔手势保留 8 方向，多笔手势默认回退到更宽容的横/竖方向以贴近 WGestures 手感。
 - `GestureRuntimeDefaults.cs`：手势识别和边缘操作运行时阈值常量，包括最小移动距离、识别步数、边缘厚度、摩擦距离和超时。
 - `GestureMatcher.cs`：将识别出的鼠标键和方向模式与已加载规则进行匹配，并按作用域优先级选择命中项。
 - `GestureScopeContext.cs`：当前前台窗口的 app/category 上下文模型。
