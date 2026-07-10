@@ -8,6 +8,9 @@ public sealed class GestureHintForm : Form
 {
     private const int WsExNoActivate = 0x08000000;
     private const int WsExToolWindow = 0x00000080;
+    private const int WmDisplayChange = 0x007E;
+    private const int WmSettingChange = 0x001A;
+    private const int WmDwmCompositionChanged = 0x031E;
     private const int HorizontalPadding = 28;
     private const int MinimumWidth = 240;
     private const double FadeStep = 0.08;
@@ -156,6 +159,7 @@ public sealed class GestureHintForm : Form
 
     private void ShowOverlay()
     {
+        RefreshDisplayLayout();
         MoveToBottomCenter();
 
         var wasHidden = !Visible;
@@ -179,8 +183,7 @@ public sealed class GestureHintForm : Form
             Height,
             NativeMethods.SwpNoActivate | NativeMethods.SwpShowWindow);
 
-        Invalidate();
-        Update();
+        Refresh();
 
         if (wasHidden)
         {
@@ -215,7 +218,7 @@ public sealed class GestureHintForm : Form
 
     private void MoveToBottomCenter()
     {
-        var area = Screen.PrimaryScreen?.WorkingArea ?? Screen.FromControl(this).WorkingArea;
+        var area = GetTargetScreen().WorkingArea;
         var bottomOffset = ResolvePercent(area.Height, uiSettings.BottomOffsetPercent, 0, area.Height);
         Left = area.Left + (area.Width - Width) / 2;
         Top = area.Bottom - Height - bottomOffset;
@@ -223,7 +226,7 @@ public sealed class GestureHintForm : Form
 
     private void ApplyPercentSize()
     {
-        var area = Screen.PrimaryScreen?.WorkingArea ?? Screen.FromControl(this).WorkingArea;
+        var area = GetTargetScreen().WorkingArea;
         if (!uiSettings.AutoWidth)
         {
             Width = Math.Max(MinimumWidth, ResolvePercent(area.Width, uiSettings.WidthPercent, MinimumWidth, area.Width));
@@ -239,7 +242,7 @@ public sealed class GestureHintForm : Form
             return;
         }
 
-        var area = Screen.PrimaryScreen?.WorkingArea ?? Screen.FromControl(this).WorkingArea;
+        var area = GetTargetScreen().WorkingArea;
         var maxWidth = Math.Max(MinimumWidth, area.Width - 24);
         var measuredWidth = MeasureTitleWidth(string.IsNullOrWhiteSpace(title) ? "已触发" : title);
         Width = Math.Min(maxWidth, Math.Max(MinimumWidth, measuredWidth + HorizontalPadding * 2));
@@ -321,6 +324,21 @@ public sealed class GestureHintForm : Form
         UpdateWindowRegion();
     }
 
+    protected override void WndProc(ref Message m)
+    {
+        base.WndProc(ref m);
+
+        if (m.Msg is WmDisplayChange or WmSettingChange or WmDwmCompositionChanged)
+        {
+            RefreshDisplayLayout();
+            if (Visible)
+            {
+                MoveToBottomCenter();
+                Refresh();
+            }
+        }
+    }
+
     private void BeginFadeOut()
     {
         if (IsDisposed || !Visible)
@@ -342,6 +360,18 @@ public sealed class GestureHintForm : Form
         using var path = RoundedRect(new Rectangle(0, 0, Width, Height), GetCornerRadius());
         Region?.Dispose();
         Region = new Region(path);
+    }
+
+    private void RefreshDisplayLayout()
+    {
+        ApplyPercentSize();
+        UpdateAdaptiveWidth();
+        UpdateWindowRegion();
+    }
+
+    private Screen GetTargetScreen()
+    {
+        return Screen.FromPoint(Cursor.Position);
     }
 
     private float GetCornerRadius()
