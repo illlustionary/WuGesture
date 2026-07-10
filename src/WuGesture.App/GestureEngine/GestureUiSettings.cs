@@ -50,6 +50,8 @@ public sealed class WebDavUiSettings
 
 public sealed class MouseTrailUiSettings
 {
+    public bool? Enabled { get; set; } = true;
+
     public string InactiveColor { get; set; } = "#FFAAAAAA";
 
     public string ActiveColor { get; set; } = "#FF87CEEB";
@@ -67,6 +69,8 @@ public sealed class MouseTrailUiSettings
 
 public sealed class GestureHintUiSettings
 {
+    public bool? Enabled { get; set; } = true;
+
     public string FontFamily { get; set; } = "Segoe UI Semibold";
 
     public float FontSize { get; set; } = 22f;

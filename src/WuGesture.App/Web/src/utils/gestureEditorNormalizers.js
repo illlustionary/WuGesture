@@ -40,6 +40,7 @@ export function normalizeMouseTrailSettings(settings) {
   const legacyOpacity = settings?.opacity;
   const legacyThickness = settings?.thickness;
   return {
+    enabled: Boolean(settings?.enabled ?? DEFAULT_UI_SETTINGS.mouseTrail.enabled),
     inactiveColor: String(settings?.inactiveColor ?? DEFAULT_UI_SETTINGS.mouseTrail.inactiveColor).trim() || DEFAULT_UI_SETTINGS.mouseTrail.inactiveColor,
     activeColor: String(settings?.activeColor ?? DEFAULT_UI_SETTINGS.mouseTrail.activeColor).trim() || DEFAULT_UI_SETTINGS.mouseTrail.activeColor,
     inactiveThickness: clampFloat(settings?.inactiveThickness ?? legacyThickness, GESTURE_EDITOR_LIMITS.mouseTrailThickness.min, GESTURE_EDITOR_LIMITS.mouseTrailThickness.max, DEFAULT_UI_SETTINGS.mouseTrail.inactiveThickness),
@@ -53,6 +54,7 @@ export function normalizeMouseTrailSettings(settings) {
 export function normalizeGestureHintSettings(settings) {
   settings = normalizeObjectKeys(settings);
   return {
+    enabled: Boolean(settings?.enabled ?? DEFAULT_UI_SETTINGS.gestureHint.enabled),
     fontFamily: String(settings?.fontFamily ?? DEFAULT_UI_SETTINGS.gestureHint.fontFamily).trim() || DEFAULT_UI_SETTINGS.gestureHint.fontFamily,
     fontSize: clampFloat(settings?.fontSize, GESTURE_EDITOR_LIMITS.hintFontSize.min, GESTURE_EDITOR_LIMITS.hintFontSize.max, DEFAULT_UI_SETTINGS.gestureHint.fontSize),
     textColor: String(settings?.textColor ?? DEFAULT_UI_SETTINGS.gestureHint.textColor).trim() || DEFAULT_UI_SETTINGS.gestureHint.textColor,

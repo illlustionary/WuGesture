@@ -118,8 +118,15 @@ public sealed class MainForm : Form
             return;
         }
 
-        gestureHintForm.Preload();
-        EnsureMouseTrailForm().Preload();
+        if (IsFeatureEnabled(loadedConfig.Config.UiSettings.GestureHint.Enabled))
+        {
+            gestureHintForm.Preload();
+        }
+
+        if (IsFeatureEnabled(loadedConfig.Config.UiSettings.MouseTrail.Enabled))
+        {
+            EnsureMouseTrailForm().Preload();
+        }
 
         gestureService.GesturePreviewMatched += OnGesturePreviewMatched;
         gestureService.GesturePreviewCleared += OnGesturePreviewCleared;
@@ -499,8 +506,15 @@ public sealed class MainForm : Form
             return;
         }
 
-        mouseTrailForm?.SetHighlighted(true);
-        gestureHintForm.ShowResult(e.ActionName, autoHide: false);
+        if (IsFeatureEnabled(loadedConfig?.Config.UiSettings.MouseTrail.Enabled))
+        {
+            mouseTrailForm?.SetHighlighted(true);
+        }
+
+        if (IsFeatureEnabled(loadedConfig?.Config.UiSettings.GestureHint.Enabled))
+        {
+            gestureHintForm.ShowResult(e.ActionName, autoHide: false);
+        }
     }
 
     private void OnGesturePreviewCleared(object? sender, EventArgs e)
@@ -516,8 +530,15 @@ public sealed class MainForm : Form
             return;
         }
 
-        mouseTrailForm?.SetHighlighted(false);
-        gestureHintForm.ClearResult();
+        if (IsFeatureEnabled(loadedConfig?.Config.UiSettings.MouseTrail.Enabled))
+        {
+            mouseTrailForm?.SetHighlighted(false);
+        }
+
+        if (IsFeatureEnabled(loadedConfig?.Config.UiSettings.GestureHint.Enabled))
+        {
+            gestureHintForm.ClearResult();
+        }
     }
 
     private void OnGestureRecognized(object? sender, GestureRecognizedEventArgs e)
@@ -541,7 +562,10 @@ public sealed class MainForm : Form
         });
 
         TryPostWebMessage(payload);
-        gestureHintForm.ShowResult(e.ActionName, autoHide: true);
+        if (IsFeatureEnabled(loadedConfig?.Config.UiSettings.GestureHint.Enabled))
+        {
+            gestureHintForm.ShowResult(e.ActionName, autoHide: true);
+        }
     }
 
     private void OnGestureRecordingCompleted(object? sender, GestureRecordingCompletedEventArgs e)
@@ -627,6 +651,12 @@ public sealed class MainForm : Form
         if (InvokeRequired)
         {
             BeginInvokeSafe(() => OnGestureProgressChanged(sender, e));
+            return;
+        }
+
+        if (!IsFeatureEnabled(loadedConfig?.Config.UiSettings.MouseTrail.Enabled))
+        {
+            mouseTrailForm?.HideTrail();
             return;
         }
 
@@ -1430,7 +1460,19 @@ public sealed class MainForm : Form
     private void ApplyUiSettings(GestureUiSettings uiSettings)
     {
         gestureHintForm.ApplySettings(uiSettings.GestureHint);
-        EnsureMouseTrailForm().ApplySettings(uiSettings.MouseTrail);
+        if (!IsFeatureEnabled(uiSettings.GestureHint.Enabled))
+        {
+            gestureHintForm.HideResult();
+        }
+
+        if (IsFeatureEnabled(uiSettings.MouseTrail.Enabled))
+        {
+            EnsureMouseTrailForm().ApplySettings(uiSettings.MouseTrail);
+        }
+        else
+        {
+            mouseTrailForm?.HideTrail();
+        }
     }
 
     private void DisposeMouseTrailForm()
@@ -1447,6 +1489,11 @@ public sealed class MainForm : Form
         }
 
         mouseTrailForm = null;
+    }
+
+    private static bool IsFeatureEnabled(bool? enabled)
+    {
+        return enabled != false;
     }
 
     private sealed class RulesWebMessage

@@ -282,6 +282,34 @@ src\pages
 - `gesturePaused`
 - `excludedApplications: [{ name, displayName, path, disableEdgeActions }]`
 
+`uiSettings.mouseTrail` 当前包含：
+
+- `enabled`
+- `inactiveColor`
+- `activeColor`
+- `inactiveThickness`
+- `activeThickness`
+- `thickness`
+- `inactiveOpacity`
+- `activeOpacity`
+
+`uiSettings.gestureHint` 当前包含：
+
+- `enabled`
+- `fontFamily`
+- `fontSize`
+- `textColor`
+- `backgroundColor`
+- `backgroundOpacity`
+- `width`
+- `widthPercent`
+- `autoWidth`
+- `height`
+- `heightPercent`
+- `cornerRadius`
+- `bottomOffset`
+- `bottomOffsetPercent`
+
 ## 构建
 
 - 前端使用 `pnpm build` 生成仓库根目录下的 `dist\web`。

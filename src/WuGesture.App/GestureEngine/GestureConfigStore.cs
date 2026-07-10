@@ -105,6 +105,7 @@ public sealed class GestureConfigStore
     private static void NormalizeUiSettings(GestureUiSettings settings)
     {
         var mouseTrail = settings.MouseTrail;
+        mouseTrail.Enabled ??= true;
         var legacyThickness = mouseTrail.Thickness > 0 ? mouseTrail.Thickness : 3f;
         if (mouseTrail.InactiveThickness <= 0 ||
             (Math.Abs(mouseTrail.InactiveThickness - 3f) < 0.001f && Math.Abs(legacyThickness - 3f) > 0.001f))
@@ -121,6 +122,7 @@ public sealed class GestureConfigStore
         mouseTrail.Thickness = Math.Max(1f, mouseTrail.InactiveThickness);
 
         var gestureHint = settings.GestureHint;
+        gestureHint.Enabled ??= true;
         gestureHint.WidthPercent = ClampInteger(gestureHint.WidthPercent, 10, 90, 28);
         gestureHint.HeightPercent = ClampInteger(gestureHint.HeightPercent, 5, 40, 11);
         gestureHint.BottomOffsetPercent = ClampInteger(gestureHint.BottomOffsetPercent, 0, 100, 13);
