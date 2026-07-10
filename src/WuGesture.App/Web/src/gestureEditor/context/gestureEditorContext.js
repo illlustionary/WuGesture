@@ -258,6 +258,7 @@ export function useGestureEditorContext() {
     selectedScopeName,
     visibleRules,
     initialize,
+    toggleUserPaused,
     setActiveScope,
     selectScope,
     getRulesForScope,
@@ -339,8 +340,16 @@ function initialize() {
 
 function handleMessage(message) {
   if (message.type === WEBVIEW_MESSAGE_TYPES.status) {
-    state.statusText = message.status === "running" ? "运行中" : message.status;
-    state.statusState = message.status === "running" ? "running" : "idle";
+    if (message.status === "running") {
+      state.statusText = "运行中";
+      state.statusState = "running";
+    } else if (message.status === "paused") {
+      state.statusText = "已暂停";
+      state.statusState = "paused";
+    } else {
+      state.statusText = message.status;
+      state.statusState = "idle";
+    }
     return;
   }
 
@@ -476,6 +485,13 @@ function setConfigResultMessage(message, success, notify) {
 
 function postWebMessageSilently(message) {
   webView.postSilent(message);
+}
+
+function toggleUserPaused() {
+  webView.postSilent({
+    type: WEBVIEW_MESSAGE_TYPES.setUserPaused,
+    paused: state.statusState !== "paused"
+  });
 }
 
 function setGesturePaused(paused) {

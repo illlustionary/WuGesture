@@ -7,6 +7,7 @@ export function useGestureEditorLifecycleStore() {
   return proxyRefs({
     statusText: computed(() => editor.state.statusText),
     statusState: computed(() => editor.state.statusState),
-    initialize: editor.initialize
+    initialize: editor.initialize,
+    toggleGesturePaused: editor.toggleUserPaused
   });
 }

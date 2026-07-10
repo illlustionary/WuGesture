@@ -62,6 +62,7 @@ function openSettingsPage() {
       :status-state="lifecycle.statusState"
       :tabs="tabs"
       @open-settings="openSettingsPage"
+      @toggle-gesture-paused="lifecycle.toggleGesturePaused"
     />
 
     <RouterView v-slot="{ Component, route: viewRoute }">

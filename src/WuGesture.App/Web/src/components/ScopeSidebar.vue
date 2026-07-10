@@ -3,7 +3,7 @@
     <div class="scope-panel__head">
       <div>
         <h3>{{ title }}</h3>
-        <p>{{ description }}</p>
+        <p v-if="description">{{ description }}</p>
       </div>
       <div
         v-if="$slots.actions"
@@ -20,7 +20,7 @@
 <script setup>
 defineProps({
   title: { type: String, required: true },
-  description: { type: String, required: true }
+  description: { type: String, default: "" }
 })
 </script>
 

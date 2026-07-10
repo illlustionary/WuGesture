@@ -99,7 +99,7 @@ src\assets
 src\components
 ```
 
-- `AppHeader.vue`：顶部栏和规则 tab / 设置入口。
+- `AppHeader.vue`：顶部栏和规则 tab / 设置入口；左侧运行状态标识可点击，切换临时用户暂停或恢复。
 - `AppShell.vue`：页面布局壳，提供主体区域和插槽。
 - `GestureRuleDialog.vue`：添加和编辑手势规则的弹窗。
 - `GestureRuleList.vue`：规则表、规则展示和规则操作入口。
@@ -219,7 +219,7 @@ src\pages
 - `exclusions`
 - `settings`
 
-顶部规则 tab 包含 `全局`、`分类`、`程序`、`边缘操作`、`排除项`。顶部 `...` 按钮打开独立的 `settings` 页面。
+顶部规则 tab 包含 `全局`、`分类`、`程序`、`边缘操作`、`排除项`。左上运行状态标识可点击，临时暂停或恢复 WuGesture；顶部 `...` 按钮打开独立的 `settings` 页面。
 
 ## 当前 UI
 
@@ -249,7 +249,8 @@ src\pages
 - `{ type: "pick-application-window", requestId: "...", category: "..." }`
 - `{ type: "start-gesture-recording", requestId: "..." }`
 - `{ type: "stop-gesture-recording" }`
-- `{ type: "set-gesture-paused", paused: true/false }`
+- `{ type: "set-gesture-paused", paused: true/false }`：仅控制规则编辑/录制期间的临时暂停。
+- `{ type: "set-user-paused", paused: true/false }`：控制与托盘菜单一致的临时用户暂停，不写入配置文件。
 - `{ type: "start-hotkey-recording", requestId: "..." }`
 - `{ type: "stop-hotkey-recording" }`
 - `{ type: "save-rules", rules: [{ scope, mouseButton, pattern, actionName, action }, ...], applications: [...], edgeActions: [...], uiSettings: {...} }`
@@ -263,7 +264,7 @@ src\pages
 
 后端发送：
 
-- `{ type: "status", ... }`
+- `{ type: "status", status: "running|paused|..." }`
 - `{ type: "rules", rules: [...], applications: [{ name, displayName, path, category, icon }, ...], edgeActions: [...], uiSettings: {...}, ... }`；其中 `uiSettings.appBehavior.excludedApplications` 的运行态消息项会额外带 `icon`，不写入配置文件。
 - `{ type: "application-selected", requestId: "...", name: "...", displayName: "...", path: "...", category: "...", icon: "..." }`
 - `{ type: "gesture-recorded", requestId: "...", button: "right|middle", pattern: ["Down", "Right"] }`

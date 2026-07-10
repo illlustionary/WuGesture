@@ -273,19 +273,19 @@ public sealed class MainForm : Form
 
     private void SetUserPaused(bool paused)
     {
-        if (isUserPaused == paused)
+        if (isUserPaused != paused)
         {
-            return;
+            isUserPaused = paused;
+            if (pauseItem is not null && pauseItem.Checked != paused)
+            {
+                pauseItem.Checked = paused;
+            }
+
+            UpdatePauseMenuText();
+            ApplyGesturePauseState();
         }
 
-        isUserPaused = paused;
-        if (pauseItem is not null && pauseItem.Checked != paused)
-        {
-            pauseItem.Checked = paused;
-        }
-
-        UpdatePauseMenuText();
-        ApplyGesturePauseState();
+        PostStatus(isUserPaused ? "paused" : "running");
     }
 
     private void UpdatePauseMenuText()
@@ -792,7 +792,7 @@ public sealed class MainForm : Form
         if (root.ValueKind == JsonValueKind.String &&
             root.GetString() == WebViewMessageTypes.GetStatus)
         {
-            PostStatus("running");
+            PostStatus(isUserPaused ? "paused" : "running");
             PostRules();
             return;
         }
@@ -819,6 +819,9 @@ public sealed class MainForm : Form
                 break;
             case WebViewMessageTypes.SetGesturePaused:
                 SetGesturePaused(json);
+                break;
+            case WebViewMessageTypes.SetUserPaused:
+                SetUserPaused(json);
                 break;
             case WebViewMessageTypes.StartHotkeyRecording:
                 StartHotkeyRecording(json);
@@ -878,6 +881,19 @@ public sealed class MainForm : Form
                 gestureHintForm.HideResult();
                 mouseTrailForm?.HideTrail();
             }
+        }
+        catch (Exception exception)
+        {
+            PostConfigResult(false, exception.Message);
+        }
+    }
+
+    private void SetUserPaused(string json)
+    {
+        try
+        {
+            var message = JsonSerializer.Deserialize<SetGesturePausedWebMessage>(json, WebMessageJsonOptions);
+            SetUserPaused(message?.Paused ?? false);
         }
         catch (Exception exception)
         {

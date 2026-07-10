@@ -8,6 +8,7 @@ internal static class WebViewMessageTypes
     public const string StartGestureRecording = "start-gesture-recording";
     public const string StopGestureRecording = "stop-gesture-recording";
     public const string SetGesturePaused = "set-gesture-paused";
+    public const string SetUserPaused = "set-user-paused";
     public const string StartHotkeyRecording = "start-hotkey-recording";
     public const string StopHotkeyRecording = "stop-hotkey-recording";
     public const string SaveRules = "save-rules";
