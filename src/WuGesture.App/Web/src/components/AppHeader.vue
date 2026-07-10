@@ -8,18 +8,22 @@ defineProps({
   tabs: { type: Array, required: true }
 })
 
-defineEmits(['open-settings'])
+defineEmits(['open-settings', 'toggle-gesture-paused'])
 </script>
 
 <template>
   <header class="app-bar surface-card">
-    <div
+    <button
+      type="button"
       class="status-badge"
       :data-state="statusState"
+      :aria-label="statusState === 'paused' ? '恢复 WuGesture' : '暂停 WuGesture'"
+      :aria-pressed="statusState === 'paused'"
+      @click="$emit('toggle-gesture-paused')"
     >
       <span class="status-badge__dot" />
       {{ statusText }}
-    </div>
+    </button>
     <nav
       class="tabs"
       aria-label="规则作用域"
@@ -64,8 +68,19 @@ defineEmits(['open-settings'])
   color: var(--muted);
   background: var(--panel-soft);
   box-shadow: none;
+  cursor: pointer;
+  font: inherit;
   font-size: 12px;
   font-weight: 600;
+
+  &:hover {
+    border-color: var(--accent-border);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
 
   &__dot {
     width: 8px;

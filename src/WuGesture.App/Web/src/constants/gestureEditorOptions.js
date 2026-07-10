@@ -55,6 +55,7 @@ export const WEBVIEW_MESSAGE_TYPES = {
   startGestureRecording: "start-gesture-recording",
   stopGestureRecording: "stop-gesture-recording",
   setGesturePaused: "set-gesture-paused",
+  setUserPaused: "set-user-paused",
   startHotkeyRecording: "start-hotkey-recording",
   stopHotkeyRecording: "stop-hotkey-recording",
   saveRules: "save-rules",
