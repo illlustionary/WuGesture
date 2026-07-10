@@ -68,7 +68,6 @@ export const DEFAULT_UI_SETTINGS = {
     launchAtStartup: false,
     runAsAdministrator: false,
     closeButtonBehavior: CLOSE_BUTTON_BEHAVIORS.minimizeToTray,
-    gesturePaused: false,
     excludedApplications: []
   },
   webDav: {

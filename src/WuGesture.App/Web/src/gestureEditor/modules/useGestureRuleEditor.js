@@ -99,7 +99,14 @@ export function useGestureRuleEditor({
       return false;
     }
 
-    const actionName = getCommandActionName(draft);
+    if (findDuplicateGestureRule(pattern, draft.mouseButton)) {
+      if (closeAfterSave) {
+        state.gestureRecognitionMessage = "⚠ 当前作用域已存在相同手势，请更换后再保存。";
+      }
+      return false;
+    }
+
+    const actionName = getActionName(draft);
     draft.actionName = actionName;
 
     let rule = null;
@@ -267,9 +274,21 @@ export function useGestureRuleEditor({
     const pattern = Array.isArray(message.pattern) ? message.pattern.filter(Boolean) : [];
     state.gestureDraft.patternText = toPatternText(pattern);
     state.gestureDraft.mouseButton = normalizeMouseButton(message.button);
-    state.gestureRecognitionMessage = pattern.length > 0 ? "已识别手势。" : "未识别到有效手势。";
     state.gestureRecordingActive = false;
     state.gestureRecordingRequestId = "";
+
+    if (pattern.length === 0) {
+      state.gestureRecognitionMessage = "未识别到有效手势。";
+      return;
+    }
+
+    if (findDuplicateGestureRule(pattern, state.gestureDraft.mouseButton)) {
+      state.gestureRecognitionMessage = "已识别手势。⚠ 当前作用域已存在相同手势，请更换。";
+      setMessage("当前作用域已存在相同手势，未新增规则。", "error");
+      return;
+    }
+
+    state.gestureRecognitionMessage = "已识别手势。";
     persistGestureEditor();
   }
 
@@ -296,7 +315,7 @@ export function useGestureRuleEditor({
     target.keysText = keysText;
     if (target === state.gestureDraft) {
       state.gestureDraft.keysText = keysText;
-      state.gestureDraft.actionName = getCommandActionName(state.gestureDraft);
+      state.gestureDraft.actionName = getActionName(state.gestureDraft);
     }
 
     if (state.gestureEditorMode === "edit") {
@@ -314,7 +333,32 @@ export function useGestureRuleEditor({
     }
   }
 
-  function getCommandActionName(source) {
+  function findDuplicateGestureRule(pattern, mouseButton) {
+    const scopeKind = state.gestureEditorScopeKind;
+    const scopeName = state.gestureEditorScopeName;
+    const patternText = toPatternText(pattern);
+    const normalizedMouseButton = normalizeMouseButton(mouseButton);
+
+    return state.rules.find((rule) =>
+      rule.id !== state.gestureEditorRuleId &&
+      rule.scopeKind === scopeKind &&
+      rule.scopeName === scopeName &&
+      normalizeMouseButton(rule.mouseButton) === normalizedMouseButton &&
+      toPatternText(parsePattern(rule.patternText)) === patternText
+    );
+  }
+
+  function getActionName(source) {
+    const actionName = String(source?.actionName ?? "").trim();
+    return actionName || getDefaultActionName(source);
+  }
+
+  function getDefaultActionName(source) {
+    if (normalizeActionType(source?.actionType) === ACTION_TYPES.hotkey) {
+      const keys = parseKeys(source?.keysText);
+      return keys.length > 0 ? `快捷键：${keys.join(" + ")}` : "快捷键";
+    }
+
     return String(getActionLabel(source) || getGestureMnemonic(source)).trim();
   }
 
