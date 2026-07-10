@@ -11,14 +11,21 @@ public sealed class GestureRecognizer
             return [];
         }
 
+        var effectivePoints = BuildEffectivePoints(points);
+        if (effectivePoints.Count < 2)
+        {
+            return [];
+        }
+
         var directions = new List<GestureDirection>();
-        var segmentStart = points[0];
+        var segmentStart = effectivePoints[0];
+        var stableSegmentEnd = segmentStart;
         GestureDirection? activeDirection = null;
         Point? turnStart = null;
 
-        for (var i = 1; i < points.Count; i++)
+        for (var i = 1; i < effectivePoints.Count; i++)
         {
-            var current = points[i];
+            var current = effectivePoints[i];
             if (activeDirection is null)
             {
                 if (Distance(segmentStart, current) < GestureRuntimeDefaults.EffectiveMove)
@@ -26,7 +33,8 @@ public sealed class GestureRecognizer
                     continue;
                 }
 
-                activeDirection = ToDirection(current.X - segmentStart.X, current.Y - segmentStart.Y);
+                activeDirection = ToDirection(current.X - segmentStart.X, current.Y - segmentStart.Y, directions.Count);
+                stableSegmentEnd = current;
                 continue;
             }
 
@@ -35,10 +43,11 @@ public sealed class GestureRecognizer
             if (AngleDistance(segmentAngle, activeAngle) <= GestureRuntimeDefaults.DirectionTolerance)
             {
                 turnStart = null;
+                stableSegmentEnd = current;
                 continue;
             }
 
-            turnStart ??= points[i - 1];
+            turnStart ??= stableSegmentEnd;
             if (Distance(turnStart.Value, current) < GestureRuntimeDefaults.MinimumTurnDistance)
             {
                 continue;
@@ -50,14 +59,15 @@ public sealed class GestureRecognizer
                 continue;
             }
 
-            AddDirection(directions, activeDirection.Value);
+            AddDirection(directions, CorrectFirstStrokeForMultiStroke(directions, activeDirection.Value, segmentStart, turnStart.Value));
             if (directions.Count >= GestureRuntimeDefaults.MaxGestureSteps)
             {
                 return directions.ToArray();
             }
 
             segmentStart = turnStart.Value;
-            activeDirection = ToDirection(current.X - segmentStart.X, current.Y - segmentStart.Y);
+            stableSegmentEnd = current;
+            activeDirection = ToDirection(current.X - segmentStart.X, current.Y - segmentStart.Y, directions.Count);
             turnStart = null;
         }
 
@@ -69,6 +79,33 @@ public sealed class GestureRecognizer
         return directions.ToArray();
     }
 
+    private static List<Point> BuildEffectivePoints(IReadOnlyList<Point> points)
+    {
+        var effectivePoints = new List<Point> { points[0] };
+        var lastEffectivePoint = points[0];
+
+        for (var i = 1; i < points.Count; i++)
+        {
+            var current = points[i];
+            if (Distance(lastEffectivePoint, current) < GestureRuntimeDefaults.EffectiveMove)
+            {
+                continue;
+            }
+
+            effectivePoints.Add(current);
+            lastEffectivePoint = current;
+        }
+
+        var lastPoint = points[^1];
+        if (lastPoint != lastEffectivePoint &&
+            Distance(lastEffectivePoint, lastPoint) >= GestureRuntimeDefaults.MinimumTurnDistance)
+        {
+            effectivePoints.Add(lastPoint);
+        }
+
+        return effectivePoints;
+    }
+
     private static void AddDirection(List<GestureDirection> directions, GestureDirection direction)
     {
         if (directions.Count == 0 || directions[^1] != direction)
@@ -77,7 +114,28 @@ public sealed class GestureRecognizer
         }
     }
 
-    private static GestureDirection ToDirection(int dx, int dy)
+    private static GestureDirection CorrectFirstStrokeForMultiStroke(
+        List<GestureDirection> directions,
+        GestureDirection direction,
+        Point segmentStart,
+        Point segmentEnd)
+    {
+        if (directions.Count != 0 || !IsDiagonal(direction))
+        {
+            return direction;
+        }
+
+        return ToCardinalDirection(segmentEnd.X - segmentStart.X, segmentEnd.Y - segmentStart.Y);
+    }
+
+    private static GestureDirection ToDirection(int dx, int dy, int completedStrokeCount)
+    {
+        return completedStrokeCount == 0
+            ? ToEightDirection(dx, dy)
+            : ToCardinalDirection(dx, dy);
+    }
+
+    private static GestureDirection ToEightDirection(int dx, int dy)
     {
         var angle = Math.Atan2(dy, dx) * 180.0 / Math.PI;
         var normalized = NormalizePositiveAngle(angle + 22.5);
@@ -94,6 +152,24 @@ public sealed class GestureRecognizer
             6 => GestureDirection.Up,
             _ => GestureDirection.UpRight
         };
+    }
+
+    private static GestureDirection ToCardinalDirection(int dx, int dy)
+    {
+        if (Math.Abs(dx) > Math.Abs(dy))
+        {
+            return dx >= 0 ? GestureDirection.Right : GestureDirection.Left;
+        }
+
+        return dy >= 0 ? GestureDirection.Down : GestureDirection.Up;
+    }
+
+    private static bool IsDiagonal(GestureDirection direction)
+    {
+        return direction is GestureDirection.UpRight
+            or GestureDirection.DownRight
+            or GestureDirection.DownLeft
+            or GestureDirection.UpLeft;
     }
 
     private static double DirectionToAngle(GestureDirection direction)
