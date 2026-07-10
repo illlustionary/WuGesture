@@ -8,6 +8,7 @@ export function useUiSettingsDraft(editor) {
   let lastLocalPersistAt = 0
 
   const trailPreviewStyle = computed(() => ({
+    opacity: draft.mouseTrail.enabled ? 1 : 0.42,
     '--trail-inactive-color': draft.mouseTrail.inactiveColor,
     '--trail-inactive-stroke': hexToRgba(
       draft.mouseTrail.inactiveColor,
@@ -23,6 +24,7 @@ export function useUiSettingsDraft(editor) {
   }))
 
   const hintPreviewStyle = computed(() => ({
+    opacity: draft.gestureHint.enabled ? 1 : 0.42,
     width: draft.gestureHint.autoWidth
       ? 'fit-content'
       : `${draft.gestureHint.widthPercent}%`,
@@ -135,6 +137,7 @@ function createDraft(settings) {
   const legacyThickness = mouseTrail.thickness ?? mouseTrail.Thickness
   return {
     mouseTrail: {
+      enabled: Boolean(mouseTrail.enabled ?? true),
       inactiveColor: mouseTrail.inactiveColor ?? '#AAAAAA',
       activeColor: mouseTrail.activeColor ?? '#87CEEB',
       inactiveThickness: mouseTrail.inactiveThickness ?? legacyThickness ?? 3,
@@ -144,6 +147,7 @@ function createDraft(settings) {
       activeOpacity: mouseTrail.activeOpacity ?? 100
     },
     gestureHint: {
+      enabled: Boolean(gestureHint.enabled ?? true),
       fontFamily: gestureHint.fontFamily ?? 'Segoe UI Semibold',
       fontSize: gestureHint.fontSize ?? 22,
       textColor: gestureHint.textColor ?? '#FFFFFF',

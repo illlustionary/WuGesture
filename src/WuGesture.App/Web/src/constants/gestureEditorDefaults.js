@@ -39,6 +39,7 @@ export const DEFAULT_APPLICATIONS = [
 
 export const DEFAULT_UI_SETTINGS = {
   mouseTrail: {
+    enabled: true,
     inactiveColor: "#AAAAAA",
     activeColor: "#87CEEB",
     inactiveThickness: 3,
@@ -48,6 +49,7 @@ export const DEFAULT_UI_SETTINGS = {
     activeOpacity: 100
   },
   gestureHint: {
+    enabled: true,
     fontFamily: "Segoe UI Semibold",
     fontSize: 22,
     textColor: "#FFFFFF",

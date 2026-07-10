@@ -2,6 +2,7 @@
 import SettingsField from './SettingsField.vue'
 import SettingsFormGrid from './SettingsFormGrid.vue'
 import SettingsSectionCard from './SettingsSectionCard.vue'
+import ToggleCheckbox from '@/components/ToggleCheckbox.vue'
 import { GESTURE_EDITOR_LIMITS } from '@/constants/gestureEditorLimits'
 
 defineProps({
@@ -10,6 +11,11 @@ defineProps({
 })
 
 const emit = defineEmits(['queue-persist', 'flush-persist'])
+
+function commit() {
+  emit('queue-persist')
+  emit('flush-persist')
+}
 </script>
 
 <template>
@@ -17,6 +23,15 @@ const emit = defineEmits(['queue-persist', 'flush-persist'])
     title="轨迹线"
     description="手势拖动时显示的路径样式。"
   >
+    <div class="field-card">
+      <ToggleCheckbox
+        v-model="draft.mouseTrail.enabled"
+        label="显示轨迹线"
+        note="关闭后不再绘制手势拖动路径。"
+        @change="commit"
+      />
+    </div>
+
     <div
       class="mouse-trail-preview"
       :style="previewStyle"

@@ -23,13 +23,21 @@ function commit() {
     title="底部提示窗"
     description="激活规则后的提示窗字体、颜色和尺寸。"
   >
+    <div class="field-card">
+      <ToggleCheckbox
+        v-model="draft.gestureHint.enabled"
+        label="显示触发提示"
+        note="关闭后不再显示手势触发后的弹窗。"
+        @change="commit"
+      />
+    </div>
+
     <div class="gesture-hint-preview">
       <div
         class="gesture-hint-preview__bubble"
         :style="previewStyle"
       >
-        <strong>已触发：关闭标签</strong>
-        <span>这里是底部提示窗示例。</span>
+        <strong>触发的规则</strong>
       </div>
     </div>
 
@@ -80,7 +88,11 @@ function commit() {
       </SettingsField>
       <SettingsField
         label="宽度"
-        :note="draft.gestureHint.autoWidth ? '自适应' : `${draft.gestureHint.widthPercent}%`"
+        :note="
+          draft.gestureHint.autoWidth
+            ? '自适应'
+            : `${draft.gestureHint.widthPercent}%`
+        "
       >
         <input
           v-model.number="draft.gestureHint.widthPercent"
@@ -170,12 +182,9 @@ function commit() {
 
   strong {
     font-size: var(--hint-font-size);
-    line-height: 1.1;
-  }
-
-  span {
-    color: var(--hint-muted-color);
-    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 }
 </style>
