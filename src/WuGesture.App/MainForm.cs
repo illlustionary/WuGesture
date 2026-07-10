@@ -14,6 +14,10 @@ public sealed class MainForm : Form
 {
     private const int SwShow = 5;
     private const int SwRestore = 9;
+    private const int DefaultWindowWidth = 1080;
+    private const int DefaultWindowHeight = 720;
+    private const int MinimumWindowWidth = 640;
+    private const int MinimumWindowHeight = 480;
     private const string StartupRegistryPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
     private readonly GestureHintForm gestureHintForm = new();
     private readonly GestureConfigStore configStore = new();
@@ -1276,7 +1280,12 @@ public sealed class MainForm : Form
     {
         try
         {
-            var bounds = WindowState == FormWindowState.Maximized ? RestoreBounds : Bounds;
+            var bounds = WindowState == FormWindowState.Normal ? Bounds : RestoreBounds;
+            if (!HasUsableWindowSize(bounds))
+            {
+                return;
+            }
+
             var windowState = new WindowStateData
             {
                 X = bounds.X,
@@ -1312,7 +1321,7 @@ public sealed class MainForm : Form
 
             var json = File.ReadAllText(windowStatePath);
             var loadedWindowState = JsonSerializer.Deserialize<WindowStateData>(json, WindowStateJsonOptions);
-            if (loadedWindowState is null || loadedWindowState.Width <= 0 || loadedWindowState.Height <= 0)
+            if (loadedWindowState is null || !HasUsableWindowSize(loadedWindowState.Bounds))
             {
                 return false;
             }
@@ -1329,8 +1338,8 @@ public sealed class MainForm : Form
     private static Rectangle NormalizeBounds(Rectangle bounds)
     {
         var workingArea = Screen.PrimaryScreen?.WorkingArea ?? new Rectangle(0, 0, 1280, 720);
-        var width = Math.Min(Math.Max(1, bounds.Width), workingArea.Width);
-        var height = Math.Min(Math.Max(1, bounds.Height), workingArea.Height);
+        var width = Math.Min(Math.Max(MinimumWindowWidth, bounds.Width), workingArea.Width);
+        var height = Math.Min(Math.Max(MinimumWindowHeight, bounds.Height), workingArea.Height);
 
         var left = bounds.Left;
         var top = bounds.Top;
@@ -1351,8 +1360,8 @@ public sealed class MainForm : Form
     private static Rectangle GetDefaultBounds()
     {
         var workingArea = Screen.PrimaryScreen?.WorkingArea ?? new Rectangle(0, 0, 1280, 720);
-        var width = Math.Max(1, workingArea.Width / 2);
-        var height = Math.Max(1, workingArea.Height / 2);
+        var width = Math.Min(DefaultWindowWidth, workingArea.Width);
+        var height = Math.Min(DefaultWindowHeight, workingArea.Height);
         var left = workingArea.Left + Math.Max(0, (workingArea.Width - width) / 2);
         var top = workingArea.Top + Math.Max(0, (workingArea.Height - height) / 2);
         return new Rectangle(left, top, width, height);
@@ -1362,6 +1371,11 @@ public sealed class MainForm : Form
     {
         var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
         return Path.Combine(appData, AppIdentity.AppDataFolderName, ConfigStorageContract.WindowStateFileName);
+    }
+
+    private static bool HasUsableWindowSize(Rectangle bounds)
+    {
+        return bounds.Width >= MinimumWindowWidth && bounds.Height >= MinimumWindowHeight;
     }
 
     private static Icon CreateGrayscaleIcon(Icon source)
