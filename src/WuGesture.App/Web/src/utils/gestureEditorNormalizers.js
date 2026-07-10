@@ -77,7 +77,6 @@ export function normalizeAppBehaviorSettings(settings) {
     launchAtStartup: Boolean(settings?.launchAtStartup ?? DEFAULT_UI_SETTINGS.appBehavior.launchAtStartup),
     runAsAdministrator: Boolean(settings?.runAsAdministrator ?? DEFAULT_UI_SETTINGS.appBehavior.runAsAdministrator),
     closeButtonBehavior: normalizeCloseButtonBehavior(settings?.closeButtonBehavior),
-    gesturePaused: Boolean(settings?.gesturePaused ?? DEFAULT_UI_SETTINGS.appBehavior.gesturePaused),
     excludedApplications: normalizeExcludedApplications(settings?.excludedApplications)
   };
 }

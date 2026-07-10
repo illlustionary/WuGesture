@@ -39,12 +39,6 @@ function commit() {
           note="保存后下次启动时生效。"
           @change="commit"
         />
-        <ToggleCheckbox
-          v-model="draft.appBehavior.gesturePaused"
-          label="暂停 WuGesture"
-          note="关闭后立即恢复手势。"
-          @change="commit"
-        />
       </div>
       <SettingsField label="关闭按钮">
         <CustomSelect

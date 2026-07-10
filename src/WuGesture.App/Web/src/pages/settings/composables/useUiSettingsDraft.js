@@ -168,7 +168,6 @@ function createDraft(settings) {
       closeButtonBehavior: normalizeCloseButtonBehavior(
         appBehavior.closeButtonBehavior
       ),
-      gesturePaused: Boolean(appBehavior.gesturePaused ?? false),
       excludedApplications: normalizeExcludedApplications(
         appBehavior.excludedApplications
       )
