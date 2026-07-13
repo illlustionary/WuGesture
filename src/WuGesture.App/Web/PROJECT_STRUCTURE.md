@@ -187,14 +187,14 @@ src\pages
   - `edge\components\EdgeActionCommandFields.vue`：快捷键、窗口、音量、亮度命令字段。
   - `edge\composables\useEdgeActionDraft.js`：边缘操作编辑草稿、打开、关闭和保存逻辑。
 - `exclusions\index.vue`：排除项页，用于维护不执行鼠标手势的程序列表，并可对单个排除项禁用边缘操作。
-- `settings\index.vue`：设置页，用于组合轨迹线、底部提示窗、应用行为和 WebDAV 配置区块；顶部提供本地主配置导入、导出和恢复默认入口。
+- `settings\index.vue`：设置页，用于组合轨迹线、底部提示窗、音量/亮度 OSD、应用行为和 WebDAV 配置区块；顶部提供本地主配置导入、导出和恢复默认入口。
   - `settings\components\SettingsSectionCard.vue`：设置页大项标题、说明、操作区和内容布局。
   - `settings\components\SettingsFormGrid.vue`：设置项双列表单布局。
   - `settings\components\SettingsField.vue`：设置项卡片。
   - `settings\components\MouseTrailSettings.vue`：轨迹线配置，顶部内置轨迹线实时预览。
   - `settings\components\AppBehaviorSettings.vue`：应用行为配置，包括开机启动、管理员启动、暂停 WuGesture 和关闭按钮行为。
   - `settings\components\WebDavSettings.vue`：WebDAV 配置、测试、恢复和保存操作。
-  - `settings\components\GestureHintSettings.vue`：底部提示窗配置，顶部内置提示窗实时预览。
+- `settings\components\GestureHintSettings.vue`：底部提示窗配置，顶部内置提示窗实时预览。
   - `settings\composables\useUiSettingsDraft.js`：设置草稿归一化、debounce 保存、重置和预览样式计算。
 
 ## Routing
@@ -299,6 +299,17 @@ src\pages
 - `cornerRadius`
 - `bottomOffset`
 - `bottomOffsetPercent`
+
+`uiSettings.levelOsd` 当前包含：
+
+- `enabled`
+- `displayDurationMs`
+- `width`
+- `height`
+- `cornerRadius`
+- `position`
+- `offsetX`
+- `offsetY`
 
 ## 构建
 

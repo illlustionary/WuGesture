@@ -8,6 +8,8 @@ public sealed class GestureUiSettings
 
     public GestureHintUiSettings GestureHint { get; set; } = new();
 
+    public LevelOsdUiSettings LevelOsd { get; set; } = new();
+
     public AppBehaviorUiSettings AppBehavior { get; set; } = new();
 
     public WebDavUiSettings WebDav { get; set; } = new();
@@ -96,6 +98,25 @@ public sealed class GestureHintUiSettings
     public int BottomOffset { get; set; } = 140;
 
     public int BottomOffsetPercent { get; set; } = 13;
+}
+
+public sealed class LevelOsdUiSettings
+{
+    public bool? Enabled { get; set; } = true;
+
+    public int DisplayDurationMs { get; set; } = 1800;
+
+    public int Width { get; set; } = 210;
+
+    public int Height { get; set; } = 190;
+
+    public int CornerRadius { get; set; } = 22;
+
+    public string Position { get; set; } = GestureConfigContract.LevelOsdPositions.Center;
+
+    public int OffsetX { get; set; }
+
+    public int OffsetY { get; set; }
 }
 
 internal static class GestureColorParser

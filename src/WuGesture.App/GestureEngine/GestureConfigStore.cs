@@ -96,6 +96,7 @@ public sealed class GestureConfigStore
         config.UiSettings ??= new GestureUiSettings();
         config.UiSettings.MouseTrail ??= new MouseTrailUiSettings();
         config.UiSettings.GestureHint ??= new GestureHintUiSettings();
+        config.UiSettings.LevelOsd ??= new LevelOsdUiSettings();
         config.UiSettings.AppBehavior ??= new AppBehaviorUiSettings();
         config.UiSettings.WebDav ??= new WebDavUiSettings();
         NormalizeUiSettings(config.UiSettings);
@@ -131,6 +132,20 @@ public sealed class GestureConfigStore
             gestureHint.BottomOffset = 140;
         }
 
+        var levelOsd = settings.LevelOsd;
+        levelOsd.Enabled ??= true;
+        levelOsd.DisplayDurationMs = ClampInteger(levelOsd.DisplayDurationMs, 300, 5000, 1800);
+        levelOsd.Width = ClampInteger(levelOsd.Width, 120, 480, 210);
+        levelOsd.Height = ClampInteger(levelOsd.Height, 100, 420, 190);
+        levelOsd.CornerRadius = ClampInteger(
+            levelOsd.CornerRadius,
+            0,
+            Math.Min(levelOsd.Width, levelOsd.Height) / 2,
+            22);
+        levelOsd.Position = NormalizeLevelOsdPosition(levelOsd.Position);
+        levelOsd.OffsetX = ClampInteger(levelOsd.OffsetX, -2000, 2000, 0);
+        levelOsd.OffsetY = ClampInteger(levelOsd.OffsetY, -2000, 2000, 0);
+
         var appBehavior = settings.AppBehavior;
         appBehavior.CloseButtonBehavior = NormalizeCloseButtonBehavior(appBehavior.CloseButtonBehavior);
         appBehavior.ExcludedApplications = NormalizeExcludedApplications(appBehavior.ExcludedApplications);
@@ -150,6 +165,20 @@ public sealed class GestureConfigStore
             GestureConfigContract.CloseButtonBehaviors.Exit
             ? value
             : GestureConfigContract.CloseButtonBehaviors.MinimizeToTray;
+    }
+
+    private static string NormalizeLevelOsdPosition(string? value)
+    {
+        return value is
+            GestureConfigContract.LevelOsdPositions.Center or
+            GestureConfigContract.LevelOsdPositions.TopCenter or
+            GestureConfigContract.LevelOsdPositions.BottomCenter or
+            GestureConfigContract.LevelOsdPositions.TopLeft or
+            GestureConfigContract.LevelOsdPositions.TopRight or
+            GestureConfigContract.LevelOsdPositions.BottomLeft or
+            GestureConfigContract.LevelOsdPositions.BottomRight
+            ? value
+            : GestureConfigContract.LevelOsdPositions.Center;
     }
 
     private static List<ExcludedApplicationConfig> NormalizeExcludedApplications(IEnumerable<ExcludedApplicationConfig>? applications)

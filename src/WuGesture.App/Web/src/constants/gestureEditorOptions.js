@@ -48,6 +48,16 @@ export const CLOSE_BUTTON_BEHAVIORS = {
   exit: "exit"
 };
 
+export const LEVEL_OSD_POSITIONS = [
+  { value: "center", label: "居中" },
+  { value: "top-center", label: "顶部居中" },
+  { value: "bottom-center", label: "底部居中" },
+  { value: "top-left", label: "左上角" },
+  { value: "top-right", label: "右上角" },
+  { value: "bottom-left", label: "左下角" },
+  { value: "bottom-right", label: "右下角" }
+];
+
 export const WEBVIEW_MESSAGE_TYPES = {
   getStatus: "get-status",
   selectApplication: "select-application",

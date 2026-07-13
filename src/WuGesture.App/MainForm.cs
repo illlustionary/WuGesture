@@ -760,6 +760,7 @@ public sealed class MainForm : Form
         {
             mouseTrail = uiSettings.MouseTrail,
             gestureHint = uiSettings.GestureHint,
+            levelOsd = uiSettings.LevelOsd,
             appBehavior = new
             {
                 launchAtStartup = uiSettings.AppBehavior.LaunchAtStartup,
