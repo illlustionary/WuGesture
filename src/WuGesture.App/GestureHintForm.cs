@@ -11,8 +11,10 @@ public sealed class GestureHintForm : Form
     private const int WmDisplayChange = 0x007E;
     private const int WmSettingChange = 0x001A;
     private const int WmDwmCompositionChanged = 0x031E;
+    private const int WmDpiChanged = 0x02E0;
     private const int HorizontalPadding = 28;
     private const int MinimumWidth = 240;
+    private const int FullScreenEdgeTolerance = 2;
     private const double FadeStep = 0.08;
 
     private readonly System.Windows.Forms.Timer hideTimer = new();
@@ -31,6 +33,7 @@ public sealed class GestureHintForm : Form
     private Pen? borderPen;
     private GestureHintUiSettings uiSettings = new();
     private string title = "";
+    private bool refreshHandleBeforeNextShow;
 
     public GestureHintForm()
     {
@@ -80,12 +83,21 @@ public sealed class GestureHintForm : Form
             return;
         }
 
+        if (IsFullscreenForegroundWindow())
+        {
+            HideResult();
+            return;
+        }
+
         hideTimer.Stop();
         fadeTimer.Stop();
         Opacity = GetTargetOpacity();
         title = string.IsNullOrWhiteSpace(ruleName) ? "已触发" : ruleName;
         UpdateAdaptiveWidth();
-        ShowOverlay();
+        if (!ShowOverlay())
+        {
+            return;
+        }
 
         if (autoHide)
         {
@@ -135,6 +147,11 @@ public sealed class GestureHintForm : Form
 
     public void HideResult()
     {
+        if (IsDisposed)
+        {
+            return;
+        }
+
         hideTimer.Stop();
         fadeTimer.Stop();
         Hide();
@@ -143,7 +160,7 @@ public sealed class GestureHintForm : Form
 
     public void Preload()
     {
-        if (IsDisposed || IsHandleCreated)
+        if (IsDisposed || IsHandleCreated || IsFullscreenForegroundWindow())
         {
             return;
         }
@@ -157,8 +174,15 @@ public sealed class GestureHintForm : Form
         Opacity = GetTargetOpacity();
     }
 
-    private void ShowOverlay()
+    private bool ShowOverlay()
     {
+        if (IsFullscreenForegroundWindow())
+        {
+            HideResult();
+            return false;
+        }
+
+        RefreshHandleAfterDisplayChange();
         RefreshDisplayLayout();
         MoveToBottomCenter();
 
@@ -189,6 +213,8 @@ public sealed class GestureHintForm : Form
         {
             Opacity = GetTargetOpacity();
         }
+
+        return true;
     }
 
     protected override void OnPaintBackground(PaintEventArgs e)
@@ -326,17 +352,13 @@ public sealed class GestureHintForm : Form
 
     protected override void WndProc(ref Message m)
     {
-        base.WndProc(ref m);
-
-        if (m.Msg is WmDisplayChange or WmSettingChange or WmDwmCompositionChanged)
+        if (m.Msg is WmDisplayChange or WmSettingChange or WmDwmCompositionChanged or WmDpiChanged)
         {
-            RefreshDisplayLayout();
-            if (Visible)
-            {
-                MoveToBottomCenter();
-                Refresh();
-            }
+            refreshHandleBeforeNextShow = true;
+            HideResult();
         }
+
+        base.WndProc(ref m);
     }
 
     private void BeginFadeOut()
@@ -369,9 +391,100 @@ public sealed class GestureHintForm : Form
         UpdateWindowRegion();
     }
 
+    private void RefreshHandleAfterDisplayChange()
+    {
+        if (!refreshHandleBeforeNextShow)
+        {
+            return;
+        }
+
+        refreshHandleBeforeNextShow = false;
+        if (!IsHandleCreated)
+        {
+            return;
+        }
+
+        RecreateHandle();
+    }
+
     private Screen GetTargetScreen()
     {
         return Screen.FromPoint(Cursor.Position);
+    }
+
+    private bool IsFullscreenForegroundWindow()
+    {
+        var foregroundWindow = NativeMethods.GetForegroundWindow();
+        if (foregroundWindow == IntPtr.Zero ||
+            (IsHandleCreated && foregroundWindow == Handle) ||
+            !NativeMethods.IsWindow(foregroundWindow) ||
+            !NativeMethods.IsWindowVisible(foregroundWindow) ||
+            NativeMethods.IsIconic(foregroundWindow) ||
+            IsCurrentProcessWindow(foregroundWindow) ||
+            IsShellWindow(foregroundWindow))
+        {
+            return false;
+        }
+
+        var windowInfo = new NativeMethods.WindowInfo
+        {
+            CbSize = (uint)Marshal.SizeOf<NativeMethods.WindowInfo>()
+        };
+
+        if (!NativeMethods.GetWindowInfo(foregroundWindow, ref windowInfo))
+        {
+            return false;
+        }
+
+        var monitor = NativeMethods.MonitorFromWindow(foregroundWindow, NativeMethods.MonitorDefaultToNearest);
+        if (monitor == IntPtr.Zero)
+        {
+            return false;
+        }
+
+        var monitorInfo = new NativeMethods.MonitorInfo
+        {
+            CbSize = (uint)Marshal.SizeOf<NativeMethods.MonitorInfo>()
+        };
+
+        if (!NativeMethods.GetMonitorInfo(monitor, ref monitorInfo) ||
+            !CoversMonitor(windowInfo.WindowRect, monitorInfo.MonitorArea))
+        {
+            return false;
+        }
+
+        if ((windowInfo.Style & NativeMethods.WsCaption) != 0)
+        {
+            return false;
+        }
+
+        return !NativeMethods.IsZoomed(foregroundWindow) ||
+               (windowInfo.Style & NativeMethods.WsThickFrame) == 0;
+    }
+
+    private static bool CoversMonitor(NativeMethods.Rect windowBounds, NativeMethods.Rect monitorBounds)
+    {
+        return windowBounds.Left <= monitorBounds.Left + FullScreenEdgeTolerance &&
+               windowBounds.Top <= monitorBounds.Top + FullScreenEdgeTolerance &&
+               windowBounds.Right >= monitorBounds.Right - FullScreenEdgeTolerance &&
+               windowBounds.Bottom >= monitorBounds.Bottom - FullScreenEdgeTolerance;
+    }
+
+    private static bool IsCurrentProcessWindow(IntPtr window)
+    {
+        return NativeMethods.GetWindowThreadProcessId(window, out var processId) != 0 &&
+               processId == Environment.ProcessId;
+    }
+
+    private static bool IsShellWindow(IntPtr window)
+    {
+        var className = new System.Text.StringBuilder(256);
+        if (NativeMethods.GetClassName(window, className, className.Capacity) == 0)
+        {
+            return false;
+        }
+
+        return className.ToString() is "Shell_TrayWnd" or "Shell_SecondaryTrayWnd" or "Progman" or "WorkerW";
     }
 
     private float GetCornerRadius()
@@ -428,6 +541,9 @@ public sealed class GestureHintForm : Form
         public static readonly IntPtr HwndTopmost = new(-1);
         public const uint SwpNoActivate = 0x0010;
         public const uint SwpShowWindow = 0x0040;
+        public const uint MonitorDefaultToNearest = 0x00000002;
+        public const uint WsCaption = 0x00C00000;
+        public const uint WsThickFrame = 0x00040000;
 
         [DllImport("user32.dll", SetLastError = true)]
         public static extern bool SetWindowPos(
@@ -438,5 +554,68 @@ public sealed class GestureHintForm : Form
             int cx,
             int cy,
             uint uFlags);
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr GetForegroundWindow();
+
+        [DllImport("user32.dll")]
+        public static extern bool IsWindow(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        public static extern bool IsWindowVisible(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        public static extern bool IsIconic(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        public static extern bool IsZoomed(IntPtr hWnd);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        public static extern bool GetWindowInfo(IntPtr hWnd, ref WindowInfo windowInfo);
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr MonitorFromWindow(IntPtr hWnd, uint flags);
+
+        [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        public static extern bool GetMonitorInfo(IntPtr monitor, ref MonitorInfo monitorInfo);
+
+        [DllImport("user32.dll")]
+        public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out int processId);
+
+        [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        public static extern int GetClassName(IntPtr hWnd, System.Text.StringBuilder className, int maxCount);
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct WindowInfo
+        {
+            public uint CbSize;
+            public Rect WindowRect;
+            public Rect ClientRect;
+            public uint Style;
+            public uint ExStyle;
+            public uint WindowStatus;
+            public uint WindowBorderWidth;
+            public uint WindowBorderHeight;
+            public ushort WindowType;
+            public ushort CreatorVersion;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct MonitorInfo
+        {
+            public uint CbSize;
+            public Rect MonitorArea;
+            public Rect WorkArea;
+            public uint Flags;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct Rect
+        {
+            public int Left;
+            public int Top;
+            public int Right;
+            public int Bottom;
+        }
     }
 }
