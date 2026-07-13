@@ -45,7 +45,6 @@ src
 ├─ styles.scss
 ├─ assets
 ├─ components
-├─ composables
 ├─ constants
 ├─ gestureEditor
 ├─ utils
@@ -113,16 +112,6 @@ src\components
 - `applications\ApplicationListItem.vue`：分类页右侧程序关联列表项。
 - `rules\RulesSection.vue`：规则页右侧复用区块，统一标题、说明、操作区和内容面板。
 - `scope\ScopeListItem.vue`：分类页和程序页左侧作用域列表项，统一选中态、键盘选择、双击重命名和删除操作。
-
-## Composables
-
-路径：
-
-```text
-src\composables
-```
-
-- `gestureEditorStore.js`：历史兼容 facade，当前只转发到 `src\gestureEditor\context\gestureEditorContext.js`；新页面优先使用对应窄 store。
 
 ## Gesture Editor
 

@@ -19,7 +19,6 @@ This repository is a Vite + Vue 3 web frontend for the WuGesture application. It
 - `src/App.vue`: top-level shell with the main navigation, status bar, and global dialogs.
 - `src/styles.scss`: shared visual styling for the entire app.
 - `src/gestureEditor/`: gesture editor domain module, including context, narrow stores, and internal workflow modules for rule editing, scope selection, persistence, and WebView message handling.
-- `src/composables/gestureEditorStore.js`: compatibility facade that forwards to `src/gestureEditor/context/gestureEditorContext.js`.
 - `src/components/`: reusable UI pieces used by the shell and editors.
   - `AppShell.vue`: layout wrapper for the app experience.
   - `IconActionButton.vue`: shared icon-only button for add/close/delete actions.
