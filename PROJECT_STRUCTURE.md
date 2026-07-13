@@ -14,7 +14,7 @@
 - 动作当前支持快捷键、窗口控制、音量控制和亮度控制；快捷键通过 `SendInput` 执行，窗口控制通过 Win32 窗口 API 执行，音量通过 Core Audio API 执行并带按键回退，静音状态下执行音量增减会先取消静音，亮度通过 DDC/CI、WMI、Gamma 三段回退执行。
 - 规则当前支持 `global`、`category` 和 `app` 作用域，并按 `app > category > global` 优先级匹配。
 - 边缘操作是独立的全局配置，支持触发角、摩擦边和边缘滚动。
-- UI 设置里的轨迹线和手势提示窗支持单独关闭，运行时会按对应 `uiSettings` 节点的 `enabled` 决定是否显示；音量/亮度 OSD 的配置节点已加入 UI 设置模型。
+- UI 设置里的轨迹线、手势提示窗和音量/亮度 OSD 都支持单独关闭，运行时会按对应 `uiSettings` 节点的 `enabled` 决定是否显示。
 
 ## 根目录
 
@@ -101,7 +101,7 @@ src\WuGesture.App\GestureEngine
 - `GestureUiSettings.cs`：持久化的运行时 UI 设置模型，包括轨迹窗、提示泡泡和音量/亮度 OSD 配置。
 - `GestureHintForm.cs`：独立的全局命中提示窗，移动过程中匹配到规则时立即显示规则名。
 - `MouseTrailForm.cs`：独立的全局透明覆盖窗，在按住中键或右键移动时绘制鼠标轨迹；启动后预热并在手势结束时隐藏复用，避免首次绘制和反复创建窗口造成卡顿。
-- 运行时窗体会从配置里的 `uiSettings` 读取并应用轨迹颜色、线宽、未激活/激活透明度和提示泡泡外观；音量/亮度 OSD 的显示时长、尺寸、圆角和位置字段已进入配置链路。
+- 运行时窗体会从配置里的 `uiSettings` 读取并应用轨迹颜色、线宽、未激活/激活透明度、提示泡泡外观，以及音量/亮度 OSD 的显示时长、尺寸、圆角和位置。
 
 手势流水线：
 
@@ -165,7 +165,7 @@ MouseHook
 - `applications`：应用程序归属列表，每项包含 `name`、`displayName`、`path`、`category`，运行时通过前台进程名匹配 `name` 后得到分类；`displayName` 只用于 UI 展示和编辑。
 - `uiSettings.mouseTrail`：轨迹窗设置，包含 `enabled`、`inactiveColor`、`activeColor`、`inactiveThickness`、`activeThickness`、`thickness`、`inactiveOpacity`、`activeOpacity`；`enabled` 关闭时不再绘制轨迹线，`thickness` 保留用于兼容旧配置。
 - `uiSettings.gestureHint`：提示泡泡设置，包含 `enabled`、`fontFamily`、`fontSize`、`textColor`、`backgroundColor`、`backgroundOpacity`、`width`、`widthPercent`、`autoWidth`、`height`、`heightPercent`、`cornerRadius`、`bottomOffset`、`bottomOffsetPercent`；`enabled` 关闭时不再显示手势触发后的弹窗，百分比字段按当前屏幕工作区宽高换算，像素字段保留用于兼容旧配置。
-- `uiSettings.levelOsd`：音量/亮度 OSD 设置，包含 `enabled`、`displayDurationMs`、`width`、`height`、`cornerRadius`、`position`、`offsetX` 和 `offsetY`；当前支持居中、上/下居中和四角位置预设。
+- `uiSettings.levelOsd`：音量/亮度 OSD 设置，包含 `enabled`、`displayDurationMs`、`fadeDurationMs`、`backgroundColor`、`backgroundOpacity`、`textColor`、`trackColor`、`volumeColor`、`brightnessColor`、`width`、`height`、`cornerRadius`、`position`、`offsetX` 和 `offsetY`；当前支持相对于鼠标所在屏幕工作区的居中、上/下居中和四角位置预设，`fadeDurationMs` 为 0 时立即消失。
 - `uiSettings.appBehavior`：应用行为设置，包含 `launchAtStartup`、`runAsAdministrator`、`gesturePaused`、`closeButtonBehavior` 和 `excludedApplications`；关闭按钮行为支持 `minimize-to-tray`、`minimize-to-taskbar`、`exit`。排除项包含 `name`、`displayName`、`path` 和 `disableEdgeActions`；命中的程序不执行鼠标手势，勾选 `disableEdgeActions` 时也会禁用边缘操作。
 - `uiSettings.webDav`：WebDAV 备份设置，包含 `address`、`userName`、`password` 和 `remotePath`。设置页可把当前完整配置导出到本地 JSON，或从本地 JSON 导入并覆盖主配置文件；本地导入/导出不包含窗口状态。设置页也可测试 WebDAV 连接；测试当前配置成功后，才允许把当前完整配置保存到 WebDAV，或从 WebDAV 下载配置并覆盖本地配置；恢复后会刷新规则匹配、边缘操作、应用行为和 UI 设置。
 

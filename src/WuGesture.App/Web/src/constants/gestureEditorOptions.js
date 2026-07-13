@@ -76,6 +76,7 @@ export const WEBVIEW_MESSAGE_TYPES = {
   importConfig: "import-config",
   reloadRules: "reload-rules",
   resetRules: "reset-rules",
+  previewLevelOsd: "preview-level-osd",
   status: "status",
   rules: "rules",
   configResult: "config-result",

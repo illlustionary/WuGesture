@@ -135,6 +135,13 @@ public sealed class GestureConfigStore
         var levelOsd = settings.LevelOsd;
         levelOsd.Enabled ??= true;
         levelOsd.DisplayDurationMs = ClampInteger(levelOsd.DisplayDurationMs, 300, 5000, 1800);
+        levelOsd.FadeDurationMs = ClampInteger(levelOsd.FadeDurationMs, 0, 1000, 240);
+        levelOsd.BackgroundColor = NormalizeColor(levelOsd.BackgroundColor, "#28282C");
+        levelOsd.BackgroundOpacity = ClampInteger(levelOsd.BackgroundOpacity, 0, 100, 88);
+        levelOsd.TextColor = NormalizeColor(levelOsd.TextColor, "#DCDCDC");
+        levelOsd.TrackColor = NormalizeColor(levelOsd.TrackColor, "#464646");
+        levelOsd.VolumeColor = NormalizeColor(levelOsd.VolumeColor, "#64C8FF");
+        levelOsd.BrightnessColor = NormalizeColor(levelOsd.BrightnessColor, "#FFC828");
         levelOsd.Width = ClampInteger(levelOsd.Width, 120, 480, 210);
         levelOsd.Height = ClampInteger(levelOsd.Height, 100, 420, 190);
         levelOsd.CornerRadius = ClampInteger(
@@ -179,6 +186,11 @@ public sealed class GestureConfigStore
             GestureConfigContract.LevelOsdPositions.BottomRight
             ? value
             : GestureConfigContract.LevelOsdPositions.Center;
+    }
+
+    private static string NormalizeColor(string? value, string fallback)
+    {
+        return string.IsNullOrWhiteSpace(value) ? fallback : value.Trim();
     }
 
     private static List<ExcludedApplicationConfig> NormalizeExcludedApplications(IEnumerable<ExcludedApplicationConfig>? applications)

@@ -9,19 +9,18 @@ internal sealed class LevelOsdForm : Form
 {
     private const int WsExNoActivate = 0x08000000;
     private const int WsExToolWindow = 0x00000080;
-    private const int FormWidth = 210;
-    private const int FormHeight = 190;
-    private const int ShowDurationMs = 1800;
-    private const double FadeStep = 0.08d;
     private static readonly object Sync = new();
     private static readonly ManualResetEventSlim Ready = new();
     private static Thread? uiThread;
     private static LevelOsdForm? instance;
+    private static LevelOsdUiSettings pendingSettings = new();
 
     private readonly System.Windows.Forms.Timer hideTimer = new();
     private readonly System.Windows.Forms.Timer fadeTimer = new();
     private readonly Bitmap? volumeIcon;
     private readonly Bitmap? brightnessIcon;
+    private LevelOsdUiSettings uiSettings;
+    private double fadeStep = 0.08d;
     private OsdKind kind = OsdKind.Volume;
     private int value;
     private bool muted;
@@ -39,17 +38,16 @@ internal sealed class LevelOsdForm : Form
         ShowInTaskbar = false;
         StartPosition = FormStartPosition.Manual;
         TopMost = true;
-        Size = new Size(FormWidth, FormHeight);
         BackColor = Color.FromArgb(40, 40, 44);
         Opacity = 1d;
 
-        hideTimer.Interval = ShowDurationMs;
         hideTimer.Tick += OnHideTimerTick;
         fadeTimer.Interval = 20;
         fadeTimer.Tick += OnFadeTimerTick;
         volumeIcon = LoadResourceBitmap(ResourceNames.VolumeIcon);
         brightnessIcon = LoadResourceBitmap(ResourceNames.BrightnessIcon);
-        UpdateWindowRegion();
+        uiSettings = GetPendingSettings();
+        ApplySettingsInternal(uiSettings);
     }
 
     protected override bool ShowWithoutActivation => true;
@@ -74,16 +72,50 @@ internal sealed class LevelOsdForm : Form
         ShowLevel(OsdKind.Brightness, brightness, false);
     }
 
-    private static void ShowLevel(OsdKind kind, int value, bool muted)
+    public static void ShowVolumePreview(int volume)
+    {
+        ShowLevel(OsdKind.Volume, volume, false, true);
+    }
+
+    public static void ShowBrightnessPreview(int brightness)
+    {
+        ShowLevel(OsdKind.Brightness, brightness, false, true);
+    }
+
+    public static void ApplySettings(LevelOsdUiSettings settings)
+    {
+        var nextSettings = NormalizeSettings(settings);
+        LevelOsdForm? form;
+        lock (Sync)
+        {
+            pendingSettings = nextSettings;
+            form = instance is { IsDisposed: false } ? instance : null;
+        }
+
+        if (form is null)
+        {
+            return;
+        }
+
+        if (form.InvokeRequired)
+        {
+            form.BeginInvoke(() => form.ApplySettingsInternal(nextSettings));
+            return;
+        }
+
+        form.ApplySettingsInternal(nextSettings);
+    }
+
+    private static void ShowLevel(OsdKind kind, int value, bool muted, bool forceShow = false)
     {
         var form = EnsureInstance();
         if (form.InvokeRequired)
         {
-            form.BeginInvoke(() => form.ShowInternal(kind, value, muted));
+            form.BeginInvoke(() => form.ShowInternal(kind, value, muted, forceShow));
             return;
         }
 
-        form.ShowInternal(kind, value, muted);
+        form.ShowInternal(kind, value, muted, forceShow);
     }
 
     private static LevelOsdForm EnsureInstance()
@@ -115,8 +147,14 @@ internal sealed class LevelOsdForm : Form
         return instance!;
     }
 
-    private void ShowInternal(OsdKind nextKind, int nextValue, bool nextMuted)
+    private void ShowInternal(OsdKind nextKind, int nextValue, bool nextMuted, bool forceShow)
     {
+        if (!forceShow && !IsFeatureEnabled(uiSettings.Enabled))
+        {
+            Hide();
+            return;
+        }
+
         kind = nextKind;
         value = Math.Max(0, Math.Min(100, nextValue));
         muted = nextMuted;
@@ -124,7 +162,7 @@ internal sealed class LevelOsdForm : Form
         hideTimer.Stop();
         fadeTimer.Stop();
         Opacity = 1d;
-        MoveToCenter();
+        MoveToPosition();
 
         if (!Visible)
         {
@@ -153,13 +191,16 @@ internal sealed class LevelOsdForm : Form
         graphics.SmoothingMode = SmoothingMode.AntiAlias;
         graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
 
-        using var background = RoundedRect(new Rectangle(0, 0, Width - 1, Height - 1), 22);
-        using var backgroundBrush = new SolidBrush(Color.FromArgb(225, 40, 40, 44));
+        using var background = RoundedRect(
+            new Rectangle(0, 0, Math.Max(1, Width - 1), Math.Max(1, Height - 1)),
+            GetCornerRadius());
+        using var backgroundBrush = new SolidBrush(GetBackgroundColor());
         using var borderPen = new Pen(Color.FromArgb(50, 120, 120, 120), 1);
         graphics.FillPath(backgroundBrush, background);
         graphics.DrawPath(borderPen, background);
 
-        var iconBounds = new Rectangle((Width - 56) / 2, 30, 56, 56);
+        var layout = GetVisualLayout();
+        var iconBounds = layout.IconBounds;
         DrawIcon(graphics, kind == OsdKind.Volume ? volumeIcon : brightnessIcon, iconBounds);
 
         DrawTrack(graphics);
@@ -191,12 +232,13 @@ internal sealed class LevelOsdForm : Form
 
     private void DrawTrack(Graphics graphics)
     {
-        const int trackWidth = 150;
-        const int trackHeight = 10;
+        var layout = GetVisualLayout();
+        var trackWidth = layout.TrackWidth;
+        var trackHeight = layout.TrackHeight;
         var x = (Width - trackWidth) / 2;
-        var y = 108;
-        using var trackPath = RoundedRect(new Rectangle(x, y, trackWidth, trackHeight), 5);
-        using var trackBrush = new SolidBrush(Color.FromArgb(255, 70, 70, 70));
+        var y = layout.TrackY;
+        using var trackPath = RoundedRect(new Rectangle(x, y, trackWidth, trackHeight), trackHeight / 2f);
+        using var trackBrush = new SolidBrush(GetTrackColor());
         graphics.FillPath(trackBrush, trackPath);
 
         var fillWidth = muted ? 0 : (int)(trackWidth * value / 100d);
@@ -206,9 +248,9 @@ internal sealed class LevelOsdForm : Form
         }
 
         fillWidth = Math.Max(trackHeight, fillWidth);
-        using var fillPath = RoundedRect(new Rectangle(x, y, fillWidth, trackHeight), 5);
-        var start = kind == OsdKind.Volume ? Color.FromArgb(100, 200, 255) : Color.FromArgb(255, 200, 40);
-        var end = kind == OsdKind.Volume ? Color.FromArgb(150, 230, 255) : Color.White;
+        using var fillPath = RoundedRect(new Rectangle(x, y, fillWidth, trackHeight), trackHeight / 2f);
+        var start = GetAccentColor();
+        var end = Lighten(start);
         using var fillBrush = new LinearGradientBrush(new Rectangle(x, y, fillWidth, trackHeight), start, end, LinearGradientMode.Horizontal);
         graphics.FillPath(fillBrush, fillPath);
     }
@@ -216,14 +258,85 @@ internal sealed class LevelOsdForm : Form
     private void DrawText(Graphics graphics)
     {
         var text = muted ? "静音" : $"{value}%";
-        using var font = new Font("Segoe UI", 13f, FontStyle.Regular);
-        using var brush = new SolidBrush(Color.FromArgb(220, 220, 220));
+        var layout = GetVisualLayout();
+        var scale = Math.Min(Width / 210d, Height / 190d);
+        using var font = new Font("Segoe UI", Math.Max(9f, (float)(13 * scale)), FontStyle.Regular);
+        using var brush = new SolidBrush(GetTextColor());
         using var format = new StringFormat
         {
             Alignment = StringAlignment.Center,
             LineAlignment = StringAlignment.Center
         };
-        graphics.DrawString(text, font, brush, new RectangleF(0, 130, Width, 32), format);
+        graphics.DrawString(text, font, brush, layout.TextBounds, format);
+    }
+
+    private (Rectangle IconBounds, int TrackWidth, int TrackHeight, int TrackY, RectangleF TextBounds) GetVisualLayout()
+    {
+        var scale = Math.Min(Width / 210d, Height / 190d);
+        var iconSize = Math.Max(
+            24,
+            Math.Min(
+                56,
+                Math.Min(Math.Max(24, Width - 32), (int)Math.Round(Height * 0.3d))));
+        var iconTop = Math.Max(8, (int)Math.Round(Height * 0.12d));
+        var trackHeight = Math.Max(5, (int)Math.Round(10 * scale));
+        var trackWidth = Math.Max(60, Math.Min(Math.Max(60, Width - 36), (int)Math.Round(150 * scale)));
+        var minimumTrackY = iconTop + iconSize + 8;
+        var preferredTrackY = (int)Math.Round(Height * 0.57d);
+        var maximumTrackY = Math.Max(minimumTrackY, Height - trackHeight - 34);
+        var trackY = Math.Min(Math.Max(minimumTrackY, preferredTrackY), maximumTrackY);
+        var textTop = Math.Min(
+            Math.Max(trackY + trackHeight + 8, (int)Math.Round(Height * 0.68d)),
+            Math.Max(0, Height - 24));
+        var textHeight = Math.Max(20, Height - textTop - 6);
+
+        return (
+            new Rectangle((Width - iconSize) / 2, iconTop, iconSize, iconSize),
+            trackWidth,
+            trackHeight,
+            trackY,
+            new RectangleF(0, textTop, Width, textHeight));
+    }
+
+    private Color GetBackgroundColor()
+    {
+        var color = GestureColorParser.Parse(uiSettings.BackgroundColor, Color.FromArgb(40, 40, 44));
+        var opacity = Math.Clamp(uiSettings.BackgroundOpacity, 0, 100) / 100d;
+        return Color.FromArgb(
+            (int)Math.Round(255 * opacity),
+            color.R,
+            color.G,
+            color.B);
+    }
+
+    private Color GetTextColor()
+    {
+        return GestureColorParser.Parse(uiSettings.TextColor, Color.FromArgb(220, 220, 220));
+    }
+
+    private Color GetTrackColor()
+    {
+        return GestureColorParser.Parse(uiSettings.TrackColor, Color.FromArgb(70, 70, 70));
+    }
+
+    private Color GetAccentColor()
+    {
+        var fallback = kind == OsdKind.Volume
+            ? Color.FromArgb(100, 200, 255)
+            : Color.FromArgb(255, 200, 40);
+        var value = kind == OsdKind.Volume
+            ? uiSettings.VolumeColor
+            : uiSettings.BrightnessColor;
+        return GestureColorParser.Parse(value, fallback);
+    }
+
+    private static Color Lighten(Color color)
+    {
+        return Color.FromArgb(
+            color.A,
+            color.R + (255 - color.R) / 3,
+            color.G + (255 - color.G) / 3,
+            color.B + (255 - color.B) / 3);
     }
 
     private static void DrawIcon(Graphics graphics, Bitmap? icon, Rectangle bounds)
@@ -259,16 +372,61 @@ internal sealed class LevelOsdForm : Form
         return new Bitmap(stream);
     }
 
-    private void MoveToCenter()
+    private void MoveToPosition()
     {
-        var area = Screen.PrimaryScreen?.WorkingArea ?? Screen.FromControl(this).WorkingArea;
-        Left = area.Left + (area.Width - Width) / 2;
-        Top = area.Top + (area.Height - Height) / 2;
+        var area = GetTargetWorkingArea();
+        var x = area.Left + (area.Width - Width) / 2;
+        var y = area.Top + (area.Height - Height) / 2;
+
+        switch (uiSettings.Position)
+        {
+            case GestureConfigContract.LevelOsdPositions.TopCenter:
+                x = area.Left + (area.Width - Width) / 2;
+                y = area.Top;
+                break;
+            case GestureConfigContract.LevelOsdPositions.BottomCenter:
+                x = area.Left + (area.Width - Width) / 2;
+                y = area.Bottom - Height;
+                break;
+            case GestureConfigContract.LevelOsdPositions.TopLeft:
+                x = area.Left;
+                y = area.Top;
+                break;
+            case GestureConfigContract.LevelOsdPositions.TopRight:
+                x = area.Right - Width;
+                y = area.Top;
+                break;
+            case GestureConfigContract.LevelOsdPositions.BottomLeft:
+                x = area.Left;
+                y = area.Bottom - Height;
+                break;
+            case GestureConfigContract.LevelOsdPositions.BottomRight:
+                x = area.Right - Width;
+                y = area.Bottom - Height;
+                break;
+        }
+
+        var maxX = Math.Max(area.Left, area.Right - Width);
+        var maxY = Math.Max(area.Top, area.Bottom - Height);
+        Left = Math.Clamp(x + uiSettings.OffsetX, area.Left, maxX);
+        Top = Math.Clamp(y + uiSettings.OffsetY, area.Top, maxY);
+    }
+
+    private static Rectangle GetTargetWorkingArea()
+    {
+        try
+        {
+            return Screen.FromPoint(Cursor.Position).WorkingArea;
+        }
+        catch
+        {
+            return Screen.PrimaryScreen?.WorkingArea ?? new Rectangle(0, 0, 1920, 1080);
+        }
     }
 
     private void UpdateWindowRegion()
     {
-        using var path = RoundedRect(new Rectangle(0, 0, Width, Height), 22);
+        using var path = RoundedRect(new Rectangle(0, 0, Width, Height), GetCornerRadius());
         Region?.Dispose();
         Region = new Region(path);
     }
@@ -276,13 +434,20 @@ internal sealed class LevelOsdForm : Form
     private void OnHideTimerTick(object? sender, EventArgs e)
     {
         hideTimer.Stop();
+        if (uiSettings.FadeDurationMs <= 0)
+        {
+            Hide();
+            Opacity = 1d;
+            return;
+        }
+
         fadeTimer.Start();
     }
 
     private void OnFadeTimerTick(object? sender, EventArgs e)
     {
-        Opacity -= FadeStep;
-        if (Opacity > FadeStep)
+        Opacity -= fadeStep;
+        if (Opacity > fadeStep)
         {
             return;
         }
@@ -292,9 +457,105 @@ internal sealed class LevelOsdForm : Form
         Opacity = 1d;
     }
 
+    private void ApplySettingsInternal(LevelOsdUiSettings settings)
+    {
+        uiSettings = NormalizeSettings(settings);
+        Size = new Size(uiSettings.Width, uiSettings.Height);
+        hideTimer.Interval = uiSettings.DisplayDurationMs;
+        fadeStep = uiSettings.FadeDurationMs <= 0
+            ? 1d
+            : Math.Min(1d, 20d / uiSettings.FadeDurationMs);
+        UpdateWindowRegion();
+
+        if (!IsFeatureEnabled(uiSettings.Enabled))
+        {
+            hideTimer.Stop();
+            fadeTimer.Stop();
+            Hide();
+            Opacity = 1d;
+            return;
+        }
+
+        if (Visible)
+        {
+            MoveToPosition();
+            Invalidate();
+        }
+    }
+
+    private float GetCornerRadius()
+    {
+        return Math.Min(uiSettings.CornerRadius, Math.Min(Width, Height) / 2f);
+    }
+
+    private static LevelOsdUiSettings GetPendingSettings()
+    {
+        lock (Sync)
+        {
+            return NormalizeSettings(pendingSettings);
+        }
+    }
+
+    private static LevelOsdUiSettings NormalizeSettings(LevelOsdUiSettings? settings)
+    {
+        settings ??= new LevelOsdUiSettings();
+        var width = Math.Clamp(settings.Width, 120, 480);
+        var height = Math.Clamp(settings.Height, 100, 420);
+
+        return new LevelOsdUiSettings
+        {
+            Enabled = settings.Enabled ?? true,
+            DisplayDurationMs = Math.Clamp(settings.DisplayDurationMs, 300, 5000),
+            FadeDurationMs = Math.Clamp(settings.FadeDurationMs, 0, 1000),
+            BackgroundColor = NormalizeColor(settings.BackgroundColor, "#28282C"),
+            BackgroundOpacity = Math.Clamp(settings.BackgroundOpacity, 0, 100),
+            TextColor = NormalizeColor(settings.TextColor, "#DCDCDC"),
+            TrackColor = NormalizeColor(settings.TrackColor, "#464646"),
+            VolumeColor = NormalizeColor(settings.VolumeColor, "#64C8FF"),
+            BrightnessColor = NormalizeColor(settings.BrightnessColor, "#FFC828"),
+            Width = width,
+            Height = height,
+            CornerRadius = Math.Clamp(settings.CornerRadius, 0, Math.Min(width, height) / 2),
+            Position = NormalizePosition(settings.Position),
+            OffsetX = Math.Clamp(settings.OffsetX, -2000, 2000),
+            OffsetY = Math.Clamp(settings.OffsetY, -2000, 2000)
+        };
+    }
+
+    private static string NormalizePosition(string? value)
+    {
+        return value is
+            GestureConfigContract.LevelOsdPositions.Center or
+            GestureConfigContract.LevelOsdPositions.TopCenter or
+            GestureConfigContract.LevelOsdPositions.BottomCenter or
+            GestureConfigContract.LevelOsdPositions.TopLeft or
+            GestureConfigContract.LevelOsdPositions.TopRight or
+            GestureConfigContract.LevelOsdPositions.BottomLeft or
+            GestureConfigContract.LevelOsdPositions.BottomRight
+            ? value
+            : GestureConfigContract.LevelOsdPositions.Center;
+    }
+
+    private static string NormalizeColor(string? value, string fallback)
+    {
+        return string.IsNullOrWhiteSpace(value) ? fallback : value.Trim();
+    }
+
+    private static bool IsFeatureEnabled(bool? enabled)
+    {
+        return enabled != false;
+    }
+
     private static GraphicsPath RoundedRect(Rectangle rect, float radius)
     {
         var path = new GraphicsPath();
+        if (radius <= 0)
+        {
+            path.AddRectangle(rect);
+            return path;
+        }
+
+        radius = Math.Min(radius, Math.Min(rect.Width, rect.Height) / 2f);
         var diameter = radius * 2;
         var arc = new RectangleF(rect.X, rect.Y, diameter, diameter);
 

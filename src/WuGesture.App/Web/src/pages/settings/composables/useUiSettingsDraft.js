@@ -41,6 +41,30 @@ export function useUiSettingsDraft(editor) {
     '--hint-bottom-offset': `${Math.min(80, draft.gestureHint.bottomOffsetPercent * 0.8)}px`
   }))
 
+  const levelOsdPreviewStyle = computed(() => {
+    const width = Number(draft.levelOsd.width) || 210
+    const height = Number(draft.levelOsd.height) || 190
+    const scale = Math.min(1, 300 / width, 150 / height)
+
+    return {
+      opacity: draft.levelOsd.enabled ? 1 : 0.42,
+      width: `${Math.max(96, Math.round(width * scale))}px`,
+      height: `${Math.max(80, Math.round(height * scale))}px`,
+      borderRadius: `${Math.round(
+        Math.min(draft.levelOsd.cornerRadius * scale, width * scale / 2, height * scale / 2)
+      )}px`,
+      '--level-osd-background': hexToRgba(
+        draft.levelOsd.backgroundColor,
+        draft.levelOsd.backgroundOpacity / 100
+      ),
+      '--level-osd-text': draft.levelOsd.textColor,
+      '--level-osd-track': draft.levelOsd.trackColor,
+      '--level-osd-accent': draft.levelOsd.volumeColor,
+      '--level-osd-offset-x': `${Math.max(-72, Math.min(72, draft.levelOsd.offsetX / 8))}px`,
+      '--level-osd-offset-y': `${Math.max(-48, Math.min(48, draft.levelOsd.offsetY / 8))}px`
+    }
+  })
+
   watch(
     () => editor.uiSettings,
     () => {
@@ -117,6 +141,7 @@ export function useUiSettingsDraft(editor) {
     draft,
     trailPreviewStyle,
     hintPreviewStyle,
+    levelOsdPreviewStyle,
     queuePersistDraft,
     flushPersistDraft,
     resetSettings
@@ -168,6 +193,13 @@ function createDraft(settings) {
     levelOsd: {
       enabled: Boolean(levelOsd.enabled ?? true),
       displayDurationMs: levelOsd.displayDurationMs ?? 1800,
+      fadeDurationMs: levelOsd.fadeDurationMs ?? 240,
+      backgroundColor: levelOsd.backgroundColor ?? '#28282C',
+      backgroundOpacity: levelOsd.backgroundOpacity ?? 88,
+      textColor: levelOsd.textColor ?? '#DCDCDC',
+      trackColor: levelOsd.trackColor ?? '#464646',
+      volumeColor: levelOsd.volumeColor ?? '#64C8FF',
+      brightnessColor: levelOsd.brightnessColor ?? '#FFC828',
       width: levelOsd.width ?? 210,
       height: levelOsd.height ?? 190,
       cornerRadius: levelOsd.cornerRadius ?? 22,
