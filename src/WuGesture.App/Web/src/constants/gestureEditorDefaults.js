@@ -64,6 +64,16 @@ export const DEFAULT_UI_SETTINGS = {
     bottomOffset: 140,
     bottomOffsetPercent: 13
   },
+  levelOsd: {
+    enabled: true,
+    displayDurationMs: 1800,
+    width: 210,
+    height: 190,
+    cornerRadius: 22,
+    position: "center",
+    offsetX: 0,
+    offsetY: 0
+  },
   appBehavior: {
     launchAtStartup: false,
     runAsAdministrator: false,

@@ -1,6 +1,11 @@
 export const GESTURE_EDITOR_LIMITS = {
   amount: { min: 1, max: 100, fallback: 5 },
   frictionCount: { min: 1, max: 20, fallback: 4 },
+  levelOsdDisplayDuration: { min: 300, max: 5000, fallback: 1800 },
+  levelOsdWidth: { min: 120, max: 480, fallback: 210 },
+  levelOsdHeight: { min: 100, max: 420, fallback: 190 },
+  levelOsdCornerRadius: { min: 0, max: 210, fallback: 22 },
+  levelOsdOffset: { min: -2000, max: 2000, fallback: 0 },
   mouseTrailThickness: { min: 1, max: 20 },
   opacityPercent: { min: 0, max: 100 },
   hintFontSize: { min: 10, max: 48 },

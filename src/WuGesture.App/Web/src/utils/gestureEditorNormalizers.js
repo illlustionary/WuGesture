@@ -26,6 +26,7 @@ export function cloneUiSettings(settings) {
   return {
     mouseTrail: normalizeMouseTrailSettings(source.mouseTrail),
     gestureHint: normalizeGestureHintSettings(source.gestureHint),
+    levelOsd: normalizeLevelOsdSettings(source.levelOsd),
     appBehavior: normalizeAppBehaviorSettings(source.appBehavior),
     webDav: normalizeWebDavSettings(source.webDav)
   };
@@ -69,6 +70,72 @@ export function normalizeGestureHintSettings(settings) {
     bottomOffset: clampInteger(settings?.bottomOffset, GESTURE_EDITOR_LIMITS.hintBottomOffset.min, GESTURE_EDITOR_LIMITS.hintBottomOffset.max, DEFAULT_UI_SETTINGS.gestureHint.bottomOffset),
     bottomOffsetPercent: clampInteger(settings?.bottomOffsetPercent, GESTURE_EDITOR_LIMITS.hintBottomOffsetPercent.min, GESTURE_EDITOR_LIMITS.hintBottomOffsetPercent.max, DEFAULT_UI_SETTINGS.gestureHint.bottomOffsetPercent)
   };
+}
+
+export function normalizeLevelOsdSettings(settings) {
+  settings = normalizeObjectKeys(settings);
+  const width = clampInteger(
+    settings?.width,
+    GESTURE_EDITOR_LIMITS.levelOsdWidth.min,
+    GESTURE_EDITOR_LIMITS.levelOsdWidth.max,
+    DEFAULT_UI_SETTINGS.levelOsd.width
+  );
+  const height = clampInteger(
+    settings?.height,
+    GESTURE_EDITOR_LIMITS.levelOsdHeight.min,
+    GESTURE_EDITOR_LIMITS.levelOsdHeight.max,
+    DEFAULT_UI_SETTINGS.levelOsd.height
+  );
+  const maxRadius = Math.min(width, height) / 2;
+
+  return {
+    enabled: Boolean(settings?.enabled ?? DEFAULT_UI_SETTINGS.levelOsd.enabled),
+    displayDurationMs: clampInteger(
+      settings?.displayDurationMs,
+      GESTURE_EDITOR_LIMITS.levelOsdDisplayDuration.min,
+      GESTURE_EDITOR_LIMITS.levelOsdDisplayDuration.max,
+      DEFAULT_UI_SETTINGS.levelOsd.displayDurationMs
+    ),
+    width,
+    height,
+    cornerRadius: Math.min(
+      maxRadius,
+      clampInteger(
+        settings?.cornerRadius,
+        GESTURE_EDITOR_LIMITS.levelOsdCornerRadius.min,
+        GESTURE_EDITOR_LIMITS.levelOsdCornerRadius.max,
+        DEFAULT_UI_SETTINGS.levelOsd.cornerRadius
+      )
+    ),
+    position: normalizeLevelOsdPosition(settings?.position),
+    offsetX: clampInteger(
+      settings?.offsetX,
+      GESTURE_EDITOR_LIMITS.levelOsdOffset.min,
+      GESTURE_EDITOR_LIMITS.levelOsdOffset.max,
+      DEFAULT_UI_SETTINGS.levelOsd.offsetX
+    ),
+    offsetY: clampInteger(
+      settings?.offsetY,
+      GESTURE_EDITOR_LIMITS.levelOsdOffset.min,
+      GESTURE_EDITOR_LIMITS.levelOsdOffset.max,
+      DEFAULT_UI_SETTINGS.levelOsd.offsetY
+    )
+  };
+}
+
+function normalizeLevelOsdPosition(value) {
+  const normalized = String(value ?? "").trim();
+  return [
+    "center",
+    "top-center",
+    "bottom-center",
+    "top-left",
+    "top-right",
+    "bottom-left",
+    "bottom-right"
+  ].includes(normalized)
+    ? normalized
+    : DEFAULT_UI_SETTINGS.levelOsd.position;
 }
 
 export function normalizeAppBehaviorSettings(settings) {

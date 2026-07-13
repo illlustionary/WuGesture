@@ -130,6 +130,9 @@ function createDraft(settings) {
   const gestureHint = normalizeObjectKeys(
     settings?.gestureHint ?? settings?.GestureHint
   )
+  const levelOsd = normalizeObjectKeys(
+    settings?.levelOsd ?? settings?.LevelOsd
+  )
   const appBehavior = normalizeObjectKeys(
     settings?.appBehavior ?? settings?.AppBehavior
   )
@@ -161,6 +164,16 @@ function createDraft(settings) {
       cornerRadius: gestureHint.cornerRadius ?? 28,
       bottomOffset: gestureHint.bottomOffset ?? 140,
       bottomOffsetPercent: gestureHint.bottomOffsetPercent ?? 13
+    },
+    levelOsd: {
+      enabled: Boolean(levelOsd.enabled ?? true),
+      displayDurationMs: levelOsd.displayDurationMs ?? 1800,
+      width: levelOsd.width ?? 210,
+      height: levelOsd.height ?? 190,
+      cornerRadius: levelOsd.cornerRadius ?? 22,
+      position: levelOsd.position ?? 'center',
+      offsetX: levelOsd.offsetX ?? 0,
+      offsetY: levelOsd.offsetY ?? 0
     },
     appBehavior: {
       launchAtStartup: Boolean(appBehavior.launchAtStartup ?? false),
