@@ -96,6 +96,23 @@ export function normalizeLevelOsdSettings(settings) {
       GESTURE_EDITOR_LIMITS.levelOsdDisplayDuration.max,
       DEFAULT_UI_SETTINGS.levelOsd.displayDurationMs
     ),
+    fadeDurationMs: clampInteger(
+      settings?.fadeDurationMs,
+      GESTURE_EDITOR_LIMITS.levelOsdFadeDuration.min,
+      GESTURE_EDITOR_LIMITS.levelOsdFadeDuration.max,
+      DEFAULT_UI_SETTINGS.levelOsd.fadeDurationMs
+    ),
+    backgroundColor: normalizeColor(settings?.backgroundColor, DEFAULT_UI_SETTINGS.levelOsd.backgroundColor),
+    backgroundOpacity: clampInteger(
+      settings?.backgroundOpacity,
+      GESTURE_EDITOR_LIMITS.opacityPercent.min,
+      GESTURE_EDITOR_LIMITS.opacityPercent.max,
+      DEFAULT_UI_SETTINGS.levelOsd.backgroundOpacity
+    ),
+    textColor: normalizeColor(settings?.textColor, DEFAULT_UI_SETTINGS.levelOsd.textColor),
+    trackColor: normalizeColor(settings?.trackColor, DEFAULT_UI_SETTINGS.levelOsd.trackColor),
+    volumeColor: normalizeColor(settings?.volumeColor, DEFAULT_UI_SETTINGS.levelOsd.volumeColor),
+    brightnessColor: normalizeColor(settings?.brightnessColor, DEFAULT_UI_SETTINGS.levelOsd.brightnessColor),
     width,
     height,
     cornerRadius: Math.min(
@@ -121,6 +138,11 @@ export function normalizeLevelOsdSettings(settings) {
       DEFAULT_UI_SETTINGS.levelOsd.offsetY
     )
   };
+}
+
+function normalizeColor(value, fallback) {
+  const normalized = String(value ?? "").trim();
+  return normalized || fallback;
 }
 
 function normalizeLevelOsdPosition(value) {

@@ -106,6 +106,20 @@ public sealed class LevelOsdUiSettings
 
     public int DisplayDurationMs { get; set; } = 1800;
 
+    public int FadeDurationMs { get; set; } = 240;
+
+    public string BackgroundColor { get; set; } = "#28282C";
+
+    public int BackgroundOpacity { get; set; } = 88;
+
+    public string TextColor { get; set; } = "#DCDCDC";
+
+    public string TrackColor { get; set; } = "#464646";
+
+    public string VolumeColor { get; set; } = "#64C8FF";
+
+    public string BrightnessColor { get; set; } = "#FFC828";
+
     public int Width { get; set; } = 210;
 
     public int Height { get; set; } = 190;

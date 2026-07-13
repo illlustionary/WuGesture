@@ -19,6 +19,7 @@ internal static class WebViewMessageTypes
     public const string ImportConfig = "import-config";
     public const string ReloadRules = "reload-rules";
     public const string ResetRules = "reset-rules";
+    public const string PreviewLevelOsd = "preview-level-osd";
 
     public const string Gesture = "gesture";
     public const string GestureRecorded = "gesture-recorded";

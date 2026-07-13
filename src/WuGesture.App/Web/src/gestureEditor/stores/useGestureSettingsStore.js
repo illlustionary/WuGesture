@@ -13,6 +13,7 @@ export function useGestureSettingsStore() {
     getUiSettingsSnapshot: editor.getUiSettingsSnapshot,
     getWebDavSignature: editor.getWebDavSignature,
     importConfigFromLocal: editor.importConfigFromLocal,
+    previewLevelOsd: editor.previewLevelOsd,
     resetUiSettings: editor.resetUiSettings,
     restoreConfigFromWebDav: editor.restoreConfigFromWebDav,
     saveConfigToWebDav: editor.saveConfigToWebDav,

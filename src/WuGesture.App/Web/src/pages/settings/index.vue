@@ -6,6 +6,7 @@ import IconActionButton from '@/components/IconActionButton.vue'
 import { useGestureSettingsStore } from '@/gestureEditor/stores/useGestureSettingsStore'
 import AppBehaviorSettings from '@/pages/settings/components/AppBehaviorSettings.vue'
 import GestureHintSettings from '@/pages/settings/components/GestureHintSettings.vue'
+import LevelOsdSettings from '@/pages/settings/components/LevelOsdSettings.vue'
 import MouseTrailSettings from '@/pages/settings/components/MouseTrailSettings.vue'
 import WebDavSettings from '@/pages/settings/components/WebDavSettings.vue'
 import { useUiSettingsDraft } from '@/pages/settings/composables/useUiSettingsDraft'
@@ -15,6 +16,7 @@ const {
   draft,
   trailPreviewStyle,
   hintPreviewStyle,
+  levelOsdPreviewStyle,
   queuePersistDraft,
   flushPersistDraft,
   resetSettings
@@ -66,6 +68,11 @@ function exportLocalConfig() {
 function importLocalConfig() {
   settingsStore.importConfigFromLocal()
 }
+
+function previewLevelOsd(kind) {
+  flushPersistDraft()
+  settingsStore.previewLevelOsd(kind)
+}
 </script>
 
 <template>
@@ -106,6 +113,19 @@ function importLocalConfig() {
           @queue-persist="queuePersistDraft"
           @flush-persist="flushPersistDraft"
         />
+        <LevelOsdSettings
+          :draft="draft"
+          :preview-style="levelOsdPreviewStyle"
+          @queue-persist="queuePersistDraft"
+          @flush-persist="flushPersistDraft"
+          @preview="previewLevelOsd"
+        />
+        <GestureHintSettings
+          :draft="draft"
+          :preview-style="hintPreviewStyle"
+          @queue-persist="queuePersistDraft"
+          @flush-persist="flushPersistDraft"
+        />
         <AppBehaviorSettings
           :draft="draft"
           @queue-persist="queuePersistDraft"
@@ -122,12 +142,6 @@ function importLocalConfig() {
           @test="testWebDav"
           @restore="restoreFromWebDav"
           @save="saveToWebDav"
-        />
-        <GestureHintSettings
-          :draft="draft"
-          :preview-style="hintPreviewStyle"
-          @queue-persist="queuePersistDraft"
-          @flush-persist="flushPersistDraft"
         />
       </section>
     </template>

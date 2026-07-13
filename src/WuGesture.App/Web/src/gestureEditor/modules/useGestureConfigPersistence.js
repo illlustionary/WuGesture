@@ -151,6 +151,18 @@ export function useGestureConfigPersistence({
     setMessage("已恢复默认设置。", "success");
   }
 
+  function previewLevelOsd(kind) {
+    if (!webView.isAvailable()) {
+      setMessage("浏览器预览中无法显示系统 OSD。", "error");
+      return;
+    }
+
+    webView.post({
+      type: WEBVIEW_MESSAGE_TYPES.previewLevelOsd,
+      kind
+    });
+  }
+
   function testWebDavConnection() {
     const payload = getConfigPayload();
     const signature = getWebDavSignature(payload.uiSettings.webDav);
@@ -277,6 +289,7 @@ export function useGestureConfigPersistence({
     reloadRules,
     resetRules,
     resetUiSettings,
+    previewLevelOsd,
     restoreConfigFromWebDav,
     saveConfigToWebDav,
     saveRules,

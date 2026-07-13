@@ -854,6 +854,29 @@ public sealed class MainForm : Form
             case WebViewMessageTypes.ResetRules:
                 ResetRules();
                 break;
+            case WebViewMessageTypes.PreviewLevelOsd:
+                PreviewLevelOsd(json);
+                break;
+        }
+    }
+
+    private void PreviewLevelOsd(string json)
+    {
+        try
+        {
+            var message = JsonSerializer.Deserialize<PreviewLevelOsdWebMessage>(json, WebMessageJsonOptions);
+            if (string.Equals(message?.Kind, "brightness", StringComparison.OrdinalIgnoreCase))
+            {
+                LevelOsdForm.ShowBrightnessPreview(62);
+            }
+            else
+            {
+                LevelOsdForm.ShowVolumePreview(72);
+            }
+        }
+        catch (Exception exception)
+        {
+            PostConfigResult(false, exception.Message);
         }
     }
 
@@ -1477,6 +1500,7 @@ public sealed class MainForm : Form
     private void ApplyUiSettings(GestureUiSettings uiSettings)
     {
         gestureHintForm.ApplySettings(uiSettings.GestureHint);
+        LevelOsdForm.ApplySettings(uiSettings.LevelOsd);
         if (!IsFeatureEnabled(uiSettings.GestureHint.Enabled))
         {
             gestureHintForm.HideResult();
@@ -1554,6 +1578,13 @@ public sealed class MainForm : Form
         public string Type { get; set; } = "";
 
         public string RequestId { get; set; } = "";
+    }
+
+    private sealed class PreviewLevelOsdWebMessage
+    {
+        public string Type { get; set; } = "";
+
+        public string Kind { get; set; } = "";
     }
 
     private sealed class WindowStateData

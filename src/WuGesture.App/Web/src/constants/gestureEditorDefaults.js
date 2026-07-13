@@ -67,6 +67,13 @@ export const DEFAULT_UI_SETTINGS = {
   levelOsd: {
     enabled: true,
     displayDurationMs: 1800,
+    fadeDurationMs: 240,
+    backgroundColor: "#28282C",
+    backgroundOpacity: 88,
+    textColor: "#DCDCDC",
+    trackColor: "#464646",
+    volumeColor: "#64C8FF",
+    brightnessColor: "#FFC828",
     width: 210,
     height: 190,
     cornerRadius: 22,
