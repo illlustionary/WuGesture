@@ -3,6 +3,7 @@ import AppShell from '@/components/AppShell.vue'
 import GestureRuleList from '@/components/GestureRuleList.vue'
 import IconActionButton from '@/components/IconActionButton.vue'
 import RulesSection from '@/components/rules/RulesSection.vue'
+import ScopePriorityNotice from '@/components/ScopePriorityNotice.vue'
 import { useGestureRulesStore } from '@/gestureEditor/stores/useGestureRulesStore'
 import { SCOPE_KINDS } from '@/constants/gestureEditorOptions'
 
@@ -19,6 +20,7 @@ rulesStore.setActiveScope(scopeKind)
   >
     <template #right>
       <section class="rules-panel">
+        <ScopePriorityNotice />
         <RulesSection
           title="手势列表"
           description="这里维护不依赖分类和程序的默认手势。"

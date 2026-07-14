@@ -85,7 +85,9 @@ const {
               label="添加程序"
               class="secondary-button"
               @click="
-                rulesStore.openApplicationPicker(rulesStore.getSelectedName(scopeKind))
+                rulesStore.openApplicationPicker(
+                  rulesStore.getSelectedName(scopeKind)
+                )
               "
             />
           </template>
