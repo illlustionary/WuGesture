@@ -15,6 +15,8 @@ const rootRef = ref(null)
 const listRef = ref(null)
 const open = ref(false)
 const activeIndex = ref(-1)
+const menuStyle = ref({})
+const placement = ref('below')
 
 const currentValue = computed(() =>
   props.value === undefined ? props.modelValue : props.value
@@ -34,11 +36,18 @@ watch(open, isOpen => {
   if (isOpen) {
     activeIndex.value = selectedIndex.value >= 0 ? selectedIndex.value : 0
     document.addEventListener('pointerdown', handleOutsidePointerDown, true)
-    nextTick(scrollActiveOptionIntoView)
+    window.addEventListener('resize', updateMenuPosition)
+    window.addEventListener('scroll', updateMenuPosition, true)
+    nextTick(() => {
+      updateMenuPosition()
+      scrollActiveOptionIntoView()
+    })
     return
   }
 
   document.removeEventListener('pointerdown', handleOutsidePointerDown, true)
+  window.removeEventListener('resize', updateMenuPosition)
+  window.removeEventListener('scroll', updateMenuPosition, true)
 })
 
 onBeforeUnmount(() => {
@@ -58,7 +67,10 @@ function close() {
 }
 
 function handleOutsidePointerDown(event) {
-  if (!rootRef.value?.contains(event.target)) {
+  if (
+    !rootRef.value?.contains(event.target) &&
+    !listRef.value?.contains(event.target)
+  ) {
     close()
   }
 }
@@ -141,6 +153,46 @@ function scrollActiveOptionIntoView() {
     block: 'nearest'
   })
 }
+
+function updateMenuPosition() {
+  const button = rootRef.value?.querySelector('.custom-select__button')
+  const menu = listRef.value
+  if (!button || !menu) {
+    return
+  }
+
+  const buttonRect = button.getBoundingClientRect()
+  const viewportPadding = 8
+  const gap = 6
+  const availableBelow = window.innerHeight - buttonRect.bottom - gap - viewportPadding
+  const availableAbove = buttonRect.top - gap - viewportPadding
+  const shouldOpenAbove =
+    availableBelow < Math.min(menu.scrollHeight, 240) &&
+    availableAbove > availableBelow
+  const availableHeight = Math.max(
+    80,
+    Math.min(240, shouldOpenAbove ? availableAbove : availableBelow)
+  )
+  const menuHeight = Math.min(menu.scrollHeight, availableHeight)
+  const left = Math.max(
+    viewportPadding,
+    Math.min(
+      buttonRect.left,
+      window.innerWidth - buttonRect.width - viewportPadding
+    )
+  )
+  const top = shouldOpenAbove
+    ? buttonRect.top - gap - menuHeight
+    : buttonRect.bottom + gap
+
+  placement.value = shouldOpenAbove ? 'above' : 'below'
+  menuStyle.value = {
+    left: `${left}px`,
+    top: `${Math.max(viewportPadding, top)}px`,
+    width: `${buttonRect.width}px`,
+    maxHeight: `${availableHeight}px`
+  }
+}
 </script>
 
 <template>
@@ -171,36 +223,40 @@ function scrollActiveOptionIntoView() {
       />
     </button>
 
-    <Transition name="custom-select-pop">
-      <div
-        v-if="open"
-        :id="listboxId"
-        ref="listRef"
-        class="custom-select__menu"
-        role="listbox"
-        :aria-activedescendant="`${listboxId}-option-${activeIndex}`"
-      >
-        <button
-          v-for="(option, index) in options"
-          :id="`${listboxId}-option-${index}`"
-          :key="option.value"
-          type="button"
-          class="custom-select__option"
-          :class="{
-            'is-active': index === activeIndex,
-            'is-selected': option.value === currentValue
-          }"
-          :disabled="option.disabled"
-          :data-index="index"
-          role="option"
-          :aria-selected="option.value === currentValue"
-          @mouseenter="activeIndex = index"
-          @click="selectOption(option)"
+    <Teleport to="body">
+      <Transition name="custom-select-pop">
+        <div
+          v-if="open"
+          :id="listboxId"
+          ref="listRef"
+          class="custom-select__menu"
+          :class="`is-${placement}`"
+          :style="menuStyle"
+          role="listbox"
+          :aria-activedescendant="`${listboxId}-option-${activeIndex}`"
         >
-          <span>{{ option.label }}</span>
-        </button>
-      </div>
-    </Transition>
+          <button
+            v-for="(option, index) in options"
+            :id="`${listboxId}-option-${index}`"
+            :key="option.value"
+            type="button"
+            class="custom-select__option"
+            :class="{
+              'is-active': index === activeIndex,
+              'is-selected': option.value === currentValue
+            }"
+            :disabled="option.disabled"
+            :data-index="index"
+            role="option"
+            :aria-selected="option.value === currentValue"
+            @mouseenter="activeIndex = index"
+            @click="selectOption(option)"
+          >
+            <span>{{ option.label }}</span>
+          </button>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
@@ -287,11 +343,8 @@ function scrollActiveOptionIntoView() {
 }
 
 .custom-select__menu {
-  position: absolute;
-  z-index: 50;
-  top: calc(100% + 6px);
-  left: 0;
-  right: 0;
+  position: fixed;
+  z-index: 1000;
   display: grid;
   gap: 4px;
   max-height: min(240px, 45vh);
