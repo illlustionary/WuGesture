@@ -4,6 +4,15 @@ namespace WuGesture.App.GestureEngine;
 
 public sealed class GestureRecognizer
 {
+    private GestureRecognizerSettings settings = GestureSensitivityProfiles.Standard;
+
+    public int MinimumGestureDistance => settings.MinimumGestureDistance;
+
+    public void ApplySensitivity(string? level)
+    {
+        settings = GestureSensitivityProfiles.Resolve(level);
+    }
+
     public IReadOnlyList<GestureDirection> Recognize(IReadOnlyList<Point> points)
     {
         if (points.Count < 2)
@@ -28,7 +37,7 @@ public sealed class GestureRecognizer
             var current = effectivePoints[i];
             if (activeDirection is null)
             {
-                if (Distance(segmentStart, current) < GestureRuntimeDefaults.EffectiveMove)
+                if (Distance(segmentStart, current) < settings.EffectiveMove)
                 {
                     continue;
                 }
@@ -40,7 +49,7 @@ public sealed class GestureRecognizer
 
             var activeAngle = DirectionToAngle(activeDirection.Value);
             var segmentAngle = ToAngle(segmentStart, current);
-            if (AngleDistance(segmentAngle, activeAngle) <= GestureRuntimeDefaults.DirectionTolerance)
+            if (AngleDistance(segmentAngle, activeAngle) <= settings.DirectionTolerance)
             {
                 turnStart = null;
                 stableSegmentEnd = current;
@@ -48,13 +57,13 @@ public sealed class GestureRecognizer
             }
 
             turnStart ??= stableSegmentEnd;
-            if (Distance(turnStart.Value, current) < GestureRuntimeDefaults.MinimumTurnDistance)
+            if (Distance(turnStart.Value, current) < settings.MinimumTurnDistance)
             {
                 continue;
             }
 
             var turnAngle = ToAngle(turnStart.Value, current);
-            if (AngleDistance(turnAngle, activeAngle) < GestureRuntimeDefaults.TurnAngle)
+            if (AngleDistance(turnAngle, activeAngle) < settings.TurnAngle)
             {
                 continue;
             }
@@ -79,7 +88,7 @@ public sealed class GestureRecognizer
         return directions.ToArray();
     }
 
-    private static List<Point> BuildEffectivePoints(IReadOnlyList<Point> points)
+    private List<Point> BuildEffectivePoints(IReadOnlyList<Point> points)
     {
         var effectivePoints = new List<Point> { points[0] };
         var lastEffectivePoint = points[0];
@@ -87,7 +96,7 @@ public sealed class GestureRecognizer
         for (var i = 1; i < points.Count; i++)
         {
             var current = points[i];
-            if (Distance(lastEffectivePoint, current) < GestureRuntimeDefaults.EffectiveMove)
+            if (Distance(lastEffectivePoint, current) < settings.EffectiveMove)
             {
                 continue;
             }
@@ -98,7 +107,7 @@ public sealed class GestureRecognizer
 
         var lastPoint = points[^1];
         if (lastPoint != lastEffectivePoint &&
-            Distance(lastEffectivePoint, lastPoint) >= GestureRuntimeDefaults.MinimumTurnDistance)
+            Distance(lastEffectivePoint, lastPoint) >= settings.MinimumTurnDistance)
         {
             effectivePoints.Add(lastPoint);
         }

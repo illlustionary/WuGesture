@@ -27,6 +27,7 @@ export function cloneUiSettings(settings) {
     mouseTrail: normalizeMouseTrailSettings(source.mouseTrail),
     gestureHint: normalizeGestureHintSettings(source.gestureHint),
     levelOsd: normalizeLevelOsdSettings(source.levelOsd),
+    gestureSensitivity: normalizeGestureSensitivitySettings(source.gestureSensitivity),
     appBehavior: normalizeAppBehaviorSettings(source.appBehavior),
     webDav: normalizeWebDavSettings(source.webDav)
   };
@@ -143,6 +144,17 @@ export function normalizeLevelOsdSettings(settings) {
 function normalizeColor(value, fallback) {
   const normalized = String(value ?? "").trim();
   return normalized || fallback;
+}
+
+export function normalizeGestureSensitivitySettings(settings) {
+  settings = normalizeObjectKeys(settings);
+  const levels = ["relaxed", "standard", "strict"];
+  const level = String(settings?.level ?? DEFAULT_UI_SETTINGS.gestureSensitivity.level).trim();
+  return {
+    level: levels.includes(level)
+      ? level
+      : DEFAULT_UI_SETTINGS.gestureSensitivity.level
+  };
 }
 
 function normalizeLevelOsdPosition(value) {

@@ -24,13 +24,13 @@ const selectedIndex = computed(() =>
   props.options.findIndex(option => option.value === currentValue.value)
 )
 
-const selectedOption = computed(() =>
-  props.options[selectedIndex.value] ?? null
+const selectedOption = computed(
+  () => props.options[selectedIndex.value] ?? null
 )
 
 const listboxId = `custom-select-${Math.random().toString(36).slice(2)}`
 
-watch(open, (isOpen) => {
+watch(open, isOpen => {
   if (isOpen) {
     activeIndex.value = selectedIndex.value >= 0 ? selectedIndex.value : 0
     document.addEventListener('pointerdown', handleOutsidePointerDown, true)

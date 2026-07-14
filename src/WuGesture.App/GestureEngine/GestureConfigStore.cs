@@ -97,6 +97,7 @@ public sealed class GestureConfigStore
         config.UiSettings.MouseTrail ??= new MouseTrailUiSettings();
         config.UiSettings.GestureHint ??= new GestureHintUiSettings();
         config.UiSettings.LevelOsd ??= new LevelOsdUiSettings();
+        config.UiSettings.GestureSensitivity ??= new GestureSensitivityUiSettings();
         config.UiSettings.AppBehavior ??= new AppBehaviorUiSettings();
         config.UiSettings.WebDav ??= new WebDavUiSettings();
         NormalizeUiSettings(config.UiSettings);
@@ -153,6 +154,9 @@ public sealed class GestureConfigStore
         levelOsd.OffsetX = ClampInteger(levelOsd.OffsetX, -2000, 2000, 0);
         levelOsd.OffsetY = ClampInteger(levelOsd.OffsetY, -2000, 2000, 0);
 
+        var gestureSensitivity = settings.GestureSensitivity;
+        gestureSensitivity.Level = NormalizeGestureSensitivityLevel(gestureSensitivity.Level);
+
         var appBehavior = settings.AppBehavior;
         appBehavior.CloseButtonBehavior = NormalizeCloseButtonBehavior(appBehavior.CloseButtonBehavior);
         appBehavior.ExcludedApplications = NormalizeExcludedApplications(appBehavior.ExcludedApplications);
@@ -186,6 +190,16 @@ public sealed class GestureConfigStore
             GestureConfigContract.LevelOsdPositions.BottomRight
             ? value
             : GestureConfigContract.LevelOsdPositions.Center;
+    }
+
+    private static string NormalizeGestureSensitivityLevel(string? value)
+    {
+        return value is
+            GestureConfigContract.GestureSensitivityLevels.Relaxed or
+            GestureConfigContract.GestureSensitivityLevels.Standard or
+            GestureConfigContract.GestureSensitivityLevels.Strict
+            ? value
+            : GestureConfigContract.GestureSensitivityLevels.Standard;
     }
 
     private static string NormalizeColor(string? value, string fallback)

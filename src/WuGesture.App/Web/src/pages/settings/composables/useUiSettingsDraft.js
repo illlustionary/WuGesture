@@ -158,6 +158,9 @@ function createDraft(settings) {
   const levelOsd = normalizeObjectKeys(
     settings?.levelOsd ?? settings?.LevelOsd
   )
+  const gestureSensitivity = normalizeObjectKeys(
+    settings?.gestureSensitivity ?? settings?.GestureSensitivity
+  )
   const appBehavior = normalizeObjectKeys(
     settings?.appBehavior ?? settings?.AppBehavior
   )
@@ -206,6 +209,9 @@ function createDraft(settings) {
       position: levelOsd.position ?? 'center',
       offsetX: levelOsd.offsetX ?? 0,
       offsetY: levelOsd.offsetY ?? 0
+    },
+    gestureSensitivity: {
+      level: gestureSensitivity.level ?? 'standard'
     },
     appBehavior: {
       launchAtStartup: Boolean(appBehavior.launchAtStartup ?? false),

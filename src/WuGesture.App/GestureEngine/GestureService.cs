@@ -19,6 +19,7 @@ public sealed class GestureService : IDisposable
     private readonly ActionExecutor actionExecutor = new();
     private readonly ApplicationExclusionMatcher exclusionMatcher = new();
     private readonly List<Point> points = [];
+    private int minimumGestureDistance = GestureRuntimeDefaults.MinimumGestureDistance;
     private string? recordingRequestId;
     private IReadOnlyList<GestureDirection> lastProgressPattern = [];
     private IReadOnlyList<Point> lastProgressPath = [];
@@ -53,6 +54,12 @@ public sealed class GestureService : IDisposable
     public void UpdateMatcher(GestureMatcher newMatcher)
     {
         matcher = newMatcher;
+    }
+
+    public void ApplyGestureSensitivity(GestureSensitivityUiSettings settings)
+    {
+        recognizer.ApplySensitivity(settings.Level);
+        minimumGestureDistance = recognizer.MinimumGestureDistance;
     }
 
     public void UpdateExcludedApplications(IEnumerable<ExcludedApplicationConfig>? applications)
@@ -280,7 +287,7 @@ public sealed class GestureService : IDisposable
             return;
         }
 
-        if (points.Count < 2 || PathLength(points) < GestureRuntimeDefaults.MinimumGestureDistance)
+        if (points.Count < 2 || PathLength(points) < minimumGestureDistance)
         {
             RaiseProgress(path, [], false, ToPublicButton(button), force: true);
             if (button == ActiveMouseButton.Right)

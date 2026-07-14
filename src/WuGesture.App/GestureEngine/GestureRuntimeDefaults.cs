@@ -12,6 +12,43 @@ internal static class GestureRuntimeDefaults
     public const int MaxGestureSteps = 12;
 }
 
+internal readonly record struct GestureRecognizerSettings(
+    int MinimumGestureDistance,
+    double EffectiveMove,
+    double DirectionTolerance,
+    double TurnAngle,
+    double MinimumTurnDistance);
+
+internal static class GestureSensitivityProfiles
+{
+    public static GestureRecognizerSettings Standard { get; } = new(
+        GestureRuntimeDefaults.MinimumGestureDistance,
+        GestureRuntimeDefaults.EffectiveMove,
+        GestureRuntimeDefaults.DirectionTolerance,
+        GestureRuntimeDefaults.TurnAngle,
+        GestureRuntimeDefaults.MinimumTurnDistance);
+
+    public static GestureRecognizerSettings Resolve(string? level)
+    {
+        return level switch
+        {
+            GestureConfigContract.GestureSensitivityLevels.Relaxed => new(
+                32,
+                18,
+                45,
+                45,
+                10),
+            GestureConfigContract.GestureSensitivityLevels.Strict => new(
+                60,
+                30,
+                25,
+                65,
+                20),
+            _ => Standard
+        };
+    }
+}
+
 internal static class EdgeActionRuntimeDefaults
 {
     public const int EdgeThickness = 3;
