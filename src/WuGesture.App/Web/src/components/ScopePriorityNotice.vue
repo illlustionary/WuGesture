@@ -1,11 +1,4 @@
-<script setup>
-defineProps({
-  scope: {
-    type: String,
-    required: true
-  }
-})
-</script>
+<script setup></script>
 
 <template>
   <div class="scope-priority-notice">
