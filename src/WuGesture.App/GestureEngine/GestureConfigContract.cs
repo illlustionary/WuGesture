@@ -77,10 +77,4 @@ public static class GestureConfigContract
         public const string BottomRight = "bottom-right";
     }
 
-    public static class GestureSensitivityLevels
-    {
-        public const string Relaxed = "relaxed";
-        public const string Standard = "standard";
-        public const string Strict = "strict";
-    }
 }

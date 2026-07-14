@@ -1,6 +1,7 @@
 export const GESTURE_EDITOR_LIMITS = {
   amount: { min: 1, max: 100, fallback: 5 },
   frictionCount: { min: 1, max: 20, fallback: 4 },
+  gestureSensitivityPercent: { min: 0, max: 200, fallback: 110 },
   levelOsdDisplayDuration: { min: 300, max: 5000, fallback: 1800 },
   levelOsdFadeDuration: { min: 0, max: 1000, fallback: 240 },
   levelOsdWidth: { min: 120, max: 480, fallback: 210 },

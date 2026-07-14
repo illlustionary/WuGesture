@@ -148,12 +148,13 @@ function normalizeColor(value, fallback) {
 
 export function normalizeGestureSensitivitySettings(settings) {
   settings = normalizeObjectKeys(settings);
-  const levels = ["relaxed", "standard", "strict"];
-  const level = String(settings?.level ?? DEFAULT_UI_SETTINGS.gestureSensitivity.level).trim();
   return {
-    level: levels.includes(level)
-      ? level
-      : DEFAULT_UI_SETTINGS.gestureSensitivity.level
+    percent: clampInteger(
+      settings?.percent,
+      GESTURE_EDITOR_LIMITS.gestureSensitivityPercent.min,
+      GESTURE_EDITOR_LIMITS.gestureSensitivityPercent.max,
+      DEFAULT_UI_SETTINGS.gestureSensitivity.percent
+    )
   };
 }
 

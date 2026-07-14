@@ -21,31 +21,59 @@ internal readonly record struct GestureRecognizerSettings(
 
 internal static class GestureSensitivityProfiles
 {
-    public static GestureRecognizerSettings Standard { get; } = new(
+    private static GestureRecognizerSettings Strict { get; } = new(
+        70,
+        36,
+        25,
+        70,
+        24);
+
+    internal static GestureRecognizerSettings Standard { get; } = new(
         GestureRuntimeDefaults.MinimumGestureDistance,
         GestureRuntimeDefaults.EffectiveMove,
         GestureRuntimeDefaults.DirectionTolerance,
         GestureRuntimeDefaults.TurnAngle,
         GestureRuntimeDefaults.MinimumTurnDistance);
 
-    public static GestureRecognizerSettings Resolve(string? level)
+    private static GestureRecognizerSettings Relaxed { get; } = new(
+        18,
+        8,
+        55,
+        40,
+        4);
+
+    public static GestureRecognizerSettings Resolve(int percent)
     {
-        return level switch
+        var normalized = Math.Clamp(percent, 0, 200);
+        if (normalized <= 100)
         {
-            GestureConfigContract.GestureSensitivityLevels.Relaxed => new(
-                32,
-                18,
-                45,
-                45,
-                10),
-            GestureConfigContract.GestureSensitivityLevels.Strict => new(
-                60,
-                30,
-                25,
-                65,
-                20),
-            _ => Standard
-        };
+            return Interpolate(Strict, Standard, normalized / 100d);
+        }
+
+        return Interpolate(Standard, Relaxed, (normalized - 100) / 100d);
+    }
+
+    private static GestureRecognizerSettings Interpolate(
+        GestureRecognizerSettings from,
+        GestureRecognizerSettings to,
+        double amount)
+    {
+        return new GestureRecognizerSettings(
+            InterpolateInt(from.MinimumGestureDistance, to.MinimumGestureDistance, amount),
+            InterpolateDouble(from.EffectiveMove, to.EffectiveMove, amount),
+            InterpolateDouble(from.DirectionTolerance, to.DirectionTolerance, amount),
+            InterpolateDouble(from.TurnAngle, to.TurnAngle, amount),
+            InterpolateDouble(from.MinimumTurnDistance, to.MinimumTurnDistance, amount));
+    }
+
+    private static int InterpolateInt(int from, int to, double amount)
+    {
+        return (int)Math.Round(from + (to - from) * amount);
+    }
+
+    private static double InterpolateDouble(double from, double to, double amount)
+    {
+        return from + (to - from) * amount;
     }
 }
 

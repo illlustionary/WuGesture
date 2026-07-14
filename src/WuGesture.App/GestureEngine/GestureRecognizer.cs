@@ -8,9 +8,9 @@ public sealed class GestureRecognizer
 
     public int MinimumGestureDistance => settings.MinimumGestureDistance;
 
-    public void ApplySensitivity(string? level)
+    public void ApplySensitivity(int percent)
     {
-        settings = GestureSensitivityProfiles.Resolve(level);
+        settings = GestureSensitivityProfiles.Resolve(percent);
     }
 
     public IReadOnlyList<GestureDirection> Recognize(IReadOnlyList<Point> points)
@@ -48,7 +48,9 @@ public sealed class GestureRecognizer
             }
 
             var activeAngle = DirectionToAngle(activeDirection.Value);
-            var segmentAngle = ToAngle(segmentStart, current);
+            // Compare the new movement with the last stable point so long first strokes
+            // do not hide a short, valid turn.
+            var segmentAngle = ToAngle(stableSegmentEnd, current);
             if (AngleDistance(segmentAngle, activeAngle) <= settings.DirectionTolerance)
             {
                 turnStart = null;

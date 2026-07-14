@@ -325,7 +325,7 @@ src\pages
 
 `uiSettings.gestureSensitivity` 当前包含：
 
-- `level`：`relaxed`、`standard` 或 `strict`
+- `percent`：0-200 的连续灵敏度百分比，默认 110
 
 ## 构建
 

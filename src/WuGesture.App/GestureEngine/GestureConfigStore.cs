@@ -155,7 +155,7 @@ public sealed class GestureConfigStore
         levelOsd.OffsetY = ClampInteger(levelOsd.OffsetY, -2000, 2000, 0);
 
         var gestureSensitivity = settings.GestureSensitivity;
-        gestureSensitivity.Level = NormalizeGestureSensitivityLevel(gestureSensitivity.Level);
+        gestureSensitivity.Percent = ClampInteger(gestureSensitivity.Percent, 0, 200, 110);
 
         var appBehavior = settings.AppBehavior;
         appBehavior.CloseButtonBehavior = NormalizeCloseButtonBehavior(appBehavior.CloseButtonBehavior);
@@ -190,16 +190,6 @@ public sealed class GestureConfigStore
             GestureConfigContract.LevelOsdPositions.BottomRight
             ? value
             : GestureConfigContract.LevelOsdPositions.Center;
-    }
-
-    private static string NormalizeGestureSensitivityLevel(string? value)
-    {
-        return value is
-            GestureConfigContract.GestureSensitivityLevels.Relaxed or
-            GestureConfigContract.GestureSensitivityLevels.Standard or
-            GestureConfigContract.GestureSensitivityLevels.Strict
-            ? value
-            : GestureConfigContract.GestureSensitivityLevels.Standard;
     }
 
     private static string NormalizeColor(string? value, string fallback)
