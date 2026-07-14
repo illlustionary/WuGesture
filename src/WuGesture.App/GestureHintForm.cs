@@ -33,7 +33,6 @@ public sealed class GestureHintForm : Form
     private Pen? borderPen;
     private GestureHintUiSettings uiSettings = new();
     private string title = "";
-    private bool refreshHandleBeforeNextShow;
 
     public GestureHintForm()
     {
@@ -182,7 +181,6 @@ public sealed class GestureHintForm : Form
             return false;
         }
 
-        RefreshHandleAfterDisplayChange();
         RefreshDisplayLayout();
         MoveToBottomCenter();
 
@@ -354,7 +352,6 @@ public sealed class GestureHintForm : Form
     {
         if (m.Msg is WmDisplayChange or WmSettingChange or WmDwmCompositionChanged or WmDpiChanged)
         {
-            refreshHandleBeforeNextShow = true;
             HideResult();
         }
 
@@ -389,22 +386,6 @@ public sealed class GestureHintForm : Form
         ApplyPercentSize();
         UpdateAdaptiveWidth();
         UpdateWindowRegion();
-    }
-
-    private void RefreshHandleAfterDisplayChange()
-    {
-        if (!refreshHandleBeforeNextShow)
-        {
-            return;
-        }
-
-        refreshHandleBeforeNextShow = false;
-        if (!IsHandleCreated)
-        {
-            return;
-        }
-
-        RecreateHandle();
     }
 
     private Screen GetTargetScreen()
