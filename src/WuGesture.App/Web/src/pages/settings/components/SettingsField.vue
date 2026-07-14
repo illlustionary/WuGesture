@@ -7,13 +7,15 @@ defineProps({
 
 <template>
   <label class="field-card">
-    <span class="field-label">{{ label }}</span>
-    <slot />
-    <small
-      v-if="note"
-      class="field-note"
+    <span class="field-label"
+      >{{ label }}
+      <small
+        v-if="note"
+        class="field-note"
+      >
+        ( {{ note }} )
+      </small></span
     >
-      {{ note }}
-    </small>
+    <slot />
   </label>
 </template>

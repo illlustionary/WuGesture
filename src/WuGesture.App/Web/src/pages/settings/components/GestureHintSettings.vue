@@ -4,6 +4,7 @@ import SettingsFormGrid from './SettingsFormGrid.vue'
 import SettingsSectionCard from './SettingsSectionCard.vue'
 import ToggleCheckbox from '@/components/ToggleCheckbox.vue'
 import { GESTURE_EDITOR_LIMITS } from '@/constants/gestureEditorLimits'
+import { getRangeProgress } from '@/utils/rangeProgress'
 
 defineProps({
   draft: { type: Object, required: true },
@@ -51,6 +52,13 @@ function commit() {
           type="range"
           :min="GESTURE_EDITOR_LIMITS.hintFontSize.min"
           :max="GESTURE_EDITOR_LIMITS.hintFontSize.max"
+          :style="{
+            '--range-progress': getRangeProgress(
+              draft.gestureHint.fontSize,
+              GESTURE_EDITOR_LIMITS.hintFontSize.min,
+              GESTURE_EDITOR_LIMITS.hintFontSize.max
+            )
+          }"
           @input="emit('queue-persist')"
           @change="emit('flush-persist')"
         />
@@ -82,6 +90,13 @@ function commit() {
           type="range"
           :min="GESTURE_EDITOR_LIMITS.opacityPercent.min"
           :max="GESTURE_EDITOR_LIMITS.opacityPercent.max"
+          :style="{
+            '--range-progress': getRangeProgress(
+              draft.gestureHint.backgroundOpacity,
+              GESTURE_EDITOR_LIMITS.opacityPercent.min,
+              GESTURE_EDITOR_LIMITS.opacityPercent.max
+            )
+          }"
           @input="emit('queue-persist')"
           @change="emit('flush-persist')"
         />
@@ -100,6 +115,13 @@ function commit() {
           :min="GESTURE_EDITOR_LIMITS.hintWidthPercent.min"
           :max="GESTURE_EDITOR_LIMITS.hintWidthPercent.max"
           :disabled="draft.gestureHint.autoWidth"
+          :style="{
+            '--range-progress': getRangeProgress(
+              draft.gestureHint.widthPercent,
+              GESTURE_EDITOR_LIMITS.hintWidthPercent.min,
+              GESTURE_EDITOR_LIMITS.hintWidthPercent.max
+            )
+          }"
           @input="emit('queue-persist')"
           @change="emit('flush-persist')"
         />
@@ -120,6 +142,13 @@ function commit() {
           type="range"
           :min="GESTURE_EDITOR_LIMITS.hintHeightPercent.min"
           :max="GESTURE_EDITOR_LIMITS.hintHeightPercent.max"
+          :style="{
+            '--range-progress': getRangeProgress(
+              draft.gestureHint.heightPercent,
+              GESTURE_EDITOR_LIMITS.hintHeightPercent.min,
+              GESTURE_EDITOR_LIMITS.hintHeightPercent.max
+            )
+          }"
           @input="emit('queue-persist')"
           @change="emit('flush-persist')"
         />
@@ -133,6 +162,13 @@ function commit() {
           type="range"
           :min="GESTURE_EDITOR_LIMITS.hintCornerRadius.min"
           :max="GESTURE_EDITOR_LIMITS.hintCornerRadius.max"
+          :style="{
+            '--range-progress': getRangeProgress(
+              draft.gestureHint.cornerRadius,
+              GESTURE_EDITOR_LIMITS.hintCornerRadius.min,
+              GESTURE_EDITOR_LIMITS.hintCornerRadius.max
+            )
+          }"
           @input="emit('queue-persist')"
           @change="emit('flush-persist')"
         />
@@ -146,6 +182,13 @@ function commit() {
           type="range"
           :min="GESTURE_EDITOR_LIMITS.hintBottomOffsetPercent.min"
           :max="GESTURE_EDITOR_LIMITS.hintBottomOffsetPercent.max"
+          :style="{
+            '--range-progress': getRangeProgress(
+              draft.gestureHint.bottomOffsetPercent,
+              GESTURE_EDITOR_LIMITS.hintBottomOffsetPercent.min,
+              GESTURE_EDITOR_LIMITS.hintBottomOffsetPercent.max
+            )
+          }"
           @input="emit('queue-persist')"
           @change="emit('flush-persist')"
         />

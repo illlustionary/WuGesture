@@ -4,6 +4,7 @@ import SettingsFormGrid from './SettingsFormGrid.vue'
 import SettingsSectionCard from './SettingsSectionCard.vue'
 import ToggleCheckbox from '@/components/ToggleCheckbox.vue'
 import { GESTURE_EDITOR_LIMITS } from '@/constants/gestureEditorLimits'
+import { getRangeProgress } from '@/utils/rangeProgress'
 
 defineProps({
   draft: { type: Object, required: true },
@@ -69,6 +70,13 @@ function commit() {
           type="range"
           :min="GESTURE_EDITOR_LIMITS.opacityPercent.min"
           :max="GESTURE_EDITOR_LIMITS.opacityPercent.max"
+          :style="{
+            '--range-progress': getRangeProgress(
+              draft.mouseTrail.inactiveOpacity,
+              GESTURE_EDITOR_LIMITS.opacityPercent.min,
+              GESTURE_EDITOR_LIMITS.opacityPercent.max
+            )
+          }"
           @input="emit('queue-persist')"
           @change="emit('flush-persist')"
         />
@@ -82,6 +90,13 @@ function commit() {
           type="range"
           :min="GESTURE_EDITOR_LIMITS.mouseTrailThickness.min"
           :max="GESTURE_EDITOR_LIMITS.mouseTrailThickness.max"
+          :style="{
+            '--range-progress': getRangeProgress(
+              draft.mouseTrail.inactiveThickness,
+              GESTURE_EDITOR_LIMITS.mouseTrailThickness.min,
+              GESTURE_EDITOR_LIMITS.mouseTrailThickness.max
+            )
+          }"
           @input="emit('queue-persist')"
           @change="emit('flush-persist')"
         />
@@ -104,6 +119,13 @@ function commit() {
           type="range"
           :min="GESTURE_EDITOR_LIMITS.opacityPercent.min"
           :max="GESTURE_EDITOR_LIMITS.opacityPercent.max"
+          :style="{
+            '--range-progress': getRangeProgress(
+              draft.mouseTrail.activeOpacity,
+              GESTURE_EDITOR_LIMITS.opacityPercent.min,
+              GESTURE_EDITOR_LIMITS.opacityPercent.max
+            )
+          }"
           @input="emit('queue-persist')"
           @change="emit('flush-persist')"
         />
@@ -117,6 +139,13 @@ function commit() {
           type="range"
           :min="GESTURE_EDITOR_LIMITS.mouseTrailThickness.min"
           :max="GESTURE_EDITOR_LIMITS.mouseTrailThickness.max"
+          :style="{
+            '--range-progress': getRangeProgress(
+              draft.mouseTrail.activeThickness,
+              GESTURE_EDITOR_LIMITS.mouseTrailThickness.min,
+              GESTURE_EDITOR_LIMITS.mouseTrailThickness.max
+            )
+          }"
           @input="emit('queue-persist')"
           @change="emit('flush-persist')"
         />
