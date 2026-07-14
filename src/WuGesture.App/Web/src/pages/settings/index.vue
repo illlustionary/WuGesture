@@ -6,6 +6,7 @@ import IconActionButton from '@/components/IconActionButton.vue'
 import { useGestureSettingsStore } from '@/gestureEditor/stores/useGestureSettingsStore'
 import AppBehaviorSettings from '@/pages/settings/components/AppBehaviorSettings.vue'
 import GestureHintSettings from '@/pages/settings/components/GestureHintSettings.vue'
+import GestureSensitivitySettings from '@/pages/settings/components/GestureSensitivitySettings.vue'
 import LevelOsdSettings from '@/pages/settings/components/LevelOsdSettings.vue'
 import MouseTrailSettings from '@/pages/settings/components/MouseTrailSettings.vue'
 import WebDavSettings from '@/pages/settings/components/WebDavSettings.vue'
@@ -126,6 +127,11 @@ function previewLevelOsd(kind) {
           @queue-persist="queuePersistDraft"
           @flush-persist="flushPersistDraft"
         />
+        <GestureSensitivitySettings
+          :draft="draft"
+          @queue-persist="queuePersistDraft"
+          @flush-persist="flushPersistDraft"
+        />
         <AppBehaviorSettings
           :draft="draft"
           @queue-persist="queuePersistDraft"
@@ -159,9 +165,10 @@ function previewLevelOsd(kind) {
   />
 </template>
 
-<style scoped lang="scss">
+<style lang="scss">
 .section-card {
   position: relative;
+  z-index: 1;
 }
 .section-card:has(.custom-select) {
   z-index: 114;

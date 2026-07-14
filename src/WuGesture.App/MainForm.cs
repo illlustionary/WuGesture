@@ -761,6 +761,7 @@ public sealed class MainForm : Form
             mouseTrail = uiSettings.MouseTrail,
             gestureHint = uiSettings.GestureHint,
             levelOsd = uiSettings.LevelOsd,
+            gestureSensitivity = uiSettings.GestureSensitivity,
             appBehavior = new
             {
                 launchAtStartup = uiSettings.AppBehavior.LaunchAtStartup,
@@ -1499,6 +1500,7 @@ public sealed class MainForm : Form
 
     private void ApplyUiSettings(GestureUiSettings uiSettings)
     {
+        gestureService?.ApplyGestureSensitivity(uiSettings.GestureSensitivity);
         gestureHintForm.ApplySettings(uiSettings.GestureHint);
         LevelOsdForm.ApplySettings(uiSettings.LevelOsd);
         if (!IsFeatureEnabled(uiSettings.GestureHint.Enabled))

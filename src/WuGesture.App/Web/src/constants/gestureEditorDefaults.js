@@ -81,6 +81,9 @@ export const DEFAULT_UI_SETTINGS = {
     offsetX: 0,
     offsetY: 0
   },
+  gestureSensitivity: {
+    level: "standard"
+  },
   appBehavior: {
     launchAtStartup: false,
     runAsAdministrator: false,

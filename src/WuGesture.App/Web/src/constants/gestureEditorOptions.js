@@ -58,6 +58,12 @@ export const LEVEL_OSD_POSITIONS = [
   { value: "bottom-right", label: "右下角" }
 ];
 
+export const GESTURE_SENSITIVITY_LEVELS = [
+  { value: "relaxed", label: "宽松" },
+  { value: "standard", label: "标准" },
+  { value: "strict", label: "严格" }
+];
+
 export const WEBVIEW_MESSAGE_TYPES = {
   getStatus: "get-status",
   selectApplication: "select-application",

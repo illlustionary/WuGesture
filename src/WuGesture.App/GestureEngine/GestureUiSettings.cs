@@ -10,6 +10,8 @@ public sealed class GestureUiSettings
 
     public LevelOsdUiSettings LevelOsd { get; set; } = new();
 
+    public GestureSensitivityUiSettings GestureSensitivity { get; set; } = new();
+
     public AppBehaviorUiSettings AppBehavior { get; set; } = new();
 
     public WebDavUiSettings WebDav { get; set; } = new();
@@ -131,6 +133,11 @@ public sealed class LevelOsdUiSettings
     public int OffsetX { get; set; }
 
     public int OffsetY { get; set; }
+}
+
+public sealed class GestureSensitivityUiSettings
+{
+    public string Level { get; set; } = GestureConfigContract.GestureSensitivityLevels.Standard;
 }
 
 internal static class GestureColorParser
