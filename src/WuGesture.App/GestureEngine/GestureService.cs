@@ -58,7 +58,7 @@ public sealed class GestureService : IDisposable
 
     public void ApplyGestureSensitivity(GestureSensitivityUiSettings settings)
     {
-        recognizer.ApplySensitivity(settings.Level);
+        recognizer.ApplySensitivity(settings.Percent);
         minimumGestureDistance = recognizer.MinimumGestureDistance;
     }
 

@@ -211,7 +211,7 @@ function createDraft(settings) {
       offsetY: levelOsd.offsetY ?? 0
     },
     gestureSensitivity: {
-      level: gestureSensitivity.level ?? 'standard'
+      percent: gestureSensitivity.percent ?? 110
     },
     appBehavior: {
       launchAtStartup: Boolean(appBehavior.launchAtStartup ?? false),

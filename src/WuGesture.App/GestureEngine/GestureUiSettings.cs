@@ -137,7 +137,7 @@ public sealed class LevelOsdUiSettings
 
 public sealed class GestureSensitivityUiSettings
 {
-    public string Level { get; set; } = GestureConfigContract.GestureSensitivityLevels.Standard;
+    public int Percent { get; set; } = 110;
 }
 
 internal static class GestureColorParser
