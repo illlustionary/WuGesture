@@ -7,6 +7,7 @@ import SettingsFormGrid from './SettingsFormGrid.vue'
 import SettingsSectionCard from './SettingsSectionCard.vue'
 import { LEVEL_OSD_POSITIONS } from '@/constants/gestureEditorOptions'
 import { GESTURE_EDITOR_LIMITS } from '@/constants/gestureEditorLimits'
+import { getRangeProgress } from '@/utils/rangeProgress'
 
 defineProps({
   draft: { type: Object, required: true },
@@ -80,6 +81,13 @@ function commit() {
           type="range"
           :min="GESTURE_EDITOR_LIMITS.levelOsdDisplayDuration.min"
           :max="GESTURE_EDITOR_LIMITS.levelOsdDisplayDuration.max"
+          :style="{
+            '--range-progress': getRangeProgress(
+              draft.levelOsd.displayDurationMs,
+              GESTURE_EDITOR_LIMITS.levelOsdDisplayDuration.min,
+              GESTURE_EDITOR_LIMITS.levelOsdDisplayDuration.max
+            )
+          }"
           step="100"
           @input="emit('queue-persist')"
           @change="emit('flush-persist')"
@@ -99,6 +107,13 @@ function commit() {
           type="range"
           :min="GESTURE_EDITOR_LIMITS.levelOsdFadeDuration.min"
           :max="GESTURE_EDITOR_LIMITS.levelOsdFadeDuration.max"
+          :style="{
+            '--range-progress': getRangeProgress(
+              draft.levelOsd.fadeDurationMs,
+              GESTURE_EDITOR_LIMITS.levelOsdFadeDuration.min,
+              GESTURE_EDITOR_LIMITS.levelOsdFadeDuration.max
+            )
+          }"
           step="20"
           @input="emit('queue-persist')"
           @change="emit('flush-persist')"
@@ -124,6 +139,13 @@ function commit() {
           type="range"
           :min="GESTURE_EDITOR_LIMITS.opacityPercent.min"
           :max="GESTURE_EDITOR_LIMITS.opacityPercent.max"
+          :style="{
+            '--range-progress': getRangeProgress(
+              draft.levelOsd.backgroundOpacity,
+              GESTURE_EDITOR_LIMITS.opacityPercent.min,
+              GESTURE_EDITOR_LIMITS.opacityPercent.max
+            )
+          }"
           @input="emit('queue-persist')"
           @change="emit('flush-persist')"
         />
@@ -187,6 +209,13 @@ function commit() {
           type="range"
           :min="GESTURE_EDITOR_LIMITS.levelOsdWidth.min"
           :max="GESTURE_EDITOR_LIMITS.levelOsdWidth.max"
+          :style="{
+            '--range-progress': getRangeProgress(
+              draft.levelOsd.width,
+              GESTURE_EDITOR_LIMITS.levelOsdWidth.min,
+              GESTURE_EDITOR_LIMITS.levelOsdWidth.max
+            )
+          }"
           step="10"
           @input="emit('queue-persist')"
           @change="emit('flush-persist')"
@@ -202,6 +231,13 @@ function commit() {
           type="range"
           :min="GESTURE_EDITOR_LIMITS.levelOsdHeight.min"
           :max="GESTURE_EDITOR_LIMITS.levelOsdHeight.max"
+          :style="{
+            '--range-progress': getRangeProgress(
+              draft.levelOsd.height,
+              GESTURE_EDITOR_LIMITS.levelOsdHeight.min,
+              GESTURE_EDITOR_LIMITS.levelOsdHeight.max
+            )
+          }"
           step="10"
           @input="emit('queue-persist')"
           @change="emit('flush-persist')"
@@ -220,6 +256,16 @@ function commit() {
             GESTURE_EDITOR_LIMITS.levelOsdCornerRadius.max,
             Math.min(draft.levelOsd.width, draft.levelOsd.height) / 2
           )"
+          :style="{
+            '--range-progress': getRangeProgress(
+              draft.levelOsd.cornerRadius,
+              GESTURE_EDITOR_LIMITS.levelOsdCornerRadius.min,
+              Math.min(
+                GESTURE_EDITOR_LIMITS.levelOsdCornerRadius.max,
+                Math.min(draft.levelOsd.width, draft.levelOsd.height) / 2
+              )
+            )
+          }"
           step="1"
           @input="emit('queue-persist')"
           @change="emit('flush-persist')"

@@ -2,7 +2,8 @@
 import CustomSelect from '@/components/CustomSelect.vue'
 import SettingsField from './SettingsField.vue'
 import SettingsSectionCard from './SettingsSectionCard.vue'
-import { GESTURE_SENSITIVITY_LEVELS } from '@/constants/gestureEditorOptions'
+import { GESTURE_EDITOR_LIMITS } from '@/constants/gestureEditorLimits'
+import { getRangeProgress } from '@/utils/rangeProgress'
 
 defineProps({
   draft: { type: Object, required: true }
@@ -31,11 +32,21 @@ function commit() {
       label="识别档位"
       :note="levelNotes[draft.gestureSensitivity.level]"
     >
-      <CustomSelect
-        v-model="draft.gestureSensitivity.level"
-        :options="GESTURE_SENSITIVITY_LEVELS"
-        placeholder="选择灵敏度"
-        @change="commit"
+      <input
+        v-model.number="draft.gestureSensitivity.percent"
+        type="range"
+        :min="GESTURE_EDITOR_LIMITS.gestureSensitivityPercent.min"
+        :max="GESTURE_EDITOR_LIMITS.gestureSensitivityPercent.max"
+        :style="{
+          '--range-progress': getRangeProgress(
+            draft.gestureSensitivity.percent,
+            GESTURE_EDITOR_LIMITS.gestureSensitivityPercent.min,
+            GESTURE_EDITOR_LIMITS.gestureSensitivityPercent.max
+          )
+        }"
+        step="5"
+        @input="emit('queue-persist')"
+        @change="emit('flush-persist')"
       />
     </SettingsField>
   </SettingsSectionCard>
