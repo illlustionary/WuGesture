@@ -21,6 +21,7 @@ public sealed class EdgeActionService : IDisposable
     private bool frictionTriggered;
     private bool started;
     private bool paused;
+    private bool disableEdgeActionsInFullscreen;
     private bool disposed;
 
     public EdgeActionService(IEnumerable<EdgeActionConfig> actions)
@@ -47,14 +48,21 @@ public sealed class EdgeActionService : IDisposable
         }
     }
 
+    public void UpdateFullscreenBehavior(bool disableEdgeActions)
+    {
+        disableEdgeActionsInFullscreen = disableEdgeActions;
+        if (IsDisabledInFullscreen())
+        {
+            ResetActiveState();
+        }
+    }
+
     public void SetPaused(bool isPaused)
     {
         paused = isPaused;
         if (paused)
         {
-            activeCorner = EdgeLocation.None;
-            activeFrictionEdge = EdgeLocation.None;
-            ResetFriction();
+            ResetActiveState();
         }
     }
 
@@ -106,8 +114,9 @@ public sealed class EdgeActionService : IDisposable
 
     private void HandleMouseLocation(Point location)
     {
-        if (disposed || paused || exclusionMatcher.IsEdgeActionExcluded())
+        if (disposed || paused || exclusionMatcher.IsEdgeActionExcluded() || IsDisabledInFullscreen())
         {
+            ResetActiveState();
             return;
         }
 
@@ -209,7 +218,7 @@ public sealed class EdgeActionService : IDisposable
 
     private void OnMouseWheel(object? sender, MouseWheelHookEventArgs e)
     {
-        if (disposed || paused || exclusionMatcher.IsEdgeActionExcluded())
+        if (disposed || paused || exclusionMatcher.IsEdgeActionExcluded() || IsDisabledInFullscreen())
         {
             return;
         }
@@ -290,6 +299,18 @@ public sealed class EdgeActionService : IDisposable
         }
 
         context.Post(_ => action(), null);
+    }
+
+    private bool IsDisabledInFullscreen()
+    {
+        return disableEdgeActionsInFullscreen && ForegroundWindowFullscreenDetector.IsFullscreenForegroundWindow();
+    }
+
+    private void ResetActiveState()
+    {
+        activeCorner = EdgeLocation.None;
+        activeFrictionEdge = EdgeLocation.None;
+        ResetFriction();
     }
 
     private static EdgeLocation GetCorner(Point location)

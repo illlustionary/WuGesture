@@ -178,6 +178,14 @@ export function normalizeAppBehaviorSettings(settings) {
   return {
     launchAtStartup: Boolean(settings?.launchAtStartup ?? DEFAULT_UI_SETTINGS.appBehavior.launchAtStartup),
     runAsAdministrator: Boolean(settings?.runAsAdministrator ?? DEFAULT_UI_SETTINGS.appBehavior.runAsAdministrator),
+    disableGesturesInFullscreen: Boolean(
+      settings?.disableGesturesInFullscreen ??
+        DEFAULT_UI_SETTINGS.appBehavior.disableGesturesInFullscreen
+    ),
+    disableEdgeActionsInFullscreen: Boolean(
+      settings?.disableEdgeActionsInFullscreen ??
+        DEFAULT_UI_SETTINGS.appBehavior.disableEdgeActionsInFullscreen
+    ),
     closeButtonBehavior: normalizeCloseButtonBehavior(settings?.closeButtonBehavior),
     excludedApplications: normalizeExcludedApplications(settings?.excludedApplications)
   };

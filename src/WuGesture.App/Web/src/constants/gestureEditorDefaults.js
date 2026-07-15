@@ -87,6 +87,8 @@ export const DEFAULT_UI_SETTINGS = {
   appBehavior: {
     launchAtStartup: false,
     runAsAdministrator: false,
+    disableGesturesInFullscreen: false,
+    disableEdgeActionsInFullscreen: false,
     closeButtonBehavior: CLOSE_BUTTON_BEHAVIORS.minimizeToTray,
     excludedApplications: []
   },

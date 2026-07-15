@@ -29,6 +29,7 @@ public sealed class GestureService : IDisposable
     private SynchronizationContext? synchronizationContext;
     private bool isTracking;
     private bool isPaused;
+    private bool disableGesturesInFullscreen;
     private ActiveMouseButton activeMouseButton = ActiveMouseButton.None;
     private bool started;
     private bool disposed;
@@ -66,6 +67,15 @@ public sealed class GestureService : IDisposable
     {
         exclusionMatcher.Update(applications);
         if (exclusionMatcher.IsGestureExcluded())
+        {
+            CancelTracking();
+        }
+    }
+
+    public void UpdateFullscreenBehavior(bool disableGestures)
+    {
+        disableGesturesInFullscreen = disableGestures;
+        if (disableGesturesInFullscreen && ForegroundWindowFullscreenDetector.IsFullscreenForegroundWindow())
         {
             CancelTracking();
         }
@@ -186,7 +196,8 @@ public sealed class GestureService : IDisposable
             return;
         }
 
-        if (recordingRequestId is null && exclusionMatcher.IsGestureExcluded())
+        if (recordingRequestId is null &&
+            (exclusionMatcher.IsGestureExcluded() || IsDisabledInFullscreen()))
         {
             return;
         }
@@ -210,6 +221,12 @@ public sealed class GestureService : IDisposable
     {
         if (disposed || !isTracking)
         {
+            return;
+        }
+
+        if (recordingRequestId is null && IsDisabledInFullscreen())
+        {
+            CancelTracking();
             return;
         }
 
@@ -428,6 +445,11 @@ public sealed class GestureService : IDisposable
         }
 
         context.Post(_ => action(), null);
+    }
+
+    private bool IsDisabledInFullscreen()
+    {
+        return disableGesturesInFullscreen && ForegroundWindowFullscreenDetector.IsFullscreenForegroundWindow();
     }
 
     private static double Distance(Point a, Point b)
