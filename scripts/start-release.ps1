@@ -1,12 +1,19 @@
 param(
-    [Parameter(Mandatory = $true)]
-    [ValidatePattern("^v\d+(\.\d+){1,3}(-[0-9A-Za-z.-]+)?$")]
-    [string]$Version,
+    [string]$Version = "",
     [string]$Remote = "github",
     [string]$Branch = "main"
 )
 
 $ErrorActionPreference = "Stop"
+
+if ([string]::IsNullOrWhiteSpace($Version)) {
+    $Version = Read-Host "请输入发行版本号（例如 v0.99）"
+}
+
+$Version = $Version.Trim()
+if ($Version -notmatch "^v\d+(\.\d+){1,3}(-[0-9A-Za-z.-]+)?$") {
+    throw "Version must use the v0.99 format."
+}
 
 $pendingChanges = @(git status --porcelain | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
 if ($pendingChanges.Count -ne 0) {
