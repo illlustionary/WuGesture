@@ -248,7 +248,14 @@ dotnet test WuGesture.slnx
 .\scripts\publish.ps1
 ```
 
-发布脚本会在执行 `dotnet publish` 前清空输出目录，再重新生成发布产物，避免发布目录里残留旧的 `Wu Gesture.*` 文件。
+发布脚本会在执行 `dotnet publish` 前自动关闭正在运行的 `WuGesture`、清空输出目录，再重新生成发布产物，避免发布目录里残留旧的 `Wu Gesture.*` 文件。可通过 `-Version` 设置程序集版本，通过 `-RuntimeIdentifier` 和 `-SelfContained` 生成指定运行时的自包含产物。
+
+自动发行：
+
+- `scripts\new-release-package.ps1`：基于已创建的 `v*` Git 标签生成版本化发布目录、ZIP 包和从相邻标签之间提交整理的 `RELEASE_NOTES.md`。
+- `scripts\start-release.ps1`：验证干净工作区后创建并推送 `v*` 注释标签，触发 GitHub Actions；默认推送 `github/main`，而 `origin` 保持指向 Gitee。
+- `.github\workflows\release.yml`：GitHub 收到 `v*` 标签后构建发行包、创建 GitHub Release；配置 `GITEE_REPOSITORY` 和 `GITEE_TOKEN` secrets 后，会镜像 `main` 和标签到 Gitee，并将相同的附件和更新说明发布至 Gitee。
+- `scripts\publish-gitee-release.ps1`：由 GitHub Actions 调用 Gitee API 创建发行版和上传附件；令牌只通过工作流 secret 传入，不存入仓库。
 
 默认发布输出：
 

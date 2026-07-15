@@ -61,6 +61,38 @@ artifacts\publish\WuGesture
 artifacts\publish\WuGesture\WuGesture.exe
 ```
 
+## 自动发行
+
+将仓库迁移到 GitHub 后，推送 `v0.97` 这类标签会触发 `.github\workflows\release.yml`：它会关闭正在运行的应用、构建并压缩发布产物、根据两个标签之间的 Git 提交生成更新说明，以及创建 GitHub Release。
+
+为同步发布至 Gitee，在 GitHub 仓库的 Actions secrets 中配置：
+
+- `GITEE_REPOSITORY`：Gitee 仓库路径，例如 `neko_nya/my-gesture`。
+- `GITEE_TOKEN`：有仓库写入权限的 Gitee 私人令牌。
+
+两个 secrets 都配置后，工作流会先镜像 `main` 和发行标签到 Gitee，再将同一份压缩包和更新说明发布到 Gitee。未配置时不会同步 Gitee，GitHub 发布仍会正常完成。
+
+首次迁移时，保留 Gitee 为 `origin`，并新增 GitHub 远程。例如：
+
+```powershell
+git remote set-url origin git@gitee.com:neko_nya/WuGesture.git
+git remote add github git@github.com:illlustionary/WuGesture.git
+git push -u github main
+git push github --tags
+```
+
+以后从干净的 `main` 工作区一键开始发布：
+
+```powershell
+.\scripts\start-release.ps1 -Version v0.97
+```
+
+该脚本默认推送到 `github`，创建并推送标签后由 GitHub Actions 接管构建、更新说明和双平台发布。本地需要只生成待检查的发行包时，可先创建标签，然后运行：
+
+```powershell
+.\scripts\new-release-package.ps1 -Version v0.97
+```
+
 ## 架构
 
 ```text
