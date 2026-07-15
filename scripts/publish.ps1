@@ -1,6 +1,9 @@
 param(
     [string]$Configuration = "Release",
-    [string]$OutputPath = ""
+    [string]$OutputPath = "",
+    [string]$Version = "",
+    [string]$RuntimeIdentifier = "",
+    [switch]$SelfContained
 )
 
 $ErrorActionPreference = "Stop"
@@ -18,7 +21,9 @@ $runningProcess = @(
 )
 if ($runningProcess) {
     $ids = ($runningProcess | Select-Object -ExpandProperty Id) -join ", "
-    throw "WuGesture is still running. Close it before publishing. Process id(s): $ids"
+    Write-Host "Stopping running WuGesture process(es): $ids"
+    $runningProcess | Stop-Process -Force
+    $runningProcess | Wait-Process
 }
 
 Write-Host "Publishing WuGesture"
@@ -31,7 +36,28 @@ if (Test-Path $OutputPath) {
     New-Item -ItemType Directory -Path $OutputPath | Out-Null
 }
 
-dotnet publish $projectPath -c $Configuration -o $OutputPath --self-contained false
+$publishArguments = @(
+    "publish",
+    $projectPath,
+    "-c", $Configuration,
+    "-o", $OutputPath
+)
+
+if (-not [string]::IsNullOrWhiteSpace($Version)) {
+    $publishArguments += "-p:Version=$Version"
+}
+
+if (-not [string]::IsNullOrWhiteSpace($RuntimeIdentifier)) {
+    $publishArguments += "-r", $RuntimeIdentifier
+    if ($SelfContained) {
+        $publishArguments += "--self-contained"
+    }
+}
+
+dotnet @publishArguments
+if ($LASTEXITCODE -ne 0) {
+    throw "dotnet publish failed with exit code $LASTEXITCODE."
+}
 
 Write-Host ""
 Write-Host "Publish complete:"

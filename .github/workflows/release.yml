@@ -1,0 +1,65 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    env:
+      GITEE_REPOSITORY: ${{ secrets.GITEE_REPOSITORY }}
+      GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+    steps:
+      - name: Check out release tag
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Enable pnpm
+        run: corepack enable
+
+      - name: Install frontend dependencies
+        working-directory: src/WuGesture.App/Web
+        run: pnpm install --frozen-lockfile
+
+      - name: Create release package
+        shell: pwsh
+        run: ./scripts/new-release-package.ps1 -Version $env:GITHUB_REF_NAME
+
+      - name: Create GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $archive = Get-ChildItem artifacts/release/*.zip | Select-Object -First 1
+          gh release create $env:GITHUB_REF_NAME $archive.FullName --title "WuGesture $env:GITHUB_REF_NAME" --notes-file artifacts/release/RELEASE_NOTES.md
+
+      - name: Mirror code and tag to Gitee
+        if: ${{ env.GITEE_REPOSITORY != '' && env.GITEE_TOKEN != '' }}
+        shell: pwsh
+        run: |
+          git remote add gitee "https://oauth2:$env:GITEE_TOKEN@gitee.com/$env:GITEE_REPOSITORY.git"
+          git push gitee "$env:GITHUB_SHA:refs/heads/main"
+          git push gitee "refs/tags/$env:GITHUB_REF_NAME:refs/tags/$env:GITHUB_REF_NAME"
+
+      - name: Create Gitee release
+        if: ${{ env.GITEE_REPOSITORY != '' && env.GITEE_TOKEN != '' }}
+        shell: pwsh
+        run: |
+          $archive = Get-ChildItem artifacts/release/*.zip | Select-Object -First 1
+          ./scripts/publish-gitee-release.ps1 -Repository $env:GITEE_REPOSITORY -Token $env:GITEE_TOKEN -Version $env:GITHUB_REF_NAME -NotesPath artifacts/release/RELEASE_NOTES.md -AssetPath $archive.FullName -TargetCommitish $env:GITHUB_SHA
