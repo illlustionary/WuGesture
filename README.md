@@ -89,7 +89,7 @@ git push github --tags
 .\scripts\start-release.ps1 -Version v0.97
 ```
 
-该脚本默认推送到 `github`，创建并推送标签后由 GitHub Actions 接管构建、更新说明和双平台发布。本地需要只生成待检查的发行包时，可先创建标签，然后运行：
+双击或不带 `-Version` 运行该脚本时，会提示输入版本号。该脚本默认推送到 `github`，创建并推送标签后由 GitHub Actions 接管构建、更新说明和双平台发布。本地需要只生成待检查的发行包时，可先创建标签，然后运行：
 
 ```powershell
 .\scripts\new-release-package.ps1 -Version v0.97
