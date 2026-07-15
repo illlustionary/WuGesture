@@ -24,7 +24,7 @@ function commit() {
 <template>
   <SettingsSectionCard
     title="应用行为"
-    description="启动权限、开机启动和关闭按钮行为。"
+    description="启动权限、开机启动、全屏限制和关闭按钮行为。"
   >
     <SettingsFormGrid>
       <div class="app-behavior-settings__checks">
@@ -37,6 +37,16 @@ function commit() {
           v-model="draft.appBehavior.runAsAdministrator"
           label="以管理员身份打开"
           note="保存后下次启动时生效。"
+          @change="commit"
+        />
+        <ToggleCheckbox
+          v-model="draft.appBehavior.disableGesturesInFullscreen"
+          label="全屏时禁用鼠标手势"
+          @change="commit"
+        />
+        <ToggleCheckbox
+          v-model="draft.appBehavior.disableEdgeActionsInFullscreen"
+          label="全屏时禁用边缘操作"
           @change="commit"
         />
       </div>

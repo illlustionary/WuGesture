@@ -104,8 +104,10 @@ public sealed class MainForm : Form
         scopeContextProvider = new ConfiguredScopeContextProvider(loadedConfig.Config.Applications);
         gestureService = new GestureService(new GestureMatcher(loadedConfig.Rules), scopeContextProvider);
         gestureService.UpdateExcludedApplications(loadedConfig.Config.UiSettings.AppBehavior.ExcludedApplications);
+        gestureService.UpdateFullscreenBehavior(loadedConfig.Config.UiSettings.AppBehavior.DisableGesturesInFullscreen);
         edgeActionService = new EdgeActionService(loadedConfig.Config.EdgeActions);
         edgeActionService.UpdateExcludedApplications(loadedConfig.Config.UiSettings.AppBehavior.ExcludedApplications);
+        edgeActionService.UpdateFullscreenBehavior(loadedConfig.Config.UiSettings.AppBehavior.DisableEdgeActionsInFullscreen);
         ApplyUiSettings(loadedConfig.Config.UiSettings);
 
         if (!startHiddenToTray)
@@ -768,6 +770,8 @@ public sealed class MainForm : Form
                 runAsAdministrator = uiSettings.AppBehavior.RunAsAdministrator,
                 closeButtonBehavior = uiSettings.AppBehavior.CloseButtonBehavior,
                 gesturePaused = uiSettings.AppBehavior.GesturePaused,
+                disableGesturesInFullscreen = uiSettings.AppBehavior.DisableGesturesInFullscreen,
+                disableEdgeActionsInFullscreen = uiSettings.AppBehavior.DisableEdgeActionsInFullscreen,
                 excludedApplications = uiSettings.AppBehavior.ExcludedApplications.Select(application => new
                 {
                     name = application.Name,
@@ -1259,8 +1263,10 @@ public sealed class MainForm : Form
         scopeContextProvider?.UpdateApplications(loadedConfig.Config.Applications);
         gestureService?.UpdateMatcher(new GestureMatcher(loadedConfig.Rules));
         gestureService?.UpdateExcludedApplications(loadedConfig.Config.UiSettings.AppBehavior.ExcludedApplications);
+        gestureService?.UpdateFullscreenBehavior(loadedConfig.Config.UiSettings.AppBehavior.DisableGesturesInFullscreen);
         edgeActionService?.UpdateActions(loadedConfig.Config.EdgeActions);
         edgeActionService?.UpdateExcludedApplications(loadedConfig.Config.UiSettings.AppBehavior.ExcludedApplications);
+        edgeActionService?.UpdateFullscreenBehavior(loadedConfig.Config.UiSettings.AppBehavior.DisableEdgeActionsInFullscreen);
         isConfigPaused = loadedConfig.Config.UiSettings.AppBehavior.GesturePaused;
         ApplyAppBehaviorSettings(loadedConfig.Config.UiSettings.AppBehavior);
         ApplyUiSettings(loadedConfig.Config.UiSettings);

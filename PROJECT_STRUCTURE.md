@@ -83,6 +83,7 @@ src\WuGesture.App\GestureEngine
 - `KeyboardShortcutRecorder.cs`：低级键盘 hook，用于配置界面录制快捷键并吞掉录制期间的原生键盘事件。
 - `GestureService.cs`：跟踪右键和中键轨迹生命周期，调用识别器、匹配器和执行器，并向 UI 发送事件；也支持录制会话，把识别结果回传给前端。
 - `EdgeActionService.cs`：轮询真实光标位置并监听滚轮，处理屏幕四角触发、四边摩擦计数和四边滚轮触发；摩擦边会排除角落区域，按沿边方向的反向位移计数并在触发后防重复，滚轮边命中时会吞掉原始滚轮事件。
+- `ForegroundWindowFullscreenDetector.cs`：判断当前前台窗口是否处于无边框全屏，供手势和边缘操作的全屏禁用设置共用。
 - `GestureRecognizer.cs`：把鼠标轨迹转换为稳定的方向模式；识别前按有效移动距离抽样，单笔手势保留 8 方向，多笔手势默认回退到更宽容的横/竖方向以贴近 WGestures 手感。
 - `GestureRuntimeDefaults.cs`：手势识别和边缘操作运行时阈值常量，包括最小移动距离、识别步数、边缘厚度、摩擦距离和超时。
 - `GestureMatcher.cs`：将识别出的鼠标键和方向模式与已加载规则进行匹配，并按作用域优先级选择命中项。
@@ -167,7 +168,7 @@ MouseHook
 - `uiSettings.gestureHint`：提示泡泡设置，包含 `enabled`、`fontFamily`、`fontSize`、`textColor`、`backgroundColor`、`backgroundOpacity`、`width`、`widthPercent`、`autoWidth`、`height`、`heightPercent`、`cornerRadius`、`bottomOffset`、`bottomOffsetPercent`；`enabled` 关闭时不再显示手势触发后的弹窗，百分比字段按当前屏幕工作区宽高换算，像素字段保留用于兼容旧配置。
 - `uiSettings.levelOsd`：音量/亮度 OSD 设置，包含 `enabled`、`displayDurationMs`、`fadeDurationMs`、`backgroundColor`、`backgroundOpacity`、`textColor`、`trackColor`、`volumeColor`、`brightnessColor`、`width`、`height`、`cornerRadius`、`position`、`offsetX` 和 `offsetY`；当前支持相对于鼠标所在屏幕工作区的居中、上/下居中和四角位置预设，`fadeDurationMs` 为 0 时立即消失。
 - `uiSettings.gestureSensitivity`：手势灵敏度配置，包含 `percent`，范围 0-200，默认 110；100 对应标准手感，数值越高越容易识别短距离手势。
-- `uiSettings.appBehavior`：应用行为设置，包含 `launchAtStartup`、`runAsAdministrator`、`gesturePaused`、`closeButtonBehavior` 和 `excludedApplications`；关闭按钮行为支持 `minimize-to-tray`、`minimize-to-taskbar`、`exit`。排除项包含 `name`、`displayName`、`path` 和 `disableEdgeActions`；命中的程序不执行鼠标手势，勾选 `disableEdgeActions` 时也会禁用边缘操作。
+- `uiSettings.appBehavior`：应用行为设置，包含 `launchAtStartup`、`runAsAdministrator`、`gesturePaused`、`closeButtonBehavior`、`disableGesturesInFullscreen`、`disableEdgeActionsInFullscreen` 和 `excludedApplications`；关闭按钮行为支持 `minimize-to-tray`、`minimize-to-taskbar`、`exit`。全屏禁用开关默认关闭，分别停止手势识别和边缘操作。排除项包含 `name`、`displayName`、`path` 和 `disableEdgeActions`；命中的程序不执行鼠标手势，勾选 `disableEdgeActions` 时也会禁用边缘操作。
 - `uiSettings.webDav`：WebDAV 备份设置，包含 `address`、`userName`、`password` 和 `remotePath`。设置页可把当前完整配置导出到本地 JSON，或从本地 JSON 导入并覆盖主配置文件；本地导入/导出不包含窗口状态。设置页也可测试 WebDAV 连接；测试当前配置成功后，才允许把当前完整配置保存到 WebDAV，或从 WebDAV 下载配置并覆盖本地配置；恢复后会刷新规则匹配、边缘操作、应用行为和 UI 设置。
 
 默认初始配置只包含全局规则和边缘操作，不包含应用程序归属或分类规则。边缘操作会预置触发角、摩擦边和边缘滚动项，但默认全部关闭。

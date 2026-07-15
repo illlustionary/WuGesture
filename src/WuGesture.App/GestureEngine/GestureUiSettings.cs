@@ -27,6 +27,10 @@ public sealed class AppBehaviorUiSettings
 
     public bool GesturePaused { get; set; }
 
+    public bool DisableGesturesInFullscreen { get; set; }
+
+    public bool DisableEdgeActionsInFullscreen { get; set; }
+
     public List<ExcludedApplicationConfig> ExcludedApplications { get; set; } = [];
 }
 

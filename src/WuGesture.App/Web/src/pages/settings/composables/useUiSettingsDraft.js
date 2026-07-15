@@ -216,6 +216,12 @@ function createDraft(settings) {
     appBehavior: {
       launchAtStartup: Boolean(appBehavior.launchAtStartup ?? false),
       runAsAdministrator: Boolean(appBehavior.runAsAdministrator ?? false),
+      disableGesturesInFullscreen: Boolean(
+        appBehavior.disableGesturesInFullscreen ?? false
+      ),
+      disableEdgeActionsInFullscreen: Boolean(
+        appBehavior.disableEdgeActionsInFullscreen ?? false
+      ),
       closeButtonBehavior: normalizeCloseButtonBehavior(
         appBehavior.closeButtonBehavior
       ),
