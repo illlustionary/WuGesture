@@ -21,7 +21,11 @@
 ```text
 D:\workspace\my-gesture
 ├─ AGENTS.md
+├─ docs
+│  ├─ architecture.md
+│  └─ releasing.md
 ├─ PROJECT_STRUCTURE.md
+├─ ROADMAP.md
 ├─ WuGesture.slnx
 ├─ README.md
 ├─ gesture.ahk
@@ -34,6 +38,9 @@ D:\workspace\my-gesture
 
 - `WuGesture.slnx`：.NET 解决方案。
 - `README.md`：面向用户的运行、构建和发布说明。
+- `docs\architecture.md`：面向开发者的架构说明和 WebView2 集成概览。
+- `docs\releasing.md`：面向维护者的本地发布和自动发行流程。
+- `ROADMAP.md`：当前开发优先级和后续计划。
 - `PROJECT_STRUCTURE.md`：本项目地图。
 - `AGENTS.md`：后续会话的代理指令。
 - `gesture.ahk`：早期 AutoHotkey 实验文件，当前未接入。
