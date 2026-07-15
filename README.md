@@ -61,6 +61,8 @@ artifacts\publish\WuGesture
 artifacts\publish\WuGesture\WuGesture.exe
 ```
 
+自动发行的 Windows x64 ZIP 是依赖框架版本，不内置 .NET。目标电脑需要安装 [.NET 10 Desktop Runtime x64](https://dotnet.microsoft.com/download/dotnet/10.0/runtime)；如果未安装，`WuGesture.exe` 的原生 .NET 启动器会显示安装提示，点击下载按钮即可打开官方安装页面。
+
 ## 自动发行
 
 将仓库迁移到 GitHub 后，推送 `v0.97` 这类标签会触发 `.github\workflows\release.yml`：它会关闭正在运行的应用、构建并压缩发布产物、根据两个标签之间的 Git 提交生成更新说明，以及创建 GitHub Release。

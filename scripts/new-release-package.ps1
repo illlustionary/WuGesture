@@ -25,7 +25,7 @@ if (Test-Path $OutputPath) {
 
 New-Item -ItemType Directory -Path $OutputPath | Out-Null
 
-& (Join-Path $scriptDir "publish.ps1") -Configuration Release -OutputPath $publishDirectory -Version $packageVersion -RuntimeIdentifier "win-x64" -SelfContained
+& (Join-Path $scriptDir "publish.ps1") -Configuration Release -OutputPath $publishDirectory -Version $packageVersion -RuntimeIdentifier "win-x64"
 
 $previousTag = git describe --tags --abbrev=0 "$Version^" 2>$null
 if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($previousTag)) {
