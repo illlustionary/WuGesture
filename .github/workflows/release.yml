@@ -47,15 +47,20 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $archive = Get-ChildItem artifacts/release/*.zip | Select-Object -First 1
-          gh release create $env:GITHUB_REF_NAME $archive.FullName --title "WuGesture $env:GITHUB_REF_NAME" --notes-file artifacts/release/RELEASE_NOTES.md
+          gh release view $env:GITHUB_REF_NAME 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $env:GITHUB_REF_NAME $archive.FullName --clobber
+          } else {
+            gh release create $env:GITHUB_REF_NAME $archive.FullName --title "WuGesture $env:GITHUB_REF_NAME" --notes-file artifacts/release/RELEASE_NOTES.md
+          }
 
       - name: Mirror code and tag to Gitee
         if: ${{ env.GITEE_REPOSITORY != '' && env.GITEE_TOKEN != '' }}
         shell: pwsh
         run: |
           git remote add gitee "https://oauth2:$env:GITEE_TOKEN@gitee.com/$env:GITEE_REPOSITORY.git"
-          git push gitee "$env:GITHUB_SHA:refs/heads/main"
-          git push gitee "refs/tags/$env:GITHUB_REF_NAME:refs/tags/$env:GITHUB_REF_NAME"
+          git push gitee "${env:GITHUB_SHA}:refs/heads/main"
+          git push gitee "refs/tags/${env:GITHUB_REF_NAME}:refs/tags/${env:GITHUB_REF_NAME}"
 
       - name: Create Gitee release
         if: ${{ env.GITEE_REPOSITORY != '' && env.GITEE_TOKEN != '' }}
