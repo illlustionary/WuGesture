@@ -23,7 +23,7 @@ export default defineConfig({
     'form-grid': 'grid grid-cols-2 gap-14px',
     'form-grid-one': 'grid grid-cols-1 gap-14px',
     'field-card':
-      'grid gap-8px   rounded-18px border border-[rgba(18,30,42,0.08)] m-b-10px',
+      'grid gap-8px rounded-18px border border-[rgba(18,30,42,0.08)] m-b-10px',
     'field-label': 'text-13px text-muted',
     'field-note': 'text-12px text-muted',
     'list-stack': 'grid gap-8px',

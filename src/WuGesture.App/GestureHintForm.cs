@@ -15,9 +15,11 @@ public sealed class GestureHintForm : Form
     private const int HorizontalPadding = 28;
     private const int MinimumWidth = 240;
     private const double FadeStep = 0.08;
+    private const int DisplayTransitionDelayMs = 500;
 
     private readonly System.Windows.Forms.Timer hideTimer = new();
     private readonly System.Windows.Forms.Timer fadeTimer = new();
+    private readonly System.Windows.Forms.Timer displayTransitionTimer = new();
     private readonly StringFormat centerFormat = new()
     {
         Alignment = StringAlignment.Center,
@@ -32,6 +34,7 @@ public sealed class GestureHintForm : Form
     private Pen? borderPen;
     private GestureHintUiSettings uiSettings = new();
     private string title = "";
+    private bool isDisplayTransition;
 
     public GestureHintForm()
     {
@@ -57,6 +60,8 @@ public sealed class GestureHintForm : Form
         hideTimer.Tick += OnHideTimerTick;
         fadeTimer.Interval = 24;
         fadeTimer.Tick += OnFadeTimerTick;
+        displayTransitionTimer.Interval = DisplayTransitionDelayMs;
+        displayTransitionTimer.Tick += OnDisplayTransitionTimerTick;
 
         ApplySettings(uiSettings);
         UpdateWindowRegion();
@@ -76,7 +81,7 @@ public sealed class GestureHintForm : Form
 
     public void ShowResult(string ruleName, bool autoHide)
     {
-        if (IsDisposed)
+        if (IsDisposed || isDisplayTransition)
         {
             return;
         }
@@ -298,6 +303,9 @@ public sealed class GestureHintForm : Form
             fadeTimer.Stop();
             fadeTimer.Tick -= OnFadeTimerTick;
             fadeTimer.Dispose();
+            displayTransitionTimer.Stop();
+            displayTransitionTimer.Tick -= OnDisplayTransitionTimerTick;
+            displayTransitionTimer.Dispose();
             DisposeBrushes();
             centerFormat.Dispose();
         }
@@ -329,6 +337,21 @@ public sealed class GestureHintForm : Form
         Opacity = GetTargetOpacity();
     }
 
+    private void OnDisplayTransitionTimerTick(object? sender, EventArgs e)
+    {
+        displayTransitionTimer.Stop();
+        isDisplayTransition = false;
+
+        if (IsDisposed || Visible || !IsHandleCreated)
+        {
+            return;
+        }
+
+        RefreshDisplayLayout();
+        MoveToBottomCenter();
+        Invalidate();
+    }
+
     protected override void OnSizeChanged(EventArgs e)
     {
         base.OnSizeChanged(e);
@@ -337,12 +360,26 @@ public sealed class GestureHintForm : Form
 
     protected override void WndProc(ref Message m)
     {
-        if (m.Msg is WmDisplayChange or WmSettingChange or WmDwmCompositionChanged or WmDpiChanged)
+        var isDisplayChange = m.Msg is WmDisplayChange or WmSettingChange or WmDwmCompositionChanged or WmDpiChanged;
+        base.WndProc(ref m);
+
+        if (isDisplayChange)
         {
-            HideResult();
+            BeginDisplayTransition();
+        }
+    }
+
+    private void BeginDisplayTransition()
+    {
+        if (IsDisposed)
+        {
+            return;
         }
 
-        base.WndProc(ref m);
+        isDisplayTransition = true;
+        HideResult();
+        displayTransitionTimer.Stop();
+        displayTransitionTimer.Start();
     }
 
     private void BeginFadeOut()
