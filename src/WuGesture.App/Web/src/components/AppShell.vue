@@ -1,5 +1,5 @@
 <template>
-  <section class="page-shell surface-card">
+  <section class="page-shell">
     <div class="page-shell__head">
       <div>
         <h2>{{ title }}</h2>
@@ -32,8 +32,7 @@ defineProps({
 </script>
 
 <style scoped lang="scss">
-.panel,
-.page-shell {
+.panel {
   border: 1px solid var(--border);
   background: var(--panel);
   box-shadow: var(--shadow-soft);
@@ -41,6 +40,9 @@ defineProps({
 }
 
 .page-shell {
+  border: 1px solid var(--border);
+  background: var(--panel);
+  box-shadow: var(--shadow-soft);
   padding: 20px;
   border-radius: 28px;
   overflow: hidden;
