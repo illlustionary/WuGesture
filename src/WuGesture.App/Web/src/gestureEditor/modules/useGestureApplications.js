@@ -22,6 +22,44 @@ export function useGestureApplications({
     return state.applications.find((application) => application.name === name) ?? null;
   }
 
+  function getCategoriesForApplication(appName = getSelectedName("app")) {
+    return [...(getApplication(appName)?.categories ?? [])];
+  }
+
+  function moveApplicationCategory(appName, categoryName, direction) {
+    const application = getApplication(appName);
+    const category = String(categoryName ?? "").trim();
+    const offset = direction === "down" ? 1 : -1;
+    const index = application?.categories.indexOf(category) ?? -1;
+    const nextIndex = index + offset;
+    if (!application || index < 0 || nextIndex < 0 || nextIndex >= application.categories.length) {
+      return false;
+    }
+
+    const categories = [...application.categories];
+    [categories[index], categories[nextIndex]] = [categories[nextIndex], categories[index]];
+    return setApplicationCategories(appName, categories);
+  }
+
+  function setApplicationCategories(appName, categories) {
+    const application = getApplication(appName);
+    if (!application) {
+      return false;
+    }
+
+    const normalized = [];
+    for (const value of Array.isArray(categories) ? categories : []) {
+      const category = String(value ?? "").trim();
+      if (category && !normalized.includes(category)) {
+        normalized.push(category);
+      }
+    }
+
+    application.categories = normalized;
+    scheduleSaveRules();
+    return true;
+  }
+
   function updateApplicationDisplayName(appName = getSelectedName("app"), displayName = "") {
     const name = String(appName ?? "").trim();
     if (!name) {
@@ -63,6 +101,9 @@ export function useGestureApplications({
     ensureApplication,
     getApplication,
     getApplicationsForCategory,
+    getCategoriesForApplication,
+    moveApplicationCategory,
+    setApplicationCategories,
     updateApplicationCategory,
     updateApplicationDisplayName
   };

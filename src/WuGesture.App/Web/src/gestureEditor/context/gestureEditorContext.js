@@ -175,6 +175,9 @@ const {
   ensureApplication,
   getApplication,
   getApplicationsForCategory,
+  getCategoriesForApplication,
+  moveApplicationCategory,
+  setApplicationCategories,
   updateApplicationCategory,
   updateApplicationDisplayName
 } = applicationActions;
@@ -266,7 +269,10 @@ export function useGestureEditorContext() {
     getScopeItems,
     getSelectedName,
     getApplicationsForCategory,
+    getCategoriesForApplication,
     getApplication,
+    moveApplicationCategory,
+    setApplicationCategories,
     updateApplicationDisplayName,
     updateApplicationCategory,
     assignSelectedAppToCategory,
