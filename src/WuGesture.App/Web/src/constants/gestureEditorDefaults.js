@@ -33,8 +33,8 @@ export const DEFAULT_RULES = [
 ];
 
 export const DEFAULT_APPLICATIONS = [
-  { name: "msedge", displayName: "Microsoft Edge", path: "", category: "浏览器", icon: "" },
-  { name: "chrome", displayName: "Google Chrome", path: "", category: "浏览器", icon: "" }
+  { name: "msedge", displayName: "Microsoft Edge", path: "", categories: ["浏览器"], icon: "" },
+  { name: "chrome", displayName: "Google Chrome", path: "", categories: ["浏览器"], icon: "" }
 ];
 
 export const DEFAULT_UI_SETTINGS = {

@@ -3,7 +3,7 @@ namespace WuGesture.App.GestureEngine;
 public sealed class ConfiguredScopeContextProvider : IGestureScopeContextProvider
 {
     private readonly IGestureScopeContextProvider innerProvider;
-    private Dictionary<string, string> appCategories;
+    private Dictionary<string, IReadOnlyList<string>> appCategories;
 
     public ConfiguredScopeContextProvider(
         IEnumerable<GestureApplicationConfig> applications,
@@ -21,8 +21,8 @@ public sealed class ConfiguredScopeContextProvider : IGestureScopeContextProvide
             return context;
         }
 
-        return appCategories.TryGetValue(context.AppName.Trim(), out var category)
-            ? new GestureScopeContext(context.AppName, category)
+        return appCategories.TryGetValue(context.AppName.Trim(), out var categories)
+            ? new GestureScopeContext(context.AppName, categories)
             : context;
     }
 
@@ -31,20 +31,24 @@ public sealed class ConfiguredScopeContextProvider : IGestureScopeContextProvide
         appCategories = BuildAppCategories(applications);
     }
 
-    private static Dictionary<string, string> BuildAppCategories(IEnumerable<GestureApplicationConfig> applications)
+    private static Dictionary<string, IReadOnlyList<string>> BuildAppCategories(IEnumerable<GestureApplicationConfig> applications)
     {
-        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var result = new Dictionary<string, IReadOnlyList<string>>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var application in applications)
         {
             var name = NormalizeAppName(application.Name);
-            var category = application.Category.Trim();
-            if (name.Length == 0 || category.Length == 0)
+            var categories = application.Categories
+                .Select(category => category.Trim())
+                .Where(category => category.Length > 0)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            if (name.Length == 0 || categories.Length == 0)
             {
                 continue;
             }
 
-            result[name] = category;
+            result[name] = categories;
         }
 
         return result;

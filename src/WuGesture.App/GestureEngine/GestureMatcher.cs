@@ -64,7 +64,7 @@ public sealed class GestureMatcher
         {
             if (MatchesScopeValue(appScopeValue, context.AppName))
             {
-                priority = 2;
+                priority = int.MaxValue;
                 return true;
             }
 
@@ -73,9 +73,8 @@ public sealed class GestureMatcher
 
         if (TryGetPrefixedScopeValue(normalizedScope, GestureConfigContract.Scopes.Category, out var categoryScopeValue))
         {
-            if (MatchesScopeValue(categoryScopeValue, context.CategoryName))
+            if (TryGetCategoryPriority(categoryScopeValue, context.CategoryNames, out priority))
             {
-                priority = 1;
                 return true;
             }
 
@@ -84,13 +83,12 @@ public sealed class GestureMatcher
 
         if (MatchesScopeValue(normalizedScope, context.AppName))
         {
-            priority = 2;
+            priority = int.MaxValue;
             return true;
         }
 
-        if (MatchesScopeValue(normalizedScope, context.CategoryName))
+        if (TryGetCategoryPriority(normalizedScope, context.CategoryNames, out priority))
         {
-            priority = 1;
             return true;
         }
 
@@ -114,5 +112,23 @@ public sealed class GestureMatcher
     {
         return !string.IsNullOrWhiteSpace(currentValue) &&
                scopeValue.Equals(currentValue.Trim(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool TryGetCategoryPriority(
+        string scopeValue,
+        IReadOnlyList<string> categoryNames,
+        out int priority)
+    {
+        priority = int.MinValue;
+        for (var index = 0; index < categoryNames.Count; index++)
+        {
+            if (MatchesScopeValue(scopeValue, categoryNames[index]))
+            {
+                priority = index + 1;
+                return true;
+            }
+        }
+
+        return false;
     }
 }

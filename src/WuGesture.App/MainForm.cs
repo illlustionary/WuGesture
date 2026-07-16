@@ -748,7 +748,7 @@ public sealed class MainForm : Form
                 name = application.Name,
                 displayName = application.DisplayName,
                 path = application.Path,
-                category = application.Category,
+                categories = application.Categories,
                 icon = GetApplicationIconDataUrl(application.Path)
             }).ToArray()
         });

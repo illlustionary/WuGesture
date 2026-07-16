@@ -34,13 +34,24 @@ export function toViewRule(rule, id) {
 }
 
 export function toViewApplication(application) {
+  const legacyCategory = String(application.category ?? "").trim();
+  const categories = normalizeCategories(application.categories, legacyCategory);
   return {
     name: String(application.name ?? "").trim(),
     displayName: String(application.displayName ?? application.name ?? "").trim(),
     path: String(application.path ?? "").trim(),
-    category: String(application.category ?? "").trim(),
+    categories,
     icon: String(application.icon ?? "").trim()
   };
+}
+
+function normalizeCategories(categories, legacyCategory) {
+  const values = Array.isArray(categories) ? categories : [legacyCategory];
+  return [...new Set(
+    values
+      .map((category) => String(category ?? "").trim())
+      .filter(Boolean)
+  )];
 }
 
 export function createRuleModel(scopeKind, scopeName, values = {}, id) {

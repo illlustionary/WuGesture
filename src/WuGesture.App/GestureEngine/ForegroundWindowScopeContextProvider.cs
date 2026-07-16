@@ -14,7 +14,7 @@ public sealed class ForegroundWindowScopeContextProvider : IGestureScopeContextP
 
         GetWindowThreadProcessId(foregroundWindow, out var processId);
 
-        return new GestureScopeContext(GetProcessName(processId), "");
+        return new GestureScopeContext(GetProcessName(processId), []);
     }
 
     private static string GetProcessName(int processId)

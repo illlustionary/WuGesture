@@ -10,7 +10,7 @@ export function useGestureApplications({
       return [];
     }
 
-    return state.applications.filter((application) => application.category === trimmed);
+    return state.applications.filter((application) => application.categories.includes(trimmed));
   }
 
   function getApplication(appName = getSelectedName("app")) {
@@ -42,8 +42,9 @@ export function useGestureApplications({
     }
 
     const application = ensureApplication(name);
-    application.category = String(categoryName ?? "").trim();
-    notifications.show(application.category ? "已设置程序分类。" : "已清除程序分类。", "success");
+    const category = String(categoryName ?? "").trim();
+    application.categories = category ? [category] : [];
+    notifications.show(category ? "已设置程序分类。" : "已清除程序分类。", "success");
     scheduleSaveRules();
   }
 
@@ -51,7 +52,7 @@ export function useGestureApplications({
     const trimmed = String(name ?? "").trim();
     let application = state.applications.find((item) => item.name === trimmed);
     if (!application) {
-      application = { name: trimmed, displayName: trimmed, path: "", category: "", icon: "" };
+      application = { name: trimmed, displayName: trimmed, path: "", categories: [], icon: "" };
       state.applications.push(application);
     }
 

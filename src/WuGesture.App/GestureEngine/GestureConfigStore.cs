@@ -100,8 +100,28 @@ public sealed class GestureConfigStore
         config.UiSettings.GestureSensitivity ??= new GestureSensitivityUiSettings();
         config.UiSettings.AppBehavior ??= new AppBehaviorUiSettings();
         config.UiSettings.WebDav ??= new WebDavUiSettings();
+        NormalizeApplications(config.Applications);
         NormalizeUiSettings(config.UiSettings);
         return config;
+    }
+
+    private static void NormalizeApplications(IEnumerable<GestureApplicationConfig> applications)
+    {
+        foreach (var application in applications)
+        {
+            application.Categories ??= [];
+            if (application.Categories.Count == 0 && !string.IsNullOrWhiteSpace(application.Category))
+            {
+                application.Categories.Add(application.Category);
+            }
+
+            application.Categories = application.Categories
+                .Select(category => category.Trim())
+                .Where(category => category.Length > 0)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            application.Category = null;
+        }
     }
 
     private static void NormalizeUiSettings(GestureUiSettings settings)

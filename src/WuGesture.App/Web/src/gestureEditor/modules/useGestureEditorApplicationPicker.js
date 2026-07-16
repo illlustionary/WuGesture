@@ -73,12 +73,15 @@ export function useGestureEditorApplicationPicker({
       return;
     }
 
+    const requestedCategory = String(
+      requestContext?.category ?? message.category ?? ""
+    ).trim();
     const application = ensureApplication(name);
     application.displayName = String(message.displayName ?? application.displayName ?? name).trim();
     application.path = String(message.path ?? "").trim();
-    const selectedCategory = String(message.category ?? "").trim();
-    if (selectedCategory || requestContext?.scopeKind !== SCOPE_KINDS.app) {
-      application.category = selectedCategory;
+    if (requestedCategory) {
+      application.categories = application.categories.filter((category) => category !== requestedCategory);
+      application.categories.push(requestedCategory);
     }
     application.icon = String(message.icon ?? application.icon ?? "").trim();
 
@@ -88,8 +91,8 @@ export function useGestureEditorApplicationPicker({
     }
 
     setSelectedName(SCOPE_KINDS.app, application.name);
-    if (application.category) {
-      setSelectedName(SCOPE_KINDS.category, application.category);
+    if (application.categories.length > 0) {
+      setSelectedName(SCOPE_KINDS.category, application.categories.at(-1));
     }
 
     notifications.show("已添加程序。", "success");

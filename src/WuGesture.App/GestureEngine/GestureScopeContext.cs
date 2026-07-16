@@ -1,8 +1,8 @@
 namespace WuGesture.App.GestureEngine;
 
-public sealed record GestureScopeContext(string AppName, string CategoryName)
+public sealed record GestureScopeContext(string AppName, IReadOnlyList<string> CategoryNames)
 {
-    public static GestureScopeContext Empty { get; } = new("", "");
+    public static GestureScopeContext Empty { get; } = new("", []);
 }
 
 public interface IGestureScopeContextProvider
