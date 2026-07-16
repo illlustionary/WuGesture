@@ -174,7 +174,6 @@ function isWindowAction(rule) {
     var(--panel-muted)
   );
   box-shadow: var(--shadow-soft);
-  backdrop-filter: blur(18px) saturate(1.15);
 
   &__body {
     padding: 10px;

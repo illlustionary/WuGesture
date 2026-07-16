@@ -15,7 +15,7 @@ export default defineConfig({
   shortcuts: {
     'page-stack': 'grid gap-18px',
     'section-card':
-      'min-w-0 p-22px border border-border rounded-26px bg-[rgba(255,255,255,0.9)] shadow-[var(--shadow-soft)] backdrop-blur-20px',
+      'min-w-0 p-22px border border-border rounded-26px bg-[rgba(255,255,255,0.9)] shadow-[var(--shadow-soft)]',
     'section-head': 'flex items-start justify-between gap-10px mb-16px',
     'section-title': 'text-16px font-700',
     'section-desc': 'mt-4px text-13px text-muted',
@@ -23,7 +23,7 @@ export default defineConfig({
     'form-grid': 'grid grid-cols-2 gap-14px',
     'form-grid-one': 'grid grid-cols-1 gap-14px',
     'field-card':
-      'grid gap-8px p-14px rounded-18px bg-[rgba(248,251,255,0.96)] border border-[rgba(18,30,42,0.08)]',
+      'grid gap-8px   rounded-18px border border-[rgba(18,30,42,0.08)] m-b-10px',
     'field-label': 'text-13px text-muted',
     'field-note': 'text-12px text-muted',
     'list-stack': 'grid gap-8px',
