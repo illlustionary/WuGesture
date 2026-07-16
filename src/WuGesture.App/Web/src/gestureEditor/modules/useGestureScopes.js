@@ -86,9 +86,9 @@ export function useGestureScopes({
 
     if (kind === "category") {
       for (const application of state.applications) {
-        if (application.category === currentName) {
-          application.category = name;
-        }
+        application.categories = application.categories.map((category) =>
+          category === currentName ? name : category
+        );
       }
     } else if (kind === "app") {
       const application = state.applications.find((item) => item.name === currentName);
@@ -112,9 +112,7 @@ export function useGestureScopes({
     state.rules = state.rules.filter((rule) => !(rule.scopeKind === kind && rule.scopeName === name));
     if (kind === "category") {
       for (const application of state.applications) {
-        if (application.category === name) {
-          application.category = "";
-        }
+        application.categories = application.categories.filter((category) => category !== name);
       }
     } else if (kind === "app") {
       state.applications = state.applications.filter((application) => application.name !== name);

@@ -61,7 +61,9 @@ export function toPayloadApplication(application) {
     name: application.name.trim(),
     displayName: String(application.displayName || application.name || "").trim(),
     path: application.path.trim(),
-    category: application.category.trim()
+    categories: Array.isArray(application.categories)
+      ? application.categories.map((category) => String(category ?? "").trim()).filter(Boolean)
+      : []
   };
 }
 

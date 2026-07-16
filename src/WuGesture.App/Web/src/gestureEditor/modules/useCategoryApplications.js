@@ -15,7 +15,8 @@ export function useCategoryApplications({
     }
 
     const application = ensureApplication(name);
-    application.category = category;
+    application.categories = application.categories.filter((item) => item !== category);
+    application.categories.push(category);
     setSelectedName("category", category);
     notifications.show("已关联程序到分类。", "success");
     scheduleSaveRules();
@@ -28,9 +29,9 @@ export function useCategoryApplications({
       return;
     }
 
-    const application = state.applications.find((item) => item.name === name && item.category === category);
+    const application = state.applications.find((item) => item.name === name && item.categories.includes(category));
     if (application) {
-      application.category = "";
+      application.categories = application.categories.filter((item) => item !== category);
       notifications.show("已移除分类关联。", "success");
       scheduleSaveRules();
     }

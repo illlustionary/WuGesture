@@ -8,14 +8,14 @@ export function collectCategoryItems(rules, applications) {
   }
 
   for (const application of applications) {
-    if (application.category) {
-      counts.set(application.category, counts.get(application.category) ?? 0);
+    for (const category of application.categories ?? []) {
+      counts.set(category, counts.get(category) ?? 0);
     }
   }
 
   return [...counts.entries()]
     .map(([name, count]) => {
-      const application = applications.find((item) => item.name === name);
+      const application = applications.find((item) => item.categories?.includes(name));
       return {
         name,
         count,

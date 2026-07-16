@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace WuGesture.App.GestureEngine;
 
 public sealed class GestureConfig
@@ -19,7 +21,10 @@ public sealed class GestureApplicationConfig
 
     public string Path { get; set; } = "";
 
-    public string Category { get; set; } = "";
+    public List<string> Categories { get; set; } = [];
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Category { get; set; }
 }
 
 public sealed class GestureRuleConfig
