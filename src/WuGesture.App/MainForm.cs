@@ -343,7 +343,7 @@ public sealed class MainForm : Form
 
             if (enabled)
             {
-                key.SetValue(AppIdentity.StartupRegistryValueName, $"\"{Application.ExecutablePath}\" {AppIdentity.StartupLaunchArgument}");
+                key.SetValue(AppIdentity.StartupRegistryValueName, $"\"{AppIdentity.GetLaunchExecutablePath()}\" {AppIdentity.StartupLaunchArgument}");
             }
             else
             {
@@ -366,7 +366,7 @@ public sealed class MainForm : Form
         {
             Process.Start(new ProcessStartInfo
             {
-                FileName = Application.ExecutablePath,
+                FileName = AppIdentity.GetLaunchExecutablePath(),
                 Arguments = startHiddenToTray
                     ? $"{AppIdentity.ElevatedRelaunchArgument} {AppIdentity.StartupLaunchArgument}"
                     : AppIdentity.ElevatedRelaunchArgument,
