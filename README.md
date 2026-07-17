@@ -42,13 +42,13 @@ artifacts\debug\WuGesture\WuGesture.exe
 artifacts\publish\WuGesture
 ```
 
-默认发布可执行文件：
+默认发布入口：
 
 ```text
 artifacts\publish\WuGesture\WuGesture.exe
 ```
 
-发布包为 framework-dependent `win-x64` 版本，目标电脑需要安装 [.NET 10 Desktop Runtime x64](https://dotnet.microsoft.com/download/dotnet/10.0/runtime)。
+发布包为 framework-dependent `win-x64` 版本。`WuGesture.exe` 会在启动前检查 [.NET 10 Desktop Runtime x64](https://dotnet.microsoft.com/download/dotnet/10.0/runtime) 和 [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/)；缺少任一依赖时会说明原因，并可直接打开对应官方下载页面。请完整解压 ZIP 后运行该入口文件。
 
 ## 文档
 
