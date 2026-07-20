@@ -79,7 +79,7 @@ function previewLevelOsd(kind) {
 <template>
   <AppShell
     title="设置"
-    description="调整轨迹线、提示窗、应用行为和配置同步等"
+    description="调整轨迹线、提示窗、应用行为和配置同步等。更改配置后会自动保存。"
     layout-class="page-shell__grid--single page-shell__grid--settings"
   >
     <template #actions>

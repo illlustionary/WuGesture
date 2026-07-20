@@ -174,6 +174,7 @@ MouseHook
 - `WebDavConfigSyncService.cs`：WebDAV 配置备份/恢复服务，负责测试连接、上传本地完整配置、下载远端配置并按远程路径规则创建目录。
 - `WebDavProtocolContract.cs`：WebDAV 协议方法、请求头、认证 scheme、媒体类型和超时常量。
 - `WebViewMessageTypes.cs`：桌面宿主侧 WebView 入站/出站消息类型常量。
+- `config-result` 消息会携带操作来源；前端仅静默 `save` 的成功结果，导入、导出、重载和恢复等明确操作仍显示结果提示，任意失败都会显示错误提示。
 
 当前支持的配置：
 

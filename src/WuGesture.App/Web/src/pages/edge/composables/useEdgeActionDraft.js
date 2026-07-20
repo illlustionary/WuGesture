@@ -32,7 +32,6 @@ export function useEdgeActionDraft(edgeActionsStore) {
     }
 
     edgeActionsStore.updateEdgeAction(action, toCommitPatch(draft), {
-      notifyResult: false,
       notifyPreview: false
     })
   }

@@ -1066,11 +1066,11 @@ public sealed class MainForm : Form
             ApplyLoadedConfig();
 
             PostRules();
-            PostConfigResult(true, "已保存");
+            PostConfigResult(true, "已保存", "save");
         }
         catch (Exception exception)
         {
-            PostConfigResult(false, exception.Message);
+            PostConfigResult(false, exception.Message, "save");
         }
     }
 
@@ -1176,11 +1176,11 @@ public sealed class MainForm : Form
             File.WriteAllText(dialog.FileName, configJson);
 
             PostRules();
-            PostConfigResult(true, "已导出配置");
+            PostConfigResult(true, "已导出配置", "export");
         }
         catch (Exception exception)
         {
-            PostConfigResult(false, exception.Message);
+            PostConfigResult(false, exception.Message, "export");
         }
     }
 
@@ -1206,11 +1206,11 @@ public sealed class MainForm : Form
             ApplyLoadedConfig();
 
             PostRules();
-            PostConfigResult(true, "已导入配置");
+            PostConfigResult(true, "已导入配置", "import");
         }
         catch (Exception exception)
         {
-            PostConfigResult(false, exception.Message);
+            PostConfigResult(false, exception.Message, "import");
         }
     }
 
@@ -1222,11 +1222,11 @@ public sealed class MainForm : Form
             ApplyLoadedConfig();
 
             PostRules();
-            PostConfigResult(true, "已重新加载");
+            PostConfigResult(true, "已重新加载", "reload");
         }
         catch (Exception exception)
         {
-            PostConfigResult(false, exception.Message);
+            PostConfigResult(false, exception.Message, "reload");
         }
     }
 
@@ -1238,11 +1238,11 @@ public sealed class MainForm : Form
             ApplyLoadedConfig();
 
             PostRules();
-            PostConfigResult(true, "已恢复默认");
+            PostConfigResult(true, "已恢复默认", "reset");
         }
         catch (Exception exception)
         {
-            PostConfigResult(false, exception.Message);
+            PostConfigResult(false, exception.Message, "reset");
         }
     }
 
@@ -1266,13 +1266,14 @@ public sealed class MainForm : Form
         ApplyGesturePauseState();
     }
 
-    private void PostConfigResult(bool success, string message)
+    private void PostConfigResult(bool success, string message, string operation = "action")
     {
         var payload = JsonSerializer.Serialize(new
         {
             type = WebViewMessageTypes.ConfigResult,
             success,
-            message
+            message,
+            operation
         });
 
         TryPostWebMessage(payload);
