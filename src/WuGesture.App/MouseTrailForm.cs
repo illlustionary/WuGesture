@@ -22,6 +22,7 @@ public sealed class MouseTrailForm : Form
     private readonly Graphics graphics;
     private readonly MouseTrailRenderer trailRenderer;
     private readonly GestureHintRenderer hintRenderer;
+    private readonly LevelOsdRenderer levelOsdRenderer;
     private Rectangle screenBounds;
 
     public MouseTrailForm()
@@ -38,7 +39,8 @@ public sealed class MouseTrailForm : Form
 
         var dpiFactor = Math.Max(1f, DeviceDpi / 96f);
         trailRenderer = new MouseTrailRenderer(dpiFactor);
-        hintRenderer = new GestureHintRenderer(RedrawOverlay, HideTrail);
+        hintRenderer = new GestureHintRenderer(RedrawOverlay, ExpireGestureHint);
+        levelOsdRenderer = new LevelOsdRenderer(RedrawOverlay, ExpireLevelOsd);
 
         screenDc = GetDC(IntPtr.Zero);
         memDc = CreateCompatibleDC(screenDc);
@@ -106,6 +108,16 @@ public sealed class MouseTrailForm : Form
         }
     }
 
+    public void ApplyLevelOsdSettings(LevelOsdUiSettings? settings)
+    {
+        levelOsdRenderer.ApplySettings(settings);
+        if (Visible)
+        {
+            RedrawOverlay();
+            HideOverlayIfEmpty();
+        }
+    }
+
     public void SetHighlighted(bool highlighted)
     {
         if (trailRenderer.SetHighlighted(highlighted))
@@ -138,10 +150,7 @@ public sealed class MouseTrailForm : Form
         }
 
         RedrawOverlay();
-        if (!trailRenderer.HasPath)
-        {
-            HideTrail();
-        }
+        HideOverlayIfEmpty();
     }
 
     public void EndPath()
@@ -152,13 +161,12 @@ public sealed class MouseTrailForm : Form
         }
 
         trailRenderer.Reset();
+        RedrawOverlay();
         if (!hintRenderer.HasHint)
         {
-            HideTrail();
+            HideOverlayIfEmpty();
             return;
         }
-
-        RedrawOverlay();
     }
 
     public void ShowPath(IReadOnlyList<Point> points, GestureMouseButton button)
@@ -180,6 +188,10 @@ public sealed class MouseTrailForm : Form
         {
             Show();
             graphics.Clear(Color.Transparent);
+        }
+
+        if (!trailRenderer.IsTracking)
+        {
             trailRenderer.StartPath();
         }
 
@@ -199,13 +211,29 @@ public sealed class MouseTrailForm : Form
 
         hintRenderer.Clear();
         trailRenderer.Reset();
-        graphics.Clear(Color.Transparent);
+        RedrawOverlay();
+        HideOverlayIfEmpty();
+    }
 
-        if (Visible)
+    internal void ShowLevelOsd(LevelOsdRequest request)
+    {
+        if (IsDisposed)
         {
-            Present(new Rectangle(Point.Empty, bufferSize), fullWindow: true);
-            Hide();
+            return;
         }
+
+        if (!levelOsdRenderer.Show(request))
+        {
+            HideOverlayIfEmpty();
+            return;
+        }
+
+        if (!Visible)
+        {
+            Show();
+        }
+
+        RedrawOverlay();
     }
 
     protected override void Dispose(bool disposing)
@@ -213,6 +241,7 @@ public sealed class MouseTrailForm : Form
         if (disposing)
         {
             hintRenderer.Dispose();
+            levelOsdRenderer.Dispose();
             trailRenderer.Dispose();
             graphics.Dispose();
             SelectObject(memDc, oldBitmap);
@@ -234,6 +263,7 @@ public sealed class MouseTrailForm : Form
         graphics.Clear(Color.Transparent);
         trailRenderer.Draw(graphics);
         hintRenderer.Draw(graphics, screenBounds);
+        levelOsdRenderer.Draw(graphics, screenBounds);
 
         if (Visible)
         {
@@ -255,7 +285,7 @@ public sealed class MouseTrailForm : Form
         {
             BlendOp = 0,
             BlendFlags = 0,
-            SourceConstantAlpha = hintRenderer.Opacity,
+            SourceConstantAlpha = 255,
             AlphaFormat = 1
         };
 
@@ -305,6 +335,40 @@ public sealed class MouseTrailForm : Form
     private PointF ToLocalPoint(Point point)
     {
         return new PointF(point.X - screenBounds.Left, point.Y - screenBounds.Top);
+    }
+
+    private void ExpireGestureHint()
+    {
+        if (IsDisposed || !hintRenderer.Clear())
+        {
+            return;
+        }
+
+        RedrawOverlay();
+        HideOverlayIfEmpty();
+    }
+
+    private void ExpireLevelOsd()
+    {
+        if (IsDisposed || !levelOsdRenderer.Clear())
+        {
+            return;
+        }
+
+        RedrawOverlay();
+        HideOverlayIfEmpty();
+    }
+
+    private void HideOverlayIfEmpty()
+    {
+        if (IsDisposed || trailRenderer.HasPath || hintRenderer.HasHint || levelOsdRenderer.HasOsd || !Visible)
+        {
+            return;
+        }
+
+        graphics.Clear(Color.Transparent);
+        Present(new Rectangle(Point.Empty, bufferSize), fullWindow: true);
+        Hide();
     }
 
     private static IntPtr CreateDibSection(IntPtr hdc, Size size)

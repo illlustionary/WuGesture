@@ -21,9 +21,9 @@ internal sealed class GestureHintRenderer : IDisposable
     private readonly Action requestHide;
     private GestureHintUiSettings settings = new();
     private Font? font;
-    private Brush? textBrush;
-    private Brush? backgroundBrush;
-    private Pen? borderPen;
+    private Color textColor;
+    private Color backgroundColor;
+    private Color borderColor;
     private string title = "";
     private Point anchor;
     private long fadeStartedAt;
@@ -53,15 +53,11 @@ internal sealed class GestureHintRenderer : IDisposable
         settings = value ?? new GestureHintUiSettings();
 
         font?.Dispose();
-        textBrush?.Dispose();
-        backgroundBrush?.Dispose();
-        borderPen?.Dispose();
-
         var baseBackgroundColor = GestureColorParser.Parse(settings.BackgroundColor, Color.FromArgb(18, 24, 31));
         font = CreateFont(settings.FontFamily, settings.FontSize);
-        textBrush = new SolidBrush(GestureColorParser.Parse(settings.TextColor, Color.White));
-        backgroundBrush = new SolidBrush(ApplyOpacity(baseBackgroundColor, ClampOpacity(settings.BackgroundOpacity)));
-        borderPen = new Pen(Color.FromArgb(90, 255, 255, 255), 1.1f);
+        textColor = GestureColorParser.Parse(settings.TextColor, Color.White);
+        backgroundColor = ApplyOpacity(baseBackgroundColor, ClampOpacity(settings.BackgroundOpacity));
+        borderColor = Color.FromArgb(90, 255, 255, 255);
     }
 
     public void Show(string ruleName, Point value, bool autoHide)
@@ -95,7 +91,7 @@ internal sealed class GestureHintRenderer : IDisposable
 
     public void Draw(Graphics graphics, Rectangle screenBounds)
     {
-        if (!HasHint || font is null || textBrush is null || backgroundBrush is null || borderPen is null)
+        if (!HasHint || font is null)
         {
             return;
         }
@@ -114,6 +110,8 @@ internal sealed class GestureHintRenderer : IDisposable
             height);
 
         using var bubblePath = RoundedRect(bounds, Math.Min(Math.Min(width, height) / 2f, Math.Max(0f, settings.CornerRadius)));
+        using var backgroundBrush = new SolidBrush(ApplyFadeOpacity(backgroundColor));
+        using var borderPen = new Pen(ApplyFadeOpacity(borderColor), 1.1f);
         graphics.FillPath(backgroundBrush, bubblePath);
         graphics.DrawPath(borderPen, bubblePath);
 
@@ -123,6 +121,7 @@ internal sealed class GestureHintRenderer : IDisposable
             bounds.Width - HorizontalPadding * 2,
             bounds.Height);
         textFormat.Trimming = settings.AutoWidth ? StringTrimming.None : StringTrimming.EllipsisCharacter;
+        using var textBrush = new SolidBrush(ApplyFadeOpacity(textColor));
         graphics.DrawString(title, font, textBrush, titleBounds, textFormat);
     }
 
@@ -135,9 +134,6 @@ internal sealed class GestureHintRenderer : IDisposable
         fadeTimer.Dispose();
         textFormat.Dispose();
         font?.Dispose();
-        textBrush?.Dispose();
-        backgroundBrush?.Dispose();
-        borderPen?.Dispose();
     }
 
     private int MeasureWidth(Graphics graphics)
@@ -187,6 +183,12 @@ internal sealed class GestureHintRenderer : IDisposable
     private static Color ApplyOpacity(Color color, byte opacity)
     {
         return Color.FromArgb(opacity, color.R, color.G, color.B);
+    }
+
+    private Color ApplyFadeOpacity(Color color)
+    {
+        var alpha = (int)Math.Round(color.A * Opacity / 255d);
+        return Color.FromArgb(alpha, color.R, color.G, color.B);
     }
 
     private static byte ClampOpacity(int value)
