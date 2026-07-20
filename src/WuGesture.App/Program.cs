@@ -2,6 +2,8 @@ namespace WuGesture.App;
 
 static class Program
 {
+    private const string WebView2RuntimeUrl = "https://developer.microsoft.com/microsoft-edge/webview2/";
+
     [STAThread]
     static void Main(string[] args)
     {
@@ -20,6 +22,11 @@ static class Program
         try
         {
             ApplicationConfiguration.Initialize();
+            if (!EnsureWebView2RuntimeAvailable())
+            {
+                return;
+            }
+
             using var showExistingInstanceEvent = new EventWaitHandle(
                 initialState: false,
                 mode: EventResetMode.AutoReset,
@@ -47,6 +54,40 @@ static class Program
         {
             mutex.ReleaseMutex();
         }
+    }
+
+    private static bool EnsureWebView2RuntimeAvailable()
+    {
+        try
+        {
+            _ = Microsoft.Web.WebView2.Core.CoreWebView2Environment.GetAvailableBrowserVersionString(null);
+            return true;
+        }
+        catch (Microsoft.Web.WebView2.Core.WebView2RuntimeNotFoundException)
+        {
+        }
+        catch (DllNotFoundException)
+        {
+        }
+        catch (BadImageFormatException)
+        {
+        }
+
+        var result = MessageBox.Show(
+            "WuGesture 需要 Microsoft Edge WebView2 Runtime 才能显示配置界面。\n\n是否打开微软官方下载页面进行安装？",
+            "WuGesture - 缺少运行环境",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Error);
+        if (result == DialogResult.Yes)
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = WebView2RuntimeUrl,
+                UseShellExecute = true
+            });
+        }
+
+        return false;
     }
 
     private static void SignalExistingInstance()

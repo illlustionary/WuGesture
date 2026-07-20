@@ -1,6 +1,5 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/WuGesture.App/WuGesture.App.csproj" />
-    <Project Path="src/WuGesture.Bootstrapper/WuGesture.Bootstrapper.csproj" />
   </Folder>
 </Solution>
