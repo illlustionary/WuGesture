@@ -11,16 +11,13 @@ $ErrorActionPreference = "Stop"
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $rootDir = Split-Path -Parent $scriptDir
 $projectPath = Join-Path $rootDir "src\WuGesture.App\WuGesture.App.csproj"
-$bootstrapperProjectPath = Join-Path $rootDir "src\WuGesture.Bootstrapper\WuGesture.Bootstrapper.csproj"
-$bootstrapperRuntimeIdentifier = if ([string]::IsNullOrWhiteSpace($RuntimeIdentifier)) { "win-x64" } else { $RuntimeIdentifier }
+$webView2RuntimeIdentifier = if ([string]::IsNullOrWhiteSpace($RuntimeIdentifier)) { "win-x64" } else { $RuntimeIdentifier }
 
 if ([string]::IsNullOrWhiteSpace($OutputPath)) {
     $OutputPath = Join-Path $rootDir "artifacts\publish\WuGesture"
 }
 
-$runningProcess = @(
-    Get-Process -Name "WuGesture", "WuGesture.App" -ErrorAction SilentlyContinue
-)
+$runningProcess = @(Get-Process -Name "WuGesture" -ErrorAction SilentlyContinue)
 if ($runningProcess) {
     $ids = ($runningProcess | Select-Object -ExpandProperty Id) -join ", "
     Write-Host "Stopping running WuGesture process(es): $ids"
@@ -31,7 +28,7 @@ if ($runningProcess) {
 Write-Host "Publishing WuGesture"
 Write-Host "Configuration: $Configuration"
 Write-Host "Output: $OutputPath"
-Write-Host "Bootstrapper runtime: $bootstrapperRuntimeIdentifier"
+Write-Host "WebView2 runtime: $webView2RuntimeIdentifier"
 
 if (Test-Path $OutputPath) {
     Get-ChildItem -Path $OutputPath -Force | Remove-Item -Recurse -Force
@@ -43,8 +40,7 @@ $publishArguments = @(
     "publish",
     $projectPath,
     "-c", $Configuration,
-    "-o", $OutputPath,
-    "-p:AssemblyName=WuGesture.App"
+    "-o", $OutputPath
 )
 
 if (-not [string]::IsNullOrWhiteSpace($Version)) {
@@ -77,30 +73,13 @@ if (Test-Path $webTargetPath) {
 
 Copy-Item -Path (Join-Path $webSourcePath "*") -Destination $webTargetPath -Recurse -Force
 
-$webView2LoaderSourcePath = Join-Path $OutputPath "runtimes\$bootstrapperRuntimeIdentifier\native\WebView2Loader.dll"
+$webView2LoaderSourcePath = Join-Path $OutputPath "runtimes\$webView2RuntimeIdentifier\native\WebView2Loader.dll"
 $webView2LoaderTargetPath = Join-Path $OutputPath "WebView2Loader.dll"
 if (-not (Test-Path $webView2LoaderSourcePath)) {
-    throw "WebView2Loader.dll for $bootstrapperRuntimeIdentifier was not found at $webView2LoaderSourcePath."
+    throw "WebView2Loader.dll for $webView2RuntimeIdentifier was not found at $webView2LoaderSourcePath."
 }
 
 Copy-Item -LiteralPath $webView2LoaderSourcePath -Destination $webView2LoaderTargetPath -Force
-
-$bootstrapperPublishArguments = @(
-    "publish",
-    $bootstrapperProjectPath,
-    "-c", $Configuration,
-    "-r", $bootstrapperRuntimeIdentifier,
-    "-o", $OutputPath
-)
-
-if (-not [string]::IsNullOrWhiteSpace($Version)) {
-    $bootstrapperPublishArguments += "-p:Version=$Version"
-}
-
-dotnet @bootstrapperPublishArguments
-if ($LASTEXITCODE -ne 0) {
-    throw "WuGesture bootstrapper publish failed with exit code $LASTEXITCODE."
-}
 
 Write-Host ""
 Write-Host "Publish complete:"

@@ -48,7 +48,7 @@ artifacts\publish\WuGesture
 artifacts\publish\WuGesture\WuGesture.exe
 ```
 
-发布包为 framework-dependent `win-x64` 版本。`WuGesture.exe` 会在启动前检查 [.NET 10 Desktop Runtime x64](https://dotnet.microsoft.com/download/dotnet/10.0/runtime) 和 [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/)；缺少任一依赖时会说明原因，并可直接打开对应官方下载页面。请完整解压 ZIP 后运行该入口文件。
+发布包为 framework-dependent `win-x64` 版本。请先安装 [.NET 10 Desktop Runtime x64](https://dotnet.microsoft.com/download/dotnet/10.0/runtime)，再完整解压 ZIP 并运行 `WuGesture.exe`。缺少 .NET 时由 .NET Host 显示系统安装提示；缺少 [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/) 时，应用会显示下载引导。
 
 ## 文档
 

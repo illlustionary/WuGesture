@@ -31,7 +31,6 @@ D:\workspace\my-gesture
 ├─ gesture.ahk
 ├─ scripts
 ├─ src
-│  ├─ WuGesture.Bootstrapper
 │  └─ WuGesture.App
 └─ tests
 ```
@@ -64,10 +63,9 @@ src\WuGesture.App
 
 启动流程：
 
-- `Program.cs` 通过命名互斥体保证单实例运行；再次启动时不会创建第二个实例，而是通知已运行实例弹出配置窗口。开机自启动会带 `--startup` 内部参数，默认只启动后台服务并驻留托盘，不打开配置窗口。
+- `Program.cs` 会在 .NET Host 成功启动后检查 WebView2 Runtime，缺少时显示官方下载引导；随后通过命名互斥体保证单实例运行。再次启动时不会创建第二个实例，而是通知已运行实例弹出配置窗口。开机自启动会带 `--startup` 内部参数，默认只启动后台服务并驻留托盘，不打开配置窗口。
 - `MainForm.cs` 加载配置、应用开机自启动和管理员启动设置、创建 `GestureService` / `EdgeActionService`、按需初始化 WebView2 配置界面、创建托盘图标，并桥接 WebView 消息；也会把配置里的 `uiSettings` 应用到轨迹窗、提示窗和应用行为。主窗口和托盘显示名为 `WuGesture`。
-- `AppIdentity.cs` 集中应用显示名、AppData 子目录、自启动注册表值、单实例 IPC 名和内部启动参数。
-- 发行包中的主程序为 `WuGesture.App.exe`；开机自启动和管理员重启会调用同目录的 `WuGesture.exe` 启动器，以便始终先完成依赖检查。
+- `AppIdentity.cs` 集中应用显示名、AppData 子目录、自启动注册表值、单实例 IPC 名和内部启动参数；开机自启动和管理员重启会直接调用当前 `WuGesture.exe`。
 - `ConfigStorageContract.cs` 集中本地配置文件名和窗口状态文件名；本地导入/导出只处理主配置文件，不包含窗口状态文件。
 - `WebViewHostContract.cs` 集中 WebView2 虚拟主机、入口 URL 和宿主输出目录中的 Web 前端路径片段。
 - 配置窗口首次启动时默认占据主屏工作区的一半，并居中显示；关闭窗口时会保存窗口位置、大小和最大化状态，并按设置选择隐藏到托盘、最小化到任务栏或直接退出。隐藏到托盘会释放 WebView2 配置界面以降低后台内存占用，托盘恢复时重建 WebView2。通过托盘菜单“退出”始终会真正释放后台手势服务并结束进程。
@@ -78,18 +76,6 @@ src\WuGesture.App
 - `Resources\volume.png`、`Resources\sun.png`：音量和亮度 OSD 使用的嵌入图标资源。
 - `Resources\wu.jpg`：应用图标来源图片。
 - `Resources\wu.ico`：从 `wu.jpg` 生成的 Windows 应用图标，用于可执行文件、任务栏、窗口左上角和托盘。
-
-## 发布启动器
-
-路径：
-
-```text
-src\WuGesture.Bootstrapper
-```
-
-- `WuGesture.Bootstrapper.csproj` / `Program.cs`：使用 NativeAOT 生成不依赖 .NET 的 `WuGesture.exe` 启动器。它会检查 .NET 10 Desktop Runtime x64、WebView2 Runtime 和同目录主程序；缺少依赖时显示具体提示，并可打开对应官方下载页面；满足要求才启动 `WuGesture.App.exe`。
-- 维护验证可用环境变量 `WUGESTURE_DOTNET_ROOT_OVERRIDE` 临时指定 .NET 根目录；设置为空目录时可安全测试缺少 .NET 的提示，不设置时始终检查系统默认安装目录。
-- `scripts\test-missing-dotnet-runtime.ps1`：创建空的临时 .NET 根目录并启动最新本地发行包，以可逆方式测试缺少 .NET 的提示；默认自动点击下载确认按钮，`-Manual` 可保留提示框供手动测试。
 
 ## 手势引擎
 
@@ -273,13 +259,11 @@ dotnet test WuGesture.slnx
 .\scripts\publish.ps1
 ```
 
-发布脚本会在执行 `dotnet publish` 前自动关闭正在运行的 `WuGesture`、清空输出目录，再重新生成发布产物，避免发布目录里残留旧的 `Wu Gesture.*` 文件。它会把依赖框架的主程序发布为 `WuGesture.App.exe`，再把 NativeAOT 启动器发布为用户入口 `WuGesture.exe`。启动器会检查 .NET 10 Desktop Runtime x64、WebView2 Runtime 及主程序文件完整性，缺少依赖时显示说明并提供官方下载跳转。可通过 `-Version` 设置程序集版本，通过 `-RuntimeIdentifier` 和 `-SelfContained` 生成指定运行时的自包含产物。
-
-本地运行发布脚本需要已安装 Visual Studio 或 Build Tools 的“使用 C++ 的桌面开发”工作负载，以提供 NativeAOT 所需的 MSVC 链接器和 Windows SDK；GitHub Actions 的 `windows-latest` 发行环境已具备该工具链。
+发布脚本会在执行 `dotnet publish` 前自动关闭正在运行的 `WuGesture`、清空输出目录，再重新生成发布产物，避免发布目录里残留旧的 `Wu Gesture.*` 文件。它将依赖框架的桌面应用直接发布为用户入口 `WuGesture.exe`，并将对应的 `WebView2Loader.dll` 放到输出根目录。发行包不包含 .NET；缺少 .NET 10 Desktop Runtime x64 时由 .NET Host 显示系统安装提示，应用启动后会检测 WebView2 Runtime 并提供官方下载引导。可通过 `-Version` 设置程序集版本，通过 `-RuntimeIdentifier` 和 `-SelfContained` 生成指定运行时的自包含产物。
 
 自动发行：
 
-- `scripts\new-release-package.ps1`：基于已创建的 `v*` Git 标签生成版本化的 framework-dependent `win-x64` 发布目录、ZIP 包和从相邻标签之间提交整理的 `RELEASE_NOTES.md`；发行包不包含 .NET，缺少 .NET 10 Desktop Runtime 时由原生启动器显示官方下载提示。
+- `scripts\new-release-package.ps1`：基于已创建的 `v*` Git 标签生成版本化的 framework-dependent `win-x64` 发布目录、ZIP 包和从相邻标签之间提交整理的 `RELEASE_NOTES.md`；发行包不包含 .NET，缺少 .NET 10 Desktop Runtime 时由 .NET Host 显示系统安装提示。
 - `scripts\start-release.ps1`：未提供版本号时会交互式提示输入；验证干净工作区后创建并推送 `v*` 注释标签，触发 GitHub Actions；默认推送 `github/main`，而 `origin` 保持指向 Gitee。
 - `.github\workflows\release.yml`：GitHub 收到 `v*` 标签后构建发行包、创建 GitHub Release；配置 `GITEE_REPOSITORY` 和 `GITEE_TOKEN` secrets 后，会镜像 `main` 和标签到 Gitee，并将相同的附件和更新说明发布至 Gitee。
 - `scripts\publish-gitee-release.ps1`：由 GitHub Actions 调用 Gitee API 创建发行版和上传附件；令牌只通过工作流 secret 传入，不存入仓库。
