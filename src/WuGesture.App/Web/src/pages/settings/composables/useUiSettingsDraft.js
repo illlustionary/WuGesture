@@ -179,6 +179,8 @@ function createDraft(settings) {
     },
     gestureHint: {
       enabled: Boolean(gestureHint.enabled ?? true),
+      displayDurationMs: gestureHint.displayDurationMs ?? 1800,
+      fadeDurationMs: gestureHint.fadeDurationMs ?? 240,
       fontFamily: gestureHint.fontFamily ?? 'Segoe UI Semibold',
       fontSize: gestureHint.fontSize ?? 22,
       textColor: gestureHint.textColor ?? '#FFFFFF',

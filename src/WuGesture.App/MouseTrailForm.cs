@@ -12,13 +12,25 @@ public sealed class MouseTrailForm : Form
     private const int WsExTransparent = 0x00000020;
     private const int WsExLayered = 0x00080000;
     private const int UlwAlpha = 0x00000002;
-    private const byte WindowOpacity = 180;
+    private const int WmNcHitTest = 0x0084;
+    private const int HtTransparent = -1;
+    private const int FadeFrameIntervalMs = 16;
+    private const int HintHorizontalPadding = 28;
+    private const int HintMinimumWidth = 240;
 
     private Pen inactivePen;
     private Pen activePen;
     private Pen dirtyPen;
     private readonly GraphicsPath path = new();
     private readonly GraphicsPath dirtyPath = new();
+    private readonly System.Windows.Forms.Timer hintDisplayTimer = new();
+    private readonly System.Windows.Forms.Timer hintFadeTimer = new() { Interval = FadeFrameIntervalMs };
+    private readonly StringFormat hintTextFormat = new()
+    {
+        Alignment = StringAlignment.Center,
+        LineAlignment = StringAlignment.Center,
+        FormatFlags = StringFormatFlags.NoWrap | StringFormatFlags.NoClip
+    };
 
     private readonly Size bufferSize;
     private readonly IntPtr screenDc;
@@ -32,7 +44,16 @@ public sealed class MouseTrailForm : Form
     private bool hasLastPoint;
     private bool isHighlighted;
     private MouseTrailUiSettings uiSettings = new();
-    private byte windowOpacity = 180;
+    private GestureHintUiSettings hintUiSettings = new();
+    private Font? hintFont;
+    private Brush? hintTextBrush;
+    private Brush? hintBackgroundBrush;
+    private Pen? hintBorderPen;
+    private string hintTitle = "";
+    private Point hintAnchor;
+    private bool hasHint;
+    private long hintFadeStartedAt;
+    private byte windowOpacity = 255;
 
     public MouseTrailForm()
     {
@@ -65,6 +86,9 @@ public sealed class MouseTrailForm : Form
         graphics.Clear(Color.Transparent);
 
         ApplySettings(uiSettings);
+        ApplyHintSettings(hintUiSettings);
+        hintDisplayTimer.Tick += OnHintDisplayTimerTick;
+        hintFadeTimer.Tick += OnHintFadeTimerTick;
     }
 
     protected override CreateParams CreateParams
@@ -78,6 +102,17 @@ public sealed class MouseTrailForm : Form
     }
 
     protected override bool ShowWithoutActivation => true;
+
+    protected override void WndProc(ref Message m)
+    {
+        if (m.Msg == WmNcHitTest)
+        {
+            m.Result = new IntPtr(HtTransparent);
+            return;
+        }
+
+        base.WndProc(ref m);
+    }
 
     public void Preload()
     {
@@ -112,9 +147,31 @@ public sealed class MouseTrailForm : Form
         activePen = CreatePen(activeColor, activePathWidth);
         dirtyPen = CreatePen(Color.White, Math.Max(inactivePathWidth, activePathWidth) * 3.5f);
 
-        if (Visible && path.PointCount > 0)
+        if (Visible)
         {
-            RedrawPath();
+            RedrawOverlay();
+        }
+    }
+
+    public void ApplyHintSettings(GestureHintUiSettings? settings)
+    {
+        hintUiSettings = settings ?? new GestureHintUiSettings();
+
+        hintFont?.Dispose();
+        hintTextBrush?.Dispose();
+        hintBackgroundBrush?.Dispose();
+        hintBorderPen?.Dispose();
+
+        var baseBackgroundColor = GestureColorParser.Parse(hintUiSettings.BackgroundColor, Color.FromArgb(18, 24, 31));
+        var backgroundOpacity = ClampOpacity(hintUiSettings.BackgroundOpacity);
+        hintFont = CreateHintFont(hintUiSettings.FontFamily, hintUiSettings.FontSize);
+        hintTextBrush = new SolidBrush(GestureColorParser.Parse(hintUiSettings.TextColor, Color.White));
+        hintBackgroundBrush = new SolidBrush(ApplyOpacity(baseBackgroundColor, backgroundOpacity));
+        hintBorderPen = new Pen(Color.FromArgb(90, 255, 255, 255), 1.1f);
+
+        if (Visible)
+        {
+            RedrawOverlay();
         }
     }
 
@@ -126,7 +183,71 @@ public sealed class MouseTrailForm : Form
         }
 
         isHighlighted = highlighted;
-        RedrawPath();
+        RedrawOverlay();
+    }
+
+    public void ShowGestureHint(string ruleName, Point anchor, bool autoHide)
+    {
+        if (IsDisposed)
+        {
+            return;
+        }
+
+        StopHintTimers();
+        windowOpacity = 255;
+        hintTitle = string.IsNullOrWhiteSpace(ruleName) ? "已触发" : ruleName;
+        hintAnchor = anchor;
+        hasHint = true;
+
+        if (!Visible)
+        {
+            Show();
+        }
+
+        RedrawOverlay();
+        if (autoHide)
+        {
+            hintDisplayTimer.Interval = hintUiSettings.DisplayDurationMs;
+            hintDisplayTimer.Start();
+        }
+    }
+
+    public void ClearGestureHint()
+    {
+        if (IsDisposed || !hasHint)
+        {
+            return;
+        }
+
+        StopHintTimers();
+        hasHint = false;
+        hintTitle = "";
+        RedrawOverlay();
+
+        if (path.PointCount == 0)
+        {
+            HideTrail();
+        }
+    }
+
+    public void EndPath()
+    {
+        if (IsDisposed)
+        {
+            return;
+        }
+
+        hasLastPoint = false;
+        isHighlighted = false;
+        path.Reset();
+
+        if (!hasHint)
+        {
+            HideTrail();
+            return;
+        }
+
+        RedrawOverlay();
     }
 
     public void ShowPath(IReadOnlyList<Point> points, GestureMouseButton button)
@@ -135,6 +256,15 @@ public sealed class MouseTrailForm : Form
         {
             HideTrail();
             return;
+        }
+
+        if (hintDisplayTimer.Enabled || hintFadeTimer.Enabled)
+        {
+            StopHintTimers();
+            windowOpacity = 255;
+            hasHint = false;
+            hintTitle = "";
+            RedrawOverlay();
         }
 
         var current = ToLocalPoint(points[^1]);
@@ -174,6 +304,10 @@ public sealed class MouseTrailForm : Form
 
         hasLastPoint = false;
         isHighlighted = false;
+        hasHint = false;
+        hintTitle = "";
+        StopHintTimers();
+        windowOpacity = 255;
         path.Reset();
         graphics.Clear(Color.Transparent);
 
@@ -195,9 +329,19 @@ public sealed class MouseTrailForm : Form
             ReleaseDC(IntPtr.Zero, screenDc);
             path.Dispose();
             dirtyPath.Dispose();
+            StopHintTimers();
+            hintDisplayTimer.Tick -= OnHintDisplayTimerTick;
+            hintDisplayTimer.Dispose();
+            hintFadeTimer.Tick -= OnHintFadeTimerTick;
+            hintFadeTimer.Dispose();
+            hintTextFormat.Dispose();
             inactivePen.Dispose();
             activePen.Dispose();
             dirtyPen.Dispose();
+            hintFont?.Dispose();
+            hintTextBrush?.Dispose();
+            hintBackgroundBrush?.Dispose();
+            hintBorderPen?.Dispose();
         }
 
         base.Dispose(disposing);
@@ -218,29 +362,105 @@ public sealed class MouseTrailForm : Form
         return dirtyRect;
     }
 
-    private void RedrawPath()
+    private void RedrawOverlay()
     {
-        if (IsDisposed || path.PointCount == 0)
+        if (IsDisposed)
         {
             return;
         }
 
-        dirtyPath.Reset();
-        dirtyPath.AddPath(path, false);
-        dirtyPath.Widen(dirtyPen);
-
-        var dirtyRect = Rectangle.Ceiling(dirtyPath.GetBounds());
-        dirtyRect.Intersect(new Rectangle(Point.Empty, bufferSize));
-
-        graphics.SetClip(dirtyPath);
         graphics.Clear(Color.Transparent);
-        graphics.ResetClip();
-        graphics.DrawPath(isHighlighted ? activePen : inactivePen, path);
+        if (path.PointCount > 0)
+        {
+            graphics.DrawPath(isHighlighted ? activePen : inactivePen, path);
+        }
+
+        if (hasHint)
+        {
+            DrawHint();
+        }
 
         if (Visible)
         {
-            Present(dirtyRect);
+            Present(new Rectangle(Point.Empty, bufferSize), fullWindow: true);
         }
+    }
+
+    private void DrawHint()
+    {
+        if (hintFont is null || hintTextBrush is null || hintBackgroundBrush is null || hintBorderPen is null)
+        {
+            return;
+        }
+
+        var area = Screen.FromPoint(hintAnchor).WorkingArea;
+        var maxWidth = Math.Max(HintMinimumWidth, area.Width - 24);
+        var width = hintUiSettings.AutoWidth
+            ? Math.Min(maxWidth, Math.Max(HintMinimumWidth, MeasureHintWidth(hintTitle) + HintHorizontalPadding * 2))
+            : Math.Max(HintMinimumWidth, ResolvePercent(area.Width, hintUiSettings.WidthPercent, HintMinimumWidth, area.Width));
+        var height = Math.Max(72, ResolvePercent(area.Height, hintUiSettings.HeightPercent, 72, area.Height));
+        var bottomOffset = ResolvePercent(area.Height, hintUiSettings.BottomOffsetPercent, 0, area.Height);
+        var bounds = new Rectangle(
+            area.Left - screenBounds.Left + (area.Width - width) / 2,
+            area.Bottom - screenBounds.Top - height - bottomOffset,
+            width,
+            height);
+
+        using var bubblePath = RoundedRect(bounds, Math.Min(Math.Min(width, height) / 2f, Math.Max(0f, hintUiSettings.CornerRadius)));
+        graphics.FillPath(hintBackgroundBrush, bubblePath);
+        graphics.DrawPath(hintBorderPen, bubblePath);
+
+        var titleBounds = new RectangleF(
+            bounds.Left + HintHorizontalPadding,
+            bounds.Top,
+            bounds.Width - HintHorizontalPadding * 2,
+            bounds.Height);
+        hintTextFormat.Trimming = hintUiSettings.AutoWidth ? StringTrimming.None : StringTrimming.EllipsisCharacter;
+        graphics.DrawString(hintTitle, hintFont, hintTextBrush, titleBounds, hintTextFormat);
+    }
+
+    private int MeasureHintWidth(string text)
+    {
+        var measuredSize = graphics.MeasureString(string.IsNullOrWhiteSpace(text) ? "已触发" : text, hintFont!);
+        return (int)Math.Ceiling(measuredSize.Width) + 8;
+    }
+
+    private void OnHintDisplayTimerTick(object? sender, EventArgs e)
+    {
+        hintDisplayTimer.Stop();
+        if (!hasHint || hintUiSettings.FadeDurationMs <= 0)
+        {
+            HideTrail();
+            return;
+        }
+
+        hintFadeStartedAt = Environment.TickCount64;
+        hintFadeTimer.Start();
+    }
+
+    private void OnHintFadeTimerTick(object? sender, EventArgs e)
+    {
+        if (!hasHint)
+        {
+            HideTrail();
+            return;
+        }
+
+        var elapsed = Environment.TickCount64 - hintFadeStartedAt;
+        var progress = Math.Min(1d, elapsed / (double)hintUiSettings.FadeDurationMs);
+        windowOpacity = (byte)Math.Round(255d * (1d - progress));
+        Present(new Rectangle(Point.Empty, bufferSize), fullWindow: true);
+
+        if (progress >= 1d)
+        {
+            HideTrail();
+        }
+    }
+
+    private void StopHintTimers()
+    {
+        hintDisplayTimer.Stop();
+        hintFadeTimer.Stop();
     }
 
     private void Present(Rectangle dirtyRect, bool fullWindow = false)
@@ -313,6 +533,49 @@ public sealed class MouseTrailForm : Form
     {
         var scaled = (int)Math.Round(value * 255d / 100d);
         return (byte)Math.Max(0, Math.Min(255, scaled));
+    }
+
+    private static int ResolvePercent(int size, int percent, int min, int max)
+    {
+        var value = (int)Math.Round(size * Math.Max(0, percent) / 100d);
+        return Math.Max(min, Math.Min(max, value));
+    }
+
+    private static GraphicsPath RoundedRect(Rectangle rect, float radius)
+    {
+        var path = new GraphicsPath();
+        if (radius <= 0)
+        {
+            path.AddRectangle(rect);
+            return path;
+        }
+
+        var diameter = radius * 2;
+        var arc = new RectangleF(rect.X, rect.Y, diameter, diameter);
+        path.AddArc(arc, 180, 90);
+        arc.X = rect.Right - diameter;
+        path.AddArc(arc, 270, 90);
+        arc.Y = rect.Bottom - diameter;
+        path.AddArc(arc, 0, 90);
+        arc.X = rect.Left;
+        path.AddArc(arc, 90, 90);
+        path.CloseFigure();
+        return path;
+    }
+
+    private static Font CreateHintFont(string? familyName, float size)
+    {
+        var resolvedFamily = string.IsNullOrWhiteSpace(familyName) ? "Segoe UI Semibold" : familyName.Trim();
+        var resolvedSize = Math.Max(8f, size);
+
+        try
+        {
+            return new Font(resolvedFamily, resolvedSize, FontStyle.Bold);
+        }
+        catch
+        {
+            return new Font("Segoe UI Semibold", resolvedSize, FontStyle.Bold);
+        }
     }
 
     private PointF ToLocalPoint(Point point)

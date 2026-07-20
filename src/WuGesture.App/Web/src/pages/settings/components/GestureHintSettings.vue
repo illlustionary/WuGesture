@@ -44,6 +44,52 @@ function commit() {
 
     <SettingsFormGrid>
       <SettingsField
+        label="显示时长"
+        :note="`${draft.gestureHint.displayDurationMs} ms`"
+      >
+        <input
+          v-model.number="draft.gestureHint.displayDurationMs"
+          type="range"
+          :min="GESTURE_EDITOR_LIMITS.hintDisplayDuration.min"
+          :max="GESTURE_EDITOR_LIMITS.hintDisplayDuration.max"
+          :style="{
+            '--range-progress': getRangeProgress(
+              draft.gestureHint.displayDurationMs,
+              GESTURE_EDITOR_LIMITS.hintDisplayDuration.min,
+              GESTURE_EDITOR_LIMITS.hintDisplayDuration.max
+            )
+          }"
+          step="100"
+          @input="emit('queue-persist')"
+          @change="emit('flush-persist')"
+        />
+      </SettingsField>
+      <SettingsField
+        label="淡出时长"
+        :note="
+          draft.gestureHint.fadeDurationMs === 0
+            ? '立即消失'
+            : `${draft.gestureHint.fadeDurationMs} ms`
+        "
+      >
+        <input
+          v-model.number="draft.gestureHint.fadeDurationMs"
+          type="range"
+          :min="GESTURE_EDITOR_LIMITS.hintFadeDuration.min"
+          :max="GESTURE_EDITOR_LIMITS.hintFadeDuration.max"
+          :style="{
+            '--range-progress': getRangeProgress(
+              draft.gestureHint.fadeDurationMs,
+              GESTURE_EDITOR_LIMITS.hintFadeDuration.min,
+              GESTURE_EDITOR_LIMITS.hintFadeDuration.max
+            )
+          }"
+          step="20"
+          @input="emit('queue-persist')"
+          @change="emit('flush-persist')"
+        />
+      </SettingsField>
+      <SettingsField
         label="字体大小"
         :note="`${draft.gestureHint.fontSize} px`"
       >

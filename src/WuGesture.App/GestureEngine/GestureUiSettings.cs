@@ -79,6 +79,10 @@ public sealed class GestureHintUiSettings
 {
     public bool? Enabled { get; set; } = true;
 
+    public int DisplayDurationMs { get; set; } = 1800;
+
+    public int FadeDurationMs { get; set; } = 240;
+
     public string FontFamily { get; set; } = "Segoe UI Semibold";
 
     public float FontSize { get; set; } = 22f;

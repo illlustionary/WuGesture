@@ -291,6 +291,8 @@ src\pages
 `uiSettings.gestureHint` 当前包含：
 
 - `enabled`
+- `displayDurationMs`
+- `fadeDurationMs`
 - `fontFamily`
 - `fontSize`
 - `textColor`

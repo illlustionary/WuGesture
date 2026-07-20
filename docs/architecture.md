@@ -10,12 +10,12 @@ MouseHook
 -> GestureRecognizer
 -> GestureMatcher
 -> ActionExecutor
--> GestureHintForm / WebView 状态
+-> MouseTrailForm / WebView 状态
 ```
 
 `GestureService` 跟踪右键或中键轨迹，`GestureRecognizer` 将轨迹转换为 8 方向模式，`GestureMatcher` 按当前前台窗口的作用域选择规则，`ActionExecutor` 执行命中的动作。
 
-手势跟踪期间，原始中键和右键事件会被吞掉；移动距离不足以构成手势时，会重放对应的普通鼠标单击。动作在按钮抬起时执行，匹配结果可在移动过程中显示于独立的全局提示窗。
+手势跟踪期间，原始中键和右键事件会被吞掉；移动距离不足以构成手势时，会重放对应的普通鼠标单击。动作在按钮抬起时执行，匹配结果可在移动过程中由全虚拟桌面轨迹覆盖层显示。最终提示会无缝接续预览，按 `gestureHint` 独立的显示和淡出时长消失；覆盖层显式鼠标穿透，不阻挡底层应用操作。
 
 ## 规则作用域
 
