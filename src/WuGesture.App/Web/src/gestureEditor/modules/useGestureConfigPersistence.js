@@ -15,20 +15,16 @@ export function useGestureConfigPersistence({
   setAutoSaveTimer,
   state,
   initialized,
-  notifications,
   setConfigResultMessage,
   setGesturePaused,
   setMessage,
   webView
 }) {
   let pendingAutoSaveOptions = {};
-  let suppressNextConfigResultToast = false;
   let preserveLocalEdgeActions = false;
   let pendingWebDavTestSignature = "";
 
   function saveRules(options = {}) {
-    markSaveActivity();
-
     if (getAutoSaveTimer()) {
       clearTimeout(getAutoSaveTimer());
       setAutoSaveTimer(0);
@@ -42,10 +38,6 @@ export function useGestureConfigPersistence({
       return;
     }
 
-    if (options.notifyResult === false) {
-      suppressNextConfigResultToast = true;
-    }
-
     webView.post(
       {
         type: WEBVIEW_MESSAGE_TYPES.saveRules,
@@ -56,8 +48,6 @@ export function useGestureConfigPersistence({
   }
 
   function scheduleSaveRules(options = {}) {
-    markSaveActivity();
-
     if (!initialized.value) {
       return;
     }
@@ -125,20 +115,14 @@ export function useGestureConfigPersistence({
     return cloneUiSettings(state.uiSettings);
   }
 
-  function saveUiSettings(nextSettings, options = {}) {
+  function saveUiSettings(nextSettings) {
     const previousPaused = Boolean(state.uiSettings.appBehavior.gesturePaused);
     state.uiSettings = normalizeUiSettings(nextSettings);
     const nextPaused = Boolean(state.uiSettings.appBehavior.gesturePaused);
     if (previousPaused !== nextPaused) {
       setGesturePaused(nextPaused);
     }
-    saveRules({
-      notifyPreview: Boolean(options.notify),
-      notifyResult: Boolean(options.notify)
-    });
-    if (options.notify) {
-      setMessage("已保存设置。", "success");
-    }
+    saveRules({ notifyPreview: false });
   }
 
   function resetUiSettings() {
@@ -147,7 +131,7 @@ export function useGestureConfigPersistence({
     state.webDavTestState = "idle";
     state.webDavTestedSignature = "";
     pendingWebDavTestSignature = "";
-    saveRules({ notifyPreview: false, notifyResult: false });
+    saveRules({ notifyPreview: false });
     setMessage("已恢复默认设置。", "success");
   }
 
@@ -229,8 +213,6 @@ export function useGestureConfigPersistence({
   }
 
   function handleConfigResult(message) {
-    const notify = !suppressNextConfigResultToast || !message.success;
-    suppressNextConfigResultToast = false;
     if (message.success) {
       window.setTimeout(() => {
         preserveLocalEdgeActions = false;
@@ -238,7 +220,11 @@ export function useGestureConfigPersistence({
     } else {
       preserveLocalEdgeActions = false;
     }
-    setConfigResultMessage(message.message, message.success, notify);
+    setConfigResultMessage(
+      message.message,
+      message.success,
+      message.operation !== "save"
+    );
   }
 
   function handleWebDavResult(message) {
@@ -259,10 +245,6 @@ export function useGestureConfigPersistence({
 
   function shouldPreserveLocalEdgeActions() {
     return preserveLocalEdgeActions;
-  }
-
-  function markSaveActivity() {
-    notifications.markSaveActivity();
   }
 
   function getConfigPayload() {

@@ -85,7 +85,6 @@ let toast = null;
 
 const notifications = useGestureEditorNotifications({
   state,
-  getAutoSaveTimer: () => autoSaveTimer,
   getToast: () => toast
 });
 
@@ -94,7 +93,6 @@ const webView = useGestureEditorWebViewBridge({ notifications });
 const persistenceActions = useGestureConfigPersistence({
   getAutoSaveTimer: () => autoSaveTimer,
   initialized,
-  notifications,
   setAutoSaveTimer: (timer) => {
     autoSaveTimer = timer;
   },
@@ -458,7 +456,7 @@ function addExcludedApplication(message) {
     excludedApplications.push(exclusion);
   }
 
-  saveRules({ notifyPreview: false, notifyResult: false });
+  saveRules({ notifyPreview: false });
   setMessage("已添加排除项。", "success");
 }
 
@@ -470,7 +468,7 @@ function updateExcludedApplication(application, patch = {}) {
   Object.assign(application, patch);
   const normalized = normalizeExcludedApplications(state.uiSettings.appBehavior.excludedApplications);
   state.uiSettings.appBehavior.excludedApplications = normalized;
-  saveRules({ notifyPreview: false, notifyResult: false });
+  saveRules({ notifyPreview: false });
 }
 
 function removeExcludedApplication(index) {
@@ -479,7 +477,7 @@ function removeExcludedApplication(index) {
   }
 
   state.uiSettings.appBehavior.excludedApplications.splice(index, 1);
-  saveRules({ notifyPreview: false, notifyResult: false });
+  saveRules({ notifyPreview: false });
   setMessage("已删除排除项。", "success");
 }
 

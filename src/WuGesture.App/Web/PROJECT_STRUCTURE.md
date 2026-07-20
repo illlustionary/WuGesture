@@ -137,7 +137,7 @@ src\gestureEditor
 - `gestureEditor\modules\useCategoryApplications.js`：分类与应用程序之间的多对多关联、重排和移除。
 - `gestureEditor\modules\useGestureRuleEditor.js`：规则新增/编辑弹窗、规则草稿提交、手势录制和快捷键录制流程。
 - `gestureEditor\modules\useGestureConfigPersistence.js`：规则保存节流、配置重载/重置、本地导入导出、WebDAV 备份恢复、UI 设置保存和边缘操作保存流程。
-- `gestureEditor\modules\useGestureEditorNotifications.js`：配置状态消息和 toast 的统一通知入口。
+- `gestureEditor\modules\useGestureEditorNotifications.js`：配置状态消息和 toast 的统一通知入口；普通自动保存成功只更新内部状态，失败和明确操作结果才显示 toast。
 - `gestureEditor\modules\useGestureEditorWebViewBridge.js`：WebView 消息发送、静默发送、可用性判断和消息监听入口。
 
 ## Constants
@@ -223,7 +223,7 @@ src\pages
 - `边缘操作` 页按触发角、摩擦边、边缘滚动三组展示配置；点击卡片打开独立弹窗编辑启用状态、命令和参数，名称由触发类型、位置与滚轮方向自动生成，关闭弹窗后自动保存。
 - `排除项` 页维护不执行鼠标手势的程序列表；可通过拖动准星或浏览 exe 添加程序，也可为单个排除项勾选“同时禁用边缘操作”，列表会展示从 exe 路径动态提取的应用图标。
 - `全局`、`分类` 和 `程序` 规则页会显示共享的作用域优先级提示，明确 `程序 > 分类 > 全局` 以及未命中当前层级时的继承关系。
-- `设置` 页右上角提供本地导出、本地导入和恢复默认按钮；恢复默认会通过确认弹窗二次确认。本地导入/导出只处理主配置 JSON，不包含窗口状态。页面中的调整会在输入变化时 debounce 自动保存，并在控件变更结束或离开页面时强制提交最后一次修改；本地编辑期间会避免宿主回传覆盖当前滑块值。设置页也包含开机自启动、以管理员身份打开、暂停 WuGesture、关闭按钮行为，以及 WebDAV 地址、账号、密码和远程路径。开机自启动、以管理员身份打开和暂停 WuGesture 等布尔项使用共享自定义复选控件，单选下拉使用共享弹层式 `CustomSelect`。轨迹线、音量/亮度 OSD 和底部提示窗预览分别内置在对应设置区块顶部，音量/亮度 OSD 区块还提供实际桌面测试按钮；手势灵敏度使用宽松、标准、严格三档。WebDAV 区域提供测试、恢复和保存按钮；当前 WebDAV 参数测试成功后，才允许把当前配置保存到远程或从远程恢复本地配置。
+- `设置` 页右上角提供本地导出、本地导入和恢复默认按钮；恢复默认会通过确认弹窗二次确认。本地导入/导出只处理主配置 JSON，不包含窗口状态。标题说明会固定提示“更改配置后会自动保存”。页面中的调整会在输入变化时 debounce 自动保存，并在控件变更结束或离开页面时强制提交最后一次修改；普通自动保存成功不弹出 toast，保存失败仍会提示。本地编辑期间会避免宿主回传覆盖当前滑块值。设置页也包含开机自启动、以管理员身份打开、暂停 WuGesture、关闭按钮行为，以及 WebDAV 地址、账号、密码和远程路径。开机自启动、以管理员身份打开和暂停 WuGesture 等布尔项使用共享自定义复选控件，单选下拉使用共享弹层式 `CustomSelect`。轨迹线、音量/亮度 OSD 和底部提示窗预览分别内置在对应设置区块顶部，音量/亮度 OSD 区块还提供实际桌面测试按钮；手势灵敏度使用宽松、标准、严格三档。WebDAV 区域提供测试、恢复和保存按钮；当前 WebDAV 参数测试成功后，才允许把当前配置保存到远程或从远程恢复本地配置。
 - 分类新增通过名称弹窗完成，不再使用左侧内联输入框；分类和程序名称都通过双击列表项后在弹窗里重命名。
 - 分类页、程序页和排除项页添加程序时都会先显示前端弹窗，用户可按住“拖动准星选择窗口”拖到目标窗口松开，或选择“浏览 exe 文件”作为备用方式。
 - 程序列表和详情会展示从 exe 路径动态提取的应用图标；图标通过 WebView 消息传递，不写入配置文件。
@@ -231,7 +231,7 @@ src\pages
 - 添加/编辑手势通过弹窗完成：弹窗里可选择命令类型，快捷键命令显示录制按钮，窗口控制命令显示操作下拉框。
 - 添加/编辑手势弹窗打开时会通过 WebView 消息暂停全局手势；手势录制由后端接管，前端只接收最终识别结果。
 - 规则编辑、删除、快捷键录制、分类/App 变更会发送 `save-rules` 写入配置文件。
-- 已移除编辑器内的手势提示区，只保留配置结果提示；新增、删除、重置和配置错误等操作会通过 toast 弹出反馈。
+- 已移除编辑器内的手势提示区，只保留配置结果提示；toast 统一显示在顶部居中。新增、删除、重置、导入导出、WebDAV 操作和配置错误会通过 toast 弹出反馈，普通自动保存成功不弹出提示。
 
 ## WebView 消息流
 
@@ -266,7 +266,7 @@ src\pages
 - `{ type: "gesture", ... }`
 - `{ type: "gesture-action-failed", ... }`
 - `{ type: "edge-action-failed", ... }`
-- `{ type: "config-result", ... }`
+- `{ type: "config-result", operation: "save|export|import|reload|reset|action", success: true|false, message: "..." }`；`save` 成功只更新内部状态，其余明确操作结果显示 toast，任意失败均显示错误 toast。
 - `{ type: "webdav-result", operation: "test|save|restore", success: true/false, message: "..." }`
 
 `uiSettings.appBehavior` 当前包含：

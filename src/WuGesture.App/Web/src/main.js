@@ -28,7 +28,7 @@ const router = createRouter({
 createApp(App)
   .use(router)
   .use(Toast, {
-    position: 'top-right',
+    position: 'top-center',
     timeout: 2400,
     closeOnClick: true,
     pauseOnFocusLoss: false,
