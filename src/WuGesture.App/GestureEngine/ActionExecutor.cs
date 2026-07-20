@@ -133,7 +133,7 @@ public sealed class ActionExecutor
         }
 
         var volume = (int)Math.Round(AudioController.GetMasterVolume() * 100);
-        LevelOsdForm.ShowVolume(volume, AudioController.IsMuted);
+        LevelOsdOverlay.ShowVolume(volume, AudioController.IsMuted);
     }
 
     private static void ExecuteBrightnessControl(BrightnessControlAction action)

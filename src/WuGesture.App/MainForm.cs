@@ -80,6 +80,7 @@ public sealed class MainForm : Form
             normalTrayIcon?.Dispose();
             pausedTrayIcon?.Dispose();
             DisposeWebView();
+            LevelOsdOverlay.Reset();
             DisposeMouseTrailForm();
         };
     }
@@ -92,6 +93,9 @@ public sealed class MainForm : Form
         }
 
         loadedConfig = configStore.LoadOrCreate();
+        LevelOsdOverlay.Configure(
+            SynchronizationContext.Current ?? new WindowsFormsSynchronizationContext(),
+            ShowLevelOsd);
         isConfigPaused = loadedConfig.Config.UiSettings.AppBehavior.GesturePaused;
         ApplyAppBehaviorSettings(loadedConfig.Config.UiSettings.AppBehavior);
         if (TryRelaunchAsAdministrator(loadedConfig.Config.UiSettings.AppBehavior))
@@ -119,7 +123,8 @@ public sealed class MainForm : Form
         }
 
         if (IsFeatureEnabled(loadedConfig.Config.UiSettings.GestureHint.Enabled) ||
-            IsFeatureEnabled(loadedConfig.Config.UiSettings.MouseTrail.Enabled))
+            IsFeatureEnabled(loadedConfig.Config.UiSettings.MouseTrail.Enabled) ||
+            IsFeatureEnabled(loadedConfig.Config.UiSettings.LevelOsd.Enabled))
         {
             EnsureMouseTrailForm().Preload();
         }
@@ -867,11 +872,11 @@ public sealed class MainForm : Form
             var message = JsonSerializer.Deserialize<PreviewLevelOsdWebMessage>(json, WebMessageJsonOptions);
             if (string.Equals(message?.Kind, "brightness", StringComparison.OrdinalIgnoreCase))
             {
-                LevelOsdForm.ShowBrightnessPreview(62);
+                LevelOsdOverlay.ShowBrightnessPreview(62);
             }
             else
             {
-                LevelOsdForm.ShowVolumePreview(72);
+                LevelOsdOverlay.ShowVolumePreview(72);
             }
         }
         catch (Exception exception)
@@ -1495,23 +1500,44 @@ public sealed class MainForm : Form
 
         mouseTrailForm?.Dispose();
         mouseTrailForm = new MouseTrailForm();
+        if (loadedConfig is not null)
+        {
+            mouseTrailForm.ApplySettings(loadedConfig.Config.UiSettings.MouseTrail);
+            mouseTrailForm.ApplyHintSettings(loadedConfig.Config.UiSettings.GestureHint);
+            mouseTrailForm.ApplyLevelOsdSettings(loadedConfig.Config.UiSettings.LevelOsd);
+        }
+
         return mouseTrailForm;
     }
 
     private void ApplyUiSettings(GestureUiSettings uiSettings)
     {
         gestureService?.ApplyGestureSensitivity(uiSettings.GestureSensitivity);
-        LevelOsdForm.ApplySettings(uiSettings.LevelOsd);
-        if (IsFeatureEnabled(uiSettings.MouseTrail.Enabled) || IsFeatureEnabled(uiSettings.GestureHint.Enabled))
+        var hasEnabledOverlay =
+            IsFeatureEnabled(uiSettings.MouseTrail.Enabled) ||
+            IsFeatureEnabled(uiSettings.GestureHint.Enabled) ||
+            IsFeatureEnabled(uiSettings.LevelOsd.Enabled);
+        if (mouseTrailForm is not null || hasEnabledOverlay)
         {
             var trailForm = EnsureMouseTrailForm();
             trailForm.ApplySettings(uiSettings.MouseTrail);
             trailForm.ApplyHintSettings(uiSettings.GestureHint);
+            trailForm.ApplyLevelOsdSettings(uiSettings.LevelOsd);
+            if (!hasEnabledOverlay)
+            {
+                trailForm.HideTrail();
+            }
         }
-        else
+    }
+
+    private void ShowLevelOsd(LevelOsdRequest request)
+    {
+        if (!CanUseUi())
         {
-            mouseTrailForm?.HideTrail();
+            return;
         }
+
+        EnsureMouseTrailForm().ShowLevelOsd(request);
     }
 
     private void DisposeMouseTrailForm()

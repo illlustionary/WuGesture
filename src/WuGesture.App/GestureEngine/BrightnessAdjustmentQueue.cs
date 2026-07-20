@@ -48,7 +48,7 @@ internal static class BrightnessAdjustmentQueue
                 var next = Math.Max(0, Math.Min(100, current + delta));
                 BrightnessController.SetBrightness(next);
                 cachedBrightness = next;
-                LevelOsdForm.ShowBrightness(next);
+                LevelOsdOverlay.ShowBrightness(next);
             }
             catch
             {

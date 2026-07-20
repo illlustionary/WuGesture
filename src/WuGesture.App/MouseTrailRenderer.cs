@@ -24,6 +24,8 @@ internal sealed class MouseTrailRenderer : IDisposable
 
     public bool HasPath => path.PointCount > 0;
 
+    public bool IsTracking => hasLastPoint || HasPath;
+
     public void ApplySettings(MouseTrailUiSettings? settings, float dpiFactor)
     {
         var uiSettings = settings ?? new MouseTrailUiSettings();
