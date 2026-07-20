@@ -19,7 +19,6 @@ public sealed class MainForm : Form
     private const int MinimumWindowWidth = 640;
     private const int MinimumWindowHeight = 480;
     private const string StartupRegistryPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
-    private readonly GestureHintForm gestureHintForm = new();
     private readonly GestureConfigStore configStore = new();
     private readonly WebDavConfigSyncService webDavConfigSyncService = new();
     private readonly KeyboardShortcutRecorder hotkeyRecorder = new();
@@ -81,7 +80,6 @@ public sealed class MainForm : Form
             normalTrayIcon?.Dispose();
             pausedTrayIcon?.Dispose();
             DisposeWebView();
-            gestureHintForm.Dispose();
             DisposeMouseTrailForm();
         };
     }
@@ -120,12 +118,8 @@ public sealed class MainForm : Form
             return;
         }
 
-        if (IsFeatureEnabled(loadedConfig.Config.UiSettings.GestureHint.Enabled))
-        {
-            gestureHintForm.Preload();
-        }
-
-        if (IsFeatureEnabled(loadedConfig.Config.UiSettings.MouseTrail.Enabled))
+        if (IsFeatureEnabled(loadedConfig.Config.UiSettings.GestureHint.Enabled) ||
+            IsFeatureEnabled(loadedConfig.Config.UiSettings.MouseTrail.Enabled))
         {
             EnsureMouseTrailForm().Preload();
         }
@@ -202,7 +196,6 @@ public sealed class MainForm : Form
         gestureService?.Dispose();
         edgeActionService?.Dispose();
         hotkeyRecorder.Dispose();
-        gestureHintForm.Hide();
         DisposeMouseTrailForm();
         DisposeWebView();
     }
@@ -214,7 +207,6 @@ public sealed class MainForm : Form
         gestureService?.StopRecording();
         isEditorPaused = false;
         ApplyGesturePauseState();
-        gestureHintForm.HideResult();
         mouseTrailForm?.HideTrail();
         DisposeWebView();
         ShowInTaskbar = false;
@@ -228,7 +220,6 @@ public sealed class MainForm : Form
         gestureService?.StopRecording();
         isEditorPaused = false;
         ApplyGesturePauseState();
-        gestureHintForm.HideResult();
         mouseTrailForm?.HideTrail();
         ShowInTaskbar = true;
         WindowState = FormWindowState.Minimized;
@@ -310,7 +301,6 @@ public sealed class MainForm : Form
         edgeActionService?.SetPaused(paused);
         if (paused)
         {
-            gestureHintForm.HideResult();
             mouseTrailForm?.HideTrail();
         }
     }
@@ -515,7 +505,7 @@ public sealed class MainForm : Form
 
         if (IsFeatureEnabled(loadedConfig?.Config.UiSettings.GestureHint.Enabled))
         {
-            gestureHintForm.ShowResult(e.ActionName, autoHide: false);
+            EnsureMouseTrailForm().ShowGestureHint(e.ActionName, e.Path[^1], autoHide: false);
         }
     }
 
@@ -539,7 +529,7 @@ public sealed class MainForm : Form
 
         if (IsFeatureEnabled(loadedConfig?.Config.UiSettings.GestureHint.Enabled))
         {
-            gestureHintForm.ClearResult();
+            mouseTrailForm?.ClearGestureHint();
         }
     }
 
@@ -566,7 +556,7 @@ public sealed class MainForm : Form
         TryPostWebMessage(payload);
         if (IsFeatureEnabled(loadedConfig?.Config.UiSettings.GestureHint.Enabled))
         {
-            gestureHintForm.ShowResult(e.ActionName, autoHide: true);
+            EnsureMouseTrailForm().ShowGestureHint(e.ActionName, e.Path[^1], autoHide: true);
         }
     }
 
@@ -591,7 +581,7 @@ public sealed class MainForm : Form
             pattern = e.Pattern.Select(x => x.ToString()).ToArray()
         });
 
-        gestureHintForm.HideResult();
+        mouseTrailForm?.HideTrail();
         TryPostWebMessage(payload);
     }
 
@@ -656,7 +646,9 @@ public sealed class MainForm : Form
             return;
         }
 
-        if (!IsFeatureEnabled(loadedConfig?.Config.UiSettings.MouseTrail.Enabled))
+        var isTrailEnabled = IsFeatureEnabled(loadedConfig?.Config.UiSettings.MouseTrail.Enabled);
+        var isHintEnabled = IsFeatureEnabled(loadedConfig?.Config.UiSettings.GestureHint.Enabled);
+        if (!isTrailEnabled && !isHintEnabled)
         {
             mouseTrailForm?.HideTrail();
             return;
@@ -664,11 +656,14 @@ public sealed class MainForm : Form
 
         if (!e.IsTracking || e.Path.Count < 2)
         {
-            mouseTrailForm?.HideTrail();
+            mouseTrailForm?.EndPath();
             return;
         }
 
-        EnsureMouseTrailForm().ShowPath(e.Path, e.Button);
+        if (isTrailEnabled)
+        {
+            EnsureMouseTrailForm().ShowPath(e.Path, e.Button);
+        }
     }
 
     private void OnHotkeyRecorded(object? sender, HotkeyRecordedEventArgs e)
@@ -907,7 +902,6 @@ public sealed class MainForm : Form
             ApplyGesturePauseState();
             if (message?.Paused == true)
             {
-                gestureHintForm.HideResult();
                 mouseTrailForm?.HideTrail();
             }
         }
@@ -936,7 +930,7 @@ public sealed class MainForm : Form
         {
             var message = JsonSerializer.Deserialize<StartGestureRecordingWebMessage>(json, WebMessageJsonOptions);
             gestureService?.StartRecording(message?.RequestId ?? "");
-            gestureHintForm.HideResult();
+            mouseTrailForm?.HideTrail();
         }
         catch (Exception exception)
         {
@@ -947,7 +941,6 @@ public sealed class MainForm : Form
     private void StopGestureRecording()
     {
         gestureService?.StopRecording();
-        gestureHintForm.HideResult();
         mouseTrailForm?.HideTrail();
     }
 
@@ -1507,16 +1500,12 @@ public sealed class MainForm : Form
     private void ApplyUiSettings(GestureUiSettings uiSettings)
     {
         gestureService?.ApplyGestureSensitivity(uiSettings.GestureSensitivity);
-        gestureHintForm.ApplySettings(uiSettings.GestureHint);
         LevelOsdForm.ApplySettings(uiSettings.LevelOsd);
-        if (!IsFeatureEnabled(uiSettings.GestureHint.Enabled))
+        if (IsFeatureEnabled(uiSettings.MouseTrail.Enabled) || IsFeatureEnabled(uiSettings.GestureHint.Enabled))
         {
-            gestureHintForm.HideResult();
-        }
-
-        if (IsFeatureEnabled(uiSettings.MouseTrail.Enabled))
-        {
-            EnsureMouseTrailForm().ApplySettings(uiSettings.MouseTrail);
+            var trailForm = EnsureMouseTrailForm();
+            trailForm.ApplySettings(uiSettings.MouseTrail);
+            trailForm.ApplyHintSettings(uiSettings.GestureHint);
         }
         else
         {

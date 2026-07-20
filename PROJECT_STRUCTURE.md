@@ -14,7 +14,7 @@
 - 动作当前支持快捷键、窗口控制、音量控制和亮度控制；快捷键通过 `SendInput` 执行，窗口控制通过 Win32 窗口 API 执行，音量通过 Core Audio API 执行并带按键回退，静音状态下执行音量增减会先取消静音，亮度通过 DDC/CI、WMI、Gamma 三段回退执行。
 - 规则当前支持 `global`、`category` 和 `app` 作用域；程序可按关联顺序归属多个分类，分类同手势以后关联的分类覆盖前者，`app` 规则仍高于分类和全局规则。
 - 边缘操作是独立的全局配置，支持触发角、摩擦边和边缘滚动。
-- UI 设置里的轨迹线、手势提示窗和音量/亮度 OSD 都支持单独关闭，运行时会按对应 `uiSettings` 节点的 `enabled` 决定是否显示。
+- UI 设置里的轨迹线、手势提示和音量/亮度 OSD 都支持单独关闭，运行时会按对应 `uiSettings` 节点的 `enabled` 决定是否显示。
 
 ## 根目录
 
@@ -122,9 +122,8 @@ src\WuGesture.App\GestureEngine
 - `GestureDirection.cs`：8 方向枚举。
 - `GestureRule.cs`：运行时规则和热键动作模型。
 - `GestureUiSettings.cs`：持久化的运行时 UI 设置模型，包括轨迹窗、提示泡泡、音量/亮度 OSD 和手势灵敏度配置。
-- `GestureHintForm.cs`：独立的全局命中提示窗，移动过程中匹配到规则时立即显示规则名。
-- `MouseTrailForm.cs`：独立的全局透明覆盖窗，在按住中键或右键移动时绘制鼠标轨迹；启动后预热并在手势结束时隐藏复用，避免首次绘制和反复创建窗口造成卡顿。
-- 运行时窗体会从配置里的 `uiSettings` 读取并应用轨迹颜色、线宽、未激活/激活透明度、提示泡泡外观，以及音量/亮度 OSD 的显示时长、尺寸、圆角和位置。
+- `MouseTrailForm.cs`：全虚拟桌面的透明覆盖窗，在按住中键或右键移动时绘制鼠标轨迹，并在同一图层绘制规则命中提示；启动后预热并在手势结束时隐藏复用，避免独立提示窗的创建和定位时序问题。最终提示会无缝接续预览，按配置停留后在同一层淡出；窗体显式鼠标穿透。即使轨迹线关闭，提示仍可单独使用此覆盖层显示。
+- 运行时窗体会从配置里的 `uiSettings` 读取并应用轨迹颜色、线宽、未激活/激活透明度、提示泡泡外观和显示/淡出时长，以及音量/亮度 OSD 的显示时长、尺寸、圆角和位置。
 
 手势流水线：
 
@@ -134,16 +133,16 @@ MouseHook
 -> GestureRecognizer
 -> GestureMatcher
 -> ActionExecutor
--> GestureHintForm
+-> MouseTrailForm
 -> WebView 状态
 ```
 
 重要行为：
 
 - 右键按下/抬起在手势跟踪期间会被吞掉。
-- 中键按下/抬起在手势跟踪期间会被吞掉，避免触发目标程序的原生中键事件；轨迹窗在松开时立即隐藏，不做淡出，并保留资源供下一次手势复用。
+- 中键按下/抬起在手势跟踪期间会被吞掉，避免触发目标程序的原生中键事件；轨迹线会在松开时隐藏并保留资源供下一次手势复用，若命中规则则提示会无缝保留至配置的显示时长结束，再按淡出时长消失。
 - 如果移动太小，就会按原触发按钮重放一次普通右键或中键。
-- 移动过程中会增量识别当前轨迹；一旦按当前鼠标键和方向匹配到规则，全局提示窗会立即显示规则名。
+- 移动过程中会增量识别当前轨迹；一旦按当前鼠标键和方向匹配到规则，透明轨迹覆盖层会立即在当前鼠标屏幕底部居中显示规则名。
 - 动作仍在右键抬起时执行；窗口控制动作会在执行时重新解析当前目标窗口。
 - 窗口控制动作在执行时会先按鼠标当前位置重新解析顶层窗口，避免沿用上一轮手势的句柄；当无法解析时才回退到缓存目标窗口。
 - `GestureService` 支持暂停；暂停时保留全局 hook，但不识别、不吞掉中/右键输入，并清理当前轨迹与预览提示，供配置界面录制手势使用。
@@ -187,7 +186,7 @@ MouseHook
 - `edgeActions`：独立的全局边缘操作列表；每项包含 `enabled`、`triggerType`、`location`、`wheelDirection`、`frictionCount` 和 `action`。`triggerType` 支持 `corner`、`friction`、`wheel`；`corner` 的位置为四角，`friction/wheel` 的位置为四边，`wheel` 额外区分滚轮 `up/down`。边缘操作名称不再保存，由 UI 和运行时根据触发类型、位置与滚轮方向生成。
 - `applications`：应用程序归属列表，每项包含 `name`、`displayName`、`path`、`categories`；`categories` 是有序分类列表，运行时通过前台进程名匹配 `name`，分类同手势以后关联者覆盖前者。旧配置的单个 `category` 会在加载时迁移；`displayName` 只用于 UI 展示和编辑。
 - `uiSettings.mouseTrail`：轨迹窗设置，包含 `enabled`、`inactiveColor`、`activeColor`、`inactiveThickness`、`activeThickness`、`thickness`、`inactiveOpacity`、`activeOpacity`；`enabled` 关闭时不再绘制轨迹线，`thickness` 保留用于兼容旧配置。
-- `uiSettings.gestureHint`：提示泡泡设置，包含 `enabled`、`fontFamily`、`fontSize`、`textColor`、`backgroundColor`、`backgroundOpacity`、`width`、`widthPercent`、`autoWidth`、`height`、`heightPercent`、`cornerRadius`、`bottomOffset`、`bottomOffsetPercent`；`enabled` 关闭时不再显示手势触发后的弹窗，百分比字段按当前屏幕工作区宽高换算，像素字段保留用于兼容旧配置。
+- `uiSettings.gestureHint`：提示泡泡设置，包含 `enabled`、`displayDurationMs`、`fadeDurationMs`、`fontFamily`、`fontSize`、`textColor`、`backgroundColor`、`backgroundOpacity`、`width`、`widthPercent`、`autoWidth`、`height`、`heightPercent`、`cornerRadius`、`bottomOffset`、`bottomOffsetPercent`；提示绘制在全虚拟桌面轨迹覆盖层而非独立窗体，`enabled` 关闭时不再显示手势命中文本，`displayDurationMs` 为停留时长、`fadeDurationMs` 为 0 时立即消失，百分比字段按当前鼠标屏幕工作区宽高换算，像素字段保留用于兼容旧配置。
 - `uiSettings.levelOsd`：音量/亮度 OSD 设置，包含 `enabled`、`displayDurationMs`、`fadeDurationMs`、`backgroundColor`、`backgroundOpacity`、`textColor`、`trackColor`、`volumeColor`、`brightnessColor`、`width`、`height`、`cornerRadius`、`position`、`offsetX` 和 `offsetY`；当前支持相对于鼠标所在屏幕工作区的居中、上/下居中和四角位置预设，`fadeDurationMs` 为 0 时立即消失。
 - `uiSettings.gestureSensitivity`：手势灵敏度配置，包含 `percent`，范围 0-200，默认 110；100 对应标准手感，数值越高越容易识别短距离手势。
 - `uiSettings.appBehavior`：应用行为设置，包含 `launchAtStartup`、`runAsAdministrator`、`gesturePaused`、`closeButtonBehavior`、`disableGesturesInFullscreen`、`disableEdgeActionsInFullscreen` 和 `excludedApplications`；关闭按钮行为支持 `minimize-to-tray`、`minimize-to-taskbar`、`exit`。全屏禁用开关默认关闭，分别停止手势识别和边缘操作。排除项包含 `name`、`displayName`、`path` 和 `disableEdgeActions`；命中的程序不执行鼠标手势，勾选 `disableEdgeActions` 时也会禁用边缘操作。

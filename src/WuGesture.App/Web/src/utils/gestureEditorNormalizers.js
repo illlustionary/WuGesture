@@ -57,6 +57,18 @@ export function normalizeGestureHintSettings(settings) {
   settings = normalizeObjectKeys(settings);
   return {
     enabled: Boolean(settings?.enabled ?? DEFAULT_UI_SETTINGS.gestureHint.enabled),
+    displayDurationMs: clampInteger(
+      settings?.displayDurationMs,
+      GESTURE_EDITOR_LIMITS.hintDisplayDuration.min,
+      GESTURE_EDITOR_LIMITS.hintDisplayDuration.max,
+      DEFAULT_UI_SETTINGS.gestureHint.displayDurationMs
+    ),
+    fadeDurationMs: clampInteger(
+      settings?.fadeDurationMs,
+      GESTURE_EDITOR_LIMITS.hintFadeDuration.min,
+      GESTURE_EDITOR_LIMITS.hintFadeDuration.max,
+      DEFAULT_UI_SETTINGS.gestureHint.fadeDurationMs
+    ),
     fontFamily: String(settings?.fontFamily ?? DEFAULT_UI_SETTINGS.gestureHint.fontFamily).trim() || DEFAULT_UI_SETTINGS.gestureHint.fontFamily,
     fontSize: clampFloat(settings?.fontSize, GESTURE_EDITOR_LIMITS.hintFontSize.min, GESTURE_EDITOR_LIMITS.hintFontSize.max, DEFAULT_UI_SETTINGS.gestureHint.fontSize),
     textColor: String(settings?.textColor ?? DEFAULT_UI_SETTINGS.gestureHint.textColor).trim() || DEFAULT_UI_SETTINGS.gestureHint.textColor,

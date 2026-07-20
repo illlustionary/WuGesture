@@ -145,6 +145,8 @@ public sealed class GestureConfigStore
 
         var gestureHint = settings.GestureHint;
         gestureHint.Enabled ??= true;
+        gestureHint.DisplayDurationMs = ClampInteger(gestureHint.DisplayDurationMs, 300, 5000, 1800);
+        gestureHint.FadeDurationMs = ClampInteger(gestureHint.FadeDurationMs, 0, 1000, 240);
         gestureHint.WidthPercent = ClampInteger(gestureHint.WidthPercent, 10, 90, 28);
         gestureHint.HeightPercent = ClampInteger(gestureHint.HeightPercent, 5, 40, 11);
         gestureHint.BottomOffsetPercent = ClampInteger(gestureHint.BottomOffsetPercent, 0, 100, 13);

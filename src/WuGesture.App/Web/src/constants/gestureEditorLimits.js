@@ -11,6 +11,8 @@ export const GESTURE_EDITOR_LIMITS = {
   mouseTrailThickness: { min: 1, max: 20 },
   opacityPercent: { min: 0, max: 100 },
   hintFontSize: { min: 10, max: 48 },
+  hintDisplayDuration: { min: 300, max: 5000, fallback: 1800 },
+  hintFadeDuration: { min: 0, max: 1000, fallback: 240 },
   hintWidthPercent: { min: 10, max: 90 },
   hintHeightPercent: { min: 5, max: 40 },
   hintCornerRadius: { min: 0, max: 80 },

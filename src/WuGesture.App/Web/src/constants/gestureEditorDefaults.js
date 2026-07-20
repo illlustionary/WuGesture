@@ -50,6 +50,8 @@ export const DEFAULT_UI_SETTINGS = {
   },
   gestureHint: {
     enabled: true,
+    displayDurationMs: 1800,
+    fadeDurationMs: 240,
     fontFamily: "Segoe UI Semibold",
     fontSize: 22,
     textColor: "#FFFFFF",
