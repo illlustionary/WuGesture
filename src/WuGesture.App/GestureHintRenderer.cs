@@ -19,6 +19,7 @@ internal sealed class GestureHintRenderer : IDisposable
     };
     private readonly Action requestRedraw;
     private readonly Action requestHide;
+    private readonly FadeOverlaySurface fadeSurface = new();
     private GestureHintUiSettings settings = new();
     private Font? font;
     private Color textColor;
@@ -109,20 +110,24 @@ internal sealed class GestureHintRenderer : IDisposable
             width,
             height);
 
-        using var bubblePath = RoundedRect(bounds, Math.Min(Math.Min(width, height) / 2f, Math.Max(0f, settings.CornerRadius)));
-        using var backgroundBrush = new SolidBrush(ApplyFadeOpacity(backgroundColor));
-        using var borderPen = new Pen(ApplyFadeOpacity(borderColor), 1.1f);
-        graphics.FillPath(backgroundBrush, bubblePath);
-        graphics.DrawPath(borderPen, bubblePath);
+        var surfaceBounds = Rectangle.Inflate(bounds, 2, 2);
+        fadeSurface.Draw(graphics, surfaceBounds, Opacity, surfaceGraphics =>
+        {
+            using var bubblePath = RoundedRect(bounds, Math.Min(Math.Min(width, height) / 2f, Math.Max(0f, settings.CornerRadius)));
+            using var backgroundBrush = new SolidBrush(backgroundColor);
+            using var borderPen = new Pen(borderColor, 1.1f);
+            surfaceGraphics.FillPath(backgroundBrush, bubblePath);
+            surfaceGraphics.DrawPath(borderPen, bubblePath);
 
-        var titleBounds = new RectangleF(
-            bounds.Left + HorizontalPadding,
-            bounds.Top,
-            bounds.Width - HorizontalPadding * 2,
-            bounds.Height);
-        textFormat.Trimming = settings.AutoWidth ? StringTrimming.None : StringTrimming.EllipsisCharacter;
-        using var textBrush = new SolidBrush(ApplyFadeOpacity(textColor));
-        graphics.DrawString(title, font, textBrush, titleBounds, textFormat);
+            var titleBounds = new RectangleF(
+                bounds.Left + HorizontalPadding,
+                bounds.Top,
+                bounds.Width - HorizontalPadding * 2,
+                bounds.Height);
+            textFormat.Trimming = settings.AutoWidth ? StringTrimming.None : StringTrimming.EllipsisCharacter;
+            using var textBrush = new SolidBrush(textColor);
+            surfaceGraphics.DrawString(title, font, textBrush, titleBounds, textFormat);
+        });
     }
 
     public void Dispose()
@@ -134,6 +139,7 @@ internal sealed class GestureHintRenderer : IDisposable
         fadeTimer.Dispose();
         textFormat.Dispose();
         font?.Dispose();
+        fadeSurface.Dispose();
     }
 
     private int MeasureWidth(Graphics graphics)
@@ -183,12 +189,6 @@ internal sealed class GestureHintRenderer : IDisposable
     private static Color ApplyOpacity(Color color, byte opacity)
     {
         return Color.FromArgb(opacity, color.R, color.G, color.B);
-    }
-
-    private Color ApplyFadeOpacity(Color color)
-    {
-        var alpha = (int)Math.Round(color.A * Opacity / 255d);
-        return Color.FromArgb(alpha, color.R, color.G, color.B);
     }
 
     private static byte ClampOpacity(int value)
