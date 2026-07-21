@@ -45,7 +45,13 @@ function commit() {
     <SettingsFormGrid>
       <SettingsField
         label="显示时长"
-        :note="`${draft.gestureHint.displayDurationMs} ms`"
+        :note="
+          draft.gestureHint.displayDurationMs === 0
+            ? draft.gestureHint.fadeDurationMs === 0
+              ? '立即消失'
+              : '立即淡出'
+            : `${draft.gestureHint.displayDurationMs} ms`
+        "
       >
         <input
           v-model.number="draft.gestureHint.displayDurationMs"

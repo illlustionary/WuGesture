@@ -61,7 +61,7 @@ internal sealed class LevelOsdRenderer : IDisposable
         anchor = Cursor.Position;
         Opacity = 255;
         HasOsd = true;
-        displayTimer.Interval = settings.DisplayDurationMs;
+        displayTimer.Interval = Math.Max(1, settings.DisplayDurationMs);
         displayTimer.Start();
         return true;
     }
@@ -312,7 +312,7 @@ internal sealed class LevelOsdRenderer : IDisposable
         return new LevelOsdUiSettings
         {
             Enabled = value.Enabled ?? true,
-            DisplayDurationMs = Math.Clamp(value.DisplayDurationMs, 300, 5000),
+            DisplayDurationMs = Math.Clamp(value.DisplayDurationMs, 0, 10000),
             FadeDurationMs = Math.Clamp(value.FadeDurationMs, 0, 1000),
             BackgroundColor = value.BackgroundColor,
             BackgroundOpacity = Math.Clamp(value.BackgroundOpacity, 0, 100),

@@ -74,7 +74,13 @@ function commit() {
     <SettingsFormGrid>
       <SettingsField
         label="显示时长"
-        :note="`${draft.levelOsd.displayDurationMs} ms`"
+        :note="
+          draft.levelOsd.displayDurationMs === 0
+            ? draft.levelOsd.fadeDurationMs === 0
+              ? '立即消失'
+              : '立即淡出'
+            : `${draft.levelOsd.displayDurationMs} ms`
+        "
       >
         <input
           v-model.number="draft.levelOsd.displayDurationMs"
