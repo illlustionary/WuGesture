@@ -1,5 +1,4 @@
 using System.Drawing.Drawing2D;
-using System.Drawing.Imaging;
 using System.Reflection;
 using WuGesture.App.GestureEngine;
 
@@ -13,6 +12,7 @@ internal sealed class LevelOsdRenderer : IDisposable
     private readonly System.Windows.Forms.Timer fadeTimer = new() { Interval = FadeFrameIntervalMs };
     private readonly Action requestRedraw;
     private readonly Action requestHide;
+    private readonly FadeOverlaySurface fadeSurface = new();
     private readonly Bitmap? volumeIcon;
     private readonly Bitmap? brightnessIcon;
     private LevelOsdUiSettings settings = new();
@@ -87,18 +87,21 @@ internal sealed class LevelOsdRenderer : IDisposable
         }
 
         var bounds = GetBounds(screenBounds);
-        using var backgroundPath = RoundedRect(bounds, settings.CornerRadius);
-        using var backgroundBrush = new SolidBrush(WithOpacity(
-            GestureColorParser.Parse(settings.BackgroundColor, Color.FromArgb(40, 40, 44)),
-            settings.BackgroundOpacity));
-        using var borderPen = new Pen(WithOpacity(Color.FromArgb(50, 120, 120, 120), 100), 1);
-        graphics.FillPath(backgroundBrush, backgroundPath);
-        graphics.DrawPath(borderPen, backgroundPath);
-
         var layout = GetVisualLayout(bounds);
-        DrawIcon(graphics, kind == LevelOsdKind.Volume ? volumeIcon : brightnessIcon, layout.IconBounds);
-        DrawTrack(graphics, layout);
-        DrawText(graphics, layout);
+        var surfaceBounds = Rectangle.Inflate(bounds, 2, 2);
+        fadeSurface.Draw(graphics, surfaceBounds, Opacity, surfaceGraphics =>
+        {
+            using var backgroundPath = RoundedRect(bounds, settings.CornerRadius);
+            using var backgroundBrush = new SolidBrush(WithConfiguredOpacity(
+                GestureColorParser.Parse(settings.BackgroundColor, Color.FromArgb(40, 40, 44)),
+                settings.BackgroundOpacity));
+            using var borderPen = new Pen(WithConfiguredOpacity(Color.FromArgb(50, 120, 120, 120), 100), 1);
+            surfaceGraphics.FillPath(backgroundBrush, backgroundPath);
+            surfaceGraphics.DrawPath(borderPen, backgroundPath);
+            DrawIcon(surfaceGraphics, kind == LevelOsdKind.Volume ? volumeIcon : brightnessIcon, layout.IconBounds);
+            DrawTrack(surfaceGraphics, layout);
+            DrawText(surfaceGraphics, layout);
+        });
     }
 
     public void Dispose()
@@ -110,6 +113,7 @@ internal sealed class LevelOsdRenderer : IDisposable
         fadeTimer.Dispose();
         volumeIcon?.Dispose();
         brightnessIcon?.Dispose();
+        fadeSurface.Dispose();
     }
 
     private Rectangle GetBounds(Rectangle screenBounds)
@@ -183,7 +187,7 @@ internal sealed class LevelOsdRenderer : IDisposable
     {
         var track = layout.TrackBounds;
         using var trackPath = RoundedRect(track, track.Height / 2f);
-        using var trackBrush = new SolidBrush(WithOpacity(
+        using var trackBrush = new SolidBrush(WithConfiguredOpacity(
             GestureColorParser.Parse(settings.TrackColor, Color.FromArgb(70, 70, 70)),
             100));
         graphics.FillPath(trackBrush, trackPath);
@@ -202,8 +206,8 @@ internal sealed class LevelOsdRenderer : IDisposable
             kind == LevelOsdKind.Volume ? Color.FromArgb(100, 200, 255) : Color.FromArgb(255, 200, 40));
         using var fillBrush = new LinearGradientBrush(
             fill,
-            WithOpacity(accent, 100),
-            WithOpacity(Lighten(accent), 100),
+            WithConfiguredOpacity(accent, 100),
+            WithConfiguredOpacity(Lighten(accent), 100),
             LinearGradientMode.Horizontal);
         graphics.FillPath(fillBrush, fillPath);
     }
@@ -212,7 +216,7 @@ internal sealed class LevelOsdRenderer : IDisposable
     {
         var scale = Math.Min(settings.Width / 210d, settings.Height / 190d);
         using var font = new Font("Segoe UI", Math.Max(9f, (float)(13 * scale)), FontStyle.Regular);
-        using var brush = new SolidBrush(WithOpacity(
+        using var brush = new SolidBrush(WithConfiguredOpacity(
             GestureColorParser.Parse(settings.TextColor, Color.FromArgb(220, 220, 220)),
             100));
         using var format = new StringFormat
@@ -230,18 +234,7 @@ internal sealed class LevelOsdRenderer : IDisposable
             return;
         }
 
-        using var attributes = new ImageAttributes();
-        var matrix = new ColorMatrix { Matrix33 = Opacity / 255f };
-        attributes.SetColorMatrix(matrix);
-        graphics.DrawImage(
-            icon,
-            bounds,
-            0,
-            0,
-            icon.Width,
-            icon.Height,
-            GraphicsUnit.Pixel,
-            attributes);
+        graphics.DrawImage(icon, bounds);
     }
 
     private void OnDisplayTimerTick(object? sender, EventArgs e)
@@ -282,10 +275,10 @@ internal sealed class LevelOsdRenderer : IDisposable
         fadeTimer.Stop();
     }
 
-    private Color WithOpacity(Color color, int configuredOpacity)
+    private static Color WithConfiguredOpacity(Color color, int configuredOpacity)
     {
         var configuredAlpha = Math.Clamp(configuredOpacity, 0, 100) / 100d;
-        var alpha = (int)Math.Round(color.A * configuredAlpha * Opacity / 255d);
+        var alpha = (int)Math.Round(color.A * configuredAlpha);
         return Color.FromArgb(alpha, color.R, color.G, color.B);
     }
 
