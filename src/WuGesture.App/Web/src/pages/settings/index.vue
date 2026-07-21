@@ -180,8 +180,8 @@ function previewLevelOsd(kind) {
 }
 
 :deep(.settings-reset-action .icon-action-button__icon) {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
 }
 
 :deep(.settings-color) {

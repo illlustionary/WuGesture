@@ -70,7 +70,7 @@ internal sealed class GestureHintRenderer : IDisposable
 
         if (autoHide)
         {
-            displayTimer.Interval = settings.DisplayDurationMs;
+            displayTimer.Interval = Math.Max(1, settings.DisplayDurationMs);
             displayTimer.Start();
         }
     }

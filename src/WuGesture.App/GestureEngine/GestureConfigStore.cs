@@ -145,7 +145,7 @@ public sealed class GestureConfigStore
 
         var gestureHint = settings.GestureHint;
         gestureHint.Enabled ??= true;
-        gestureHint.DisplayDurationMs = ClampInteger(gestureHint.DisplayDurationMs, 300, 5000, 1800);
+        gestureHint.DisplayDurationMs = ClampInteger(gestureHint.DisplayDurationMs, 0, 10000, 1800);
         gestureHint.FadeDurationMs = ClampInteger(gestureHint.FadeDurationMs, 0, 1000, 240);
         gestureHint.WidthPercent = ClampInteger(gestureHint.WidthPercent, 10, 90, 28);
         gestureHint.HeightPercent = ClampInteger(gestureHint.HeightPercent, 5, 40, 11);
@@ -157,7 +157,7 @@ public sealed class GestureConfigStore
 
         var levelOsd = settings.LevelOsd;
         levelOsd.Enabled ??= true;
-        levelOsd.DisplayDurationMs = ClampInteger(levelOsd.DisplayDurationMs, 300, 5000, 1800);
+        levelOsd.DisplayDurationMs = ClampInteger(levelOsd.DisplayDurationMs, 0, 10000, 1800);
         levelOsd.FadeDurationMs = ClampInteger(levelOsd.FadeDurationMs, 0, 1000, 240);
         levelOsd.BackgroundColor = NormalizeColor(levelOsd.BackgroundColor, "#28282C");
         levelOsd.BackgroundOpacity = ClampInteger(levelOsd.BackgroundOpacity, 0, 100, 88);
