@@ -14,6 +14,7 @@ public sealed class MainForm : Form
 {
     private const int SwShow = 5;
     private const int SwRestore = 9;
+    private const int WmClose = 0x0010;
     private const int DefaultWindowWidth = 1080;
     private const int DefaultWindowHeight = 720;
     private const int MinimumWindowWidth = 640;
@@ -83,6 +84,17 @@ public sealed class MainForm : Form
             LevelOsdOverlay.Reset();
             DisposeMouseTrailForm();
         };
+    }
+
+    protected override void WndProc(ref Message m)
+    {
+        // Gesture window actions use WM_CLOSE directly, before WinForms assigns a CloseReason.
+        if (m.Msg == WmClose && HandleConfiguredUserClose())
+        {
+            return;
+        }
+
+        base.WndProc(ref m);
     }
 
     private async void OnLoad(object? sender, EventArgs e)
@@ -172,27 +184,10 @@ public sealed class MainForm : Form
 
     private void OnFormClosing(object? sender, FormClosingEventArgs e)
     {
-        if (!isExiting && e.CloseReason == CloseReason.UserClosing)
+        if (e.CloseReason == CloseReason.UserClosing && HandleConfiguredUserClose())
         {
-            var closeButtonBehavior = GetCloseButtonBehavior();
-            if (closeButtonBehavior == GestureConfigContract.CloseButtonBehaviors.Exit)
-            {
-                isExiting = true;
-            }
-            else
-            {
-                e.Cancel = true;
-                if (closeButtonBehavior == GestureConfigContract.CloseButtonBehaviors.MinimizeToTaskbar)
-                {
-                    MinimizeToTaskbar();
-                }
-                else
-                {
-                    MinimizeToTray();
-                }
-
-                return;
-            }
+            e.Cancel = true;
+            return;
         }
 
         isClosing = true;
@@ -203,6 +198,32 @@ public sealed class MainForm : Form
         hotkeyRecorder.Dispose();
         DisposeMouseTrailForm();
         DisposeWebView();
+    }
+
+    private bool HandleConfiguredUserClose()
+    {
+        if (isExiting)
+        {
+            return false;
+        }
+
+        var closeButtonBehavior = GetCloseButtonBehavior();
+        if (closeButtonBehavior == GestureConfigContract.CloseButtonBehaviors.Exit)
+        {
+            isExiting = true;
+            return false;
+        }
+
+        if (closeButtonBehavior == GestureConfigContract.CloseButtonBehaviors.MinimizeToTaskbar)
+        {
+            MinimizeToTaskbar();
+        }
+        else
+        {
+            MinimizeToTray();
+        }
+
+        return true;
     }
 
     private void MinimizeToTray()
