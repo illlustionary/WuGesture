@@ -189,6 +189,9 @@ export function normalizeAppBehaviorSettings(settings) {
   settings = normalizeObjectKeys(settings);
   return {
     launchAtStartup: Boolean(settings?.launchAtStartup ?? DEFAULT_UI_SETTINGS.appBehavior.launchAtStartup),
+    showConfigWindowOnLaunch: Boolean(
+      settings?.showConfigWindowOnLaunch ?? DEFAULT_UI_SETTINGS.appBehavior.showConfigWindowOnLaunch
+    ),
     runAsAdministrator: Boolean(settings?.runAsAdministrator ?? DEFAULT_UI_SETTINGS.appBehavior.runAsAdministrator),
     disableGesturesInFullscreen: Boolean(
       settings?.disableGesturesInFullscreen ??

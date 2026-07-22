@@ -34,6 +34,12 @@ function commit() {
           @change="commit"
         />
         <ToggleCheckbox
+          v-model="draft.appBehavior.showConfigWindowOnLaunch"
+          label="启动时显示配置窗口"
+          note="关闭后会在后台启动，可从托盘打开配置。"
+          @change="commit"
+        />
+        <ToggleCheckbox
           v-model="draft.appBehavior.runAsAdministrator"
           label="以管理员身份打开"
           note="保存后下次启动时生效。"
