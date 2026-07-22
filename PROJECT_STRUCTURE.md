@@ -25,10 +25,8 @@ D:\workspace\my-gesture
 │  ├─ architecture.md
 │  └─ releasing.md
 ├─ PROJECT_STRUCTURE.md
-├─ ROADMAP.md
 ├─ WuGesture.slnx
 ├─ README.md
-├─ gesture.ahk
 ├─ scripts
 ├─ src
 │  └─ WuGesture.App
@@ -41,10 +39,8 @@ D:\workspace\my-gesture
 - `README.md`：面向用户的运行、构建和发布说明。
 - `docs\architecture.md`：面向开发者的架构说明和 WebView2 集成概览。
 - `docs\releasing.md`：面向维护者的本地发布和自动发行流程。
-- `ROADMAP.md`：当前开发优先级和后续计划。
 - `PROJECT_STRUCTURE.md`：本项目地图。
 - `AGENTS.md`：后续会话的代理指令。
-- `gesture.ahk`：早期 AutoHotkey 实验文件，当前未接入。
 - `.gitignore`：忽略构建输出、WebView2 运行时缓存、IDE 状态和发布产物。
 
 ## 桌面应用
@@ -263,7 +259,7 @@ dotnet test WuGesture.slnx
 
 自动发行：
 
-- `scripts\new-release-package.ps1`：基于已创建的 `v*` Git 标签生成版本化的 framework-dependent `win-x64` 发布目录、ZIP 包和从相邻标签之间提交整理的 `RELEASE_NOTES.md`；发行包不包含 .NET，缺少 .NET 10 Desktop Runtime 时由 .NET Host 显示系统安装提示。
+- `scripts\new-release-package.ps1`：基于已创建的 `v*` Git 标签生成 framework-dependent `win-x64` 发布目录、版本化 ZIP 包和从相邻标签之间提交整理的 `RELEASE_NOTES.md`；ZIP 内的根目录固定为 `WuGesture`，而 ZIP 文件名保留版本号。发行包不包含 .NET，缺少 .NET 10 Desktop Runtime 时由 .NET Host 显示系统安装提示。
 - `scripts\start-release.ps1`：未提供版本号时会交互式提示输入；验证干净工作区后创建并推送 `v*` 注释标签，触发 GitHub Actions；默认推送 `github/main`，而 `origin` 保持指向 Gitee。
 - `.github\workflows\release.yml`：GitHub 收到 `v*` 标签后构建发行包、创建 GitHub Release；配置 `GITEE_REPOSITORY` 和 `GITEE_TOKEN` secrets 后，会镜像 `main` 和标签到 Gitee，并将相同的附件和更新说明发布至 Gitee。
 - `scripts\publish-gitee-release.ps1`：由 GitHub Actions 调用 Gitee API 创建发行版和上传附件；令牌只通过工作流 secret 传入，不存入仓库。
