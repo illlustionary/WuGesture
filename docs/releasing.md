@@ -18,7 +18,7 @@
 .\scripts\start-release.ps1 -Version v0.97
 ```
 
-该脚本会创建并推送 `v*` 注释标签，默认推送至 `github` 远程。GitHub Actions 的 `.github/workflows/release.yml` 在收到标签后生成 framework-dependent `win-x64` 发行包、ZIP 文件和基于相邻标签提交整理的更新说明，并创建 GitHub Release。
+该脚本会创建并推送 `v*` 注释标签，默认推送至 `github` 远程。GitHub Actions 的 `.github/workflows/release.yml` 在收到标签后生成 framework-dependent `win-x64` 发行包、ZIP 文件和基于相邻标签提交整理的更新说明，并创建 GitHub Release。ZIP 内的根目录固定为 `WuGesture`，而 ZIP 文件名保留版本号，例如 `WuGesture-v0.97-windows-x64.zip`。
 
 不传 `-Version` 时，脚本会交互式提示输入版本。仅需在本地生成待检查发行包时，先创建对应标签，再执行：
 

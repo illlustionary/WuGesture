@@ -15,7 +15,7 @@ if ([string]::IsNullOrWhiteSpace($OutputPath)) {
     $OutputPath = Join-Path $rootDir "artifacts\release"
 }
 
-$publishDirectory = Join-Path $OutputPath "WuGesture-$Version"
+$publishDirectory = Join-Path $OutputPath "WuGesture"
 $archivePath = Join-Path $OutputPath "WuGesture-$Version-windows-x64.zip"
 $notesPath = Join-Path $OutputPath "RELEASE_NOTES.md"
 
