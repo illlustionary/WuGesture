@@ -88,6 +88,7 @@ export const DEFAULT_UI_SETTINGS = {
   },
   appBehavior: {
     launchAtStartup: false,
+    showConfigWindowOnLaunch: true,
     runAsAdministrator: false,
     disableGesturesInFullscreen: false,
     disableEdgeActionsInFullscreen: false,

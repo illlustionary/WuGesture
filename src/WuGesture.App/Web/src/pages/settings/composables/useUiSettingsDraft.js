@@ -217,6 +217,7 @@ function createDraft(settings) {
     },
     appBehavior: {
       launchAtStartup: Boolean(appBehavior.launchAtStartup ?? false),
+      showConfigWindowOnLaunch: Boolean(appBehavior.showConfigWindowOnLaunch ?? true),
       runAsAdministrator: Boolean(appBehavior.runAsAdministrator ?? false),
       disableGesturesInFullscreen: Boolean(
         appBehavior.disableGesturesInFullscreen ?? false

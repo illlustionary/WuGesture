@@ -4,7 +4,7 @@ WuGesture 的桌面宿主使用 WinForms 和 WebView2；配置界面是独立的
 
 ## 启动与依赖
 
-发行包直接以 framework-dependent 的 `WuGesture.exe` 作为桌面应用入口，开机自启动和管理员重启也直接调用该文件。`.NET 10 Desktop Runtime x64` 未安装时，.NET Host 会在应用代码执行前显示系统安装提示。应用启动后会检查 WebView2 Runtime；缺少时显示下载引导并退出，避免在初始化配置界面时出现不明确的异常。
+发行包直接以 framework-dependent 的 `WuGesture.exe` 作为桌面应用入口，开机自启动和管理员重启也直接调用该文件。普通启动默认显示配置窗口，可在应用行为中关闭并改为后台驻留；开机自启动始终后台运行。`.NET 10 Desktop Runtime x64` 未安装时，.NET Host 会在应用代码执行前显示系统安装提示。应用启动后会检查 WebView2 Runtime；缺少时显示下载引导并退出，避免在初始化配置界面时出现不明确的异常。
 
 ## 手势流水线
 

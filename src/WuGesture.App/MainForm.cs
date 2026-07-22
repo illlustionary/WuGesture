@@ -40,6 +40,7 @@ public sealed class MainForm : Form
     private bool isClosing;
     private bool isExiting;
     private bool isWebViewInitializing;
+    private bool hideConfigWindowOnLaunch;
     private bool isUserPaused;
     private bool isConfigPaused;
     private bool isEditorPaused;
@@ -99,12 +100,19 @@ public sealed class MainForm : Form
 
     private async void OnLoad(object? sender, EventArgs e)
     {
-        if (startMaximized && !startHiddenToTray)
+        loadedConfig = configStore.LoadOrCreate();
+        hideConfigWindowOnLaunch = startHiddenToTray ||
+            !loadedConfig.Config.UiSettings.AppBehavior.ShowConfigWindowOnLaunch;
+        if (hideConfigWindowOnLaunch)
+        {
+            HideStartupWindow();
+        }
+
+        if (startMaximized && !hideConfigWindowOnLaunch)
         {
             WindowState = FormWindowState.Maximized;
         }
 
-        loadedConfig = configStore.LoadOrCreate();
         LevelOsdOverlay.Configure(
             SynchronizationContext.Current ?? new WindowsFormsSynchronizationContext(),
             ShowLevelOsd);
@@ -124,7 +132,7 @@ public sealed class MainForm : Form
         edgeActionService.UpdateFullscreenBehavior(loadedConfig.Config.UiSettings.AppBehavior.DisableEdgeActionsInFullscreen);
         ApplyUiSettings(loadedConfig.Config.UiSettings);
 
-        if (!startHiddenToTray)
+        if (!hideConfigWindowOnLaunch)
         {
             await EnsureWebViewAsync();
         }
@@ -153,10 +161,6 @@ public sealed class MainForm : Form
         edgeActionService.Start();
         ApplyGesturePauseState();
 
-        if (startHiddenToTray)
-        {
-            HideStartupWindow();
-        }
     }
 
     private void InitializeTrayIcon()
@@ -788,6 +792,7 @@ public sealed class MainForm : Form
             appBehavior = new
             {
                 launchAtStartup = uiSettings.AppBehavior.LaunchAtStartup,
+                showConfigWindowOnLaunch = uiSettings.AppBehavior.ShowConfigWindowOnLaunch,
                 runAsAdministrator = uiSettings.AppBehavior.RunAsAdministrator,
                 closeButtonBehavior = uiSettings.AppBehavior.CloseButtonBehavior,
                 gesturePaused = uiSettings.AppBehavior.GesturePaused,
