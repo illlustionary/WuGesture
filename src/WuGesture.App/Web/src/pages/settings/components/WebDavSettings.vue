@@ -12,13 +12,7 @@ const props = defineProps({
   testing: { type: Boolean, required: true }
 })
 
-const emit = defineEmits([
-  'queue-persist',
-  'flush-persist',
-  'test',
-  'restore',
-  'save'
-])
+const emit = defineEmits(['queue-persist', 'flush-persist', 'test', 'restore', 'save'])
 
 const webDavTestState = computed(() => {
   if (props.ready && props.testState === 'success') {
@@ -77,10 +71,7 @@ const webDavTestState = computed(() => {
           @change="emit('flush-persist')"
         />
       </SettingsField>
-      <SettingsField
-        label="路径"
-        note="留空时使用 gestures.json。"
-      >
+      <SettingsField label="路径" note="留空时使用 gestures.json。">
         <input
           v-model.trim="draft.webDav.remotePath"
           type="text"
@@ -115,11 +106,6 @@ const webDavTestState = computed(() => {
 :deep(button:disabled) {
   cursor: not-allowed;
   box-shadow: none;
-}
-
-:deep(.webdav-test-button) {
-  border: 1px solid var(--accent-border-strong);
-  border-radius: 14px;
 }
 
 :deep(.webdav-test-button--success) {

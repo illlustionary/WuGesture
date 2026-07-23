@@ -37,7 +37,7 @@
   --interactive-active-bg: rgba(232, 240, 246, 0.96);
   --interactive-icon-bg: rgba(82, 158, 241, 0.1);
   --focus-ring: rgba(82, 158, 241, 0.16);
-  --danger: #ff7a60;
+  --danger: #ff3b3b;
   --danger-border: rgba(173, 76, 57, 0.28);
   --success-border: rgba(63, 147, 96, 0.34);
   --recording-text: #8a441f;
@@ -85,8 +85,7 @@ body {
     radial-gradient(circle at 82% 12%, var(--bg-glow), transparent 26%),
     radial-gradient(circle at 15% 82%, var(--bg-wash), transparent 30%),
     linear-gradient(180deg, var(--bg), var(--bg-accent));
-  font-family:
-    'Segoe UI Variable', 'Segoe UI', 'Microsoft YaHei UI', sans-serif;
+  font-family: 'Segoe UI Variable', 'Segoe UI', 'Microsoft YaHei UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -327,11 +326,7 @@ p {
   padding: 0 8px;
   border: 1px solid var(--border-medium);
   border-radius: 8px;
-  background: linear-gradient(
-    180deg,
-    var(--keycap-bg-start),
-    var(--keycap-bg-end)
-  );
+  background: linear-gradient(180deg, var(--keycap-bg-start), var(--keycap-bg-end));
   box-shadow:
     0 1px 0 var(--keycap-highlight) inset,
     var(--shadow-control);

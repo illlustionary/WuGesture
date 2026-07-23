@@ -23,13 +23,9 @@ const {
   resetSettings
 } = useUiSettingsDraft(settingsStore)
 
-const webDavDraftSignature = computed(() =>
-  settingsStore.getWebDavSignature(draft.webDav)
-)
+const webDavDraftSignature = computed(() => settingsStore.getWebDavSignature(draft.webDav))
 const webDavReady = computed(
-  () =>
-    Boolean(draft.webDav.address) &&
-    settingsStore.webDavTestedSignature === webDavDraftSignature.value
+  () => Boolean(draft.webDav.address) && settingsStore.webDavTestedSignature === webDavDraftSignature.value
 )
 const resetConfirmOpen = ref(false)
 
@@ -178,7 +174,6 @@ function previewLevelOsd(kind) {
   width: 22px;
   height: 22px;
 }
-
 :deep(.settings-reset-action .icon-action-button__icon) {
   width: 16px;
   height: 16px;
