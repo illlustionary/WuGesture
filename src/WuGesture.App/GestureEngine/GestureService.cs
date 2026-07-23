@@ -157,8 +157,7 @@ public sealed class GestureService : IDisposable
             return;
         }
 
-        isTracking = false;
-        activeMouseButton = ActiveMouseButton.None;
+        CancelTracking();
         mouseHook.RightButtonDown -= OnRightButtonDown;
         mouseHook.MiddleButtonDown -= OnMiddleButtonDown;
         mouseHook.MouseMove -= OnMouseMove;
@@ -191,9 +190,22 @@ public sealed class GestureService : IDisposable
 
     private void StartTracking(MouseHookEventArgs e, ActiveMouseButton button, bool swallowInput)
     {
-        if (disposed || isTracking || (isPaused && recordingRequestId is null))
+        if (disposed || (isPaused && recordingRequestId is null))
         {
             return;
+        }
+
+        if (isTracking)
+        {
+            // A second down for the same button can only follow a missed up event.
+            if (activeMouseButton == button)
+            {
+                CancelTracking();
+            }
+            else
+            {
+                return;
+            }
         }
 
         if (recordingRequestId is null &&
