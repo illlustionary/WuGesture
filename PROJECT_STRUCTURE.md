@@ -60,7 +60,7 @@ src\WuGesture.App
 启动流程：
 
 - `Program.cs` 会在 .NET Host 成功启动后检查 WebView2 Runtime，缺少时显示官方下载引导；随后通过命名互斥体保证单实例运行。再次启动时不会创建第二个实例，而是通知已运行实例弹出配置窗口。开机自启动会带 `--startup` 内部参数，始终只启动后台服务并驻留托盘，不打开配置窗口；普通启动是否显示配置窗口由应用行为设置控制，默认显示。
-- `MainForm.cs` 加载配置、应用开机自启动和管理员启动设置、创建 `GestureService` / `EdgeActionService`、按需初始化 WebView2 配置界面、创建托盘图标，并桥接 WebView 消息；也会把配置里的 `uiSettings` 应用到轨迹窗、提示窗和应用行为。主窗口和托盘显示名为 `WuGesture`。
+- `MainForm.cs` 会在首次显示前加载配置并决定是否后台启动，以避免后台启动时短暂绘制主窗口；随后应用开机自启动和管理员启动设置、创建 `GestureService` / `EdgeActionService`、按需初始化 WebView2 配置界面、创建托盘图标，并桥接 WebView 消息；也会把配置里的 `uiSettings` 应用到轨迹窗、提示窗和应用行为。主窗口和托盘显示名为 `WuGesture`。
 - `AppIdentity.cs` 集中应用显示名、AppData 子目录、自启动注册表值、单实例 IPC 名和内部启动参数；开机自启动和管理员重启会直接调用当前 `WuGesture.exe`。
 - `ConfigStorageContract.cs` 集中本地配置文件名和窗口状态文件名；本地导入/导出只处理主配置文件，不包含窗口状态文件。
 - `WebViewHostContract.cs` 集中 WebView2 虚拟主机、入口 URL 和宿主输出目录中的 Web 前端路径片段。

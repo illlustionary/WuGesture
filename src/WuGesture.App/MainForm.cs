@@ -59,11 +59,14 @@ public sealed class MainForm : Form
     public MainForm(bool startHiddenToTray = false)
     {
         this.startHiddenToTray = startHiddenToTray;
+        loadedConfig = configStore.LoadOrCreate();
+        hideConfigWindowOnLaunch = startHiddenToTray ||
+            !loadedConfig.Config.UiSettings.AppBehavior.ShowConfigWindowOnLaunch;
         Text = AppIdentity.DisplayName;
         Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? SystemIcons.Application;
         StartPosition = FormStartPosition.Manual;
         ApplyInitialWindowState();
-        if (startHiddenToTray)
+        if (hideConfigWindowOnLaunch)
         {
             ShowInTaskbar = false;
             WindowState = FormWindowState.Minimized;
@@ -100,9 +103,7 @@ public sealed class MainForm : Form
 
     private async void OnLoad(object? sender, EventArgs e)
     {
-        loadedConfig = configStore.LoadOrCreate();
-        hideConfigWindowOnLaunch = startHiddenToTray ||
-            !loadedConfig.Config.UiSettings.AppBehavior.ShowConfigWindowOnLaunch;
+        var config = loadedConfig ??= configStore.LoadOrCreate();
         if (hideConfigWindowOnLaunch)
         {
             HideStartupWindow();
@@ -116,21 +117,21 @@ public sealed class MainForm : Form
         LevelOsdOverlay.Configure(
             SynchronizationContext.Current ?? new WindowsFormsSynchronizationContext(),
             ShowLevelOsd);
-        isConfigPaused = loadedConfig.Config.UiSettings.AppBehavior.GesturePaused;
-        ApplyAppBehaviorSettings(loadedConfig.Config.UiSettings.AppBehavior);
-        if (TryRelaunchAsAdministrator(loadedConfig.Config.UiSettings.AppBehavior))
+        isConfigPaused = config.Config.UiSettings.AppBehavior.GesturePaused;
+        ApplyAppBehaviorSettings(config.Config.UiSettings.AppBehavior);
+        if (TryRelaunchAsAdministrator(config.Config.UiSettings.AppBehavior))
         {
             return;
         }
 
-        scopeContextProvider = new ConfiguredScopeContextProvider(loadedConfig.Config.Applications);
-        gestureService = new GestureService(new GestureMatcher(loadedConfig.Rules), scopeContextProvider);
-        gestureService.UpdateExcludedApplications(loadedConfig.Config.UiSettings.AppBehavior.ExcludedApplications);
-        gestureService.UpdateFullscreenBehavior(loadedConfig.Config.UiSettings.AppBehavior.DisableGesturesInFullscreen);
-        edgeActionService = new EdgeActionService(loadedConfig.Config.EdgeActions);
-        edgeActionService.UpdateExcludedApplications(loadedConfig.Config.UiSettings.AppBehavior.ExcludedApplications);
-        edgeActionService.UpdateFullscreenBehavior(loadedConfig.Config.UiSettings.AppBehavior.DisableEdgeActionsInFullscreen);
-        ApplyUiSettings(loadedConfig.Config.UiSettings);
+        scopeContextProvider = new ConfiguredScopeContextProvider(config.Config.Applications);
+        gestureService = new GestureService(new GestureMatcher(config.Rules), scopeContextProvider);
+        gestureService.UpdateExcludedApplications(config.Config.UiSettings.AppBehavior.ExcludedApplications);
+        gestureService.UpdateFullscreenBehavior(config.Config.UiSettings.AppBehavior.DisableGesturesInFullscreen);
+        edgeActionService = new EdgeActionService(config.Config.EdgeActions);
+        edgeActionService.UpdateExcludedApplications(config.Config.UiSettings.AppBehavior.ExcludedApplications);
+        edgeActionService.UpdateFullscreenBehavior(config.Config.UiSettings.AppBehavior.DisableEdgeActionsInFullscreen);
+        ApplyUiSettings(config.Config.UiSettings);
 
         if (!hideConfigWindowOnLaunch)
         {
@@ -142,9 +143,9 @@ public sealed class MainForm : Form
             return;
         }
 
-        if (IsFeatureEnabled(loadedConfig.Config.UiSettings.GestureHint.Enabled) ||
-            IsFeatureEnabled(loadedConfig.Config.UiSettings.MouseTrail.Enabled) ||
-            IsFeatureEnabled(loadedConfig.Config.UiSettings.LevelOsd.Enabled))
+        if (IsFeatureEnabled(config.Config.UiSettings.GestureHint.Enabled) ||
+            IsFeatureEnabled(config.Config.UiSettings.MouseTrail.Enabled) ||
+            IsFeatureEnabled(config.Config.UiSettings.LevelOsd.Enabled))
         {
             EnsureMouseTrailForm().Preload();
         }
