@@ -397,7 +397,17 @@ function handleMessage(message) {
 }
 
 function replaceConfig(rules, applications, uiSettings = DEFAULT_UI_SETTINGS, edgeActions = [], options = {}) {
-  state.rules = rules.map((rule) => toViewRule(rule));
+  const currentRuleIds = new Map(
+    state.rules.map((rule) => [getRuleIdentity(rule), rule.id])
+  );
+
+  state.rules = rules.map((sourceRule) => {
+    const rule = toViewRule(sourceRule);
+    return {
+      ...rule,
+      id: currentRuleIds.get(getRuleIdentity(rule)) ?? rule.id
+    };
+  });
   state.applications = applications.map((application) => toViewApplication(application));
   if (!options.preserveEdgeActions) {
     state.edgeActions = normalizeEdgeActions(edgeActions);
@@ -509,6 +519,15 @@ function setGesturePaused(paused) {
 
 function toViewRule(rule) {
   return toViewRuleModel(rule, createRuleId(state.nextId++));
+}
+
+function getRuleIdentity(rule) {
+  return [
+    String(rule?.scopeKind ?? ""),
+    String(rule?.scopeName ?? ""),
+    String(rule?.mouseButton ?? ""),
+    String(rule?.patternText ?? "")
+  ].join("\u0000");
 }
 
 function createRule(scopeKind, scopeName, values = {}) {
