@@ -45,6 +45,7 @@ src
 ├─ styles.scss
 ├─ assets
 ├─ components
+├─ composables
 ├─ constants
 ├─ gestureEditor
 ├─ utils
@@ -52,7 +53,7 @@ src
 ```
 
 - `src\main.js`：Vue 应用入口，设置 hash 路由、加载 `virtual:uno.css` 并挂载应用。
-- `src\App.vue`：路由壳、页面切换过渡、全局弹窗挂载和规则编辑弹窗挂载，顶部 `...` 入口会跳转到设置页。
+- `src\App.vue`：路由壳、页面切换过渡、全局弹窗挂载和规则编辑弹窗挂载；通过 `useQuickSearch` 绑定顶部搜索入口，设置入口会跳转到设置页。
 - `src\styles.scss`：编辑器全局设计 token、reset、通用按钮、输入框、弹窗和图标样式；常用布局/区块/表单/列表样式优先用 UnoCSS shortcuts，复杂动态样式和组件专属样式放在对应 `.vue` 文件的 scoped SCSS 中。
 
 ## Assets
@@ -83,6 +84,7 @@ src\assets
 - `mouse.svg`
 - `record.svg`
 - `reset.svg`
+- `search.svg`
 - `setting.svg`
 - `sparkle.svg`
 - `test.svg`
@@ -98,12 +100,13 @@ src\assets
 src\components
 ```
 
-- `AppHeader.vue`：顶部栏和规则 tab / 设置入口；左侧运行状态标识可点击，切换临时用户暂停或恢复。
+- `AppHeader.vue`：顶部栏和规则 tab / 搜索 / 设置入口；左侧运行状态标识可点击，切换临时用户暂停或恢复。
 - `AppShell.vue`：页面布局壳，提供主体区域和插槽。
 - `GestureRuleDialog.vue`：添加和编辑手势规则的弹窗。
 - `GestureRuleList.vue`：规则表、规则展示和规则操作入口。
 - `HoverBubble.vue`：悬浮提示气泡。
 - `IconActionButton.vue`：共享图标按钮，集中导入 `src\assets` 下的 SVG，并通过 `icon` key 映射到按钮图标。
+- `QuickSearchDialog.vue`：全局快速搜索弹层，按配置类型显示匹配结果，包含带搜索图标和焦点反馈的输入字段。
 - `ConfirmDialog.vue`：重大操作确认弹窗，带缩放进入/退出动画。
 - `CustomSelect.vue`：共享弹层式自定义单选下拉控件，不复用浏览器默认 select。
 - `ToggleCheckbox.vue`：共享自定义复选控件，用于替代浏览器默认 checkbox。
@@ -113,6 +116,16 @@ src\components
 - `rules\RulesSection.vue`：规则页右侧复用区块，统一标题、说明、操作区和内容面板。
 - `ScopePriorityNotice.vue`：全局、分类和程序规则页共享的作用域优先级与继承提示。
 - `scope\ScopeListItem.vue`：分类页和程序页左侧作用域列表项，统一选中态、键盘选择、双击重命名和删除操作。
+
+## Composables
+
+路径：
+
+```text
+src\composables
+```
+
+- `useQuickSearch.js`：全局快速搜索的弹层开关、`Ctrl+K` 生命周期与结果直达路由，协调搜索 store 的 scope 选择和规则编辑入口。
 
 ## Gesture Editor
 
@@ -131,6 +144,7 @@ src\gestureEditor
 - `gestureEditor\stores\useGestureEdgeActionsStore.js`：边缘操作页使用的窄 store，只暴露边缘动作列表、边缘动作保存、快捷键录制和边缘操作选项。
 - `gestureEditor\stores\useGestureSettingsStore.js`：设置页使用的窄 store，只暴露 UI 设置草稿保存、恢复默认、本地导入导出和 WebDAV 状态/操作。
 - `gestureEditor\stores\useGestureExclusionsStore.js`：排除项页使用的窄 store，只暴露排除项列表、应用图标匹配和排除项增删改入口。
+- `gestureEditor\stores\useGestureQuickSearchStore.js`：全局快速搜索使用的窄 store，从现有编辑器状态汇总规则、作用域、程序和排除项。
 - `gestureEditor\modules\useGestureEditorApplicationPicker.js`：共享 context 内部使用的应用选择器流程，包括打开选择器、发起窗口/文件选择请求，以及处理宿主返回的程序信息。
 - `gestureEditor\modules\useGestureScopes.js`：分类/程序 scope 选择、新增、重命名、删除和规则查询。
 - `gestureEditor\modules\useGestureApplications.js`：应用程序视图数据读取、创建、显示名和有序分类列表更新。
@@ -211,7 +225,7 @@ src\pages
 - `exclusions`
 - `settings`
 
-顶部规则 tab 包含 `全局`、`分类`、`程序`、`边缘操作`、`排除项`。左上运行状态标识可点击，临时暂停或恢复 WuGesture；顶部 `...` 按钮打开独立的 `settings` 页面。
+顶部规则 tab 包含 `全局`、`分类`、`程序`、`边缘操作`、`排除项`。左上运行状态标识可点击，临时暂停或恢复 WuGesture；顶部放大镜按钮及 `Ctrl+K` 打开全局快速搜索，设置按钮打开独立的 `settings` 页面。
 
 ## 当前 UI
 
@@ -228,6 +242,7 @@ src\pages
 - 分类页、程序页和排除项页添加程序时都会先显示前端弹窗，用户可按住“拖动准星选择窗口”拖到目标窗口松开，或选择“浏览 exe 文件”作为备用方式。
 - 程序列表和详情会展示从 exe 路径动态提取的应用图标；图标通过 WebView 消息传递，不写入配置文件。
 - 规则表列为 `名称`、`手势`、`命令`，删除按钮默认隐藏、在行悬浮时才显示；双击规则行、点击手势列或点击命令列都会打开规则编辑弹窗。
+- 全局快速搜索会匹配手势规则的名称、手势、命令和作用域，以及分类、程序和排除项；点击规则会打开其编辑弹窗，点击分类、程序和排除项会定位对应项。
 - 添加/编辑手势通过弹窗完成：弹窗里可选择命令类型，快捷键命令显示录制按钮，窗口控制命令显示操作下拉框。
 - 添加/编辑手势弹窗打开时会通过 WebView 消息暂停全局手势；手势录制由后端接管，前端只接收最终识别结果。
 - 规则编辑、删除、快捷键录制、分类/App 变更会发送 `save-rules` 写入配置文件。

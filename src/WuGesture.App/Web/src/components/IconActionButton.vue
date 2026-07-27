@@ -18,6 +18,7 @@ import mediaIcon from '@/assets/media.svg'
 import mouseIcon from '@/assets/mouse.svg'
 import recordIcon from '@/assets/record.svg'
 import resetIcon from '@/assets/reset.svg'
+import searchIcon from '@/assets/search.svg'
 import settingIcon from '@/assets/setting.svg'
 import sparkleIcon from '@/assets/sparkle.svg'
 import testIcon from '@/assets/test.svg'
@@ -61,6 +62,7 @@ const iconMap = {
   mouse: mouseIcon,
   record: recordIcon,
   reset: resetIcon,
+  search: searchIcon,
   setting: settingIcon,
   sparkle: sparkleIcon,
   test: testIcon,

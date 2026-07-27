@@ -3,7 +3,9 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter, RouterView } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
 import IconActionButton from '@/components/IconActionButton.vue'
+import QuickSearchDialog from '@/components/QuickSearchDialog.vue'
 import GestureRuleDialog from '@/components/GestureRuleDialog.vue'
+import { useQuickSearch } from '@/composables/useQuickSearch'
 import { useGestureEditorLifecycleStore } from '@/gestureEditor/stores/useGestureEditorLifecycleStore'
 import { useGestureEditorOverlayStore } from '@/gestureEditor/stores/useGestureEditorOverlayStore'
 import CrosshairIcon from '@/assets/crosshair.svg'
@@ -11,6 +13,7 @@ import FolderIcon from '@/assets/folder.svg'
 
 const lifecycle = useGestureEditorLifecycleStore()
 const overlay = useGestureEditorOverlayStore()
+const quickSearch = useQuickSearch()
 const route = useRoute()
 const router = useRouter()
 const tabs = [
@@ -61,6 +64,7 @@ function openSettingsPage() {
       :status-text="lifecycle.statusText"
       :status-state="lifecycle.statusState"
       :tabs="tabs"
+      @open-search="quickSearch.open"
       @open-settings="openSettingsPage"
       @toggle-gesture-paused="lifecycle.toggleGesturePaused"
     />
@@ -164,6 +168,13 @@ function openSettingsPage() {
       @persist="overlay.persistGestureEditor"
       @record="overlay.startGestureRecording"
       @record-hotkey="overlay.startRecording"
+    />
+
+    <QuickSearchDialog
+      :open="quickSearch.isOpen"
+      :items="quickSearch.searchItems"
+      @close="quickSearch.close"
+      @select="quickSearch.select"
     />
   </div>
 </template>
