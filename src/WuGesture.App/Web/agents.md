@@ -22,6 +22,7 @@ This repository is a Vite + Vue 3 web frontend for the WuGesture application. It
 - `src/components/`: reusable UI pieces used by the shell and editors.
   - `AppShell.vue`: layout wrapper for the app experience.
   - `BaseDialog.vue`: shared dialog shell for modal behavior, optional close button, action footer, and transitions.
+  - `BaseInput.vue` and `BaseRange.vue`: shared native input controls for text/number/color and range editing.
   - `IconActionButton.vue`: shared icon-only button for add/close/delete actions.
   - `GestureRuleDialog.vue`: gesture rule creation/edit dialog.
   - `GestureRuleList.vue`: rule list and rule operations.

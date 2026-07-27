@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue'
+import BaseInput from '@/components/BaseInput.vue'
 import IconActionButton from '@/components/IconActionButton.vue'
 import SettingsField from './SettingsField.vue'
 import SettingsFormGrid from './SettingsFormGrid.vue'
@@ -63,7 +64,7 @@ const webDavTestState = computed(() => {
 
     <SettingsFormGrid>
       <SettingsField label="地址">
-        <input
+        <BaseInput
           v-model.trim="draft.webDav.address"
           type="url"
           placeholder="https://example.com/dav/"
@@ -72,7 +73,7 @@ const webDavTestState = computed(() => {
         />
       </SettingsField>
       <SettingsField label="路径" note="留空时使用 gestures.json。">
-        <input
+        <BaseInput
           v-model.trim="draft.webDav.remotePath"
           type="text"
           placeholder="wugesture/"
@@ -81,7 +82,7 @@ const webDavTestState = computed(() => {
         />
       </SettingsField>
       <SettingsField label="账号">
-        <input
+        <BaseInput
           v-model.trim="draft.webDav.userName"
           type="text"
           autocomplete="username"
@@ -90,7 +91,7 @@ const webDavTestState = computed(() => {
         />
       </SettingsField>
       <SettingsField label="密码">
-        <input
+        <BaseInput
           v-model="draft.webDav.password"
           type="password"
           autocomplete="current-password"

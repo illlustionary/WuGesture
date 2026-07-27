@@ -2,9 +2,10 @@
 import SettingsField from './SettingsField.vue'
 import SettingsFormGrid from './SettingsFormGrid.vue'
 import SettingsSectionCard from './SettingsSectionCard.vue'
+import BaseInput from '@/components/BaseInput.vue'
+import BaseRange from '@/components/BaseRange.vue'
 import ToggleCheckbox from '@/components/ToggleCheckbox.vue'
 import { GESTURE_EDITOR_LIMITS } from '@/constants/gestureEditorLimits'
-import { getRangeProgress } from '@/utils/rangeProgress'
 
 defineProps({
   draft: { type: Object, required: true },
@@ -53,7 +54,7 @@ function commit() {
 
     <SettingsFormGrid>
       <SettingsField label="未激活颜色">
-        <input
+        <BaseInput
           v-model="draft.mouseTrail.inactiveColor"
           type="color"
           class="settings-color"
@@ -65,18 +66,10 @@ function commit() {
         label="未激活透明度"
         :note="`${draft.mouseTrail.inactiveOpacity}%`"
       >
-        <input
+        <BaseRange
           v-model.number="draft.mouseTrail.inactiveOpacity"
-          type="range"
           :min="GESTURE_EDITOR_LIMITS.opacityPercent.min"
           :max="GESTURE_EDITOR_LIMITS.opacityPercent.max"
-          :style="{
-            '--range-progress': getRangeProgress(
-              draft.mouseTrail.inactiveOpacity,
-              GESTURE_EDITOR_LIMITS.opacityPercent.min,
-              GESTURE_EDITOR_LIMITS.opacityPercent.max
-            )
-          }"
           @input="emit('queue-persist')"
           @change="emit('flush-persist')"
         />
@@ -85,24 +78,16 @@ function commit() {
         label="未激活粗细"
         :note="`${draft.mouseTrail.inactiveThickness} px`"
       >
-        <input
+        <BaseRange
           v-model.number="draft.mouseTrail.inactiveThickness"
-          type="range"
           :min="GESTURE_EDITOR_LIMITS.mouseTrailThickness.min"
           :max="GESTURE_EDITOR_LIMITS.mouseTrailThickness.max"
-          :style="{
-            '--range-progress': getRangeProgress(
-              draft.mouseTrail.inactiveThickness,
-              GESTURE_EDITOR_LIMITS.mouseTrailThickness.min,
-              GESTURE_EDITOR_LIMITS.mouseTrailThickness.max
-            )
-          }"
           @input="emit('queue-persist')"
           @change="emit('flush-persist')"
         />
       </SettingsField>
       <SettingsField label="激活颜色">
-        <input
+        <BaseInput
           v-model="draft.mouseTrail.activeColor"
           type="color"
           class="settings-color"
@@ -114,18 +99,10 @@ function commit() {
         label="激活透明度"
         :note="`${draft.mouseTrail.activeOpacity}%`"
       >
-        <input
+        <BaseRange
           v-model.number="draft.mouseTrail.activeOpacity"
-          type="range"
           :min="GESTURE_EDITOR_LIMITS.opacityPercent.min"
           :max="GESTURE_EDITOR_LIMITS.opacityPercent.max"
-          :style="{
-            '--range-progress': getRangeProgress(
-              draft.mouseTrail.activeOpacity,
-              GESTURE_EDITOR_LIMITS.opacityPercent.min,
-              GESTURE_EDITOR_LIMITS.opacityPercent.max
-            )
-          }"
           @input="emit('queue-persist')"
           @change="emit('flush-persist')"
         />
@@ -134,18 +111,10 @@ function commit() {
         label="激活粗细"
         :note="`${draft.mouseTrail.activeThickness} px`"
       >
-        <input
+        <BaseRange
           v-model.number="draft.mouseTrail.activeThickness"
-          type="range"
           :min="GESTURE_EDITOR_LIMITS.mouseTrailThickness.min"
           :max="GESTURE_EDITOR_LIMITS.mouseTrailThickness.max"
-          :style="{
-            '--range-progress': getRangeProgress(
-              draft.mouseTrail.activeThickness,
-              GESTURE_EDITOR_LIMITS.mouseTrailThickness.min,
-              GESTURE_EDITOR_LIMITS.mouseTrailThickness.max
-            )
-          }"
           @input="emit('queue-persist')"
           @change="emit('flush-persist')"
         />
