@@ -1,10 +1,15 @@
 <script setup>
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
 import IconActionButton from '@/components/IconActionButton.vue'
 import ToggleCheckbox from '@/components/ToggleCheckbox.vue'
 import { useGestureExclusionsStore } from '@/gestureEditor/stores/useGestureExclusionsStore'
+import { getApplicationKey } from '@/gestureEditor/stores/useGestureQuickSearchStore'
 
 const exclusionsStore = useGestureExclusionsStore()
+const route = useRoute()
+const selectedExclusion = computed(() => String(route.query.selected || ''))
 
 function toggleDisableEdgeActions(application) {
   exclusionsStore.updateExcludedApplication(application, {
@@ -40,6 +45,9 @@ function toggleDisableEdgeActions(application) {
           ) in exclusionsStore.exclusionsWithIcons"
           :key="application.path || application.name || index"
           class="exclusion-item"
+          :class="{
+            'exclusion-item--selected': getApplicationKey(application, index) === selectedExclusion
+          }"
         >
           <span
             class="exclusion-item__icon"
@@ -105,6 +113,11 @@ function toggleDisableEdgeActions(application) {
   border: 1px solid var(--border-subtle);
   border-radius: 16px;
   background: var(--panel-inset);
+
+  &--selected {
+    border-color: var(--accent-border);
+    box-shadow: 0 0 0 3px var(--focus-ring);
+  }
 }
 
 .exclusion-item__icon {

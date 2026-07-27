@@ -8,7 +8,7 @@ defineProps({
   tabs: { type: Array, required: true }
 })
 
-defineEmits(['open-settings', 'toggle-gesture-paused'])
+defineEmits(['open-search', 'open-settings', 'toggle-gesture-paused'])
 </script>
 
 <template>
@@ -38,12 +38,20 @@ defineEmits(['open-settings', 'toggle-gesture-paused'])
         {{ tab.label }}
       </RouterLink>
     </nav>
-    <IconActionButton
-      icon="setting"
-      label="更多设置"
-      class="menu-button"
-      @click="$emit('open-settings')"
-    />
+    <div class="app-bar__actions">
+      <IconActionButton
+        icon="search"
+        label="搜索"
+        class="menu-button"
+        @click="$emit('open-search')"
+      />
+      <IconActionButton
+        icon="setting"
+        label="更多设置"
+        class="menu-button"
+        @click="$emit('open-settings')"
+      />
+    </div>
   </header>
 </template>
 
@@ -162,5 +170,11 @@ defineEmits(['open-settings', 'toggle-gesture-paused'])
   &:hover {
     color: var(--text);
   }
+}
+
+.app-bar__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 </style>
