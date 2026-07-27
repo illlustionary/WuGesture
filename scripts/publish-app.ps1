@@ -25,7 +25,7 @@ if ($runningProcess) {
     $runningProcess | Wait-Process
 }
 
-Write-Host "Publishing WuGesture"
+Write-Host "Publishing WuGesture application output"
 Write-Host "Configuration: $Configuration"
 Write-Host "Output: $OutputPath"
 Write-Host "WebView2 runtime: $webView2RuntimeIdentifier"

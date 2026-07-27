@@ -5,25 +5,33 @@
 ## 本地发布
 
 ```powershell
-.\scripts\publish.ps1
+.\scripts\publish-app.ps1
 ```
 
-发布脚本会关闭正在运行的 `WuGesture`、清理发布输出，再将依赖框架的桌面应用直接发布为用户入口 `WuGesture.exe`。默认输出目录为 `artifacts\publish\WuGesture`。可使用 `-Version`、`-RuntimeIdentifier` 和 `-SelfContained` 指定版本与目标运行时；自动发行始终生成 framework-dependent `win-x64` 包。
+通用发布脚本会关闭正在运行的 `WuGesture`、清理发布输出，再将依赖框架的桌面应用直接发布为用户入口 `WuGesture.exe`。默认输出目录为 `artifacts\publish\WuGesture`。可使用 `-Version`、`-RuntimeIdentifier` 和 `-SelfContained` 指定版本与目标运行时；自动发行始终生成 framework-dependent `win-x64` 包。
+
+## Debug 打包
+
+直接执行：
+
+```powershell
+.\scripts\package-debug.ps1
+```
+
+脚本会生成 `artifacts\debug-package\WuGesture-debug-windows-x64.zip`，不需要版本号或 Git 标签。
 
 ## 自动发行
 
-从干净的 `main` 工作区执行：
+将 `v*` 标签上传到 GitHub 后，GitHub Actions 会自动发行：
 
 ```powershell
-.\scripts\start-release.ps1 -Version v0.97
+git push github v0.97
 ```
 
-该脚本会创建并推送 `v*` 注释标签，默认推送至 `github` 远程。GitHub Actions 的 `.github/workflows/release.yml` 在收到标签后生成 framework-dependent `win-x64` 发行包、ZIP 文件和基于相邻标签提交整理的更新说明，并创建 GitHub Release。ZIP 内的根目录固定为 `WuGesture`，而 ZIP 文件名保留版本号，例如 `WuGesture-v0.97-windows-x64.zip`。
-
-不传 `-Version` 时，脚本会交互式提示输入版本。仅需在本地生成待检查发行包时，先创建对应标签，再执行：
+GitHub Actions 的 `.github/workflows/release.yml` 在收到标签后生成 framework-dependent `win-x64` 发行包、ZIP 文件和基于相邻标签提交整理的更新说明，并创建 GitHub Release。ZIP 内的根目录固定为 `WuGesture`，而 ZIP 文件名保留版本号，例如 `WuGesture-v0.97-windows-x64.zip`。仅需在本地生成待检查发行包时，先创建对应标签，再执行：
 
 ```powershell
-.\scripts\new-release-package.ps1 -Version v0.97
+.\scripts\package-release.ps1 -Version v0.97
 ```
 
 ## Gitee 同步

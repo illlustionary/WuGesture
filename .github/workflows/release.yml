@@ -39,7 +39,7 @@ jobs:
 
       - name: Create release package
         shell: pwsh
-        run: ./scripts/new-release-package.ps1 -Version $env:GITHUB_REF_NAME
+        run: ./scripts/package-release.ps1 -Version $env:GITHUB_REF_NAME
 
       - name: Create GitHub release
         shell: pwsh
@@ -67,4 +67,4 @@ jobs:
         shell: pwsh
         run: |
           $archive = Get-ChildItem artifacts/release/*.zip | Select-Object -First 1
-          ./scripts/publish-gitee-release.ps1 -Repository $env:GITEE_REPOSITORY -Token $env:GITEE_TOKEN -Version $env:GITHUB_REF_NAME -NotesPath artifacts/release/RELEASE_NOTES.md -AssetPath $archive.FullName -TargetCommitish $env:GITHUB_SHA
+          ./scripts/upload-gitee-release.ps1 -Repository $env:GITEE_REPOSITORY -Token $env:GITEE_TOKEN -Version $env:GITHUB_REF_NAME -NotesPath artifacts/release/RELEASE_NOTES.md -AssetPath $archive.FullName -TargetCommitish $env:GITHUB_SHA
