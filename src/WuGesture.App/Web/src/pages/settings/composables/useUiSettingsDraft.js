@@ -1,5 +1,5 @@
 import { computed, onBeforeUnmount, reactive, watch } from 'vue'
-import { CLOSE_BUTTON_BEHAVIORS } from '@/constants/gestureEditorOptions'
+import { CLOSE_BUTTON_BEHAVIORS, WINDOW_TARGET_MODES } from '@/constants/gestureEditorOptions'
 
 export function useUiSettingsDraft(editor) {
   const draft = reactive(createDraft(editor.getUiSettingsSnapshot()))
@@ -228,6 +228,7 @@ function createDraft(settings) {
       closeButtonBehavior: normalizeCloseButtonBehavior(
         appBehavior.closeButtonBehavior
       ),
+      targetWindowMode: normalizeWindowTargetMode(appBehavior.targetWindowMode),
       excludedApplications: normalizeExcludedApplications(
         appBehavior.excludedApplications
       )
@@ -245,6 +246,12 @@ function normalizeCloseButtonBehavior(value) {
   return Object.values(CLOSE_BUTTON_BEHAVIORS).includes(value)
     ? value
     : CLOSE_BUTTON_BEHAVIORS.minimizeToTray
+}
+
+function normalizeWindowTargetMode(value) {
+  return Object.values(WINDOW_TARGET_MODES).includes(value)
+    ? value
+    : WINDOW_TARGET_MODES.startWindow
 }
 
 function normalizeExcludedApplications(applications) {

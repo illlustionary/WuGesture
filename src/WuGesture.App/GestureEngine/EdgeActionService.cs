@@ -280,7 +280,10 @@ public sealed class EdgeActionService : IDisposable
             try
             {
                 var actionName = GetActionName(config);
-                actionExecutor.Execute(new GestureRule([], GestureConfigContract.Scopes.Global, actionName, action), IntPtr.Zero);
+                actionExecutor.Execute(
+                    new GestureRule([], GestureConfigContract.Scopes.Global, actionName, action),
+                    IntPtr.Zero,
+                    useCurrentWindowWhenTargetMissing: true);
             }
             catch (Exception exception)
             {

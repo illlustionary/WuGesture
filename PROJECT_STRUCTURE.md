@@ -91,9 +91,9 @@ src\WuGesture.App\GestureEngine
 - `GestureRecognizer.cs`：把鼠标轨迹转换为稳定的方向模式；识别前按有效移动距离抽样，单笔手势保留 8 方向，多笔手势默认回退到更宽容的横/竖方向以贴近 WGestures 手感。
 - `GestureRuntimeDefaults.cs`：手势识别和边缘操作运行时阈值常量，包括最小移动距离、识别步数、边缘厚度、摩擦距离和超时。
 - `GestureMatcher.cs`：将识别出的鼠标键和方向模式与已加载规则进行匹配，并按作用域优先级选择命中项。
-- `GestureScopeContext.cs`：当前前台窗口的 app/有序分类上下文模型。
-- `ForegroundWindowScopeContextProvider.cs`：读取前台窗口进程名。
-- `ConfiguredScopeContextProvider.cs`：用配置里的应用程序列表把前台进程名映射到有序分类列表，供作用域匹配使用。
+- `GestureScopeContext.cs`：用于规则匹配的窗口 app/有序分类上下文模型。
+- `ForegroundWindowScopeContextProvider.cs`：读取前台窗口或指定窗口句柄的进程名。
+- `ConfiguredScopeContextProvider.cs`：用配置里的应用程序列表把窗口进程名映射到有序分类列表，供作用域匹配使用。
 - `ActionExecutor.cs`：按动作类型执行命令；快捷键通过 Win32 `SendInput` 执行，窗口控制通过 `ShowWindow`、`SetWindowPos` 和窗口消息执行，音量/亮度会调用对应控制器并显示 OSD。
 - `AudioController.cs`：通过 Windows Core Audio API 读取和设置系统主音量、静音状态。
 - `BrightnessController.cs`：通过 DDC/CI、WMI、Gamma 三段回退读取和设置显示亮度。
@@ -128,10 +128,10 @@ MouseHook
 - 中键按下/抬起在手势跟踪期间会被吞掉，避免触发目标程序的原生中键事件；轨迹线会在松开时隐藏并保留资源供下一次手势复用，若命中规则则提示会无缝保留至配置的显示时长结束，再按淡出时长消失。
 - 如果移动太小，就会按原触发按钮重放一次普通右键或中键。
 - 移动过程中会增量识别当前轨迹；一旦按当前鼠标键和方向匹配到规则，透明轨迹覆盖层会立即在当前鼠标屏幕底部居中显示规则名。
-- 动作仍在右键抬起时执行；窗口控制动作会在执行时重新解析当前目标窗口。
-- 窗口控制动作在执行时会先按鼠标当前位置重新解析顶层窗口，避免沿用上一轮手势的句柄；当无法解析时才回退到缓存目标窗口。
+- 动作仍在右键抬起时执行；窗口控制动作的目标窗口由应用行为设置决定。
+- 窗口控制动作的目标窗口由 `uiSettings.appBehavior.targetWindowMode` 决定：默认 `start-window` 会在鼠标按下时按起点坐标解析顶层窗口，并使用该窗口的进程和分类上下文匹配 `app > category > global` 规则；松开后会直接将该起始窗口设为当前激活窗口，再执行动作。`current-window` 会保留当前活动窗口的规则上下文，并直接对动作执行时的当前窗口执行。两种模式都不依赖鼠标结束位置，起始窗口无法解析时不会执行动作。
 - `GestureService` 支持暂停；暂停时保留全局 hook，但不识别、不吞掉中/右键输入，并清理当前轨迹与预览提示，供配置界面录制手势使用。
-- `GestureService` 会读取应用行为里的排除项；当前前台程序命中排除项时，不启动手势跟踪，也不吞掉原始鼠标输入。
+- `GestureService` 会读取应用行为里的排除项；`start-window` 在鼠标按下时按起始窗口判断排除项，`current-window` 则按当前前台窗口判断。命中排除项时不启动手势跟踪，也不吞掉原始鼠标输入。
 - 托盘暂停和配置界面左上角状态标识共用同一个临时用户暂停状态，配置界面录制暂停则是独立暂停来源；运行时按用户、配置和录制暂停合并后的状态控制 `GestureService` 和 `EdgeActionService`。
 - 快捷键录制由后端低级键盘 hook 完成；录制期间会阻止 `Win` 等系统级按键继续传递，松开所有按键后回传组合键。
 - 钩子回调必须保持快速；动作会切回 WinForms 消息线程执行。
@@ -175,7 +175,7 @@ MouseHook
 - `uiSettings.gestureHint`：提示泡泡设置，包含 `enabled`、`displayDurationMs`、`fadeDurationMs`、`fontFamily`、`fontSize`、`textColor`、`backgroundColor`、`backgroundOpacity`、`width`、`widthPercent`、`autoWidth`、`height`、`heightPercent`、`cornerRadius`、`bottomOffset`、`bottomOffsetPercent`；提示绘制在全虚拟桌面轨迹覆盖层而非独立窗体，`enabled` 关闭时不再显示手势命中文本，`displayDurationMs` 为停留时长、`fadeDurationMs` 为 0 时立即消失，百分比字段按当前鼠标屏幕工作区宽高换算，像素字段保留用于兼容旧配置。
 - `uiSettings.levelOsd`：音量/亮度 OSD 设置，包含 `enabled`、`displayDurationMs`、`fadeDurationMs`、`backgroundColor`、`backgroundOpacity`、`textColor`、`trackColor`、`volumeColor`、`brightnessColor`、`width`、`height`、`cornerRadius`、`position`、`offsetX` 和 `offsetY`；OSD 由全虚拟桌面透明覆盖层绘制，不再创建独立窗体；当前支持相对于鼠标所在屏幕工作区的居中、上/下居中和四角位置预设，`fadeDurationMs` 为 0 时立即消失。
 - `uiSettings.gestureSensitivity`：手势灵敏度配置，包含 `percent`，范围 0-200，默认 110；100 对应标准手感，数值越高越容易识别短距离手势。
-- `uiSettings.appBehavior`：应用行为设置，包含 `launchAtStartup`、`showConfigWindowOnLaunch`、`runAsAdministrator`、`gesturePaused`、`closeButtonBehavior`、`disableGesturesInFullscreen`、`disableEdgeActionsInFullscreen` 和 `excludedApplications`；`showConfigWindowOnLaunch` 默认开启，控制普通启动时是否显示配置窗口，关闭后仅后台驻留并可从托盘打开，开机自启动始终后台运行。关闭按钮行为支持 `minimize-to-tray`、`minimize-to-taskbar`、`exit`。全屏禁用开关默认关闭，分别停止手势识别和边缘操作。排除项包含 `name`、`displayName`、`path` 和 `disableEdgeActions`；命中的程序不执行鼠标手势，勾选 `disableEdgeActions` 时也会禁用边缘操作。
+- `uiSettings.appBehavior`：应用行为设置，包含 `launchAtStartup`、`showConfigWindowOnLaunch`、`runAsAdministrator`、`gesturePaused`、`closeButtonBehavior`、`targetWindowMode`、`disableGesturesInFullscreen`、`disableEdgeActionsInFullscreen` 和 `excludedApplications`；`showConfigWindowOnLaunch` 默认开启，控制普通启动时是否显示配置窗口，关闭后仅后台驻留并可从托盘打开，开机自启动始终后台运行。关闭按钮行为支持 `minimize-to-tray`、`minimize-to-taskbar`、`exit`。`targetWindowMode` 支持默认的 `start-window` 和 `current-window`。全屏禁用开关默认关闭，分别停止手势识别和边缘操作。排除项包含 `name`、`displayName`、`path` 和 `disableEdgeActions`；命中的程序不执行鼠标手势，勾选 `disableEdgeActions` 时也会禁用边缘操作。
 - `uiSettings.webDav`：WebDAV 备份设置，包含 `address`、`userName`、`password` 和 `remotePath`。设置页可把当前完整配置导出到本地 JSON，或从本地 JSON 导入并覆盖主配置文件；本地导入/导出不包含窗口状态。设置页也可测试 WebDAV 连接；测试当前配置成功后，才允许把当前完整配置保存到 WebDAV，或从 WebDAV 下载配置并覆盖本地配置；恢复后会刷新规则匹配、边缘操作、应用行为和 UI 设置。
 
 默认初始配置只包含全局规则和边缘操作，不包含应用程序归属或分类规则。边缘操作会预置触发角、摩擦边和边缘滚动项，但默认全部关闭。

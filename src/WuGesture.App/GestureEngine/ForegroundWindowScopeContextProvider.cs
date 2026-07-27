@@ -6,13 +6,17 @@ public sealed class ForegroundWindowScopeContextProvider : IGestureScopeContextP
 {
     public GestureScopeContext GetCurrentContext()
     {
-        var foregroundWindow = GetForegroundWindow();
-        if (foregroundWindow == IntPtr.Zero)
+        return GetContextForWindow(GetForegroundWindow());
+    }
+
+    public GestureScopeContext GetContextForWindow(IntPtr window)
+    {
+        if (window == IntPtr.Zero)
         {
             return GestureScopeContext.Empty;
         }
 
-        GetWindowThreadProcessId(foregroundWindow, out var processId);
+        GetWindowThreadProcessId(window, out var processId);
 
         return new GestureScopeContext(GetProcessName(processId), []);
     }
