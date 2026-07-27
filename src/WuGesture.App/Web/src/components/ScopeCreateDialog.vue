@@ -1,6 +1,6 @@
 <script setup>
 import { computed, nextTick, ref, watch } from "vue";
-import IconActionButton from "./IconActionButton.vue";
+import BaseDialog from "./BaseDialog.vue";
 
 const props = defineProps({
   open: { type: Boolean, required: true },
@@ -43,54 +43,40 @@ watch(
 </script>
 
 <template>
-  <div v-if="open" class="modal-backdrop" @click.self="$emit('close')">
-    <section class="modal-panel scope-create-dialog" role="dialog" aria-modal="true" :aria-labelledby="titleId">
-      <div class="modal-panel__head">
-        <div>
-          <h3 :id="titleId">{{ title }}</h3>
-          <p v-if="description">{{ description }}</p>
-        </div>
-        <IconActionButton
-          icon="close"
-          label="关闭"
-          class="scope-create-dialog__close ghost-button"
-          @click="$emit('close')"
-        />
-      </div>
-
-      <label class="scope-create-dialog__field">
-        <span>{{ label }}</span>
-        <input
-          ref="inputRef"
-          v-model.trim="value"
-          class="scope-input"
-          :placeholder="placeholder"
-          @blur="confirm"
-          @keydown.enter.prevent="confirm"
-        >
-      </label>
-    </section>
-  </div>
+  <BaseDialog
+    :open="open"
+    :title="title"
+    :description="description"
+    :title-id="titleId"
+    :show-close="true"
+    confirm-text="保存"
+    panel-class="scope-create-dialog"
+    @close="$emit('close')"
+    @confirm="confirm"
+  >
+    <label class="scope-create-dialog__field">
+      <span>{{ label }}</span>
+      <input
+        ref="inputRef"
+        v-model.trim="value"
+        class="scope-input"
+        :placeholder="placeholder"
+        @keydown.enter.prevent="confirm"
+      >
+    </label>
+  </BaseDialog>
 </template>
 
 <style scoped lang="scss">
-.scope-create-dialog {
+.scope-create-dialog__field {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+:deep(.scope-create-dialog) {
   width: min(480px, 100%);
-
-  .modal-panel__head {
-    align-items: flex-start;
-  }
-
-  &__field {
-    display: grid;
-    gap: 6px;
-    margin-top: 10px;
-    color: var(--muted);
-    font-size: 13px;
-  }
-
-  &__close {
-    color: var(--muted);
-  }
 }
 </style>

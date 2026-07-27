@@ -1,6 +1,6 @@
 <script setup>
 import { computed, nextTick, ref, watch } from 'vue'
-import IconActionButton from '@/components/IconActionButton.vue'
+import BaseDialog from '@/components/BaseDialog.vue'
 import SearchIcon from '@/assets/search.svg'
 
 const props = defineProps({
@@ -66,75 +66,63 @@ function handleKeydown(event) {
 </script>
 
 <template>
-  <div
-    v-if="open"
-    class="quick-search-backdrop"
-    @click.self="close"
+  <BaseDialog
+    :open="open"
+    title="快速查找"
+    title-id="quick-search-title"
+    :show-close="true"
+    :show-actions="false"
+    backdrop-class="quick-search-backdrop"
+    panel-class="quick-search-dialog"
+    @close="close"
+    @keydown="handleKeydown"
   >
-    <section
-      class="quick-search-dialog"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="quick-search-title"
-      @keydown="handleKeydown"
-    >
-      <div class="quick-search-dialog__head">
-        <h2 id="quick-search-title">快速查找</h2>
-        <IconActionButton
-          icon="close"
-          label="关闭搜索"
-          class="ghost-button"
-          tone="muted"
-          @click="close"
-        />
-      </div>
-      <div class="quick-search-dialog__field">
-        <SearchIcon
-          class="quick-search-dialog__search-icon"
-          aria-hidden="true"
-        />
-        <input
-          ref="input"
-          v-model="query"
-          class="quick-search-dialog__input"
-          type="search"
-          placeholder="搜索手势、分类、程序或排除项"
-          aria-label="搜索配置"
+    <div class="quick-search-dialog__field">
+      <SearchIcon
+        class="quick-search-dialog__search-icon"
+        aria-hidden="true"
+      />
+      <input
+        ref="input"
+        v-model="query"
+        class="quick-search-dialog__input"
+        type="search"
+        placeholder="搜索手势、分类、程序或排除项"
+        aria-label="搜索配置"
+      >
+    </div>
+    <div class="quick-search-dialog__results">
+      <template v-if="groupedItems.length">
+        <section
+          v-for="group in groupedItems"
+          :key="group.name"
+          class="quick-search-group"
         >
-      </div>
-      <div class="quick-search-dialog__results">
-        <template v-if="groupedItems.length">
-          <section
-            v-for="group in groupedItems"
-            :key="group.name"
-            class="quick-search-group"
+          <h3>{{ group.name }}</h3>
+          <button
+            v-for="item in group.items"
+            :key="item.id"
+            type="button"
+            class="quick-search-result"
+            @click="selectItem(item)"
           >
-            <h3>{{ group.name }}</h3>
-            <button
-              v-for="item in group.items"
-              :key="item.id"
-              type="button"
-              class="quick-search-result"
-              @click="selectItem(item)"
-            >
-              <strong>{{ item.title }}</strong>
-              <span>{{ item.detail }}</span>
-            </button>
-          </section>
-        </template>
-        <p
-          v-else
-          class="quick-search-dialog__empty"
-        >
-          没有匹配的配置。
-        </p>
-      </div>
-    </section>
-  </div>
+            <strong>{{ item.title }}</strong>
+            <span>{{ item.detail }}</span>
+          </button>
+        </section>
+      </template>
+      <p
+        v-else
+        class="quick-search-dialog__empty"
+      >
+        没有匹配的配置。
+      </p>
+    </div>
+  </BaseDialog>
 </template>
 
 <style scoped lang="scss">
-.quick-search-backdrop {
+:deep(.quick-search-backdrop) {
   position: fixed;
   inset: 0;
   z-index: 30;
@@ -144,37 +132,19 @@ function handleKeydown(event) {
   background: rgb(20 27 39 / 36%);
 }
 
-.quick-search-dialog {
-  display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
+:deep(.quick-search-dialog) {
   width: min(680px, 100%);
+  min-height: 0;
   max-height: min(70vh, 620px);
   overflow: hidden;
-  border: 1px solid var(--border-strong);
   border-radius: 16px;
-  background: var(--panel);
-  box-shadow: 0 24px 60px rgb(20 27 39 / 24%);
-}
-
-.quick-search-dialog__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 14px 16px 8px;
-
-  h2 {
-    margin: 0;
-    color: var(--text);
-    font-size: 16px;
-  }
 }
 
 .quick-search-dialog__field {
   display: flex;
   align-items: center;
   min-height: 42px;
-  margin: 0 16px;
+  margin: 0;
   padding: 0 12px;
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -224,9 +194,9 @@ function handleKeydown(event) {
 .quick-search-dialog__results {
   display: grid;
   gap: 16px;
-  min-height: 0;
+  max-height: min(48vh, 420px);
   overflow-y: auto;
-  padding: 16px;
+  padding: 16px 0 0;
 }
 
 .quick-search-group {

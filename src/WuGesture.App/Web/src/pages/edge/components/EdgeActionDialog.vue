@@ -1,6 +1,6 @@
 <script setup>
 import CustomSelect from '@/components/CustomSelect.vue'
-import IconActionButton from '@/components/IconActionButton.vue'
+import BaseDialog from '@/components/BaseDialog.vue'
 import ToggleCheckbox from '@/components/ToggleCheckbox.vue'
 import EdgeActionCommandFields from './EdgeActionCommandFields.vue'
 import { ACTION_TYPE_OPTIONS, EDGE_TRIGGER_TYPES } from '@/constants/gestureEditorOptions'
@@ -21,30 +21,16 @@ const actionTypeOptions = ACTION_TYPE_OPTIONS
 </script>
 
 <template>
-  <div
-    class="modal-backdrop"
-    @click.self="emit('close')"
+  <BaseDialog
+    :open="true"
+    :title="title"
+    description="关闭弹窗后自动保存。"
+    title-id="edge-dialog-title"
+    :show-close="true"
+    :show-actions="false"
+    panel-class="edge-dialog"
+    @close="emit('close')"
   >
-    <section
-      class="modal-panel edge-dialog"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="edge-dialog-title"
-      tabindex="-1"
-      @keydown.esc.prevent="emit('close')"
-    >
-      <div class="modal-panel__head">
-        <div>
-          <h3 id="edge-dialog-title">{{ title }}</h3>
-          <p>关闭弹窗后自动保存。</p>
-        </div>
-        <IconActionButton
-          icon="close"
-          label="关闭"
-          class="ghost-button"
-          @click="emit('close')"
-        />
-      </div>
 
       <div class="edge-dialog__grid">
         <ToggleCheckbox
@@ -85,19 +71,18 @@ const actionTypeOptions = ACTION_TYPE_OPTIONS
         @record-hotkey="emit('record-hotkey')"
         @update-operation="emit('update-operation', $event)"
       />
-    </section>
-  </div>
+  </BaseDialog>
 </template>
 
 <style scoped lang="scss">
-.edge-dialog {
-  width: min(620px, calc(100vw - 36px));
+.edge-dialog__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
 
-  &__grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
-  }
+:deep(.edge-dialog) {
+  width: min(620px, calc(100vw - 36px));
 }
 
 .edge-field {

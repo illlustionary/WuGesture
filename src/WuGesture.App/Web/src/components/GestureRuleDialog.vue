@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue'
+import BaseDialog from './BaseDialog.vue'
 import CustomSelect from './CustomSelect.vue'
-import IconActionButton from './IconActionButton.vue'
 import KeyboardIcon from '@/assets/keyboard.svg'
 import RecordIcon from '@/assets/record.svg'
 import { ACTION_TYPE_OPTIONS, ACTION_TYPES, OPERATIONS } from '@/constants/gestureEditorOptions'
@@ -29,30 +29,17 @@ const actionTypeOptions = ACTION_TYPE_OPTIONS
 </script>
 
 <template>
-  <div
-    v-if="open"
-    class="modal-backdrop modal-backdrop--gesture"
-    @click.self="$emit('close')"
+  <BaseDialog
+    :open="open"
+    title="手势"
+    description="点击开始录制后，按住右键或中键绘制，松开后完成识别。"
+    title-id="gesture-dialog-title"
+    :show-close="true"
+    :show-actions="false"
+    backdrop-class="gesture-dialog-backdrop"
+    panel-class="gesture-dialog"
+    @close="$emit('close')"
   >
-    <section
-      class="gesture-dialog"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="gesture-dialog-title"
-    >
-      <div class="modal-panel gesture-dialog__panel">
-        <div class="modal-panel__head">
-          <div>
-            <h3 id="gesture-dialog-title">手势</h3>
-            <p>点击开始录制后，按住右键或中键绘制，松开后完成识别。</p>
-          </div>
-          <IconActionButton
-            icon="close"
-            label="关闭"
-            class="ghost-button"
-            @click="$emit('close')"
-          />
-        </div>
 
         <div class="gesture-dialog__grid">
           <label>
@@ -188,84 +175,67 @@ const actionTypeOptions = ACTION_TYPE_OPTIONS
         >
           {{ message }}
         </p>
-      </div>
-    </section>
-  </div>
+  </BaseDialog>
 </template>
 
 <style scoped lang="scss">
-.gesture-dialog {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  // &__chrome {
-  //   position: fixed;
-  //   top: 18px;
-  //   left: 18px;
-  //   right: 18px;
-  //   display: flex;
-  //   justify-content: center;
-  //   pointer-events: none;
-  // }
+:deep(.gesture-dialog) {
+  width: min(780px, calc(100vw - 36px));
+}
 
-  &__panel {
-    width: min(780px, calc(100vw - 36px));
-    pointer-events: auto;
-  }
+.gesture-dialog__grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr 1fr;
+  margin-bottom: 14px;
 
-  &__grid {
+  label {
     display: grid;
-    gap: 12px;
-    grid-template-columns: 1fr 1fr;
-    margin-bottom: 14px;
-
-    label {
-      display: grid;
-      gap: 6px;
-      color: var(--muted);
-      font-size: 13px;
-    }
-  }
-
-  &__command {
-    display: grid;
-    gap: 10px;
-    margin-bottom: 14px;
-
-    label {
-      display: grid;
-      gap: 6px;
-      color: var(--muted);
-      font-size: 13px;
-    }
-  }
-
-  &__result {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-height: 36px;
-    padding: 4px 0 0;
-
-    span {
-      color: var(--muted);
-      font-size: 13px;
-    }
-
-    strong {
-      font-size: 14px;
-    }
-  }
-
-  &__message {
-    margin-top: 4px;
+    gap: 6px;
     color: var(--muted);
     font-size: 13px;
   }
+}
+
+.gesture-dialog__command {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+
+  label {
+    display: grid;
+    gap: 6px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+}
+
+.gesture-dialog__result {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  padding: 4px 0 0;
+
+  span {
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  strong {
+    font-size: 14px;
+  }
+}
+
+.gesture-dialog__message {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+:deep(.gesture-dialog-backdrop) {
+  padding: 0;
+  background: var(--scrim-subtle);
 }
 
 .hotkey-record-button {

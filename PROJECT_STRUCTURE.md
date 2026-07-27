@@ -210,6 +210,7 @@ src\WuGesture.App\Web\PROJECT_STRUCTURE.md
 宿主集成：
 
 - 前端使用 `pnpm build` 生成根目录下的 `dist\web`。
+- `Web\src\components\BaseDialog.vue` 统一前端对话框的遮罩关闭、可选右上关闭按钮、默认操作区和关闭动画；自动保存或即时选择类弹层可复用外壳并关闭默认操作区。
 - 前端 `pnpm` 构建脚本通过 `src\WuGesture.App\Web\pnpm-workspace.yaml` 放行 `@parcel/watcher` 的本地构建脚本，避免非交互环境下的依赖安装中断。
 - `WuGesture.App.csproj` 会在 `.NET` 构建前自动执行前端构建。
 - `WuGesture.App.csproj` 会在前端构建后把 `dist\web` 复制到宿主输出目录中的 `Web\dist`。
