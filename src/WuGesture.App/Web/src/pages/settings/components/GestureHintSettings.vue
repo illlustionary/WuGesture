@@ -2,9 +2,10 @@
 import SettingsField from './SettingsField.vue'
 import SettingsFormGrid from './SettingsFormGrid.vue'
 import SettingsSectionCard from './SettingsSectionCard.vue'
+import BaseInput from '@/components/BaseInput.vue'
+import BaseRange from '@/components/BaseRange.vue'
 import ToggleCheckbox from '@/components/ToggleCheckbox.vue'
 import { GESTURE_EDITOR_LIMITS } from '@/constants/gestureEditorLimits'
-import { getRangeProgress } from '@/utils/rangeProgress'
 
 defineProps({
   draft: { type: Object, required: true },
@@ -53,18 +54,10 @@ function commit() {
             : `${draft.gestureHint.displayDurationMs} ms`
         "
       >
-        <input
+        <BaseRange
           v-model.number="draft.gestureHint.displayDurationMs"
-          type="range"
           :min="GESTURE_EDITOR_LIMITS.hintDisplayDuration.min"
           :max="GESTURE_EDITOR_LIMITS.hintDisplayDuration.max"
-          :style="{
-            '--range-progress': getRangeProgress(
-              draft.gestureHint.displayDurationMs,
-              GESTURE_EDITOR_LIMITS.hintDisplayDuration.min,
-              GESTURE_EDITOR_LIMITS.hintDisplayDuration.max
-            )
-          }"
           step="100"
           @input="emit('queue-persist')"
           @change="emit('flush-persist')"
@@ -78,18 +71,10 @@ function commit() {
             : `${draft.gestureHint.fadeDurationMs} ms`
         "
       >
-        <input
+        <BaseRange
           v-model.number="draft.gestureHint.fadeDurationMs"
-          type="range"
           :min="GESTURE_EDITOR_LIMITS.hintFadeDuration.min"
           :max="GESTURE_EDITOR_LIMITS.hintFadeDuration.max"
-          :style="{
-            '--range-progress': getRangeProgress(
-              draft.gestureHint.fadeDurationMs,
-              GESTURE_EDITOR_LIMITS.hintFadeDuration.min,
-              GESTURE_EDITOR_LIMITS.hintFadeDuration.max
-            )
-          }"
           step="20"
           @input="emit('queue-persist')"
           @change="emit('flush-persist')"
@@ -99,24 +84,16 @@ function commit() {
         label="字体大小"
         :note="`${draft.gestureHint.fontSize} px`"
       >
-        <input
+        <BaseRange
           v-model.number="draft.gestureHint.fontSize"
-          type="range"
           :min="GESTURE_EDITOR_LIMITS.hintFontSize.min"
           :max="GESTURE_EDITOR_LIMITS.hintFontSize.max"
-          :style="{
-            '--range-progress': getRangeProgress(
-              draft.gestureHint.fontSize,
-              GESTURE_EDITOR_LIMITS.hintFontSize.min,
-              GESTURE_EDITOR_LIMITS.hintFontSize.max
-            )
-          }"
           @input="emit('queue-persist')"
           @change="emit('flush-persist')"
         />
       </SettingsField>
       <SettingsField label="字体颜色">
-        <input
+        <BaseInput
           v-model="draft.gestureHint.textColor"
           type="color"
           class="settings-color"
@@ -125,7 +102,7 @@ function commit() {
         />
       </SettingsField>
       <SettingsField label="背景颜色">
-        <input
+        <BaseInput
           v-model="draft.gestureHint.backgroundColor"
           type="color"
           class="settings-color"
@@ -137,18 +114,10 @@ function commit() {
         label="背景透明度"
         :note="`${draft.gestureHint.backgroundOpacity}%`"
       >
-        <input
+        <BaseRange
           v-model.number="draft.gestureHint.backgroundOpacity"
-          type="range"
           :min="GESTURE_EDITOR_LIMITS.opacityPercent.min"
           :max="GESTURE_EDITOR_LIMITS.opacityPercent.max"
-          :style="{
-            '--range-progress': getRangeProgress(
-              draft.gestureHint.backgroundOpacity,
-              GESTURE_EDITOR_LIMITS.opacityPercent.min,
-              GESTURE_EDITOR_LIMITS.opacityPercent.max
-            )
-          }"
           @input="emit('queue-persist')"
           @change="emit('flush-persist')"
         />
@@ -161,19 +130,11 @@ function commit() {
             : `${draft.gestureHint.widthPercent}%`
         "
       >
-        <input
+        <BaseRange
           v-model.number="draft.gestureHint.widthPercent"
-          type="range"
           :min="GESTURE_EDITOR_LIMITS.hintWidthPercent.min"
           :max="GESTURE_EDITOR_LIMITS.hintWidthPercent.max"
           :disabled="draft.gestureHint.autoWidth"
-          :style="{
-            '--range-progress': getRangeProgress(
-              draft.gestureHint.widthPercent,
-              GESTURE_EDITOR_LIMITS.hintWidthPercent.min,
-              GESTURE_EDITOR_LIMITS.hintWidthPercent.max
-            )
-          }"
           @input="emit('queue-persist')"
           @change="emit('flush-persist')"
         />
@@ -189,18 +150,10 @@ function commit() {
         label="高度"
         :note="`${draft.gestureHint.heightPercent}%`"
       >
-        <input
+        <BaseRange
           v-model.number="draft.gestureHint.heightPercent"
-          type="range"
           :min="GESTURE_EDITOR_LIMITS.hintHeightPercent.min"
           :max="GESTURE_EDITOR_LIMITS.hintHeightPercent.max"
-          :style="{
-            '--range-progress': getRangeProgress(
-              draft.gestureHint.heightPercent,
-              GESTURE_EDITOR_LIMITS.hintHeightPercent.min,
-              GESTURE_EDITOR_LIMITS.hintHeightPercent.max
-            )
-          }"
           @input="emit('queue-persist')"
           @change="emit('flush-persist')"
         />
@@ -209,18 +162,10 @@ function commit() {
         label="圆角"
         :note="`${draft.gestureHint.cornerRadius} px`"
       >
-        <input
+        <BaseRange
           v-model.number="draft.gestureHint.cornerRadius"
-          type="range"
           :min="GESTURE_EDITOR_LIMITS.hintCornerRadius.min"
           :max="GESTURE_EDITOR_LIMITS.hintCornerRadius.max"
-          :style="{
-            '--range-progress': getRangeProgress(
-              draft.gestureHint.cornerRadius,
-              GESTURE_EDITOR_LIMITS.hintCornerRadius.min,
-              GESTURE_EDITOR_LIMITS.hintCornerRadius.max
-            )
-          }"
           @input="emit('queue-persist')"
           @change="emit('flush-persist')"
         />
@@ -229,18 +174,10 @@ function commit() {
         label="距离底部"
         :note="`${draft.gestureHint.bottomOffsetPercent}%`"
       >
-        <input
+        <BaseRange
           v-model.number="draft.gestureHint.bottomOffsetPercent"
-          type="range"
           :min="GESTURE_EDITOR_LIMITS.hintBottomOffsetPercent.min"
           :max="GESTURE_EDITOR_LIMITS.hintBottomOffsetPercent.max"
-          :style="{
-            '--range-progress': getRangeProgress(
-              draft.gestureHint.bottomOffsetPercent,
-              GESTURE_EDITOR_LIMITS.hintBottomOffsetPercent.min,
-              GESTURE_EDITOR_LIMITS.hintBottomOffsetPercent.max
-            )
-          }"
           @input="emit('queue-persist')"
           @change="emit('flush-persist')"
         />

@@ -1,5 +1,7 @@
 <script setup>
 import CustomSelect from '@/components/CustomSelect.vue'
+import BaseInput from '@/components/BaseInput.vue'
+import BaseRange from '@/components/BaseRange.vue'
 import IconActionButton from '@/components/IconActionButton.vue'
 import ToggleCheckbox from '@/components/ToggleCheckbox.vue'
 import SettingsField from './SettingsField.vue'
@@ -7,7 +9,6 @@ import SettingsFormGrid from './SettingsFormGrid.vue'
 import SettingsSectionCard from './SettingsSectionCard.vue'
 import { LEVEL_OSD_POSITIONS } from '@/constants/gestureEditorOptions'
 import { GESTURE_EDITOR_LIMITS } from '@/constants/gestureEditorLimits'
-import { getRangeProgress } from '@/utils/rangeProgress'
 
 defineProps({
   draft: { type: Object, required: true },
@@ -82,18 +83,10 @@ function commit() {
             : `${draft.levelOsd.displayDurationMs} ms`
         "
       >
-        <input
+        <BaseRange
           v-model.number="draft.levelOsd.displayDurationMs"
-          type="range"
           :min="GESTURE_EDITOR_LIMITS.levelOsdDisplayDuration.min"
           :max="GESTURE_EDITOR_LIMITS.levelOsdDisplayDuration.max"
-          :style="{
-            '--range-progress': getRangeProgress(
-              draft.levelOsd.displayDurationMs,
-              GESTURE_EDITOR_LIMITS.levelOsdDisplayDuration.min,
-              GESTURE_EDITOR_LIMITS.levelOsdDisplayDuration.max
-            )
-          }"
           step="100"
           @input="emit('queue-persist')"
           @change="emit('flush-persist')"
@@ -108,18 +101,10 @@ function commit() {
             : `${draft.levelOsd.fadeDurationMs} ms`
         "
       >
-        <input
+        <BaseRange
           v-model.number="draft.levelOsd.fadeDurationMs"
-          type="range"
           :min="GESTURE_EDITOR_LIMITS.levelOsdFadeDuration.min"
           :max="GESTURE_EDITOR_LIMITS.levelOsdFadeDuration.max"
-          :style="{
-            '--range-progress': getRangeProgress(
-              draft.levelOsd.fadeDurationMs,
-              GESTURE_EDITOR_LIMITS.levelOsdFadeDuration.min,
-              GESTURE_EDITOR_LIMITS.levelOsdFadeDuration.max
-            )
-          }"
           step="20"
           @input="emit('queue-persist')"
           @change="emit('flush-persist')"
@@ -127,7 +112,7 @@ function commit() {
       </SettingsField>
 
       <SettingsField label="背景颜色">
-        <input
+        <BaseInput
           v-model="draft.levelOsd.backgroundColor"
           type="color"
           class="settings-color"
@@ -140,25 +125,17 @@ function commit() {
         label="背景透明度"
         :note="`${draft.levelOsd.backgroundOpacity}%`"
       >
-        <input
+        <BaseRange
           v-model.number="draft.levelOsd.backgroundOpacity"
-          type="range"
           :min="GESTURE_EDITOR_LIMITS.opacityPercent.min"
           :max="GESTURE_EDITOR_LIMITS.opacityPercent.max"
-          :style="{
-            '--range-progress': getRangeProgress(
-              draft.levelOsd.backgroundOpacity,
-              GESTURE_EDITOR_LIMITS.opacityPercent.min,
-              GESTURE_EDITOR_LIMITS.opacityPercent.max
-            )
-          }"
           @input="emit('queue-persist')"
           @change="emit('flush-persist')"
         />
       </SettingsField>
 
       <SettingsField label="文字颜色">
-        <input
+        <BaseInput
           v-model="draft.levelOsd.textColor"
           type="color"
           class="settings-color"
@@ -168,7 +145,7 @@ function commit() {
       </SettingsField>
 
       <SettingsField label="进度条底色">
-        <input
+        <BaseInput
           v-model="draft.levelOsd.trackColor"
           type="color"
           class="settings-color"
@@ -178,7 +155,7 @@ function commit() {
       </SettingsField>
 
       <SettingsField label="音量强调色">
-        <input
+        <BaseInput
           v-model="draft.levelOsd.volumeColor"
           type="color"
           class="settings-color"
@@ -188,7 +165,7 @@ function commit() {
       </SettingsField>
 
       <SettingsField label="亮度强调色">
-        <input
+        <BaseInput
           v-model="draft.levelOsd.brightnessColor"
           type="color"
           class="settings-color"
@@ -210,18 +187,10 @@ function commit() {
         label="宽度"
         :note="`${draft.levelOsd.width} px`"
       >
-        <input
+        <BaseRange
           v-model.number="draft.levelOsd.width"
-          type="range"
           :min="GESTURE_EDITOR_LIMITS.levelOsdWidth.min"
           :max="GESTURE_EDITOR_LIMITS.levelOsdWidth.max"
-          :style="{
-            '--range-progress': getRangeProgress(
-              draft.levelOsd.width,
-              GESTURE_EDITOR_LIMITS.levelOsdWidth.min,
-              GESTURE_EDITOR_LIMITS.levelOsdWidth.max
-            )
-          }"
           step="10"
           @input="emit('queue-persist')"
           @change="emit('flush-persist')"
@@ -232,18 +201,10 @@ function commit() {
         label="高度"
         :note="`${draft.levelOsd.height} px`"
       >
-        <input
+        <BaseRange
           v-model.number="draft.levelOsd.height"
-          type="range"
           :min="GESTURE_EDITOR_LIMITS.levelOsdHeight.min"
           :max="GESTURE_EDITOR_LIMITS.levelOsdHeight.max"
-          :style="{
-            '--range-progress': getRangeProgress(
-              draft.levelOsd.height,
-              GESTURE_EDITOR_LIMITS.levelOsdHeight.min,
-              GESTURE_EDITOR_LIMITS.levelOsdHeight.max
-            )
-          }"
           step="10"
           @input="emit('queue-persist')"
           @change="emit('flush-persist')"
@@ -254,24 +215,13 @@ function commit() {
         label="圆角"
         :note="`${draft.levelOsd.cornerRadius} px`"
       >
-        <input
+        <BaseRange
           v-model.number="draft.levelOsd.cornerRadius"
-          type="range"
           :min="GESTURE_EDITOR_LIMITS.levelOsdCornerRadius.min"
           :max="Math.min(
             GESTURE_EDITOR_LIMITS.levelOsdCornerRadius.max,
             Math.min(draft.levelOsd.width, draft.levelOsd.height) / 2
           )"
-          :style="{
-            '--range-progress': getRangeProgress(
-              draft.levelOsd.cornerRadius,
-              GESTURE_EDITOR_LIMITS.levelOsdCornerRadius.min,
-              Math.min(
-                GESTURE_EDITOR_LIMITS.levelOsdCornerRadius.max,
-                Math.min(draft.levelOsd.width, draft.levelOsd.height) / 2
-              )
-            )
-          }"
           step="1"
           @input="emit('queue-persist')"
           @change="emit('flush-persist')"
@@ -282,7 +232,7 @@ function commit() {
         label="水平偏移"
         :note="`${draft.levelOsd.offsetX} px`"
       >
-        <input
+        <BaseInput
           v-model.number="draft.levelOsd.offsetX"
           type="number"
           :min="GESTURE_EDITOR_LIMITS.levelOsdOffset.min"
@@ -296,7 +246,7 @@ function commit() {
         label="垂直偏移"
         :note="`${draft.levelOsd.offsetY} px`"
       >
-        <input
+        <BaseInput
           v-model.number="draft.levelOsd.offsetY"
           type="number"
           :min="GESTURE_EDITOR_LIMITS.levelOsdOffset.min"

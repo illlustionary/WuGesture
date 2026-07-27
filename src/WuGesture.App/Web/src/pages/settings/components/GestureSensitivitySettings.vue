@@ -1,8 +1,8 @@
 <script setup>
 import SettingsField from './SettingsField.vue'
 import SettingsSectionCard from './SettingsSectionCard.vue'
+import BaseRange from '@/components/BaseRange.vue'
 import { GESTURE_EDITOR_LIMITS } from '@/constants/gestureEditorLimits'
-import { getRangeProgress } from '@/utils/rangeProgress'
 
 defineProps({
   draft: { type: Object, required: true }
@@ -20,18 +20,10 @@ const emit = defineEmits(['queue-persist', 'flush-persist'])
       label="灵敏度"
       :note="`${draft.gestureSensitivity.percent}%`"
     >
-      <input
+      <BaseRange
         v-model.number="draft.gestureSensitivity.percent"
-        type="range"
         :min="GESTURE_EDITOR_LIMITS.gestureSensitivityPercent.min"
         :max="GESTURE_EDITOR_LIMITS.gestureSensitivityPercent.max"
-        :style="{
-          '--range-progress': getRangeProgress(
-            draft.gestureSensitivity.percent,
-            GESTURE_EDITOR_LIMITS.gestureSensitivityPercent.min,
-            GESTURE_EDITOR_LIMITS.gestureSensitivityPercent.max
-          )
-        }"
         step="5"
         @input="emit('queue-persist')"
         @change="emit('flush-persist')"
