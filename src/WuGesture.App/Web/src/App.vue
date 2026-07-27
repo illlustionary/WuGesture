@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter, RouterView } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
-import IconActionButton from '@/components/IconActionButton.vue'
+import BaseDialog from '@/components/BaseDialog.vue'
 import QuickSearchDialog from '@/components/QuickSearchDialog.vue'
 import GestureRuleDialog from '@/components/GestureRuleDialog.vue'
 import { useQuickSearch } from '@/composables/useQuickSearch'
@@ -82,77 +82,47 @@ function openSettingsPage() {
       </div>
     </RouterView>
 
-    <div
-      v-if="overlay.applicationPickerOpen"
-      class="modal-backdrop"
-      @click.self="overlay.closeApplicationPicker()"
+    <BaseDialog
+      :open="overlay.applicationPickerOpen"
+      :title="overlay.applicationPickerTarget === 'exclusion' ? '添加排除项' : '添加程序'"
+      title-id="application-picker-title"
+      :show-close="true"
+      :show-actions="false"
+      @close="overlay.closeApplicationPicker()"
     >
-      <section
-        class="modal-panel"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="application-picker-title"
-      >
-        <div class="modal-panel__head">
-          <div>
-            <h3 id="application-picker-title">
-              {{
-                overlay.applicationPickerTarget === 'exclusion'
-                  ? '添加排除项'
-                  : '添加程序'
-              }}
-            </h3>
-            <!-- <p>
-              {{
-                overlay.applicationPickerScopeKind === 'app'
-                  ? '选择一种方式添加程序规则。'
-                  : '选择一种方式把程序加入当前分类。'
-              }}
-            </p> -->
-          </div>
-          <IconActionButton
-            icon="close"
-            label="关闭"
-            class="ghost-button"
-            tone="muted"
-            @click="overlay.closeApplicationPicker()"
+      <div class="picker-options">
+        <button
+          type="button"
+          class="picker-option"
+          @pointerdown.prevent="overlay.pickApplicationWindow()"
+          @click.prevent
+        >
+          <CrosshairIcon
+            class="picker-option__icon"
+            aria-hidden="true"
           />
-        </div>
+          <span class="picker-option__text">
+            <strong>拖动准星选择窗口</strong>
+            <span>使用准星拖动选择</span>
+          </span>
+        </button>
 
-        <div class="picker-options">
-          <button
-            type="button"
-            class="picker-option"
-            @pointerdown.prevent="overlay.pickApplicationWindow()"
-            @click.prevent
-          >
-            <CrosshairIcon
-              class="picker-option__icon"
-              aria-hidden="true"
-            />
-            <span class="picker-option__text">
-              <strong>拖动准星选择窗口</strong>
-              <span>使用准星拖动选择</span>
-            </span>
-          </button>
-
-          <button
-            type="button"
-            class="picker-option"
-            @click="overlay.selectApplication()"
-          >
-            <FolderIcon
-              class="picker-option__icon"
-              aria-hidden="true"
-            />
-            <span class="picker-option__text">
-              <strong>浏览 exe 文件</strong>
-              <span>使用文件资源管理器选择</span>
-            </span>
-          </button>
-        </div>
-      </section>
-    </div>
+        <button
+          type="button"
+          class="picker-option"
+          @click="overlay.selectApplication()"
+        >
+          <FolderIcon
+            class="picker-option__icon"
+            aria-hidden="true"
+          />
+          <span class="picker-option__text">
+            <strong>浏览 exe 文件</strong>
+            <span>使用文件资源管理器选择</span>
+          </span>
+        </button>
+      </div>
+    </BaseDialog>
 
     <GestureRuleDialog
       :open="overlay.gestureEditorOpen"

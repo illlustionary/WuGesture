@@ -102,6 +102,7 @@ src\components
 
 - `AppHeader.vue`：顶部栏和规则 tab / 搜索 / 设置入口；左侧运行状态标识可点击，切换临时用户暂停或恢复。
 - `AppShell.vue`：页面布局壳，提供主体区域和插槽。
+- `BaseDialog.vue`：共享对话框外壳，统一遮罩关闭、可选关闭按钮、默认取消/确认操作区及上移淡出关闭动画；搜索和自动保存编辑器可关闭默认操作区。
 - `GestureRuleDialog.vue`：添加和编辑手势规则的弹窗。
 - `GestureRuleList.vue`：规则表、规则展示和规则操作入口。
 - `HoverBubble.vue`：悬浮提示气泡。
