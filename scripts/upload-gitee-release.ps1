@@ -29,4 +29,4 @@ $release = Invoke-RestMethod -Method Post -Uri $releaseEndpoint -ContentType "ap
 $uploadEndpoint = "https://gitee.com/api/v5/repos/$encodedRepository/releases/$($release.id)/attach_files?access_token=$accessToken"
 Invoke-RestMethod -Method Post -Uri $uploadEndpoint -Form @{ file = Get-Item -LiteralPath $AssetPath } | Out-Null
 
-Write-Host "Published $Version to Gitee repository $Repository."
+Write-Host "Uploaded $Version to Gitee repository $Repository."
