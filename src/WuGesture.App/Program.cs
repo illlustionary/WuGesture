@@ -3,6 +3,7 @@ namespace WuGesture.App;
 static class Program
 {
     private const string WebView2RuntimeUrl = "https://developer.microsoft.com/microsoft-edge/webview2/";
+    private const uint AsfwAny = 0xFFFFFFFF;
 
     [STAThread]
     static void Main(string[] args)
@@ -31,10 +32,15 @@ static class Program
                 initialState: false,
                 mode: EventResetMode.AutoReset,
                 name: AppIdentity.ShowExistingInstanceEventName);
+            using var showExistingInstanceCompletedEvent = new EventWaitHandle(
+                initialState: false,
+                mode: EventResetMode.AutoReset,
+                name: AppIdentity.ShowExistingInstanceCompletedEventName);
             using var form = new MainForm(isStartupLaunch);
             using var listenerCancellation = new CancellationTokenSource();
             var listener = Task.Run(() => ListenForExistingInstanceRequests(
                 showExistingInstanceEvent,
+                showExistingInstanceCompletedEvent,
                 form,
                 listenerCancellation.Token));
 
@@ -97,7 +103,12 @@ static class Program
             try
             {
                 using var showExistingInstanceEvent = EventWaitHandle.OpenExisting(AppIdentity.ShowExistingInstanceEventName);
+                using var showExistingInstanceCompletedEvent = EventWaitHandle.OpenExisting(
+                    AppIdentity.ShowExistingInstanceCompletedEventName);
+                showExistingInstanceCompletedEvent.Reset();
+                AllowSetForegroundWindow(AsfwAny);
                 showExistingInstanceEvent.Set();
+                showExistingInstanceCompletedEvent.WaitOne(TimeSpan.FromSeconds(3));
                 return;
             }
             catch
@@ -107,8 +118,12 @@ static class Program
         }
     }
 
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool AllowSetForegroundWindow(uint dwProcessId);
+
     private static void ListenForExistingInstanceRequests(
         EventWaitHandle showExistingInstanceEvent,
+        EventWaitHandle showExistingInstanceCompletedEvent,
         MainForm form,
         CancellationToken cancellationToken)
     {
@@ -135,7 +150,17 @@ static class Program
 
             try
             {
-                form.BeginInvoke(new Action(form.ShowExistingInstance));
+                form.BeginInvoke(new Action(() =>
+                {
+                    try
+                    {
+                        form.ShowExistingInstance();
+                    }
+                    finally
+                    {
+                        showExistingInstanceCompletedEvent.Set();
+                    }
+                }));
             }
             catch
             {

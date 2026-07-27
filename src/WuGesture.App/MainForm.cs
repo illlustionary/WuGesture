@@ -124,6 +124,11 @@ public sealed class MainForm : Form
             return;
         }
 
+        if (!hideConfigWindowOnLaunch)
+        {
+            BringWindowToFront();
+        }
+
         scopeContextProvider = new ConfiguredScopeContextProvider(config.Config.Applications);
         gestureService = new GestureService(new GestureMatcher(config.Rules), scopeContextProvider);
         gestureService.UpdateExcludedApplications(config.Config.UiSettings.AppBehavior.ExcludedApplications);
@@ -272,7 +277,7 @@ public sealed class MainForm : Form
             WindowState = FormWindowState.Normal;
         }
 
-        Activate();
+        BringWindowToFront();
         await EnsureWebViewAsync();
     }
 
@@ -292,8 +297,13 @@ public sealed class MainForm : Form
 
     public void ShowExistingInstance()
     {
+        if (Visible && WindowState != FormWindowState.Minimized)
+        {
+            BringWindowToFront(attachToForegroundInputFirst: true);
+            return;
+        }
+
         RestoreFromTray();
-        BringWindowToFront();
     }
 
     private void SetUserPaused(bool paused)
@@ -1348,13 +1358,59 @@ public sealed class MainForm : Form
         return !isClosing && !IsDisposed && !Disposing && IsHandleCreated;
     }
 
-    private void BringWindowToFront()
+    private void BringWindowToFront(bool attachToForegroundInputFirst = false)
     {
         if (!IsHandleCreated)
         {
             return;
         }
 
+        if (attachToForegroundInputFirst)
+        {
+            BringWindowToFrontWithAttachedInput();
+            return;
+        }
+
+        RestoreAndActivateWindow();
+        if (GetForegroundWindow() != Handle)
+        {
+            BringWindowToFrontWithAttachedInput();
+        }
+    }
+
+    private void BringWindowToFrontWithAttachedInput()
+    {
+        var foregroundWindow = GetForegroundWindow();
+        var currentThreadId = GetCurrentThreadId();
+        var foregroundThreadId = foregroundWindow == IntPtr.Zero
+            ? 0
+            : GetWindowThreadProcessId(foregroundWindow, out _);
+        var isInputAttached = foregroundThreadId != 0 &&
+            foregroundThreadId != currentThreadId &&
+            AttachThreadInput(currentThreadId, foregroundThreadId, true);
+
+        try
+        {
+            if (isInputAttached)
+            {
+                RestoreAndActivateWindow(bringToTop: true);
+            }
+            else
+            {
+                RestoreAndActivateWindow();
+            }
+        }
+        finally
+        {
+            if (isInputAttached)
+            {
+                AttachThreadInput(currentThreadId, foregroundThreadId, false);
+            }
+        }
+    }
+
+    private void RestoreAndActivateWindow(bool bringToTop = false)
+    {
         if (IsIconic(Handle))
         {
             ShowWindow(Handle, SwRestore);
@@ -1364,10 +1420,14 @@ public sealed class MainForm : Form
             ShowWindow(Handle, SwShow);
         }
 
-        Activate();
+        if (bringToTop)
+        {
+            BringWindowToTop(Handle);
+        }
+
         SetForegroundWindow(Handle);
-        TopMost = true;
-        TopMost = false;
+        Activate();
+        Focus();
     }
 
     private void ApplyInitialWindowState()
@@ -1517,6 +1577,21 @@ public sealed class MainForm : Form
 
     [DllImport("user32.dll")]
     private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetForegroundWindow();
+
+    [DllImport("user32.dll")]
+    private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
+
+    [DllImport("kernel32.dll")]
+    private static extern uint GetCurrentThreadId();
+
+    [DllImport("user32.dll")]
+    private static extern bool AttachThreadInput(uint idAttach, uint idAttachTo, bool attach);
+
+    [DllImport("user32.dll")]
+    private static extern bool BringWindowToTop(IntPtr hWnd);
 
     [DllImport("user32.dll")]
     private static extern bool DestroyIcon(IntPtr hIcon);
