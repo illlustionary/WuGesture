@@ -19,13 +19,18 @@ public sealed class ApplicationExclusionMatcher
 
     public bool IsGestureExcluded()
     {
-        return TryGetCurrentApplication(out var appName, out var appPath) &&
+        return IsGestureExcluded(GetForegroundWindow());
+    }
+
+    public bool IsGestureExcluded(IntPtr window)
+    {
+        return TryGetApplication(window, out var appName, out var appPath) &&
             applications.Any(application => IsMatch(application, appName, appPath));
     }
 
     public bool IsEdgeActionExcluded()
     {
-        return TryGetCurrentApplication(out var appName, out var appPath) &&
+        return TryGetApplication(GetForegroundWindow(), out var appName, out var appPath) &&
             applications.Any(application => application.DisableEdgeActions && IsMatch(application, appName, appPath));
     }
 
@@ -56,18 +61,17 @@ public sealed class ApplicationExclusionMatcher
             string.Equals(NormalizeAppName(application.Name), appName, StringComparison.OrdinalIgnoreCase);
     }
 
-    private static bool TryGetCurrentApplication(out string appName, out string appPath)
+    private static bool TryGetApplication(IntPtr window, out string appName, out string appPath)
     {
         appName = "";
         appPath = "";
 
-        var foregroundWindow = GetForegroundWindow();
-        if (foregroundWindow == IntPtr.Zero)
+        if (window == IntPtr.Zero)
         {
             return false;
         }
 
-        GetWindowThreadProcessId(foregroundWindow, out var processId);
+        GetWindowThreadProcessId(window, out var processId);
         if (processId <= 0)
         {
             return false;

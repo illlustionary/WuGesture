@@ -27,6 +27,8 @@ public sealed class AppBehaviorUiSettings
 
     public string CloseButtonBehavior { get; set; } = GestureConfigContract.CloseButtonBehaviors.MinimizeToTray;
 
+    public string TargetWindowMode { get; set; } = GestureConfigContract.WindowTargetModes.StartWindow;
+
     public bool GesturePaused { get; set; }
 
     public bool DisableGesturesInFullscreen { get; set; }

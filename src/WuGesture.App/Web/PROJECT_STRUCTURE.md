@@ -211,7 +211,7 @@ src\pages
   - `settings\components\SettingsField.vue`：设置项卡片。
   - `settings\components\MouseTrailSettings.vue`：轨迹线配置，顶部内置轨迹线实时预览。
   - `settings\components\LevelOsdSettings.vue`：音量/亮度 OSD 配置，顶部内置位置、尺寸和圆角实时预览。
-  - `settings\components\AppBehaviorSettings.vue`：应用行为配置，包括开机启动、管理员启动、暂停 WuGesture 和关闭按钮行为。
+  - `settings\components\AppBehaviorSettings.vue`：应用行为配置，包括开机启动、管理员启动、目标窗口模式、暂停 WuGesture 和关闭按钮行为。
   - `settings\components\WebDavSettings.vue`：WebDAV 配置、测试、恢复和保存操作。
   - `settings\components\GestureHintSettings.vue`：底部提示窗配置，顶部内置提示窗实时预览。
   - `settings\components\GestureSensitivitySettings.vue`：手势灵敏度三档配置。
@@ -292,6 +292,7 @@ src\pages
 - `launchAtStartup`
 - `runAsAdministrator`
 - `closeButtonBehavior`
+- `targetWindowMode`：`start-window`（默认，手势按下位置所在的顶层窗口）或 `current-window`（动作执行时的活动窗口）
 - `gesturePaused`
 - `excludedApplications: [{ name, displayName, path, disableEdgeActions }]`
 

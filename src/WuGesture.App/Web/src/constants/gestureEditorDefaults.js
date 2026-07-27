@@ -5,6 +5,7 @@ import {
   EDGE_TRIGGER_TYPES,
   OPERATIONS,
   SCOPE_KINDS,
+  WINDOW_TARGET_MODES,
   WHEEL_DIRECTIONS
 } from "./gestureEditorOptions";
 
@@ -93,6 +94,7 @@ export const DEFAULT_UI_SETTINGS = {
     disableGesturesInFullscreen: false,
     disableEdgeActionsInFullscreen: false,
     closeButtonBehavior: CLOSE_BUTTON_BEHAVIORS.minimizeToTray,
+    targetWindowMode: WINDOW_TARGET_MODES.startWindow,
     excludedApplications: []
   },
   webDav: {

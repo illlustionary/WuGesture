@@ -4,7 +4,10 @@ import ToggleCheckbox from '@/components/ToggleCheckbox.vue'
 import SettingsField from './SettingsField.vue'
 import SettingsFormGrid from './SettingsFormGrid.vue'
 import SettingsSectionCard from './SettingsSectionCard.vue'
-import { CLOSE_BUTTON_BEHAVIOR_OPTIONS } from '@/constants/gestureEditorOptions'
+import {
+  CLOSE_BUTTON_BEHAVIOR_OPTIONS,
+  WINDOW_TARGET_MODE_OPTIONS
+} from '@/constants/gestureEditorOptions'
 
 defineProps({
   draft: { type: Object, required: true }
@@ -13,6 +16,7 @@ defineProps({
 const emit = defineEmits(['queue-persist', 'flush-persist'])
 
 const closeButtonOptions = CLOSE_BUTTON_BEHAVIOR_OPTIONS
+const targetWindowModeOptions = WINDOW_TARGET_MODE_OPTIONS
 
 function commit() {
   emit('queue-persist')
@@ -61,6 +65,14 @@ function commit() {
           v-model="draft.appBehavior.closeButtonBehavior"
           :options="closeButtonOptions"
           placeholder="选择关闭行为"
+          @change="commit"
+        />
+      </SettingsField>
+      <SettingsField label="目标窗口">
+        <CustomSelect
+          v-model="draft.appBehavior.targetWindowMode"
+          :options="targetWindowModeOptions"
+          placeholder="选择目标窗口"
           @change="commit"
         />
       </SettingsField>

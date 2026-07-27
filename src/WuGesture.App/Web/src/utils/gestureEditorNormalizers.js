@@ -8,6 +8,7 @@ import {
   OPERATIONS,
   SCOPE_KINDS,
   VOLUME_OPERATIONS,
+  WINDOW_TARGET_MODES,
   WHEEL_DIRECTIONS,
   WINDOW_OPERATIONS
 } from "@/constants/gestureEditorOptions";
@@ -202,6 +203,7 @@ export function normalizeAppBehaviorSettings(settings) {
         DEFAULT_UI_SETTINGS.appBehavior.disableEdgeActionsInFullscreen
     ),
     closeButtonBehavior: normalizeCloseButtonBehavior(settings?.closeButtonBehavior),
+    targetWindowMode: normalizeWindowTargetMode(settings?.targetWindowMode),
     excludedApplications: normalizeExcludedApplications(settings?.excludedApplications)
   };
 }
@@ -260,6 +262,13 @@ export function normalizeCloseButtonBehavior(value) {
   return Object.values(CLOSE_BUTTON_BEHAVIORS).includes(normalized)
     ? normalized
     : DEFAULT_UI_SETTINGS.appBehavior.closeButtonBehavior;
+}
+
+export function normalizeWindowTargetMode(value) {
+  const normalized = String(value ?? "").trim();
+  return Object.values(WINDOW_TARGET_MODES).includes(normalized)
+    ? normalized
+    : DEFAULT_UI_SETTINGS.appBehavior.targetWindowMode;
 }
 
 export function normalizeObjectKeys(source) {

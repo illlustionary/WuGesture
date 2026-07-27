@@ -24,8 +24,8 @@ public sealed class GestureService : IDisposable
     private IReadOnlyList<GestureDirection> lastProgressPattern = [];
     private IReadOnlyList<Point> lastProgressPath = [];
     private string? lastPreviewActionName;
-    private GestureScopeContext currentScopeContext = GestureScopeContext.Empty;
-    private IntPtr currentTargetWindow;
+    private string targetWindowMode = GestureConfigContract.WindowTargetModes.StartWindow;
+    private GestureExecutionContext activeGestureContext = GestureExecutionContext.Empty;
     private SynchronizationContext? synchronizationContext;
     private bool isTracking;
     private bool isPaused;
@@ -33,6 +33,20 @@ public sealed class GestureService : IDisposable
     private ActiveMouseButton activeMouseButton = ActiveMouseButton.None;
     private bool started;
     private bool disposed;
+
+    private sealed record GestureExecutionContext(
+        string TargetWindowMode,
+        IntPtr StartWindow,
+        GestureScopeContext ScopeContext)
+    {
+        public static GestureExecutionContext Empty { get; } = new(
+            GestureConfigContract.WindowTargetModes.StartWindow,
+            IntPtr.Zero,
+            GestureScopeContext.Empty);
+
+        public bool UsesStartWindow =>
+            TargetWindowMode == GestureConfigContract.WindowTargetModes.StartWindow;
+    }
 
     public event EventHandler<GestureRecognizedEventArgs>? GestureRecognized;
 
@@ -66,7 +80,7 @@ public sealed class GestureService : IDisposable
     public void UpdateExcludedApplications(IEnumerable<ExcludedApplicationConfig>? applications)
     {
         exclusionMatcher.Update(applications);
-        if (exclusionMatcher.IsGestureExcluded())
+        if (isTracking && recordingRequestId is null && IsGestureExcluded(activeGestureContext))
         {
             CancelTracking();
         }
@@ -79,6 +93,13 @@ public sealed class GestureService : IDisposable
         {
             CancelTracking();
         }
+    }
+
+    public void UpdateTargetWindowMode(string? mode)
+    {
+        targetWindowMode = mode == GestureConfigContract.WindowTargetModes.CurrentWindow
+            ? GestureConfigContract.WindowTargetModes.CurrentWindow
+            : GestureConfigContract.WindowTargetModes.StartWindow;
     }
 
     public void SetPaused(bool paused)
@@ -208,8 +229,12 @@ public sealed class GestureService : IDisposable
             }
         }
 
+        var gestureContext = recordingRequestId is null
+            ? CreateGestureContext(e.Location)
+            : GestureExecutionContext.Empty;
+
         if (recordingRequestId is null &&
-            (exclusionMatcher.IsGestureExcluded() || IsDisabledInFullscreen()))
+            (IsGestureExcluded(gestureContext) || IsDisabledInFullscreen()))
         {
             return;
         }
@@ -219,10 +244,7 @@ public sealed class GestureService : IDisposable
         points.Clear();
         points.Add(e.Location);
         isTracking = true;
-        currentScopeContext = recordingRequestId is null
-            ? scopeContextProvider.GetCurrentContext()
-            : GestureScopeContext.Empty;
-        currentTargetWindow = recordingRequestId is null ? GetForegroundWindow() : IntPtr.Zero;
+        activeGestureContext = gestureContext;
         lastProgressPattern = [];
         lastProgressPath = [];
         lastPreviewActionName = null;
@@ -281,6 +303,7 @@ public sealed class GestureService : IDisposable
 
         isTracking = false;
         activeMouseButton = ActiveMouseButton.None;
+        activeGestureContext = GestureExecutionContext.Empty;
         points.Clear();
         lastProgressPattern = [];
         lastProgressPath = [];
@@ -291,9 +314,11 @@ public sealed class GestureService : IDisposable
     private void FinishTracking(Point location, ActiveMouseButton button)
     {
         var recordingId = recordingRequestId;
+        var gestureContext = activeGestureContext;
         recordingRequestId = null;
         isTracking = false;
         activeMouseButton = ActiveMouseButton.None;
+        activeGestureContext = GestureExecutionContext.Empty;
         points.Add(location);
         var path = points.ToArray();
 
@@ -333,7 +358,7 @@ public sealed class GestureService : IDisposable
 
         var publicButton = ToPublicButton(button);
         var pattern = recognizer.Recognize(points);
-        var rule = matcher.Match(pattern, currentScopeContext, publicButton);
+        var rule = matcher.Match(pattern, gestureContext.ScopeContext, publicButton);
         if (rule is null)
         {
             RaiseProgress(path, pattern, false, publicButton, force: true);
@@ -351,7 +376,20 @@ public sealed class GestureService : IDisposable
             try
             {
                 GestureRecognized?.Invoke(this, new GestureRecognizedEventArgs(path, pattern, rule.ActionName));
-                actionExecutor.Execute(rule, currentTargetWindow);
+                if (gestureContext.UsesStartWindow)
+                {
+                    if (gestureContext.StartWindow == IntPtr.Zero)
+                    {
+                        return;
+                    }
+
+                    SetForegroundWindow(gestureContext.StartWindow);
+                }
+
+                var targetWindow = gestureContext.UsesStartWindow
+                    ? gestureContext.StartWindow
+                    : GetForegroundWindow();
+                actionExecutor.Execute(rule, targetWindow);
             }
             catch (Exception exception)
             {
@@ -372,7 +410,7 @@ public sealed class GestureService : IDisposable
         var path = points.ToArray();
         RaiseProgress(path, pattern, true, ToPublicButton(activeMouseButton));
 
-        RaisePreviewMatch(path, pattern, currentScopeContext, ToPublicButton(activeMouseButton));
+        RaisePreviewMatch(path, pattern, activeGestureContext.ScopeContext, ToPublicButton(activeMouseButton));
     }
 
     private void RaisePreviewMatch(
@@ -464,6 +502,43 @@ public sealed class GestureService : IDisposable
         return disableGesturesInFullscreen && ForegroundWindowFullscreenDetector.IsFullscreenForegroundWindow();
     }
 
+    private GestureExecutionContext CreateGestureContext(Point startLocation)
+    {
+        var mode = targetWindowMode;
+        if (mode == GestureConfigContract.WindowTargetModes.StartWindow)
+        {
+            var startWindow = ResolveStartTargetWindow(startLocation);
+            return new GestureExecutionContext(
+                mode,
+                startWindow,
+                scopeContextProvider.GetContextForWindow(startWindow));
+        }
+
+        return new GestureExecutionContext(
+            mode,
+            IntPtr.Zero,
+            scopeContextProvider.GetCurrentContext());
+    }
+
+    private bool IsGestureExcluded(GestureExecutionContext context)
+    {
+        return context.UsesStartWindow
+            ? exclusionMatcher.IsGestureExcluded(context.StartWindow)
+            : exclusionMatcher.IsGestureExcluded();
+    }
+
+    private static IntPtr ResolveStartTargetWindow(Point location)
+    {
+        var window = WindowFromPoint(location);
+        if (window == IntPtr.Zero)
+        {
+            return IntPtr.Zero;
+        }
+
+        var rootWindow = GetAncestor(window, GetAncestorRoot);
+        return rootWindow != IntPtr.Zero ? rootWindow : window;
+    }
+
     private static double Distance(Point a, Point b)
     {
         var dx = a.X - b.X;
@@ -489,4 +564,15 @@ public sealed class GestureService : IDisposable
 
     [DllImport("user32.dll")]
     private static extern IntPtr GetForegroundWindow();
+
+    [DllImport("user32.dll")]
+    private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr WindowFromPoint(Point point);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetAncestor(IntPtr hwnd, uint gaFlags);
+
+    private const uint GetAncestorRoot = 2;
 }

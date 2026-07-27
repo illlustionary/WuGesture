@@ -48,6 +48,11 @@ export const CLOSE_BUTTON_BEHAVIORS = {
   exit: "exit"
 };
 
+export const WINDOW_TARGET_MODES = {
+  startWindow: "start-window",
+  currentWindow: "current-window"
+};
+
 export const LEVEL_OSD_POSITIONS = [
   { value: "center", label: "居中" },
   { value: "top-center", label: "顶部居中" },
@@ -141,4 +146,9 @@ export const CLOSE_BUTTON_BEHAVIOR_OPTIONS = [
   { value: CLOSE_BUTTON_BEHAVIORS.minimizeToTray, label: "最小化到托盘" },
   { value: CLOSE_BUTTON_BEHAVIORS.minimizeToTaskbar, label: "最小化到任务栏" },
   { value: CLOSE_BUTTON_BEHAVIORS.exit, label: "直接关闭" }
+];
+
+export const WINDOW_TARGET_MODE_OPTIONS = [
+  { value: WINDOW_TARGET_MODES.startWindow, label: "起始窗口" },
+  { value: WINDOW_TARGET_MODES.currentWindow, label: "当前窗口" }
 ];

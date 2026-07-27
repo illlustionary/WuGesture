@@ -181,6 +181,7 @@ public sealed class GestureConfigStore
 
         var appBehavior = settings.AppBehavior;
         appBehavior.CloseButtonBehavior = NormalizeCloseButtonBehavior(appBehavior.CloseButtonBehavior);
+        appBehavior.TargetWindowMode = NormalizeWindowTargetMode(appBehavior.TargetWindowMode);
         appBehavior.ExcludedApplications = NormalizeExcludedApplications(appBehavior.ExcludedApplications);
 
         var webDav = settings.WebDav;
@@ -198,6 +199,13 @@ public sealed class GestureConfigStore
             GestureConfigContract.CloseButtonBehaviors.Exit
             ? value
             : GestureConfigContract.CloseButtonBehaviors.MinimizeToTray;
+    }
+
+    private static string NormalizeWindowTargetMode(string? value)
+    {
+        return value is GestureConfigContract.WindowTargetModes.CurrentWindow
+            ? value
+            : GestureConfigContract.WindowTargetModes.StartWindow;
     }
 
     private static string NormalizeLevelOsdPosition(string? value)

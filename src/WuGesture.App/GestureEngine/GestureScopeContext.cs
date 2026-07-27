@@ -8,4 +8,6 @@ public sealed record GestureScopeContext(string AppName, IReadOnlyList<string> C
 public interface IGestureScopeContextProvider
 {
     GestureScopeContext GetCurrentContext();
+
+    GestureScopeContext GetContextForWindow(IntPtr window);
 }

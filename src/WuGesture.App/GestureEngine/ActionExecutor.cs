@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
@@ -19,11 +18,10 @@ public sealed class ActionExecutor
     private const uint SwpNoMove = 0x0002;
     private const uint SwpNoActivate = 0x0010;
     private const int WmClose = 0x0010;
-    private const uint GetAncestorRoot = 2;
     private static readonly IntPtr HwndTopMost = new(-1);
     private static readonly IntPtr HwndNoTopMost = new(-2);
 
-    public void Execute(GestureRule rule, IntPtr targetWindow)
+    public void Execute(GestureRule rule, IntPtr targetWindow, bool useCurrentWindowWhenTargetMissing = false)
     {
         switch (rule.Action)
         {
@@ -31,7 +29,7 @@ public sealed class ActionExecutor
                 ExecuteHotkey(hotkey);
                 break;
             case WindowControlAction window:
-                ExecuteWindowControl(window, targetWindow);
+                ExecuteWindowControl(window, targetWindow, useCurrentWindowWhenTargetMissing);
                 break;
             case VolumeControlAction volume:
                 ExecuteVolumeControl(volume);
@@ -68,9 +66,16 @@ public sealed class ActionExecutor
         }
     }
 
-    private static void ExecuteWindowControl(WindowControlAction action, IntPtr targetWindow)
+    private static void ExecuteWindowControl(
+        WindowControlAction action,
+        IntPtr targetWindow,
+        bool useCurrentWindowWhenTargetMissing)
     {
-        targetWindow = ResolveWindowTarget(targetWindow);
+        if (targetWindow == IntPtr.Zero && useCurrentWindowWhenTargetMissing)
+        {
+            targetWindow = GetForegroundWindow();
+        }
+
         if (targetWindow == IntPtr.Zero || !IsWindow(targetWindow))
         {
             return;
@@ -139,23 +144,6 @@ public sealed class ActionExecutor
     private static void ExecuteBrightnessControl(BrightnessControlAction action)
     {
         BrightnessAdjustmentQueue.Enqueue(action);
-    }
-
-    private static IntPtr ResolveWindowTarget(IntPtr fallbackWindow)
-    {
-        var cursorWindow = WindowFromPoint(Cursor.Position);
-        if (cursorWindow != IntPtr.Zero)
-        {
-            var rootWindow = GetAncestor(cursorWindow, GetAncestorRoot);
-            if (rootWindow != IntPtr.Zero)
-            {
-                return rootWindow;
-            }
-
-            return cursorWindow;
-        }
-
-        return fallbackWindow;
     }
 
     private static void ToggleTopMost(IntPtr targetWindow)
@@ -248,10 +236,7 @@ public sealed class ActionExecutor
         uint flags);
 
     [DllImport("user32.dll")]
-    private static extern IntPtr WindowFromPoint(Point point);
-
-    [DllImport("user32.dll")]
-    private static extern IntPtr GetAncestor(IntPtr hwnd, uint gaFlags);
+    private static extern IntPtr GetForegroundWindow();
 
     [StructLayout(LayoutKind.Sequential)]
     private struct Input

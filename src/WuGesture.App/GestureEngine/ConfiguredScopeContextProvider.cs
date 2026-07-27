@@ -15,7 +15,16 @@ public sealed class ConfiguredScopeContextProvider : IGestureScopeContextProvide
 
     public GestureScopeContext GetCurrentContext()
     {
-        var context = innerProvider.GetCurrentContext();
+        return ApplyCategories(innerProvider.GetCurrentContext());
+    }
+
+    public GestureScopeContext GetContextForWindow(IntPtr window)
+    {
+        return ApplyCategories(innerProvider.GetContextForWindow(window));
+    }
+
+    private GestureScopeContext ApplyCategories(GestureScopeContext context)
+    {
         if (string.IsNullOrWhiteSpace(context.AppName))
         {
             return context;

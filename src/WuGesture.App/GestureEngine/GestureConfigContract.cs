@@ -66,6 +66,12 @@ public static class GestureConfigContract
         public const string Exit = "exit";
     }
 
+    public static class WindowTargetModes
+    {
+        public const string StartWindow = "start-window";
+        public const string CurrentWindow = "current-window";
+    }
+
     public static class LevelOsdPositions
     {
         public const string Center = "center";
