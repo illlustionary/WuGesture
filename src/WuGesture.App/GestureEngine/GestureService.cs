@@ -24,6 +24,7 @@ public sealed class GestureService : IDisposable
     private IReadOnlyList<GestureDirection> lastProgressPattern = [];
     private IReadOnlyList<Point> lastProgressPath = [];
     private string? lastPreviewActionName;
+    private long lastPreviewSessionId;
     private string targetWindowMode = GestureConfigContract.WindowTargetModes.StartWindow;
     private GestureExecutionContext activeGestureContext = GestureExecutionContext.Empty;
     private SynchronizationContext? synchronizationContext;
@@ -31,6 +32,10 @@ public sealed class GestureService : IDisposable
     private bool isPaused;
     private bool disableGesturesInFullscreen;
     private ActiveMouseButton activeMouseButton = ActiveMouseButton.None;
+    private ActiveMouseButton suppressedReleaseButton = ActiveMouseButton.None;
+    private long nextSessionId;
+    private long activeSessionId;
+    private bool isCompleting;
     private bool started;
     private bool disposed;
 
@@ -54,7 +59,7 @@ public sealed class GestureService : IDisposable
 
     public event EventHandler<GestureRecognizedEventArgs>? GesturePreviewMatched;
 
-    public event EventHandler? GesturePreviewCleared;
+    public event EventHandler<GesturePreviewClearedEventArgs>? GesturePreviewCleared;
 
     public event EventHandler<GestureProgressEventArgs>? GestureProgressChanged;
 
@@ -211,21 +216,19 @@ public sealed class GestureService : IDisposable
 
     private void StartTracking(MouseHookEventArgs e, ActiveMouseButton button, bool swallowInput)
     {
-        if (disposed || (isPaused && recordingRequestId is null))
+        if (disposed || (isPaused && recordingRequestId is null) || isCompleting)
         {
             return;
         }
 
         if (isTracking)
         {
-            // A second down for the same button can only follow a missed up event.
-            if (activeMouseButton == button)
+            var previousButton = activeMouseButton;
+            CancelTracking();
+            if (previousButton != button)
             {
-                CancelTracking();
-            }
-            else
-            {
-                return;
+                // The original Down was swallowed, so swallow its later Up if it arrives.
+                suppressedReleaseButton = previousButton;
             }
         }
 
@@ -240,7 +243,13 @@ public sealed class GestureService : IDisposable
         }
 
         e.Handled = swallowInput;
+        if (suppressedReleaseButton == button)
+        {
+            suppressedReleaseButton = ActiveMouseButton.None;
+        }
+
         activeMouseButton = button;
+        activeSessionId = ++nextSessionId;
         points.Clear();
         points.Add(e.Location);
         isTracking = true;
@@ -248,7 +257,8 @@ public sealed class GestureService : IDisposable
         lastProgressPattern = [];
         lastProgressPath = [];
         lastPreviewActionName = null;
-        RaiseProgress(points.ToArray(), [], true, ToPublicButton(button), force: true);
+        lastPreviewSessionId = 0;
+        RaiseProgress(activeSessionId, points.ToArray(), [], true, ToPublicButton(button), force: true);
     }
 
     private void OnMouseMove(object? sender, MouseHookEventArgs e)
@@ -278,6 +288,7 @@ public sealed class GestureService : IDisposable
     {
         if (disposed || !isTracking || activeMouseButton != ActiveMouseButton.Right)
         {
+            SuppressAbandonedButtonUp(e, ActiveMouseButton.Right);
             return;
         }
 
@@ -289,6 +300,7 @@ public sealed class GestureService : IDisposable
     {
         if (disposed || !isTracking || activeMouseButton != ActiveMouseButton.Middle)
         {
+            SuppressAbandonedButtonUp(e, ActiveMouseButton.Middle);
             return;
         }
 
@@ -298,25 +310,35 @@ public sealed class GestureService : IDisposable
 
     private void CancelTracking()
     {
+        if (!isTracking && !isCompleting)
+        {
+            return;
+        }
+
         var button = activeMouseButton;
+        var sessionId = activeSessionId;
         var path = points.ToArray();
 
         isTracking = false;
+        isCompleting = false;
         activeMouseButton = ActiveMouseButton.None;
+        activeSessionId = 0;
         activeGestureContext = GestureExecutionContext.Empty;
         points.Clear();
         lastProgressPattern = [];
         lastProgressPath = [];
-        ClearPreviewMatch();
-        RaiseProgress(path, [], false, ToPublicButton(button), force: true);
+        ClearPreviewMatch(sessionId);
+        RaiseProgress(sessionId, path, [], false, ToPublicButton(button), force: true);
     }
 
     private void FinishTracking(Point location, ActiveMouseButton button)
     {
+        var sessionId = activeSessionId;
         var recordingId = recordingRequestId;
         var gestureContext = activeGestureContext;
         recordingRequestId = null;
         isTracking = false;
+        isCompleting = true;
         activeMouseButton = ActiveMouseButton.None;
         activeGestureContext = GestureExecutionContext.Empty;
         points.Add(location);
@@ -325,32 +347,51 @@ public sealed class GestureService : IDisposable
         if (recordingId is not null)
         {
             var recordingPattern = recognizer.Recognize(points);
-            RaiseProgress(path, recordingPattern, false, ToPublicButton(button), force: true);
-            ClearPreviewMatch();
+            RaiseProgress(sessionId, path, recordingPattern, false, ToPublicButton(button), force: true);
+            ClearPreviewMatch(sessionId);
             Post(() =>
             {
-                if (disposed)
+                if (!CanCompleteSession(sessionId))
                 {
                     return;
                 }
 
                 GestureRecordingCompleted?.Invoke(
                     this,
-                    new GestureRecordingCompletedEventArgs(recordingId, path, recordingPattern, ToPublicButton(button)));
+                    new GestureRecordingCompletedEventArgs(sessionId, recordingId, path, recordingPattern, ToPublicButton(button)));
+                CompleteSession(sessionId);
             });
             return;
         }
 
         if (points.Count < 2 || PathLength(points) < minimumGestureDistance)
         {
-            RaiseProgress(path, [], false, ToPublicButton(button), force: true);
+            RaiseProgress(sessionId, path, [], false, ToPublicButton(button), force: true);
             if (button == ActiveMouseButton.Right)
             {
-                Post(MouseInput.ReplayRightClick);
+                Post(() =>
+                {
+                    if (!CanCompleteSession(sessionId))
+                    {
+                        return;
+                    }
+
+                    MouseInput.ReplayRightClick();
+                    CompleteSession(sessionId);
+                });
             }
             else if (button == ActiveMouseButton.Middle)
             {
-                Post(MouseInput.ReplayMiddleClick);
+                Post(() =>
+                {
+                    if (!CanCompleteSession(sessionId))
+                    {
+                        return;
+                    }
+
+                    MouseInput.ReplayMiddleClick();
+                    CompleteSession(sessionId);
+                });
             }
 
             return;
@@ -361,21 +402,22 @@ public sealed class GestureService : IDisposable
         var rule = matcher.Match(pattern, gestureContext.ScopeContext, publicButton);
         if (rule is null)
         {
-            RaiseProgress(path, pattern, false, publicButton, force: true);
+            RaiseProgress(sessionId, path, pattern, false, publicButton, force: true);
+            Post(() => CompleteSession(sessionId));
             return;
         }
 
-        RaiseProgress(path, pattern, false, publicButton, force: true);
+        RaiseProgress(sessionId, path, pattern, false, publicButton, force: true);
         Post(() =>
         {
-            if (disposed)
+            if (!CanCompleteSession(sessionId))
             {
                 return;
             }
 
             try
             {
-                GestureRecognized?.Invoke(this, new GestureRecognizedEventArgs(path, pattern, rule.ActionName));
+                GestureRecognized?.Invoke(this, new GestureRecognizedEventArgs(sessionId, path, pattern, rule.ActionName));
                 var isDesktopCloseAction = rule.Action is WindowControlAction
                 {
                     Operation: WindowControlOperation.Close
@@ -406,27 +448,55 @@ public sealed class GestureService : IDisposable
             }
             catch (Exception exception)
             {
-                GestureActionFailed?.Invoke(this, new GestureActionFailedEventArgs(path, pattern, rule.ActionName, exception));
+                GestureActionFailed?.Invoke(this, new GestureActionFailedEventArgs(sessionId, path, pattern, rule.ActionName, exception));
+            }
+            finally
+            {
+                CompleteSession(sessionId);
             }
         });
+    }
+
+    private void SuppressAbandonedButtonUp(MouseHookEventArgs e, ActiveMouseButton button)
+    {
+        if (suppressedReleaseButton == button)
+        {
+            e.Handled = true;
+            suppressedReleaseButton = ActiveMouseButton.None;
+        }
+    }
+
+    private bool CanCompleteSession(long sessionId)
+    {
+        return !disposed && isCompleting && activeSessionId == sessionId;
+    }
+
+    private void CompleteSession(long sessionId)
+    {
+        if (activeSessionId == sessionId)
+        {
+            isCompleting = false;
+            activeSessionId = 0;
+        }
     }
 
     private void PublishProgress()
     {
         if (recordingRequestId is not null)
         {
-            RaiseProgress(points.ToArray(), [], true, ToPublicButton(activeMouseButton));
+            RaiseProgress(activeSessionId, points.ToArray(), [], true, ToPublicButton(activeMouseButton));
             return;
         }
 
         var pattern = recognizer.Recognize(points);
         var path = points.ToArray();
-        RaiseProgress(path, pattern, true, ToPublicButton(activeMouseButton));
+        RaiseProgress(activeSessionId, path, pattern, true, ToPublicButton(activeMouseButton));
 
-        RaisePreviewMatch(path, pattern, activeGestureContext.ScopeContext, ToPublicButton(activeMouseButton));
+        RaisePreviewMatch(activeSessionId, path, pattern, activeGestureContext.ScopeContext, ToPublicButton(activeMouseButton));
     }
 
     private void RaisePreviewMatch(
+        long sessionId,
         IReadOnlyList<Point> path,
         IReadOnlyList<GestureDirection> pattern,
         GestureScopeContext context,
@@ -435,7 +505,7 @@ public sealed class GestureService : IDisposable
         var rule = matcher.Match(pattern, context, button);
         if (rule is null)
         {
-            ClearPreviewMatch();
+            ClearPreviewMatch(sessionId);
             return;
         }
 
@@ -445,33 +515,37 @@ public sealed class GestureService : IDisposable
         }
 
         lastPreviewActionName = rule.ActionName;
+        lastPreviewSessionId = sessionId;
         Post(() =>
         {
             if (!disposed)
             {
-                GesturePreviewMatched?.Invoke(this, new GestureRecognizedEventArgs(path, pattern, rule.ActionName));
+                GesturePreviewMatched?.Invoke(this, new GestureRecognizedEventArgs(sessionId, path, pattern, rule.ActionName));
             }
         });
     }
 
-    private void ClearPreviewMatch()
+    private void ClearPreviewMatch(long? sessionId = null)
     {
         if (lastPreviewActionName is null)
         {
             return;
         }
 
+        var previewSessionId = sessionId ?? lastPreviewSessionId;
         lastPreviewActionName = null;
+        lastPreviewSessionId = 0;
         Post(() =>
         {
             if (!disposed)
             {
-                GesturePreviewCleared?.Invoke(this, EventArgs.Empty);
+                GesturePreviewCleared?.Invoke(this, new GesturePreviewClearedEventArgs(previewSessionId));
             }
         });
     }
 
     private void RaiseProgress(
+        long sessionId,
         IReadOnlyList<Point> path,
         IReadOnlyList<GestureDirection> pattern,
         bool isCurrentlyTracking,
@@ -493,7 +567,7 @@ public sealed class GestureService : IDisposable
             {
                 GestureProgressChanged?.Invoke(
                     this,
-                    new GestureProgressEventArgs(path, pattern, isCurrentlyTracking, button));
+                    new GestureProgressEventArgs(sessionId, path, pattern, isCurrentlyTracking, button));
             }
         });
     }

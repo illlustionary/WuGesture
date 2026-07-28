@@ -85,7 +85,7 @@ src\WuGesture.App\GestureEngine
 
 - `MouseHook.cs`：低级全局鼠标钩子。
 - `KeyboardShortcutRecorder.cs`：低级键盘 hook，用于配置界面录制快捷键并吞掉录制期间的原生键盘事件。
-- `GestureService.cs`：跟踪右键和中键轨迹生命周期，调用识别器、匹配器和执行器，并向 UI 发送事件；也支持录制会话，把识别结果回传给前端。
+- `GestureService.cs`：跟踪右键和中键轨迹生命周期，调用识别器、匹配器和执行器，并向 UI 发送事件；也支持录制会话，把识别结果回传给前端。手势会话按 `Tracking -> Completing -> Idle` 串行推进，完成阶段不会开始下一笔；跟踪中收到任意新的手势按键按下时会先取消旧会话，再以新按下开始下一笔，且会吞掉被取消旧按键迟到的抬起事件。
 - `EdgeActionService.cs`：轮询真实光标位置并监听滚轮，处理屏幕四角触发、四边摩擦计数和四边滚轮触发；摩擦边会排除角落区域，按沿边方向的反向位移计数并在触发后防重复，滚轮边命中时会吞掉原始滚轮事件。
 - `ForegroundWindowFullscreenDetector.cs`：判断当前前台窗口是否处于无边框全屏，供手势和边缘操作的全屏禁用设置共用。
 - `GestureRecognizer.cs`：把鼠标轨迹转换为稳定的方向模式；识别前按有效移动距离抽样，单笔手势保留 8 方向，多笔手势默认回退到更宽容的横/竖方向以贴近 WGestures 手感。
