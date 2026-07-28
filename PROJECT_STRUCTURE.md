@@ -31,6 +31,7 @@ D:\workspace\my-gesture
 ├─ src
 │  └─ WuGesture.App
 └─ tests
+   └─ WuGesture.App.Tests
 ```
 
 根目录重要文件：
@@ -234,9 +235,19 @@ src\WuGesture.App\Web\PROJECT_STRUCTURE.md
 
 ## 测试
 
-当前仓库没有独立的测试项目。`WuGesture.slnx` 目前只包含桌面应用工程。
+测试工程路径：
 
-如果后续补回测试工程，可在此补充对应路径、覆盖范围和运行命令。
+```text
+tests\WuGesture.App.Tests
+```
+
+`WuGesture.slnx` 包含桌面应用工程与 xUnit 测试工程。测试工程通过 `InternalsVisibleTo` 访问需要覆盖的内部纯逻辑，不直接驱动全局鼠标 hook、窗口前置或 WebView2。
+
+当前单元测试覆盖：
+
+- `GestureRecognizer`：有效移动距离、单笔 8 方向、多笔首段归一化和灵敏度。
+- `GestureMatcher`：`app > category > global` 作用域优先级、分类关联顺序、鼠标按键和完整方向模式匹配。
+- `EdgeHitTester`：多屏坐标、边缘优先级、摩擦边角落排除和到边距离计算。
 
 ## 构建与发布
 
@@ -264,7 +275,7 @@ WuGesture.exe
 dotnet test WuGesture.slnx
 ```
 
-当前会因没有测试项目而没有可执行测试目标。
+`dotnet test WuGesture.slnx` 会构建桌面应用和测试工程，并执行上述单元测试。
 
 发布：
 
