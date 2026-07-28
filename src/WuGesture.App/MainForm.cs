@@ -34,6 +34,7 @@ public sealed class MainForm : Form
     private ConfiguredScopeContextProvider? scopeContextProvider;
     private LoadedGestureConfig? loadedConfig;
     private GestureService? gestureService;
+    private long latestGestureOverlaySessionId;
     private EdgeActionService? edgeActionService;
     private MouseTrailForm? mouseTrailForm;
     private bool startMaximized;
@@ -540,6 +541,11 @@ public sealed class MainForm : Form
             return;
         }
 
+        if (!AcceptGestureOverlaySession(e.SessionId))
+        {
+            return;
+        }
+
         if (IsFeatureEnabled(loadedConfig?.Config.UiSettings.MouseTrail.Enabled))
         {
             mouseTrailForm?.SetHighlighted(true);
@@ -551,7 +557,7 @@ public sealed class MainForm : Form
         }
     }
 
-    private void OnGesturePreviewCleared(object? sender, EventArgs e)
+    private void OnGesturePreviewCleared(object? sender, GesturePreviewClearedEventArgs e)
     {
         if (!CanUseUi())
         {
@@ -561,6 +567,11 @@ public sealed class MainForm : Form
         if (InvokeRequired)
         {
             BeginInvokeSafe(() => OnGesturePreviewCleared(sender, e));
+            return;
+        }
+
+        if (!AcceptGestureOverlaySession(e.SessionId))
+        {
             return;
         }
 
@@ -585,6 +596,11 @@ public sealed class MainForm : Form
         if (InvokeRequired)
         {
             BeginInvokeSafe(() => OnGestureRecognized(sender, e));
+            return;
+        }
+
+        if (!AcceptGestureOverlaySession(e.SessionId))
+        {
             return;
         }
 
@@ -615,6 +631,11 @@ public sealed class MainForm : Form
             return;
         }
 
+        if (!AcceptGestureOverlaySession(e.SessionId))
+        {
+            return;
+        }
+
         var payload = JsonSerializer.Serialize(new
         {
             type = WebViewMessageTypes.GestureRecorded,
@@ -637,6 +658,11 @@ public sealed class MainForm : Form
         if (InvokeRequired)
         {
             BeginInvokeSafe(() => OnGestureActionFailed(sender, e));
+            return;
+        }
+
+        if (!AcceptGestureOverlaySession(e.SessionId))
+        {
             return;
         }
 
@@ -685,6 +711,11 @@ public sealed class MainForm : Form
         if (InvokeRequired)
         {
             BeginInvokeSafe(() => OnGestureProgressChanged(sender, e));
+            return;
+        }
+
+        if (!AcceptGestureOverlaySession(e.SessionId))
+        {
             return;
         }
 
@@ -1351,6 +1382,17 @@ public sealed class MainForm : Form
                 action();
             }
         });
+    }
+
+    private bool AcceptGestureOverlaySession(long sessionId)
+    {
+        if (sessionId < latestGestureOverlaySessionId)
+        {
+            return false;
+        }
+
+        latestGestureOverlaySessionId = sessionId;
+        return true;
     }
 
     private bool CanUseUi()
