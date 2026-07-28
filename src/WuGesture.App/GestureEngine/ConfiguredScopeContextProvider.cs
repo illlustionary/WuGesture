@@ -46,7 +46,7 @@ public sealed class ConfiguredScopeContextProvider : IGestureScopeContextProvide
 
         foreach (var application in applications)
         {
-            var name = NormalizeAppName(application.Name);
+            var name = ApplicationIdentityNormalizer.NormalizeProcessName(application.Name);
             var categories = application.Categories
                 .Select(category => category.Trim())
                 .Where(category => category.Length > 0)
@@ -63,9 +63,4 @@ public sealed class ConfiguredScopeContextProvider : IGestureScopeContextProvide
         return result;
     }
 
-    private static string NormalizeAppName(string value)
-    {
-        var name = Path.GetFileNameWithoutExtension(value.Trim());
-        return string.IsNullOrWhiteSpace(name) ? value.Trim() : name;
-    }
 }
