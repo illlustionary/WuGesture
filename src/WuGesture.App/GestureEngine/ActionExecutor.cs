@@ -21,7 +21,11 @@ public sealed class ActionExecutor
     private static readonly IntPtr HwndTopMost = new(-1);
     private static readonly IntPtr HwndNoTopMost = new(-2);
 
-    public void Execute(GestureRule rule, IntPtr targetWindow, bool useCurrentWindowWhenTargetMissing = false)
+    public void Execute(
+        GestureRule rule,
+        IntPtr targetWindow,
+        bool useCurrentWindowWhenTargetMissing = false,
+        bool targetIsDesktopSurface = false)
     {
         switch (rule.Action)
         {
@@ -29,7 +33,7 @@ public sealed class ActionExecutor
                 ExecuteHotkey(hotkey);
                 break;
             case WindowControlAction window:
-                ExecuteWindowControl(window, targetWindow, useCurrentWindowWhenTargetMissing);
+                ExecuteWindowControl(window, targetWindow, useCurrentWindowWhenTargetMissing, targetIsDesktopSurface);
                 break;
             case VolumeControlAction volume:
                 ExecuteVolumeControl(volume);
@@ -69,7 +73,8 @@ public sealed class ActionExecutor
     private static void ExecuteWindowControl(
         WindowControlAction action,
         IntPtr targetWindow,
-        bool useCurrentWindowWhenTargetMissing)
+        bool useCurrentWindowWhenTargetMissing,
+        bool targetIsDesktopSurface)
     {
         if (targetWindow == IntPtr.Zero && useCurrentWindowWhenTargetMissing)
         {
@@ -93,7 +98,14 @@ public sealed class ActionExecutor
                 ShowWindow(targetWindow, SwMinimize);
                 break;
             case WindowControlOperation.Close:
-                PostMessage(targetWindow, WmClose, IntPtr.Zero, IntPtr.Zero);
+                if (targetIsDesktopSurface || DesktopWindowClassifier.IsDesktopSurface(targetWindow))
+                {
+                    ShowDesktopShutdownDialog();
+                }
+                else
+                {
+                    PostMessage(targetWindow, WmClose, IntPtr.Zero, IntPtr.Zero);
+                }
                 break;
         }
     }
@@ -158,6 +170,17 @@ public sealed class ActionExecutor
             0,
             0,
             SwpNoMove | SwpNoSize | SwpNoActivate);
+    }
+
+    private static void ShowDesktopShutdownDialog()
+    {
+        var shellWindow = GetShellWindow();
+        if (shellWindow != IntPtr.Zero && IsWindow(shellWindow))
+        {
+            // This is the same target and message as Alt+F4 on an unfettered desktop.
+            SetForegroundWindow(shellWindow);
+            PostMessage(shellWindow, WmClose, IntPtr.Zero, IntPtr.Zero);
+        }
     }
 
     private static Input CreateKeyboardInput(Keys key, bool keyUp)
@@ -237,6 +260,12 @@ public sealed class ActionExecutor
 
     [DllImport("user32.dll")]
     private static extern IntPtr GetForegroundWindow();
+
+    [DllImport("user32.dll")]
+    private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetShellWindow();
 
     [StructLayout(LayoutKind.Sequential)]
     private struct Input
