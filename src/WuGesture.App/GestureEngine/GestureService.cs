@@ -37,14 +37,12 @@ public sealed class GestureService : IDisposable
     private sealed record GestureExecutionContext(
         string TargetWindowMode,
         IntPtr StartWindow,
-        GestureScopeContext ScopeContext,
-        bool StartWindowIsDesktopSurface)
+        GestureScopeContext ScopeContext)
     {
         public static GestureExecutionContext Empty { get; } = new(
             GestureConfigContract.WindowTargetModes.StartWindow,
             IntPtr.Zero,
-            GestureScopeContext.Empty,
-            false);
+            GestureScopeContext.Empty);
 
         public bool UsesStartWindow =>
             TargetWindowMode == GestureConfigContract.WindowTargetModes.StartWindow;
@@ -378,6 +376,16 @@ public sealed class GestureService : IDisposable
             try
             {
                 GestureRecognized?.Invoke(this, new GestureRecognizedEventArgs(path, pattern, rule.ActionName));
+                var isDesktopCloseAction = rule.Action is WindowControlAction
+                {
+                    Operation: WindowControlOperation.Close
+                };
+                var targetWindow = gestureContext.UsesStartWindow
+                    ? gestureContext.StartWindow
+                    : GetForegroundWindow();
+                var isDesktopCloseTarget = isDesktopCloseAction &&
+                                           targetWindow != IntPtr.Zero &&
+                                           DesktopWindowClassifier.IsDesktopSurface(targetWindow);
                 if (gestureContext.UsesStartWindow)
                 {
                     if (gestureContext.StartWindow == IntPtr.Zero)
@@ -385,19 +393,16 @@ public sealed class GestureService : IDisposable
                         return;
                     }
 
-                    if (!gestureContext.StartWindowIsDesktopSurface)
+                    if (!isDesktopCloseTarget)
                     {
                         SetForegroundWindow(gestureContext.StartWindow);
                     }
                 }
 
-                var targetWindow = gestureContext.UsesStartWindow
-                    ? gestureContext.StartWindow
-                    : GetForegroundWindow();
                 actionExecutor.Execute(
                     rule,
                     targetWindow,
-                    targetIsDesktopSurface: gestureContext.UsesStartWindow && gestureContext.StartWindowIsDesktopSurface);
+                    targetIsDesktopSurface: isDesktopCloseTarget);
             }
             catch (Exception exception)
             {
@@ -518,16 +523,14 @@ public sealed class GestureService : IDisposable
             var startTarget = ResolveStartTargetWindow(startLocation);
             return new GestureExecutionContext(
                 mode,
-                startTarget.Window,
-                scopeContextProvider.GetContextForWindow(startTarget.Window),
-                startTarget.IsDesktopSurface);
+                startTarget,
+                scopeContextProvider.GetContextForWindow(startTarget));
         }
 
         return new GestureExecutionContext(
             mode,
             IntPtr.Zero,
-            scopeContextProvider.GetCurrentContext(),
-            false);
+            scopeContextProvider.GetCurrentContext());
     }
 
     private bool IsGestureExcluded(GestureExecutionContext context)
@@ -537,17 +540,16 @@ public sealed class GestureService : IDisposable
             : exclusionMatcher.IsGestureExcluded();
     }
 
-    private static (IntPtr Window, bool IsDesktopSurface) ResolveStartTargetWindow(Point location)
+    private static IntPtr ResolveStartTargetWindow(Point location)
     {
         var window = WindowFromPoint(location);
         if (window == IntPtr.Zero)
         {
-            return (IntPtr.Zero, false);
+            return IntPtr.Zero;
         }
 
         var rootWindow = GetAncestor(window, GetAncestorRoot);
-        var targetWindow = rootWindow != IntPtr.Zero ? rootWindow : window;
-        return (targetWindow, DesktopWindowClassifier.IsDesktopSurface(window));
+        return rootWindow != IntPtr.Zero ? rootWindow : window;
     }
 
     private static double Distance(Point a, Point b)

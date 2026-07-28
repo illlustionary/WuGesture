@@ -48,7 +48,7 @@ internal static class DesktopWindowClassifier
 
     private static bool IsDesktopShellClass(string className)
     {
-        return className is "Progman" or "WorkerW" or "SHELLDLL_DefView" or "SysListView32";
+        return className is "Progman" or "WorkerW" or "SHELLDLL_DefView";
     }
 
     private static string GetWindowClassName(IntPtr window)
