@@ -60,7 +60,12 @@ src\WuGesture.App
 启动流程：
 
 - `Program.cs` 会在 .NET Host 成功启动后检查 WebView2 Runtime，缺少时显示官方下载引导；随后通过命名互斥体保证单实例运行。再次启动时不会创建第二个实例，而是先将前台切换权限授予已运行实例，再通知它在 UI 线程弹出并激活配置窗口，且等待该 UI 操作通过命名自动重置事件确认或超时后才退出。已有且可见的配置窗口收到单实例唤醒时，会临时关联当前前台线程的输入队列后激活，并在完成后立即解除关联；没有配置窗口时则保持普通启动与恢复流程，避免使用短暂置顶造成焦点回退。开机自启动会带 `--startup` 内部参数，始终只启动后台服务并驻留托盘，不打开配置窗口；普通启动是否显示配置窗口由应用行为设置控制，默认显示。
-- `MainForm.cs` 会在首次显示前加载配置并决定是否后台启动，以避免后台启动时短暂绘制主窗口；普通启动显示配置窗口、托盘恢复和单实例唤醒都会将配置窗口前置并激活，后台启动则继续隐藏。随后应用开机自启动和管理员启动设置、创建 `GestureService` / `EdgeActionService`、按需初始化 WebView2 配置界面、创建托盘图标，并桥接 WebView 消息；也会把配置里的 `uiSettings` 应用到轨迹窗、提示窗和应用行为。主窗口和托盘显示名为 `WuGesture`。
+- `MainForm.cs` 会在首次显示前加载配置并决定是否后台启动，以避免后台启动时短暂绘制主窗口；普通启动显示配置窗口、托盘恢复和单实例唤醒都会将配置窗口前置并激活，后台启动则继续隐藏。随后应用开机自启动和管理员启动设置、创建 `GestureService` / `EdgeActionService` / `GestureFeedbackCoordinator`、创建托盘图标，并处理 WebView 业务消息；也会把配置里的 `uiSettings` 应用到轨迹窗、提示窗和应用行为。主窗口和托盘显示名为 `WuGesture`。
+- `WebViewHost.cs`：负责 WebView2 控件的创建、销毁、虚拟主机映射、导航和消息事件订阅；入站消息仍同步交由 `MainForm` 的业务处理器执行，宿主不存在时出站消息直接丢弃。
+- `WebViewMessageDtos.cs`：集中 WebView 入站消息 DTO。
+- `WebViewRulesPayloadFactory.cs`：把已加载的手势配置转换为 WebView `rules` 消息 payload，并补充应用图标数据。
+- `ApplicationIconDataUrl.cs`：从可执行文件提取图标并转换为 WebView 可用的 PNG data URL。
+- `WindowStateStore.cs`：负责配置窗口位置、尺寸和最大化状态的读写、校验与屏幕边界规范化。
 - `AppIdentity.cs` 集中应用显示名、AppData 子目录、自启动注册表值、单实例 IPC 请求/确认事件名和内部启动参数；开机自启动和管理员重启会直接调用当前 `WuGesture.exe`。
 - `ConfigStorageContract.cs` 集中本地配置文件名和窗口状态文件名；本地导入/导出只处理主配置文件，不包含窗口状态文件。
 - `WebViewHostContract.cs` 集中 WebView2 虚拟主机、入口 URL 和宿主输出目录中的 Web 前端路径片段。
@@ -85,8 +90,14 @@ src\WuGesture.App\GestureEngine
 
 - `MouseHook.cs`：低级全局鼠标钩子。
 - `KeyboardShortcutRecorder.cs`：低级键盘 hook，用于配置界面录制快捷键并吞掉录制期间的原生键盘事件。
-- `GestureService.cs`：跟踪右键和中键轨迹生命周期，调用识别器、匹配器和执行器，并向 UI 发送事件；也支持录制会话，把识别结果回传给前端。手势会话按 `Tracking -> Completing -> Idle` 串行推进，完成阶段不会开始下一笔；跟踪中收到任意新的手势按键按下时会先取消旧会话，再以新按下开始下一笔，且会吞掉被取消旧按键迟到的抬起事件。
-- `EdgeActionService.cs`：轮询真实光标位置并监听滚轮，处理屏幕四角触发、四边摩擦计数和四边滚轮触发；摩擦边会排除角落区域，按沿边方向的反向位移计数并在触发后防重复，滚轮边命中时会吞掉原始滚轮事件。
+- `GestureService.cs`：接入右键和中键低级 hook，协调会话、识别器、匹配器和执行器，并向 UI 发送事件；也支持录制会话，把识别结果回传给前端。
+- `GestureSession.cs`：保存单次手势的 `Tracking -> Completing -> Idle` 生命周期、会话编号、轨迹和预览/进度缓存。完成阶段不会开始下一笔；跟踪中收到任意新的手势按键按下时会先取消旧会话，再以新按下开始下一笔，且会吞掉被取消旧按键迟到的抬起事件。
+- `GestureFeedbackCoordinator.cs`：订阅手势 UI 事件，在 UI 线程按会话编号过滤陈旧更新，负责轨迹/提示覆盖层及手势相关 WebView 消息；`MainForm` 仅提供配置和宿主资源回调。
+- `EdgeActionService.cs`：轮询真实光标位置并监听滚轮，负责暂停/排除/全屏门控、触发顺序、动作筛选和 UI 线程调度；摩擦边会排除角落区域，按沿边方向的反向位移计数并在触发后防重复，滚轮边命中时会吞掉原始滚轮事件。
+- `EdgeHitTester.cs`：集中四角、普通边缘和摩擦边的屏幕几何命中计算，并提供到边距离计算；保留屏幕遍历和边界优先级。
+- `FrictionTracker.cs`：维护单次摩擦边的位移方向、计数、触发后冷却和超时重置状态。
+- `EdgeActionConfigNormalizer.cs`：将边缘动作配置规范为运行时所需形态，并迁移旧版摩擦边角落位置。
+- `EdgeActionFormatting.cs` 和 `EdgeLocation.cs`：分别提供边缘动作失败名称格式化及运行时边缘位置模型/配置位置映射。
 - `ForegroundWindowFullscreenDetector.cs`：判断当前前台窗口是否处于无边框全屏，供手势和边缘操作的全屏禁用设置共用。
 - `GestureRecognizer.cs`：把鼠标轨迹转换为稳定的方向模式；识别前按有效移动距离抽样，单笔手势保留 8 方向，多笔手势默认回退到更宽容的横/竖方向以贴近 WGestures 手感。
 - `GestureRuntimeDefaults.cs`：手势识别和边缘操作运行时阈值常量，包括最小移动距离、识别步数、边缘厚度、摩擦距离和超时。
@@ -151,7 +162,9 @@ MouseHook
 
 - `GestureConfig.cs`：JSON DTO。
 - `GestureConfigContract.cs`：配置和运行时共享的字符串契约常量，包括 scope、鼠标按键、动作类型、操作名、边缘触发类型/位置、滚轮方向和关闭按钮行为。
-- `GestureConfigStore.cs`：加载、保存、重置默认配置，并为本地/WebDAV 恢复提供 JSON 校验、规范化和写入。
+- `GestureConfigStore.cs`：加载、保存、重置默认配置，并处理本地/WebDAV 配置的 JSON 读写与 `LoadedGestureConfig` 组装。
+- `GestureConfigNormalizer.cs`：集中配置 schema 的空值补全、旧字段迁移、UI 设置范围校验和排除项规范化；后端仍是配置校验的最终权威。
+- `ApplicationIdentityNormalizer.cs`：集中可执行文件名/进程名的规范化，供配置、排除项和应用分类匹配复用。
 - `ConfigStorageContract.cs`：配置文件名和窗口状态文件名常量。
 - `GestureConfigMapper.cs`：把配置 DTO 映射为运行时 `GestureRule`。
 - `DefaultGestureConfig.cs`：完整默认初始配置，包含默认全局规则、默认 UI/应用行为设置和默认关闭的边缘操作。

@@ -1,9 +1,6 @@
-using Microsoft.Web.WebView2.Core;
-using Microsoft.Web.WebView2.WinForms;
 using Microsoft.Win32;
 using WuGesture.App.GestureEngine;
 using System.Diagnostics;
-using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
 using System.Text.Json;
@@ -15,32 +12,27 @@ public sealed class MainForm : Form
     private const int SwShow = 5;
     private const int SwRestore = 9;
     private const int WmClose = 0x0010;
-    private const int DefaultWindowWidth = 1080;
-    private const int DefaultWindowHeight = 720;
-    private const int MinimumWindowWidth = 640;
-    private const int MinimumWindowHeight = 480;
     private const string StartupRegistryPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
     private readonly GestureConfigStore configStore = new();
     private readonly WebDavConfigSyncService webDavConfigSyncService = new();
     private readonly KeyboardShortcutRecorder hotkeyRecorder = new();
-    private readonly string windowStatePath = GetWindowStatePath();
+    private readonly WindowStateStore windowStateStore = new();
     private readonly NotifyIcon trayIcon = new();
     private readonly ContextMenuStrip trayMenu = new();
     private readonly bool startHiddenToTray;
     private ToolStripMenuItem? pauseItem;
     private Icon? normalTrayIcon;
     private Icon? pausedTrayIcon;
-    private WebView2? webView;
+    private readonly WebViewHost webViewHost;
     private ConfiguredScopeContextProvider? scopeContextProvider;
     private LoadedGestureConfig? loadedConfig;
     private GestureService? gestureService;
-    private long latestGestureOverlaySessionId;
+    private GestureFeedbackCoordinator? gestureFeedbackCoordinator;
     private EdgeActionService? edgeActionService;
     private MouseTrailForm? mouseTrailForm;
     private bool startMaximized;
     private bool isClosing;
     private bool isExiting;
-    private bool isWebViewInitializing;
     private bool hideConfigWindowOnLaunch;
     private bool isUserPaused;
     private bool isConfigPaused;
@@ -51,15 +43,10 @@ public sealed class MainForm : Form
         PropertyNameCaseInsensitive = true
     };
 
-    private static readonly JsonSerializerOptions WindowStateJsonOptions = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        WriteIndented = true
-    };
-
     public MainForm(bool startHiddenToTray = false)
     {
         this.startHiddenToTray = startHiddenToTray;
+        webViewHost = new WebViewHost(this, CanUseUi, HandleWebMessage);
         loadedConfig = configStore.LoadOrCreate();
         hideConfigWindowOnLaunch = startHiddenToTray ||
             !loadedConfig.Config.UiSettings.AppBehavior.ShowConfigWindowOnLaunch;
@@ -87,6 +74,7 @@ public sealed class MainForm : Form
             pausedTrayIcon?.Dispose();
             DisposeWebView();
             LevelOsdOverlay.Reset();
+            gestureFeedbackCoordinator?.Dispose();
             DisposeMouseTrailForm();
         };
     }
@@ -157,12 +145,14 @@ public sealed class MainForm : Form
             EnsureMouseTrailForm().Preload();
         }
 
-        gestureService.GesturePreviewMatched += OnGesturePreviewMatched;
-        gestureService.GesturePreviewCleared += OnGesturePreviewCleared;
-        gestureService.GestureRecognized += OnGestureRecognized;
-        gestureService.GestureRecordingCompleted += OnGestureRecordingCompleted;
-        gestureService.GestureActionFailed += OnGestureActionFailed;
-        gestureService.GestureProgressChanged += OnGestureProgressChanged;
+        gestureFeedbackCoordinator = new GestureFeedbackCoordinator(
+            this,
+            gestureService,
+            () => loadedConfig?.Config.UiSettings,
+            EnsureMouseTrailForm,
+            () => mouseTrailForm,
+            TryPostWebMessage,
+            CanUseUi);
         edgeActionService.EdgeActionFailed += OnEdgeActionFailed;
         hotkeyRecorder.HotkeyRecorded += OnHotkeyRecorded;
         gestureService.Start();
@@ -205,6 +195,7 @@ public sealed class MainForm : Form
         isClosing = true;
         SaveWindowState();
         hotkeyRecorder.Stop();
+        gestureFeedbackCoordinator?.Dispose();
         gestureService?.Dispose();
         edgeActionService?.Dispose();
         hotkeyRecorder.Dispose();
@@ -425,257 +416,22 @@ public sealed class MainForm : Form
 
     private async Task EnsureWebViewAsync()
     {
-        if (webView is { IsDisposed: false, CoreWebView2: not null } || isWebViewInitializing)
-        {
-            return;
-        }
-
-        isWebViewInitializing = true;
-        try
-        {
-            DisposeWebView();
-            var createdWebView = new WebView2
-            {
-                Dock = DockStyle.Fill
-            };
-            webView = createdWebView;
-            Controls.Add(createdWebView);
-            createdWebView.BringToFront();
-
-            await createdWebView.EnsureCoreWebView2Async();
-            if (!CanUseUi() || createdWebView.IsDisposed || !ReferenceEquals(webView, createdWebView))
-            {
-                return;
-            }
-
-            createdWebView.CoreWebView2.WebMessageReceived += OnWebMessageReceived;
-            ConfigureWebViewHostMapping();
-            createdWebView.Source = WebViewHostContract.EntryUri;
-        }
-        catch (ObjectDisposedException)
-        {
-        }
-        catch (InvalidOperationException) when (isClosing || webView is null)
-        {
-        }
-        finally
-        {
-            isWebViewInitializing = false;
-        }
+        await webViewHost.EnsureAsync();
     }
 
     private void DisposeWebView()
     {
-        if (webView is null)
-        {
-            return;
-        }
-
-        if (!webView.IsDisposed)
-        {
-            if (webView.CoreWebView2 is not null)
-            {
-                webView.CoreWebView2.WebMessageReceived -= OnWebMessageReceived;
-            }
-
-            Controls.Remove(webView);
-            webView.Dispose();
-        }
-
-        webView = null;
-    }
-
-    private void OnWebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs args)
-    {
-        HandleWebMessage(args.WebMessageAsJson);
+        webViewHost.Dispose();
     }
 
     private void TryPostWebMessage(string payload)
     {
-        if (!CanPostWebMessage())
+        if (isClosing)
         {
             return;
         }
 
-        webView!.CoreWebView2!.PostWebMessageAsJson(payload);
-    }
-
-    private bool CanPostWebMessage()
-    {
-        return !isClosing && webView is { IsDisposed: false, CoreWebView2: not null };
-    }
-
-    private void ConfigureWebViewHostMapping()
-    {
-        if (webView?.CoreWebView2 is null)
-        {
-            return;
-        }
-
-        var webDistPath = Path.Combine(
-            AppContext.BaseDirectory,
-            WebViewHostContract.OutputRootFolder,
-            WebViewHostContract.OutputDistFolder);
-        if (!Directory.Exists(webDistPath))
-        {
-            throw new DirectoryNotFoundException(
-                $"Web frontend output was not found at '{webDistPath}'. Run 'dotnet build WuGesture.slnx' from the repository root first.");
-        }
-
-        webView.CoreWebView2.SetVirtualHostNameToFolderMapping(
-            WebViewHostContract.HostName,
-            webDistPath,
-            CoreWebView2HostResourceAccessKind.Allow);
-    }
-
-    private void OnGesturePreviewMatched(object? sender, GestureRecognizedEventArgs e)
-    {
-        if (!CanUseUi())
-        {
-            return;
-        }
-
-        if (InvokeRequired)
-        {
-            BeginInvokeSafe(() => OnGesturePreviewMatched(sender, e));
-            return;
-        }
-
-        if (!AcceptGestureOverlaySession(e.SessionId))
-        {
-            return;
-        }
-
-        if (IsFeatureEnabled(loadedConfig?.Config.UiSettings.MouseTrail.Enabled))
-        {
-            mouseTrailForm?.SetHighlighted(true);
-        }
-
-        if (IsFeatureEnabled(loadedConfig?.Config.UiSettings.GestureHint.Enabled))
-        {
-            EnsureMouseTrailForm().ShowGestureHint(e.ActionName, e.Path[^1], autoHide: false);
-        }
-    }
-
-    private void OnGesturePreviewCleared(object? sender, GesturePreviewClearedEventArgs e)
-    {
-        if (!CanUseUi())
-        {
-            return;
-        }
-
-        if (InvokeRequired)
-        {
-            BeginInvokeSafe(() => OnGesturePreviewCleared(sender, e));
-            return;
-        }
-
-        if (!AcceptGestureOverlaySession(e.SessionId))
-        {
-            return;
-        }
-
-        if (IsFeatureEnabled(loadedConfig?.Config.UiSettings.MouseTrail.Enabled))
-        {
-            mouseTrailForm?.SetHighlighted(false);
-        }
-
-        if (IsFeatureEnabled(loadedConfig?.Config.UiSettings.GestureHint.Enabled))
-        {
-            mouseTrailForm?.ClearGestureHint();
-        }
-    }
-
-    private void OnGestureRecognized(object? sender, GestureRecognizedEventArgs e)
-    {
-        if (!CanUseUi())
-        {
-            return;
-        }
-
-        if (InvokeRequired)
-        {
-            BeginInvokeSafe(() => OnGestureRecognized(sender, e));
-            return;
-        }
-
-        if (!AcceptGestureOverlaySession(e.SessionId))
-        {
-            return;
-        }
-
-        var payload = JsonSerializer.Serialize(new
-        {
-            type = WebViewMessageTypes.Gesture,
-            pattern = e.Pattern.Select(x => x.ToString()).ToArray(),
-            action = e.ActionName
-        });
-
-        TryPostWebMessage(payload);
-        if (IsFeatureEnabled(loadedConfig?.Config.UiSettings.GestureHint.Enabled))
-        {
-            EnsureMouseTrailForm().ShowGestureHint(e.ActionName, e.Path[^1], autoHide: true);
-        }
-    }
-
-    private void OnGestureRecordingCompleted(object? sender, GestureRecordingCompletedEventArgs e)
-    {
-        if (!CanUseUi())
-        {
-            return;
-        }
-
-        if (InvokeRequired)
-        {
-            BeginInvokeSafe(() => OnGestureRecordingCompleted(sender, e));
-            return;
-        }
-
-        if (!AcceptGestureOverlaySession(e.SessionId))
-        {
-            return;
-        }
-
-        var payload = JsonSerializer.Serialize(new
-        {
-            type = WebViewMessageTypes.GestureRecorded,
-            requestId = e.RequestId,
-            button = e.Button.ToString().ToLowerInvariant(),
-            pattern = e.Pattern.Select(x => x.ToString()).ToArray()
-        });
-
-        mouseTrailForm?.HideTrail();
-        TryPostWebMessage(payload);
-    }
-
-    private void OnGestureActionFailed(object? sender, GestureActionFailedEventArgs e)
-    {
-        if (!CanUseUi())
-        {
-            return;
-        }
-
-        if (InvokeRequired)
-        {
-            BeginInvokeSafe(() => OnGestureActionFailed(sender, e));
-            return;
-        }
-
-        if (!AcceptGestureOverlaySession(e.SessionId))
-        {
-            return;
-        }
-
-        var message = e.Exception.Message;
-        var payload = JsonSerializer.Serialize(new
-        {
-            type = WebViewMessageTypes.GestureActionFailed,
-            pattern = e.Pattern.Select(x => x.ToString()).ToArray(),
-            action = e.ActionName,
-            error = message
-        });
-
-        TryPostWebMessage(payload);
+        webViewHost.TryPostJson(payload);
     }
 
     private void OnEdgeActionFailed(object? sender, EdgeActionFailedEventArgs e)
@@ -699,44 +455,6 @@ public sealed class MainForm : Form
         });
 
         TryPostWebMessage(payload);
-    }
-
-    private void OnGestureProgressChanged(object? sender, GestureProgressEventArgs e)
-    {
-        if (!CanUseUi())
-        {
-            return;
-        }
-
-        if (InvokeRequired)
-        {
-            BeginInvokeSafe(() => OnGestureProgressChanged(sender, e));
-            return;
-        }
-
-        if (!AcceptGestureOverlaySession(e.SessionId))
-        {
-            return;
-        }
-
-        var isTrailEnabled = IsFeatureEnabled(loadedConfig?.Config.UiSettings.MouseTrail.Enabled);
-        var isHintEnabled = IsFeatureEnabled(loadedConfig?.Config.UiSettings.GestureHint.Enabled);
-        if (!isTrailEnabled && !isHintEnabled)
-        {
-            mouseTrailForm?.HideTrail();
-            return;
-        }
-
-        if (!e.IsTracking || e.Path.Count < 2)
-        {
-            mouseTrailForm?.EndPath();
-            return;
-        }
-
-        if (isTrailEnabled)
-        {
-            EnsureMouseTrailForm().ShowPath(e.Path, e.Button);
-        }
     }
 
     private void OnHotkeyRecorded(object? sender, HotkeyRecordedEventArgs e)
@@ -780,79 +498,7 @@ public sealed class MainForm : Form
             return;
         }
 
-        var payload = JsonSerializer.Serialize(new
-        {
-            type = WebViewMessageTypes.Rules,
-            configPath = loadedConfig.FilePath,
-            uiSettings = CreateUiSettingsPayload(loadedConfig.Config.UiSettings),
-            rules = loadedConfig.Config.Rules.Select(rule => new
-            {
-                scope = rule.Scope,
-                mouseButton = string.IsNullOrWhiteSpace(rule.MouseButton) ? GestureConfigContract.MouseButtons.Right : rule.MouseButton,
-                pattern = rule.Pattern,
-                actionName = rule.ActionName,
-                actionType = string.IsNullOrWhiteSpace(rule.Action.Type) ? GestureConfigContract.ActionTypes.Hotkey : rule.Action.Type,
-                keys = rule.Action.Keys,
-                operation = rule.Action.Operation,
-                amount = rule.Action.Amount
-            }).ToArray(),
-            edgeActions = loadedConfig.Config.EdgeActions.Select(action => new
-            {
-                enabled = action.Enabled,
-                triggerType = action.TriggerType,
-                location = action.Location,
-                wheelDirection = action.WheelDirection,
-                frictionCount = action.FrictionCount,
-                action = new
-                {
-                    type = string.IsNullOrWhiteSpace(action.Action.Type) ? GestureConfigContract.ActionTypes.Hotkey : action.Action.Type,
-                    keys = action.Action.Keys,
-                    operation = action.Action.Operation,
-                    amount = action.Action.Amount
-                }
-            }).ToArray(),
-            applications = loadedConfig.Config.Applications.Select(application => new
-            {
-                name = application.Name,
-                displayName = application.DisplayName,
-                path = application.Path,
-                categories = application.Categories,
-                icon = GetApplicationIconDataUrl(application.Path)
-            }).ToArray()
-        });
-
-        TryPostWebMessage(payload);
-    }
-
-    private static object CreateUiSettingsPayload(GestureUiSettings uiSettings)
-    {
-        return new
-        {
-            mouseTrail = uiSettings.MouseTrail,
-            gestureHint = uiSettings.GestureHint,
-            levelOsd = uiSettings.LevelOsd,
-            gestureSensitivity = uiSettings.GestureSensitivity,
-            appBehavior = new
-            {
-                launchAtStartup = uiSettings.AppBehavior.LaunchAtStartup,
-                showConfigWindowOnLaunch = uiSettings.AppBehavior.ShowConfigWindowOnLaunch,
-                runAsAdministrator = uiSettings.AppBehavior.RunAsAdministrator,
-                closeButtonBehavior = uiSettings.AppBehavior.CloseButtonBehavior,
-                targetWindowMode = uiSettings.AppBehavior.TargetWindowMode,
-                gesturePaused = uiSettings.AppBehavior.GesturePaused,
-                disableGesturesInFullscreen = uiSettings.AppBehavior.DisableGesturesInFullscreen,
-                disableEdgeActionsInFullscreen = uiSettings.AppBehavior.DisableEdgeActionsInFullscreen,
-                excludedApplications = uiSettings.AppBehavior.ExcludedApplications.Select(application => new
-                {
-                    name = application.Name,
-                    displayName = application.DisplayName,
-                    path = application.Path,
-                    disableEdgeActions = application.DisableEdgeActions,
-                    icon = GetApplicationIconDataUrl(application.Path)
-                }).ToArray()
-            },
-            webDav = uiSettings.WebDav
-        };
+        TryPostWebMessage(WebViewRulesPayloadFactory.Create(loadedConfig));
     }
 
     private void HandleWebMessage(string json)
@@ -1091,36 +737,10 @@ public sealed class MainForm : Form
             displayName,
             path,
             category,
-            icon = GetApplicationIconDataUrl(path)
+            icon = ApplicationIconDataUrl.FromExecutable(path)
         });
 
         TryPostWebMessage(payload);
-    }
-
-    private static string GetApplicationIconDataUrl(string path)
-    {
-        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
-        {
-            return "";
-        }
-
-        try
-        {
-            using var icon = Icon.ExtractAssociatedIcon(path);
-            if (icon is null)
-            {
-                return "";
-            }
-
-            using var bitmap = icon.ToBitmap();
-            using var stream = new MemoryStream();
-            bitmap.Save(stream, ImageFormat.Png);
-            return "data:image/png;base64," + Convert.ToBase64String(stream.ToArray());
-        }
-        catch
-        {
-            return "";
-        }
     }
 
     private void SaveRules(string json)
@@ -1384,17 +1004,6 @@ public sealed class MainForm : Form
         });
     }
 
-    private bool AcceptGestureOverlaySession(long sessionId)
-    {
-        if (sessionId < latestGestureOverlaySessionId)
-        {
-            return false;
-        }
-
-        latestGestureOverlaySessionId = sessionId;
-        return true;
-    }
-
     private bool CanUseUi()
     {
         return !isClosing && !IsDisposed && !Disposing && IsHandleCreated;
@@ -1474,116 +1083,19 @@ public sealed class MainForm : Form
 
     private void ApplyInitialWindowState()
     {
-        if (TryLoadWindowState(out var windowState))
+        if (windowStateStore.TryLoad(out var bounds, out var maximized))
         {
-            Bounds = NormalizeBounds(windowState.Bounds);
-            startMaximized = windowState.Maximized;
+            Bounds = bounds;
+            startMaximized = maximized;
             return;
         }
 
-        Bounds = GetDefaultBounds();
+        Bounds = windowStateStore.GetDefaultBounds();
     }
 
     private void SaveWindowState()
     {
-        try
-        {
-            var bounds = WindowState == FormWindowState.Normal ? Bounds : RestoreBounds;
-            if (!HasUsableWindowSize(bounds))
-            {
-                return;
-            }
-
-            var windowState = new WindowStateData
-            {
-                X = bounds.X,
-                Y = bounds.Y,
-                Width = bounds.Width,
-                Height = bounds.Height,
-                Maximized = WindowState == FormWindowState.Maximized
-            };
-
-            var directory = Path.GetDirectoryName(windowStatePath);
-            if (!string.IsNullOrEmpty(directory))
-            {
-                Directory.CreateDirectory(directory);
-            }
-
-            File.WriteAllText(windowStatePath, JsonSerializer.Serialize(windowState, WindowStateJsonOptions));
-        }
-        catch
-        {
-        }
-    }
-
-    private bool TryLoadWindowState(out WindowStateData windowState)
-    {
-        windowState = new WindowStateData();
-
-        try
-        {
-            if (!File.Exists(windowStatePath))
-            {
-                return false;
-            }
-
-            var json = File.ReadAllText(windowStatePath);
-            var loadedWindowState = JsonSerializer.Deserialize<WindowStateData>(json, WindowStateJsonOptions);
-            if (loadedWindowState is null || !HasUsableWindowSize(loadedWindowState.Bounds))
-            {
-                return false;
-            }
-
-            windowState = loadedWindowState;
-            return true;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    private static Rectangle NormalizeBounds(Rectangle bounds)
-    {
-        var workingArea = Screen.PrimaryScreen?.WorkingArea ?? new Rectangle(0, 0, 1280, 720);
-        var width = Math.Min(Math.Max(MinimumWindowWidth, bounds.Width), workingArea.Width);
-        var height = Math.Min(Math.Max(MinimumWindowHeight, bounds.Height), workingArea.Height);
-
-        var left = bounds.Left;
-        var top = bounds.Top;
-
-        if (left < workingArea.Left || left + width > workingArea.Right)
-        {
-            left = workingArea.Left + Math.Max(0, (workingArea.Width - width) / 2);
-        }
-
-        if (top < workingArea.Top || top + height > workingArea.Bottom)
-        {
-            top = workingArea.Top + Math.Max(0, (workingArea.Height - height) / 2);
-        }
-
-        return new Rectangle(left, top, width, height);
-    }
-
-    private static Rectangle GetDefaultBounds()
-    {
-        var workingArea = Screen.PrimaryScreen?.WorkingArea ?? new Rectangle(0, 0, 1280, 720);
-        var width = Math.Min(DefaultWindowWidth, workingArea.Width);
-        var height = Math.Min(DefaultWindowHeight, workingArea.Height);
-        var left = workingArea.Left + Math.Max(0, (workingArea.Width - width) / 2);
-        var top = workingArea.Top + Math.Max(0, (workingArea.Height - height) / 2);
-        return new Rectangle(left, top, width, height);
-    }
-
-    private static string GetWindowStatePath()
-    {
-        var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        return Path.Combine(appData, AppIdentity.AppDataFolderName, ConfigStorageContract.WindowStateFileName);
-    }
-
-    private static bool HasUsableWindowSize(Rectangle bounds)
-    {
-        return bounds.Width >= MinimumWindowWidth && bounds.Height >= MinimumWindowHeight;
+        windowStateStore.Save(WindowState, Bounds, RestoreBounds);
     }
 
     private static Icon CreateGrayscaleIcon(Icon source)
@@ -1708,68 +1220,4 @@ public sealed class MainForm : Form
         return enabled != false;
     }
 
-    private sealed class RulesWebMessage
-    {
-        public string Type { get; set; } = "";
-
-        public List<GestureRuleConfig> Rules { get; set; } = [];
-
-        public List<GestureApplicationConfig> Applications { get; set; } = [];
-
-        public List<EdgeActionConfig> EdgeActions { get; set; } = [];
-
-        public GestureUiSettings UiSettings { get; set; } = new();
-    }
-
-    private sealed class SelectApplicationWebMessage
-    {
-        public string Type { get; set; } = "";
-
-        public string RequestId { get; set; } = "";
-
-        public string Category { get; set; } = "";
-    }
-
-    private sealed class SetGesturePausedWebMessage
-    {
-        public string Type { get; set; } = "";
-
-        public bool Paused { get; set; }
-    }
-
-    private sealed class StartHotkeyRecordingWebMessage
-    {
-        public string Type { get; set; } = "";
-
-        public string RequestId { get; set; } = "";
-    }
-
-    private sealed class StartGestureRecordingWebMessage
-    {
-        public string Type { get; set; } = "";
-
-        public string RequestId { get; set; } = "";
-    }
-
-    private sealed class PreviewLevelOsdWebMessage
-    {
-        public string Type { get; set; } = "";
-
-        public string Kind { get; set; } = "";
-    }
-
-    private sealed class WindowStateData
-    {
-        public int X { get; set; }
-
-        public int Y { get; set; }
-
-        public int Width { get; set; }
-
-        public int Height { get; set; }
-
-        public bool Maximized { get; set; }
-
-        public Rectangle Bounds => new(X, Y, Width, Height);
-    }
 }

@@ -39,7 +39,7 @@ public sealed class ApplicationExclusionMatcher
         return (source ?? [])
             .Select(application => new ExcludedApplicationConfig
             {
-                Name = NormalizeAppName(application.Name),
+                Name = ApplicationIdentityNormalizer.NormalizeProcessName(application.Name),
                 DisplayName = (application.DisplayName ?? "").Trim(),
                 Path = (application.Path ?? "").Trim(),
                 DisableEdgeActions = application.DisableEdgeActions
@@ -58,7 +58,7 @@ public sealed class ApplicationExclusionMatcher
         }
 
         return !string.IsNullOrWhiteSpace(application.Name) &&
-            string.Equals(NormalizeAppName(application.Name), appName, StringComparison.OrdinalIgnoreCase);
+            string.Equals(ApplicationIdentityNormalizer.NormalizeProcessName(application.Name), appName, StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool TryGetApplication(IntPtr window, out string appName, out string appPath)
@@ -80,7 +80,7 @@ public sealed class ApplicationExclusionMatcher
         try
         {
             using var process = Process.GetProcessById(processId);
-            appName = NormalizeAppName(process.ProcessName);
+            appName = ApplicationIdentityNormalizer.NormalizeProcessName(process.ProcessName);
             try
             {
                 appPath = process.MainModule?.FileName ?? "";
@@ -96,13 +96,6 @@ public sealed class ApplicationExclusionMatcher
         {
             return false;
         }
-    }
-
-    private static string NormalizeAppName(string? value)
-    {
-        var trimmed = (value ?? "").Trim();
-        var name = Path.GetFileNameWithoutExtension(trimmed);
-        return string.IsNullOrWhiteSpace(name) ? trimmed : name;
     }
 
     [DllImport("user32.dll")]

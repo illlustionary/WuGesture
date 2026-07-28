@@ -215,7 +215,7 @@ src\pages
   - `settings\components\WebDavSettings.vue`：WebDAV 配置、测试、恢复和保存操作。
   - `settings\components\GestureHintSettings.vue`：底部提示窗配置，顶部内置提示窗实时预览。
   - `settings\components\GestureSensitivitySettings.vue`：手势灵敏度三档配置。
-  - `settings\composables\useUiSettingsDraft.js`：设置草稿归一化、debounce 保存、重置和预览样式计算。
+  - `settings\composables\useUiSettingsDraft.js`：基于 `gestureEditorNormalizers.js` 的共享设置深拷贝创建草稿，负责 debounce 保存、重置和预览样式计算。
 
 ## Routing
 
