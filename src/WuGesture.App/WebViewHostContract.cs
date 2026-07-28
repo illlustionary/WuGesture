@@ -2,7 +2,7 @@ namespace WuGesture.App;
 
 internal static class WebViewHostContract
 {
-    public const string HostName = "appassets.local";
+    public const string HostName = "gesture.wu.philosophy";
     public const string EntryPath = "index.html";
     public const string OutputRootFolder = "Web";
     public const string OutputDistFolder = "dist";
