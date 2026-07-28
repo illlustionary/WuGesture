@@ -353,7 +353,7 @@ src\pages
 - 前端使用 `pnpm build` 生成仓库根目录下的 `dist\web`。
 - `WuGesture.App.csproj` 会在 `.NET` 构建前自动执行前端构建。
 - `WuGesture.App.csproj` 会在前端构建后把 `dist\web` 复制到宿主输出目录中的 `Web\dist`。
-- 桌面宿主通过 WebView2 虚拟主机 `https://appassets.local/` 加载宿主输出目录中的 `Web\dist`。
+- 桌面宿主通过 WebView2 虚拟主机 `https://gesture.wu.philosophy/` 加载宿主输出目录中的 `Web\dist`。
 
 ## 何时更新此文件
 

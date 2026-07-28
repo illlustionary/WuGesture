@@ -41,6 +41,6 @@ MouseHook
 
 ## WebView2 集成
 
-前端工程位于 `src/WuGesture.App/Web`。`pnpm build` 会生成 `dist/web`，桌面工程会在构建时将其复制到宿主输出目录中的 `Web/dist`，再经由 WebView2 虚拟主机 `https://appassets.local/` 加载。
+前端工程位于 `src/WuGesture.App/Web`。`pnpm build` 会生成 `dist/web`，桌面工程会在构建时将其复制到宿主输出目录中的 `Web/dist`，再经由 WebView2 虚拟主机 `https://gesture.wu.philosophy/` 加载。
 
 前端页面、组件、路由、状态模块与 WebView 消息细节见 [前端项目地图](../src/WuGesture.App/Web/PROJECT_STRUCTURE.md)。桌面端模块和配置契约见 [项目结构](../PROJECT_STRUCTURE.md)。
