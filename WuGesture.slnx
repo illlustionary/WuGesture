@@ -2,4 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/WuGesture.App/WuGesture.App.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/WuGesture.App.Tests/WuGesture.App.Tests.csproj" />
+  </Folder>
 </Solution>
