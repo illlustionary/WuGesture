@@ -86,6 +86,12 @@ public sealed class ActionExecutor
             return;
         }
 
+        if (action.Operation == WindowControlOperation.Close && targetIsDesktopSurface)
+        {
+            ShowDesktopShutdownDialog();
+            return;
+        }
+
         switch (action.Operation)
         {
             case WindowControlOperation.ToggleTopMost:
@@ -98,14 +104,7 @@ public sealed class ActionExecutor
                 ShowWindow(targetWindow, SwMinimize);
                 break;
             case WindowControlOperation.Close:
-                if (targetIsDesktopSurface || DesktopWindowClassifier.IsDesktopSurface(targetWindow))
-                {
-                    ShowDesktopShutdownDialog();
-                }
-                else
-                {
-                    PostMessage(targetWindow, WmClose, IntPtr.Zero, IntPtr.Zero);
-                }
+                PostMessage(targetWindow, WmClose, IntPtr.Zero, IntPtr.Zero);
                 break;
         }
     }
