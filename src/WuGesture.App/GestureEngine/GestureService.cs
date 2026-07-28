@@ -37,12 +37,14 @@ public sealed class GestureService : IDisposable
     private sealed record GestureExecutionContext(
         string TargetWindowMode,
         IntPtr StartWindow,
-        GestureScopeContext ScopeContext)
+        GestureScopeContext ScopeContext,
+        bool StartWindowIsDesktopSurface)
     {
         public static GestureExecutionContext Empty { get; } = new(
             GestureConfigContract.WindowTargetModes.StartWindow,
             IntPtr.Zero,
-            GestureScopeContext.Empty);
+            GestureScopeContext.Empty,
+            false);
 
         public bool UsesStartWindow =>
             TargetWindowMode == GestureConfigContract.WindowTargetModes.StartWindow;
@@ -383,13 +385,19 @@ public sealed class GestureService : IDisposable
                         return;
                     }
 
-                    SetForegroundWindow(gestureContext.StartWindow);
+                    if (!gestureContext.StartWindowIsDesktopSurface)
+                    {
+                        SetForegroundWindow(gestureContext.StartWindow);
+                    }
                 }
 
                 var targetWindow = gestureContext.UsesStartWindow
                     ? gestureContext.StartWindow
                     : GetForegroundWindow();
-                actionExecutor.Execute(rule, targetWindow);
+                actionExecutor.Execute(
+                    rule,
+                    targetWindow,
+                    targetIsDesktopSurface: gestureContext.UsesStartWindow && gestureContext.StartWindowIsDesktopSurface);
             }
             catch (Exception exception)
             {
@@ -507,17 +515,19 @@ public sealed class GestureService : IDisposable
         var mode = targetWindowMode;
         if (mode == GestureConfigContract.WindowTargetModes.StartWindow)
         {
-            var startWindow = ResolveStartTargetWindow(startLocation);
+            var startTarget = ResolveStartTargetWindow(startLocation);
             return new GestureExecutionContext(
                 mode,
-                startWindow,
-                scopeContextProvider.GetContextForWindow(startWindow));
+                startTarget.Window,
+                scopeContextProvider.GetContextForWindow(startTarget.Window),
+                startTarget.IsDesktopSurface);
         }
 
         return new GestureExecutionContext(
             mode,
             IntPtr.Zero,
-            scopeContextProvider.GetCurrentContext());
+            scopeContextProvider.GetCurrentContext(),
+            false);
     }
 
     private bool IsGestureExcluded(GestureExecutionContext context)
@@ -527,16 +537,17 @@ public sealed class GestureService : IDisposable
             : exclusionMatcher.IsGestureExcluded();
     }
 
-    private static IntPtr ResolveStartTargetWindow(Point location)
+    private static (IntPtr Window, bool IsDesktopSurface) ResolveStartTargetWindow(Point location)
     {
         var window = WindowFromPoint(location);
         if (window == IntPtr.Zero)
         {
-            return IntPtr.Zero;
+            return (IntPtr.Zero, false);
         }
 
         var rootWindow = GetAncestor(window, GetAncestorRoot);
-        return rootWindow != IntPtr.Zero ? rootWindow : window;
+        var targetWindow = rootWindow != IntPtr.Zero ? rootWindow : window;
+        return (targetWindow, DesktopWindowClassifier.IsDesktopSurface(window));
     }
 
     private static double Distance(Point a, Point b)
