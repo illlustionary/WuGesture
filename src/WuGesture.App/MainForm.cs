@@ -53,6 +53,7 @@ public sealed class MainForm : Form
         Text = AppIdentity.DisplayName;
         Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? SystemIcons.Application;
         StartPosition = FormStartPosition.Manual;
+        MinimumSize = new Size(WindowStateStore.MinimumWindowWidth, WindowStateStore.MinimumWindowHeight);
         ApplyInitialWindowState();
         if (hideConfigWindowOnLaunch)
         {
