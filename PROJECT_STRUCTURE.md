@@ -61,10 +61,11 @@ src\WuGesture.App
 启动流程：
 
 - `Program.cs` 会在 .NET Host 成功启动后检查 WebView2 Runtime，缺少时显示官方下载引导；随后通过命名互斥体保证单实例运行。再次启动时不会创建第二个实例，而是先将前台切换权限授予已运行实例，再通知它在 UI 线程弹出并激活配置窗口，且等待该 UI 操作通过命名自动重置事件确认或超时后才退出。已有且可见的配置窗口收到单实例唤醒时，会临时关联当前前台线程的输入队列后激活，并在完成后立即解除关联；没有配置窗口时则保持普通启动与恢复流程，避免使用短暂置顶造成焦点回退。开机自启动会带 `--startup` 内部参数，始终只启动后台服务并驻留托盘，不打开配置窗口；普通启动是否显示配置窗口由应用行为设置控制，默认显示。
-- `MainForm.cs` 会在首次显示前加载配置并决定是否后台启动，以避免后台启动时短暂绘制主窗口；普通启动显示配置窗口、托盘恢复和单实例唤醒都会将配置窗口前置并激活，后台启动则继续隐藏。随后应用开机自启动和管理员启动设置、创建 `GestureService` / `EdgeActionService` / `GestureFeedbackCoordinator`、创建托盘图标，并处理 WebView 业务消息；也会把配置里的 `uiSettings` 应用到轨迹窗、提示窗和应用行为。主窗口和托盘显示名为 `WuGesture`。
+- `MainForm.cs` 会在首次显示前加载配置并决定是否后台启动，以避免后台启动时短暂绘制主窗口；普通启动显示配置窗口、托盘恢复和单实例唤醒都会将配置窗口前置并激活，后台启动则继续隐藏。该文件负责生命周期、配置/服务装配、托盘、应用行为和 WebView 业务消息；也会把配置里的 `uiSettings` 应用到轨迹窗、提示窗和应用行为。主窗口和托盘显示名为 `WuGesture`。
+- `MainForm.Windowing.cs`：`MainForm` 的无边框窗口职责，集中自定义标题栏的最小化、最大化/还原、关闭、拖动和缩放，以及窗口状态持久化、带系统动画的任务栏原生最小化/激活、右下角系统缩放、Win11 DWM 标准圆角和单实例唤醒时临时关联输入队列的前置激活；Windows 10 保持兼容的无边框外观。
 - `WebViewHost.cs`：负责 WebView2 控件的创建、销毁、虚拟主机映射、导航和消息事件订阅；入站消息仍同步交由 `MainForm` 的业务处理器执行，宿主不存在时出站消息直接丢弃。
 - `WebViewMessageDtos.cs`：集中 WebView 入站消息 DTO。
-- `WebViewRulesPayloadFactory.cs`：把已加载的手势配置转换为 WebView `rules` 消息 payload，并补充应用图标数据。
+- `WebViewRulesPayloadFactory.cs`：把已加载的手势配置转换为 WebView `rules` 消息 payload；其中 `appInfo` 补充宿主应用构建版本和应用图标 PNG data URL，供前端侧栏展示。
 - `ApplicationIconDataUrl.cs`：从可执行文件提取图标并转换为 WebView 可用的 PNG data URL。
 - `WindowStateStore.cs`：负责配置窗口位置、尺寸和最大化状态的读写、校验与屏幕边界规范化。
 - `AppIdentity.cs` 集中应用显示名、AppData 子目录、自启动注册表值、单实例 IPC 请求/确认事件名和内部启动参数；开机自启动和管理员重启会直接调用当前 `WuGesture.exe`。
@@ -225,6 +226,9 @@ src\WuGesture.App\Web\PROJECT_STRUCTURE.md
 
 宿主集成：
 
+- 配置界面顶层采用贴边固定的自定义窗口顶部栏，左侧显示可暂停/恢复 WuGesture 的应用图标按钮及构建版本，右侧提供最小化、最大化/还原和关闭；中间区域可拖动窗口并支持双击切换最大化。下方为可折叠的左侧导航和独立滚动的右侧页面工作区，不保留外层总边距、页面壳卡片或侧栏圆角：工作区卡片使用直角连续边框而非留白分隔。侧栏入口保留图标、文字、hover 状态和当前项左侧竖线动画；底部左侧按钮可折叠为仅图标导航，搜索和问号帮助入口保留在底部右侧，问号会通过基础遮罩对话框展示规则生效顺序。
+- 前端可向宿主发送 `window-minimize`、`window-toggle-maximize`、`window-close`、`window-start-drag` 和 `window-start-resize`；宿主通过 `window-state` 回传 `{ maximized }`，供顶部栏切换最大化/还原图标。
+- 宿主下发的 `rules` WebView 消息包含 `appInfo`，其 `version` 与 `icon` 分别为程序集构建版本和应用图标 PNG data URL；前端在桌面宿主中使用该信息展示侧栏，浏览器预览使用自身回退值。
 - 前端使用 `pnpm build` 生成根目录下的 `dist\web`。
 - `Web\src\components\BaseDialog.vue` 统一前端对话框的遮罩关闭、可选右上关闭按钮、默认操作区和关闭动画；自动保存或即时选择类弹层可复用外壳并关闭默认操作区。
 - `Web\src\components\BaseInput.vue` 和 `BaseRange.vue` 统一前端原生输入控件的 `v-model` 事件、宽度约束和滑块进度填充；页面继续保留各自的配置约束与保存时机。

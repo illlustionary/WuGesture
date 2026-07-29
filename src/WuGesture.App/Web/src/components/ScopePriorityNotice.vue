@@ -16,11 +16,7 @@
 <style scoped lang="scss">
 .scope-priority-notice {
   display: grid;
-  gap: 6px;
-  padding: 12px 14px;
-  border: 1px solid var(--accent-border);
-  border-radius: 14px;
-  background: var(--accent-soft);
+  gap: 10px;
 
   &__order {
     display: inline-flex;
@@ -28,7 +24,7 @@
     flex-wrap: wrap;
     gap: 6px;
     color: var(--accent-strong);
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 700;
   }
 

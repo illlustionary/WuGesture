@@ -1,5 +1,5 @@
 <script setup>
-import KeyboardIcon from '@/assets/keyboard.svg'
+import KeyboardIcon from '@/assets/gesture/keyboard.svg'
 import CustomSelect from '@/components/CustomSelect.vue'
 import { ACTION_TYPES, OPERATIONS } from '@/constants/gestureEditorOptions'
 import { GESTURE_EDITOR_LIMITS } from '@/constants/gestureEditorLimits'

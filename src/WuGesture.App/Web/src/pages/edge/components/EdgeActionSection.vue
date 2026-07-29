@@ -18,10 +18,7 @@ const emit = defineEmits(['open'])
 <template>
   <section class="edge-section section-card">
     <div class="edge-section__head">
-      <div>
-        <h3 class="section-title">{{ group.title }}</h3>
-        <p class="section-desc">{{ group.description }}</p>
-      </div>
+      <h3 class="section-title">{{ group.title }}</h3>
     </div>
 
     <div class="edge-grid">
@@ -41,7 +38,8 @@ const emit = defineEmits(['open'])
 
 <style scoped lang="scss">
 .edge-section {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 14px;
 
   &__head {
@@ -52,9 +50,11 @@ const emit = defineEmits(['open'])
 }
 
 .edge-grid {
+  flex: 1;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 10px 5px;
+  align-content: start;
 }
 
 @media (max-width: 920px) {

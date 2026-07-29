@@ -22,10 +22,7 @@ const emit = defineEmits(['open'])
     @keydown.enter.prevent="emit('open', action)"
   >
     <header class="edge-card__head">
-      <span
-        class="edge-status"
-        :class="{ 'is-enabled': action.enabled }"
-      />
+      <span class="edge-status" :class="{ 'is-enabled': action.enabled }" />
       <div>
         <strong>{{ title }}</strong>
         <small>{{ subtitle }}</small>
@@ -35,9 +32,7 @@ const emit = defineEmits(['open'])
     <div class="edge-card__summary">
       <span>{{ name }}</span>
       <strong>{{ summary }}</strong>
-      <small v-if="action.triggerType === EDGE_TRIGGER_TYPES.friction">
-        摩擦 {{ action.frictionCount }} 次
-      </small>
+      <small v-if="action.triggerType === EDGE_TRIGGER_TYPES.friction"> 摩擦 {{ action.frictionCount }} 次 </small>
     </div>
   </article>
 </template>
@@ -49,7 +44,7 @@ const emit = defineEmits(['open'])
   min-width: 0;
   padding: 14px;
   border: 1px solid var(--border-subtle);
-  border-radius: 18px;
+  border-radius: 10px;
   background: var(--panel-soft);
   text-align: left;
   cursor: pointer;

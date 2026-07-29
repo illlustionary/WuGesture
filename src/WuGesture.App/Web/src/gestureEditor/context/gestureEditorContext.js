@@ -48,6 +48,12 @@ import { useGestureScopes } from "@/gestureEditor/modules/useGestureScopes";
 const state = reactive({
   statusText: "启动中",
   statusState: "idle",
+  appInfo: {
+    version: "预览版",
+    icon: ""
+  },
+  windowMaximized: false,
+  windowResizing: false,
   configPath: "读取中",
   configMessage: "",
   configMessageState: "idle",
@@ -261,6 +267,11 @@ export function useGestureEditorContext() {
     visibleRules,
     initialize,
     toggleUserPaused,
+    minimizeWindow,
+    toggleWindowMaximize,
+    closeWindow,
+    startWindowDrag,
+    startWindowResize,
     setActiveScope,
     selectScope,
     getRulesForScope,
@@ -333,6 +344,7 @@ function initialize() {
   if (!webView.isAvailable()) {
     state.statusText = "浏览器预览";
     state.statusState = "idle";
+    state.appInfo = { version: "预览版", icon: "" };
     state.configPath = "内置默认规则";
     replaceConfig(DEFAULT_RULES, DEFAULT_APPLICATIONS, DEFAULT_UI_SETTINGS);
     return;
@@ -359,7 +371,21 @@ function handleMessage(message) {
     return;
   }
 
+  if (message.type === WEBVIEW_MESSAGE_TYPES.windowState) {
+    state.windowMaximized = Boolean(message.maximized);
+    return;
+  }
+
+  if (message.type === WEBVIEW_MESSAGE_TYPES.windowResizeState) {
+    state.windowResizing = Boolean(message.resizing);
+    return;
+  }
+
   if (message.type === WEBVIEW_MESSAGE_TYPES.rules) {
+    state.appInfo = {
+      version: message.appInfo?.version || "v0.0.0",
+      icon: message.appInfo?.icon || ""
+    };
     state.configPath = message.configPath;
     replaceConfig(
       message.rules ?? [],
@@ -508,6 +534,31 @@ function toggleUserPaused() {
     type: WEBVIEW_MESSAGE_TYPES.setUserPaused,
     paused: state.statusState !== "paused"
   });
+}
+
+function minimizeWindow() {
+  webView.postSilent({ type: WEBVIEW_MESSAGE_TYPES.windowMinimize });
+}
+
+function toggleWindowMaximize() {
+  webView.postSilent({ type: WEBVIEW_MESSAGE_TYPES.windowToggleMaximize });
+}
+
+function closeWindow() {
+  webView.postSilent({ type: WEBVIEW_MESSAGE_TYPES.windowClose });
+}
+
+function startWindowDrag() {
+  webView.postSilent({ type: WEBVIEW_MESSAGE_TYPES.windowStartDrag });
+}
+
+function startWindowResize() {
+  if (!webView.isAvailable() || state.windowMaximized) {
+    return;
+  }
+
+  state.windowResizing = true;
+  webView.postSilent({ type: WEBVIEW_MESSAGE_TYPES.windowStartResize });
 }
 
 function setGesturePaused(paused) {

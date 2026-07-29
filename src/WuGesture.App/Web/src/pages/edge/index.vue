@@ -12,6 +12,10 @@ import {
   WHEEL_DIRECTIONS
 } from '@/constants/gestureEditorOptions'
 
+const props = defineProps({
+  section: { type: String, default: 'corner' }
+})
+
 const edgeActionsStore = useGestureEdgeActionsStore()
 const { draft, editingAction, openEditor, closeEditor } =
   useEdgeActionDraft(edgeActionsStore)
@@ -20,19 +24,18 @@ const groups = [
   {
     type: EDGE_TRIGGER_TYPES.corner,
     title: '触发角',
-    description: '鼠标进入角落时触发一次，离开后再次进入才会再次触发。'
   },
   {
     type: EDGE_TRIGGER_TYPES.friction,
     title: '摩擦边',
-    description: '贴近屏幕边缘后沿边反复移动，达到次数后触发。'
   },
   {
     type: EDGE_TRIGGER_TYPES.wheel,
     title: '边缘滚动',
-    description: '鼠标停在屏幕边缘滚动时触发，并吞掉原始滚轮事件。'
   }
 ]
+
+const activeGroup = computed(() => groups.find(group => group.type === props.section) ?? groups[0])
 
 const triggerLabels = {
   [EDGE_TRIGGER_TYPES.corner]: '触发角',
@@ -148,18 +151,12 @@ function recordHotkey() {
 </script>
 
 <template>
-  <AppShell
-    title="边缘操作"
-    description="配置屏幕角落、四边摩擦和边缘滚轮触发的动作。"
-    layout-class="page-shell__grid--single"
-  >
+  <AppShell layout-class="page-shell__grid--single">
     <template #right>
       <div class="page-stack">
         <EdgeActionSection
-          v-for="group in groups"
-          :key="group.type"
-          :group="group"
-          :actions="groupActions(group.type)"
+          :group="activeGroup"
+          :actions="groupActions(activeGroup.type)"
           :trigger-labels="triggerLabels"
           :location-label="locationLabel"
           :wheel-label="wheelLabel"

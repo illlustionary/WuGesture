@@ -262,9 +262,38 @@ p {
 
 .surface-card {
   border: 1px solid var(--border);
-  border-radius: 24px;
+  border-radius: 0;
   background: var(--panel);
   box-shadow: var(--shadow-panel);
+}
+
+.section-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 20px;
+  padding: 22px;
+  border: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.list-stack {
+  display: grid;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.page-stack > .section-card + .section-card,
+.rules-panel > .section-card + .section-card,
+.list-stack > * + * {
+  border-top-width: 0 !important;
+}
+
+.page-shell__grid--split > .rules-panel > .section-card {
+  border-left-width: 0;
 }
 
 .primary-button,

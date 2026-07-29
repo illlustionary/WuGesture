@@ -25,7 +25,7 @@ export function useQuickSearch() {
         quickSearchStore.setActiveScope(item.scopeKind)
         quickSearchStore.selectScope(item.scopeKind, item.scopeName)
       }
-      await router.push(getRuleRoute(item.scopeKind))
+      await router.push(getRuleRoute(item.scopeKind, item.scopeName))
       await nextTick()
       quickSearchStore.openEditRule(item.target)
       return
@@ -34,14 +34,14 @@ export function useQuickSearch() {
     if (item.type === 'category') {
       quickSearchStore.setActiveScope(SCOPE_KINDS.category)
       quickSearchStore.selectScope(SCOPE_KINDS.category, item.target)
-      await router.push('/category')
+      await router.push({ name: 'category-scope', params: { name: item.target } })
       return
     }
 
     if (item.type === 'app') {
       quickSearchStore.setActiveScope(SCOPE_KINDS.app)
       quickSearchStore.selectScope(SCOPE_KINDS.app, item.target)
-      await router.push('/app')
+      await router.push({ name: 'app-scope', params: { name: item.target } })
       return
     }
 
@@ -67,13 +67,13 @@ export function useQuickSearch() {
   })
 }
 
-function getRuleRoute(scopeKind) {
+function getRuleRoute(scopeKind, scopeName) {
   if (scopeKind === SCOPE_KINDS.category) {
-    return '/category'
+    return { name: 'category-scope', params: { name: scopeName } }
   }
 
   if (scopeKind === SCOPE_KINDS.app) {
-    return '/app'
+    return { name: 'app-scope', params: { name: scopeName } }
   }
 
   return '/global'

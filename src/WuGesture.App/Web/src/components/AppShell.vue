@@ -1,16 +1,10 @@
 <template>
   <section class="page-shell">
-    <div class="page-shell__head">
-      <div>
-        <h2>{{ title }}</h2>
-        <p>{{ description }}</p>
-      </div>
-      <div
-        v-if="$slots.actions"
-        class="page-shell__head-actions"
-      >
-        <slot name="actions" />
-      </div>
+    <div
+      v-if="$slots.actions"
+      class="page-shell__actions"
+    >
+      <slot name="actions" />
     </div>
 
     <div
@@ -24,11 +18,7 @@
 </template>
 
 <script setup>
-defineProps({
-  title: { type: String, required: true },
-  description: { type: String, required: true },
-  layoutClass: { type: String, default: '' }
-})
+defineProps({ layoutClass: { type: String, default: '' } })
 </script>
 
 <style scoped lang="scss">
@@ -40,43 +30,24 @@ defineProps({
 }
 
 .page-shell {
-  border: 1px solid var(--border);
-  background: var(--panel);
-  box-shadow: var(--shadow-soft);
-  padding: 20px;
-  border-radius: 28px;
-  overflow: hidden;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  width: 100%;
+  min-height: 100%;
 
-  &__head {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 16px;
-
-    h2 {
-      font-size: 24px;
-      line-height: 1.2;
-      font-weight: 700;
-    }
-
-    p {
-      margin-top: 8px;
-      color: var(--muted);
-      font-size: 14px;
-    }
-  }
-
-  &__head-actions {
+  &__actions {
     display: flex;
     align-items: center;
-    gap: 8px;
-    flex: 0 0 auto;
+    justify-content: flex-end;
+    margin-bottom: 12px;
   }
 
   &__grid {
     display: grid;
-    gap: 20px;
+    flex: 1 1 auto;
+    gap: 0;
+    min-height: 100%;
 
     &--split {
       grid-template-columns: 258px minmax(0, 1fr);

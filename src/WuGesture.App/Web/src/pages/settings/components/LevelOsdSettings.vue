@@ -26,7 +26,6 @@ function commit() {
 <template>
   <SettingsSectionCard
     title="音量/亮度提示"
-    description="调节音量或亮度时显示的系统级提示窗。"
   >
     <template #actions>
       <IconActionButton

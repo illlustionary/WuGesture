@@ -14,7 +14,6 @@ const emit = defineEmits(['queue-persist', 'flush-persist'])
 <template>
   <SettingsSectionCard
     title="手势灵敏度"
-    description="数值越高，越容易识别短距离和快速手势，但误触概率也会增加。"
   >
     <SettingsField
       label="灵敏度"

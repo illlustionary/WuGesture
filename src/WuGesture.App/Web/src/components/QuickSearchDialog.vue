@@ -1,7 +1,7 @@
 <script setup>
 import { computed, nextTick, ref, watch } from 'vue'
 import BaseDialog from '@/components/BaseDialog.vue'
-import SearchIcon from '@/assets/search.svg'
+import SearchIcon from '@/assets/navigation/search.svg'
 
 const props = defineProps({
   open: { type: Boolean, required: true },
@@ -17,8 +17,10 @@ const filteredItems = computed(() => {
     return props.items
   }
 
-  return props.items.filter((item) =>
-    String(item.searchText || item.title).toLocaleLowerCase().includes(normalizedQuery.value)
+  return props.items.filter(item =>
+    String(item.searchText || item.title)
+      .toLocaleLowerCase()
+      .includes(normalizedQuery.value)
   )
 })
 const groupedItems = computed(() => {
@@ -39,7 +41,7 @@ const groupedItems = computed(() => {
 
 watch(
   () => props.open,
-  (open) => {
+  open => {
     if (!open) {
       query.value = ''
       return
@@ -78,10 +80,7 @@ function handleKeydown(event) {
     @keydown="handleKeydown"
   >
     <div class="quick-search-dialog__field">
-      <SearchIcon
-        class="quick-search-dialog__search-icon"
-        aria-hidden="true"
-      />
+      <SearchIcon class="quick-search-dialog__search-icon" aria-hidden="true" />
       <input
         ref="input"
         v-model="query"
@@ -89,15 +88,11 @@ function handleKeydown(event) {
         type="search"
         placeholder="搜索手势、分类、程序或排除项"
         aria-label="搜索配置"
-      >
+      />
     </div>
     <div class="quick-search-dialog__results">
       <template v-if="groupedItems.length">
-        <section
-          v-for="group in groupedItems"
-          :key="group.name"
-          class="quick-search-group"
-        >
+        <section v-for="group in groupedItems" :key="group.name" class="quick-search-group">
           <h3>{{ group.name }}</h3>
           <button
             v-for="item in group.items"
@@ -111,12 +106,7 @@ function handleKeydown(event) {
           </button>
         </section>
       </template>
-      <p
-        v-else
-        class="quick-search-dialog__empty"
-      >
-        没有匹配的配置。
-      </p>
+      <p v-else class="quick-search-dialog__empty">没有匹配的配置。</p>
     </div>
   </BaseDialog>
 </template>
@@ -125,7 +115,7 @@ function handleKeydown(event) {
 :deep(.quick-search-backdrop) {
   position: fixed;
   inset: 0;
-  z-index: 30;
+  z-index: 999;
   display: grid;
   place-items: start center;
   padding: min(12vh, 96px) 20px 20px;

@@ -12,9 +12,7 @@ const emit = defineEmits(['remove'])
 
 const displayName = computed(() => props.app.displayName || props.app.name)
 const pathText = computed(() => props.app.path || props.missingPathText)
-const fallbackGlyph = computed(() =>
-  (displayName.value || '?').slice(0, 1).toUpperCase()
-)
+const fallbackGlyph = computed(() => (displayName.value || '?').slice(0, 1).toUpperCase())
 const missingPath = computed(() => !String(props.app.path ?? '').trim())
 </script>
 
@@ -61,8 +59,7 @@ const missingPath = computed(() => !String(props.app.path ?? '').trim())
   min-height: 64px;
   padding: 12px 14px;
   align-items: center;
-  border: 1px solid var(--border-subtle);
-  border-radius: 18px;
+  border-radius: 0;
   background: var(--interactive-bg);
   transition:
     background-color 120ms ease,
@@ -71,7 +68,6 @@ const missingPath = computed(() => !String(props.app.path ?? '').trim())
 
 .app-list__item:hover {
   background: var(--interactive-hover-bg);
-  border-color: var(--border-strong);
 }
 
 .app-list__icon {

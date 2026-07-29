@@ -1,5 +1,5 @@
 <template>
-  <aside class="scope-panel surface-card">
+  <aside class="scope-panel">
     <div class="scope-panel__head">
       <div>
         <h3>{{ title }}</h3>
@@ -28,12 +28,12 @@ defineProps({
 .scope-panel {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 12px;
   min-width: 0;
   min-height: 100%;
   padding: 20px 18px 18px;
   background: var(--panel-control);
-  box-shadow: var(--shadow-soft);
+  border-right: 1px solid var(--border);
 
   &__head {
     display: flex;

@@ -3,7 +3,6 @@ import AppShell from '@/components/AppShell.vue'
 import GestureRuleList from '@/components/GestureRuleList.vue'
 import IconActionButton from '@/components/IconActionButton.vue'
 import RulesSection from '@/components/rules/RulesSection.vue'
-import ScopePriorityNotice from '@/components/ScopePriorityNotice.vue'
 import { useGestureRulesStore } from '@/gestureEditor/stores/useGestureRulesStore'
 import { SCOPE_KINDS } from '@/constants/gestureEditorOptions'
 
@@ -13,19 +12,10 @@ rulesStore.setActiveScope(scopeKind)
 </script>
 
 <template>
-  <AppShell
-    title="全局规则"
-    description="全局规则对所有程序生效。"
-    layout-class="page-shell__grid--single page-shell__grid--editor"
-  >
+  <AppShell layout-class="page-shell__grid--single page-shell__grid--editor">
     <template #right>
       <section class="rules-panel">
-        <ScopePriorityNotice />
-        <RulesSection
-          title="手势列表"
-          description="这里维护不依赖分类和程序的默认手势。"
-          flex
-        >
+        <RulesSection title="手势列表" flex>
           <template #actions>
             <IconActionButton
               icon="add"
@@ -53,7 +43,7 @@ rulesStore.setActiveScope(scopeKind)
 .rules-panel {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 0;
   min-height: 100%;
   min-width: 0;
 }

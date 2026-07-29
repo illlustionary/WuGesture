@@ -23,7 +23,6 @@ function commit() {
 <template>
   <SettingsSectionCard
     title="轨迹线"
-    description="手势拖动时显示的路径样式。"
   >
     <div class="field-card">
       <ToggleCheckbox

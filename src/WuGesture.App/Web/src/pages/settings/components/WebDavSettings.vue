@@ -31,7 +31,6 @@ const webDavTestState = computed(() => {
 <template>
   <SettingsSectionCard
     title="WebDAV"
-    description="把当前配置保存到远程，或从远程恢复本机配置。"
     :note="ready ? '当前 WebDAV 配置已测试通过。' : '保存或恢复前需要先测试当前 WebDAV 配置。'"
   >
     <template #actions>

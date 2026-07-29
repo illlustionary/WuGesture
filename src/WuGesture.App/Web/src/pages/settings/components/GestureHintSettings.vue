@@ -23,7 +23,6 @@ function commit() {
 <template>
   <SettingsSectionCard
     title="底部提示窗"
-    description="激活规则后的提示窗字体、颜色和尺寸。"
   >
     <div class="field-card">
       <ToggleCheckbox
