@@ -4,10 +4,10 @@ namespace WuGesture.App;
 
 internal sealed class WindowStateStore
 {
-    private const int DefaultWindowWidth = 1080;
+    private const int DefaultWindowWidth = 1280;
     private const int DefaultWindowHeight = 720;
-    private const int MinimumWindowWidth = 640;
-    private const int MinimumWindowHeight = 480;
+    internal const int MinimumWindowWidth = 1280;
+    internal const int MinimumWindowHeight = 720;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -80,8 +80,8 @@ internal sealed class WindowStateStore
     public Rectangle GetDefaultBounds()
     {
         var workingArea = GetWorkingArea();
-        var width = Math.Min(DefaultWindowWidth, workingArea.Width);
-        var height = Math.Min(DefaultWindowHeight, workingArea.Height);
+        var width = DefaultWindowWidth;
+        var height = DefaultWindowHeight;
         var left = workingArea.Left + Math.Max(0, (workingArea.Width - width) / 2);
         var top = workingArea.Top + Math.Max(0, (workingArea.Height - height) / 2);
         return new Rectangle(left, top, width, height);
@@ -90,8 +90,8 @@ internal sealed class WindowStateStore
     private static Rectangle NormalizeBounds(Rectangle bounds)
     {
         var workingArea = GetWorkingArea();
-        var width = Math.Min(Math.Max(MinimumWindowWidth, bounds.Width), workingArea.Width);
-        var height = Math.Min(Math.Max(MinimumWindowHeight, bounds.Height), workingArea.Height);
+        var width = Math.Max(MinimumWindowWidth, bounds.Width);
+        var height = Math.Max(MinimumWindowHeight, bounds.Height);
         var left = bounds.Left;
         var top = bounds.Top;
 
