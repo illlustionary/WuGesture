@@ -124,7 +124,7 @@ public sealed class GestureMatcher
         {
             if (MatchesScopeValue(scopeValue, categoryNames[index]))
             {
-                priority = index + 1;
+                priority = categoryNames.Count - index;
                 return true;
             }
         }
