@@ -107,8 +107,8 @@ src\WuGesture.App\GestureEngine
 - `GestureScopeContext.cs`：用于规则匹配的窗口 app/有序分类上下文模型。
 - `ForegroundWindowScopeContextProvider.cs`：读取前台窗口或指定窗口句柄的进程名。
 - `ConfiguredScopeContextProvider.cs`：用配置里的应用程序列表把窗口进程名映射到有序分类列表，供作用域匹配使用。
-- `ActionExecutor.cs`：按动作类型执行命令；快捷键通过 Win32 `SendInput` 执行，窗口控制通过 `ShowWindow`、`SetWindowPos` 和窗口消息执行。鼠标手势关闭桌面或桌面托管的 Wallpaper Engine 窗口时会让 Explorer 显示系统关机选择对话框；其余动作按原目标窗口流程执行；音量/亮度会调用对应控制器并显示 OSD。
-- `DesktopWindowClassifier.cs`：通过桌面 Shell 窗口类以及父/拥有者链识别 `Progman`、`WorkerW` 和桌面视图，供鼠标手势关闭窗口动作区分桌面与普通应用窗口。
+- `ActionExecutor.cs`：按动作类型执行命令；快捷键通过 Win32 `SendInput` 执行，窗口控制通过 `ShowWindow`、`SetWindowPos` 和窗口消息执行。命中桌面或桌面托管窗口的窗口控制动作会直接忽略；音量/亮度会调用对应控制器并显示 OSD。
+- `DesktopWindowClassifier.cs`：通过桌面 Shell 窗口类以及父/拥有者链识别 `Progman`、`WorkerW` 和桌面视图，供窗口控制动作排除桌面目标。
 - `AudioController.cs`：通过 Windows Core Audio API 读取和设置系统主音量、静音状态。
 - `BrightnessController.cs`：通过 DDC/CI、WMI、Gamma 三段回退读取和设置显示亮度。
 - `BrightnessAdjustmentQueue.cs`：把亮度调节放到后台串行队列执行，并合并连续滚轮输入，避免 DDC/CI 等慢调用阻塞鼠标钩子或主 UI。
@@ -144,7 +144,7 @@ MouseHook
 - 移动过程中会增量识别当前轨迹；一旦按当前鼠标键和方向匹配到规则，透明轨迹覆盖层会立即在当前鼠标屏幕底部居中显示规则名。
 - 动作仍在右键抬起时执行；窗口控制动作的目标窗口由应用行为设置决定。
 - 窗口控制动作的目标窗口由 `uiSettings.appBehavior.targetWindowMode` 决定：默认 `start-window` 会在鼠标按下时按起点坐标解析顶层窗口，并使用该窗口的进程和分类上下文匹配 `app > category > global` 规则；松开后会直接将该起始窗口设为当前激活窗口，再执行动作。`current-window` 会保留当前活动窗口的规则上下文，并直接对动作执行时的当前窗口执行。两种模式都不依赖鼠标结束位置，起始窗口无法解析时不会执行动作。
-- 鼠标手势命中桌面 Shell 或其托管窗口（包括 Wallpaper Engine 的桌面宿主）时，只有关闭窗口动作会触发 Explorer 的桌面关机选择对话框。`start-window` 仅在这种情况下不激活桌面目标；`current-window` 则在执行时按当前窗口识别桌面。快捷键、其他窗口控制、音量和亮度都按原流程执行，边缘操作不使用该桌面关闭策略。
+- 鼠标手势或边缘操作命中桌面 Shell 或其托管窗口（包括 Wallpaper Engine 的桌面宿主）时，所有窗口控制动作都会直接忽略，不会激活桌面目标或触发系统对话框。快捷键、音量和亮度仍按原流程执行。
 - `GestureService` 支持暂停；暂停时保留全局 hook，但不识别、不吞掉中/右键输入，并清理当前轨迹与预览提示，供配置界面录制手势使用。
 - `GestureService` 会读取应用行为里的排除项；`start-window` 在鼠标按下时按起始窗口判断排除项，`current-window` 则按当前前台窗口判断。命中排除项时不启动手势跟踪，也不吞掉原始鼠标输入。
 - 托盘暂停和配置界面左上角状态标识共用同一个临时用户暂停状态，配置界面录制暂停则是独立暂停来源；运行时按用户、配置和录制暂停合并后的状态控制 `GestureService` 和 `EdgeActionService`。

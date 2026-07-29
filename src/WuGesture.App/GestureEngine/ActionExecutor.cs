@@ -24,8 +24,7 @@ public sealed class ActionExecutor
     public void Execute(
         GestureRule rule,
         IntPtr targetWindow,
-        bool useCurrentWindowWhenTargetMissing = false,
-        bool targetIsDesktopSurface = false)
+        bool useCurrentWindowWhenTargetMissing = false)
     {
         switch (rule.Action)
         {
@@ -33,7 +32,7 @@ public sealed class ActionExecutor
                 ExecuteHotkey(hotkey);
                 break;
             case WindowControlAction window:
-                ExecuteWindowControl(window, targetWindow, useCurrentWindowWhenTargetMissing, targetIsDesktopSurface);
+                ExecuteWindowControl(window, targetWindow, useCurrentWindowWhenTargetMissing);
                 break;
             case VolumeControlAction volume:
                 ExecuteVolumeControl(volume);
@@ -73,8 +72,7 @@ public sealed class ActionExecutor
     private static void ExecuteWindowControl(
         WindowControlAction action,
         IntPtr targetWindow,
-        bool useCurrentWindowWhenTargetMissing,
-        bool targetIsDesktopSurface)
+        bool useCurrentWindowWhenTargetMissing)
     {
         if (targetWindow == IntPtr.Zero && useCurrentWindowWhenTargetMissing)
         {
@@ -86,9 +84,8 @@ public sealed class ActionExecutor
             return;
         }
 
-        if (action.Operation == WindowControlOperation.Close && targetIsDesktopSurface)
+        if (DesktopWindowClassifier.IsDesktopSurface(targetWindow))
         {
-            ShowDesktopShutdownDialog();
             return;
         }
 
@@ -171,17 +168,6 @@ public sealed class ActionExecutor
             SwpNoMove | SwpNoSize | SwpNoActivate);
     }
 
-    private static void ShowDesktopShutdownDialog()
-    {
-        var shellWindow = GetShellWindow();
-        if (shellWindow != IntPtr.Zero && IsWindow(shellWindow))
-        {
-            // This is the same target and message as Alt+F4 on an unfettered desktop.
-            SetForegroundWindow(shellWindow);
-            PostMessage(shellWindow, WmClose, IntPtr.Zero, IntPtr.Zero);
-        }
-    }
-
     private static Input CreateKeyboardInput(Keys key, bool keyUp)
     {
         var flags = IsExtendedKey(key) ? KeyEventFExtendedKey : 0;
@@ -259,12 +245,6 @@ public sealed class ActionExecutor
 
     [DllImport("user32.dll")]
     private static extern IntPtr GetForegroundWindow();
-
-    [DllImport("user32.dll")]
-    private static extern bool SetForegroundWindow(IntPtr hWnd);
-
-    [DllImport("user32.dll")]
-    private static extern IntPtr GetShellWindow();
 
     [StructLayout(LayoutKind.Sequential)]
     private struct Input

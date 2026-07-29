@@ -6,31 +6,49 @@ namespace WuGesture.App.GestureEngine;
 public sealed class ApplicationExclusionMatcher
 {
     private IReadOnlyList<ExcludedApplicationConfig> applications;
+    private bool hasPathRules;
 
     public ApplicationExclusionMatcher(IEnumerable<ExcludedApplicationConfig>? applications = null)
     {
         this.applications = NormalizeApplications(applications);
+        hasPathRules = this.applications.Any(application => application.Path.Length > 0);
     }
 
     public void Update(IEnumerable<ExcludedApplicationConfig>? nextApplications)
     {
         applications = NormalizeApplications(nextApplications);
+        hasPathRules = applications.Any(application => application.Path.Length > 0);
     }
 
     public bool IsGestureExcluded()
     {
+        if (applications.Count == 0)
+        {
+            return false;
+        }
+
         return IsGestureExcluded(GetForegroundWindow());
     }
 
     public bool IsGestureExcluded(IntPtr window)
     {
-        return TryGetApplication(window, out var appName, out var appPath) &&
+        if (applications.Count == 0)
+        {
+            return false;
+        }
+
+        return TryGetApplication(window, hasPathRules, out var appName, out var appPath) &&
             applications.Any(application => IsMatch(application, appName, appPath));
     }
 
     public bool IsEdgeActionExcluded()
     {
-        return TryGetApplication(GetForegroundWindow(), out var appName, out var appPath) &&
+        if (applications.Count == 0)
+        {
+            return false;
+        }
+
+        return TryGetApplication(GetForegroundWindow(), hasPathRules, out var appName, out var appPath) &&
             applications.Any(application => application.DisableEdgeActions && IsMatch(application, appName, appPath));
     }
 
@@ -61,7 +79,7 @@ public sealed class ApplicationExclusionMatcher
             string.Equals(ApplicationIdentityNormalizer.NormalizeProcessName(application.Name), appName, StringComparison.OrdinalIgnoreCase);
     }
 
-    private static bool TryGetApplication(IntPtr window, out string appName, out string appPath)
+    private static bool TryGetApplication(IntPtr window, bool includePath, out string appName, out string appPath)
     {
         appName = "";
         appPath = "";
@@ -81,13 +99,16 @@ public sealed class ApplicationExclusionMatcher
         {
             using var process = Process.GetProcessById(processId);
             appName = ApplicationIdentityNormalizer.NormalizeProcessName(process.ProcessName);
-            try
+            if (includePath)
             {
-                appPath = process.MainModule?.FileName ?? "";
-            }
-            catch
-            {
-                appPath = "";
+                try
+                {
+                    appPath = process.MainModule?.FileName ?? "";
+                }
+                catch
+                {
+                    appPath = "";
+                }
             }
 
             return appName.Length > 0 || appPath.Length > 0;

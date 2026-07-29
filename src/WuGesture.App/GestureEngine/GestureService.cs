@@ -398,16 +398,17 @@ public sealed class GestureService : IDisposable
             try
             {
                 GestureRecognized?.Invoke(this, new GestureRecognizedEventArgs(sessionId, path, pattern, rule.ActionName));
-                var isDesktopCloseAction = rule.Action is WindowControlAction
-                {
-                    Operation: WindowControlOperation.Close
-                };
                 var targetWindow = gestureContext.UsesStartWindow
                     ? gestureContext.StartWindow
                     : GetForegroundWindow();
-                var isDesktopCloseTarget = isDesktopCloseAction &&
-                                           targetWindow != IntPtr.Zero &&
-                                           DesktopWindowClassifier.IsDesktopSurface(targetWindow);
+                var isDesktopWindowControlTarget = rule.Action is WindowControlAction &&
+                                                   targetWindow != IntPtr.Zero &&
+                                                   DesktopWindowClassifier.IsDesktopSurface(targetWindow);
+                if (isDesktopWindowControlTarget)
+                {
+                    return;
+                }
+
                 if (gestureContext.UsesStartWindow)
                 {
                     if (gestureContext.StartWindow == IntPtr.Zero)
@@ -415,16 +416,12 @@ public sealed class GestureService : IDisposable
                         return;
                     }
 
-                    if (!isDesktopCloseTarget)
-                    {
-                        SetForegroundWindow(gestureContext.StartWindow);
-                    }
+                    SetForegroundWindow(gestureContext.StartWindow);
                 }
 
                 actionExecutor.Execute(
                     rule,
-                    targetWindow,
-                    targetIsDesktopSurface: isDesktopCloseTarget);
+                    targetWindow);
             }
             catch (Exception exception)
             {
