@@ -82,7 +82,7 @@ function displayLabel() {
   min-height: 58px;
   padding: 10px 12px 10px 14px;
   border: 0;
-  border-radius: 18px;
+  border-radius: 0;
   text-align: left;
   background: var(--interactive-bg);
   border: 1px solid var(--border-subtle);

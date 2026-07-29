@@ -166,9 +166,8 @@ function closeFromMask(event) {
   border: 1px solid transparent;
   border-radius: 8px;
   cursor: pointer;
-  font-weight: 650;
   transition: opacity 120ms ease;
-
+  font-size: 13px;
   &:hover,
   &:focus-visible {
     opacity: 0.76;

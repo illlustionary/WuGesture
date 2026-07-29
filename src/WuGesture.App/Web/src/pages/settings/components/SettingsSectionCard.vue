@@ -1,7 +1,6 @@
 <script setup>
 defineProps({
   title: { type: String, required: true },
-  description: { type: String, default: '' },
   note: { type: String, default: '' }
 })
 </script>
@@ -11,12 +10,6 @@ defineProps({
     <div class="section-head">
       <div>
         <h3 class="section-title">{{ title }}</h3>
-        <p
-          v-if="description"
-          class="section-desc"
-        >
-          {{ description }}
-        </p>
       </div>
       <div
         v-if="$slots.actions"

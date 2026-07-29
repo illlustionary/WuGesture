@@ -33,11 +33,13 @@ const actionTypeOptions = ACTION_TYPE_OPTIONS
   >
 
       <div class="edge-dialog__grid">
-        <ToggleCheckbox
-          v-model="draft.enabled"
-          label="启用"
-          class="edge-dialog__enabled"
-        />
+        <div class="edge-field edge-dialog__enabled">
+          <span>是否启用</span>
+          <ToggleCheckbox
+            v-model="draft.enabled"
+            label="启用"
+          />
+        </div>
 
         <label
           v-if="draft.triggerType === EDGE_TRIGGER_TYPES.friction"

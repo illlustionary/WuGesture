@@ -1,17 +1,13 @@
 using Microsoft.Win32;
 using WuGesture.App.GestureEngine;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Security.Principal;
 using System.Text.Json;
 
 namespace WuGesture.App;
 
-public sealed class MainForm : Form
+public sealed partial class MainForm : Form
 {
-    private const int SwShow = 5;
-    private const int SwRestore = 9;
-    private const int WmClose = 0x0010;
     private const string StartupRegistryPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
     private readonly GestureConfigStore configStore = new();
     private readonly WebDavConfigSyncService webDavConfigSyncService = new();
@@ -52,6 +48,7 @@ public sealed class MainForm : Form
             !loadedConfig.Config.UiSettings.AppBehavior.ShowConfigWindowOnLaunch;
         Text = AppIdentity.DisplayName;
         Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? SystemIcons.Application;
+        FormBorderStyle = FormBorderStyle.None;
         StartPosition = FormStartPosition.Manual;
         MinimumSize = new Size(WindowStateStore.MinimumWindowWidth, WindowStateStore.MinimumWindowHeight);
         ApplyInitialWindowState();
@@ -65,6 +62,7 @@ public sealed class MainForm : Form
         InitializeTrayIcon();
 
         Load += OnLoad;
+        Resize += (_, _) => PostWindowState();
         FormClosing += OnFormClosing;
         FormClosed += (_, _) =>
         {
@@ -78,17 +76,6 @@ public sealed class MainForm : Form
             gestureFeedbackCoordinator?.Dispose();
             DisposeMouseTrailForm();
         };
-    }
-
-    protected override void WndProc(ref Message m)
-    {
-        // Gesture window actions use WM_CLOSE directly, before WinForms assigns a CloseReason.
-        if (m.Msg == WmClose && HandleConfiguredUserClose())
-        {
-            return;
-        }
-
-        base.WndProc(ref m);
     }
 
     private async void OnLoad(object? sender, EventArgs e)
@@ -252,7 +239,7 @@ public sealed class MainForm : Form
         ApplyGesturePauseState();
         mouseTrailForm?.HideTrail();
         ShowInTaskbar = true;
-        WindowState = FormWindowState.Minimized;
+        MinimizeWindow();
     }
 
     private async void RestoreFromTray()
@@ -492,6 +479,28 @@ public sealed class MainForm : Form
         TryPostWebMessage(payload);
     }
 
+    private void PostWindowState()
+    {
+        var payload = JsonSerializer.Serialize(new
+        {
+            type = WebViewMessageTypes.WindowState,
+            maximized = WindowState == FormWindowState.Maximized
+        });
+
+        TryPostWebMessage(payload);
+    }
+
+    private void PostWindowResizeState(bool resizing)
+    {
+        var payload = JsonSerializer.Serialize(new
+        {
+            type = WebViewMessageTypes.WindowResizeState,
+            resizing
+        });
+
+        TryPostWebMessage(payload);
+    }
+
     private void PostRules()
     {
         if (loadedConfig is null)
@@ -517,6 +526,7 @@ public sealed class MainForm : Form
         {
             PostStatus(isUserPaused ? "paused" : "running");
             PostRules();
+            PostWindowState();
             return;
         }
 
@@ -579,6 +589,29 @@ public sealed class MainForm : Form
             case WebViewMessageTypes.PreviewLevelOsd:
                 PreviewLevelOsd(json);
                 break;
+            case WebViewMessageTypes.WindowMinimize:
+                MinimizeToTaskbar();
+                break;
+            case WebViewMessageTypes.WindowToggleMaximize:
+                ToggleWindowMaximized();
+                break;
+            case WebViewMessageTypes.WindowClose:
+                CloseFromWindowControl();
+                break;
+            case WebViewMessageTypes.WindowStartDrag:
+                StartWindowDrag();
+                break;
+            case WebViewMessageTypes.WindowStartResize:
+                StartWindowResize();
+                break;
+        }
+    }
+
+    private void CloseFromWindowControl()
+    {
+        if (!HandleConfiguredUserClose())
+        {
+            Close();
         }
     }
 
@@ -1010,95 +1043,6 @@ public sealed class MainForm : Form
         return !isClosing && !IsDisposed && !Disposing && IsHandleCreated;
     }
 
-    private void BringWindowToFront(bool attachToForegroundInputFirst = false)
-    {
-        if (!IsHandleCreated)
-        {
-            return;
-        }
-
-        if (attachToForegroundInputFirst)
-        {
-            BringWindowToFrontWithAttachedInput();
-            return;
-        }
-
-        RestoreAndActivateWindow();
-        if (GetForegroundWindow() != Handle)
-        {
-            BringWindowToFrontWithAttachedInput();
-        }
-    }
-
-    private void BringWindowToFrontWithAttachedInput()
-    {
-        var foregroundWindow = GetForegroundWindow();
-        var currentThreadId = GetCurrentThreadId();
-        var foregroundThreadId = foregroundWindow == IntPtr.Zero
-            ? 0
-            : GetWindowThreadProcessId(foregroundWindow, out _);
-        var isInputAttached = foregroundThreadId != 0 &&
-            foregroundThreadId != currentThreadId &&
-            AttachThreadInput(currentThreadId, foregroundThreadId, true);
-
-        try
-        {
-            if (isInputAttached)
-            {
-                RestoreAndActivateWindow(bringToTop: true);
-            }
-            else
-            {
-                RestoreAndActivateWindow();
-            }
-        }
-        finally
-        {
-            if (isInputAttached)
-            {
-                AttachThreadInput(currentThreadId, foregroundThreadId, false);
-            }
-        }
-    }
-
-    private void RestoreAndActivateWindow(bool bringToTop = false)
-    {
-        if (IsIconic(Handle))
-        {
-            ShowWindow(Handle, SwRestore);
-        }
-        else
-        {
-            ShowWindow(Handle, SwShow);
-        }
-
-        if (bringToTop)
-        {
-            BringWindowToTop(Handle);
-        }
-
-        SetForegroundWindow(Handle);
-        Activate();
-        Focus();
-    }
-
-    private void ApplyInitialWindowState()
-    {
-        if (windowStateStore.TryLoad(out var bounds, out var maximized))
-        {
-            Bounds = bounds;
-            startMaximized = maximized;
-            return;
-        }
-
-        Bounds = windowStateStore.GetDefaultBounds();
-    }
-
-    private void SaveWindowState()
-    {
-        windowStateStore.Save(WindowState, Bounds, RestoreBounds);
-    }
-
     private static Icon CreateGrayscaleIcon(Icon source)
     {
         using var bitmap = source.ToBitmap();
@@ -1123,33 +1067,6 @@ public sealed class MainForm : Form
             DestroyIcon(handle);
         }
     }
-
-    [DllImport("user32.dll")]
-    private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
-
-    [DllImport("user32.dll")]
-    private static extern bool IsIconic(IntPtr hWnd);
-
-    [DllImport("user32.dll")]
-    private static extern bool SetForegroundWindow(IntPtr hWnd);
-
-    [DllImport("user32.dll")]
-    private static extern IntPtr GetForegroundWindow();
-
-    [DllImport("user32.dll")]
-    private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
-
-    [DllImport("kernel32.dll")]
-    private static extern uint GetCurrentThreadId();
-
-    [DllImport("user32.dll")]
-    private static extern bool AttachThreadInput(uint idAttach, uint idAttachTo, bool attach);
-
-    [DllImport("user32.dll")]
-    private static extern bool BringWindowToTop(IntPtr hWnd);
-
-    [DllImport("user32.dll")]
-    private static extern bool DestroyIcon(IntPtr hIcon);
 
     private MouseTrailForm EnsureMouseTrailForm()
     {

@@ -1,16 +1,57 @@
 import { ref } from 'vue'
-import BriefcaseIcon from '@/assets/briefcase.svg'
-import BrowserIcon from '@/assets/browser.svg'
-import CircleDashedIcon from '@/assets/circle-dashed.svg'
-import CodeIcon from '@/assets/code.svg'
-import FolderIcon from '@/assets/folder.svg'
-import MediaIcon from '@/assets/media.svg'
-import SparkleIcon from '@/assets/sparkle.svg'
+import BriefcaseIcon from '@/assets/navigation/briefcase.svg'
+import BrowserIcon from '@/assets/category/browser.svg'
+import CircleDashedIcon from '@/assets/navigation/circle-dashed.svg'
+import CodeIcon from '@/assets/category/code.svg'
+import FolderIcon from '@/assets/navigation/folder.svg'
+import MediaIcon from '@/assets/category/media.svg'
+import SparkleIcon from '@/assets/category/sparkle.svg'
 import { SCOPE_KINDS } from '@/constants/gestureEditorOptions'
 
-export function useCategoryPage(editor) {
+export function getCategoryIcon(name) {
+  const value = String(name ?? '')
+    .trim()
+    .toLowerCase()
+  if (!value) {
+    return CircleDashedIcon
+  }
+
+  if (
+    value.includes('浏览') ||
+    value.includes('browser') ||
+    value.includes('网页')
+  ) {
+    return BrowserIcon
+  }
+  if (value.includes('办公') || value.includes('office')) {
+    return BriefcaseIcon
+  }
+  if (
+    value.includes('开发') ||
+    value.includes('dev') ||
+    value.includes('编程')
+  ) {
+    return CodeIcon
+  }
+  if (value.includes('设计') || value.includes('创作')) {
+    return SparkleIcon
+  }
+  if (
+    value.includes('媒体') ||
+    value.includes('音乐') ||
+    value.includes('视频')
+  ) {
+    return MediaIcon
+  }
+
+  return FolderIcon
+}
+
+export function useCategoryPage(editor, options = {}) {
   const scopeKind = SCOPE_KINDS.category
-  editor.setActiveScope(scopeKind)
+  if (options.activate !== false) {
+    editor.setActiveScope(scopeKind)
+  }
 
   const categoryDraft = ref('')
   const categoryDialogOpen = ref(false)
@@ -30,7 +71,10 @@ export function useCategoryPage(editor) {
   function confirmCategoryDialog() {
     if (editor.createScopeTarget(scopeKind, categoryDraft.value)) {
       closeCategoryDialog()
+      return true
     }
+
+    return false
   }
 
   function openCategoryRenameDialog(item) {
@@ -54,56 +98,20 @@ export function useCategoryPage(editor) {
   function confirmCategoryRenameDialog() {
     const nextName = String(categoryRenameDraft.value ?? '').trim()
     if (!nextName) {
-      return
+      return false
     }
 
     if (nextName === categoryRenameSource.value) {
       closeCategoryRenameDialog()
-      return
+      return true
     }
 
     if (editor.renameSelectedScope(scopeKind, nextName, categoryRenameSource.value)) {
       closeCategoryRenameDialog()
-    }
-  }
-
-  function getCategoryIcon(name) {
-    const value = String(name ?? '')
-      .trim()
-      .toLowerCase()
-    if (!value) {
-      return CircleDashedIcon
+      return true
     }
 
-    if (
-      value.includes('浏览') ||
-      value.includes('browser') ||
-      value.includes('网页')
-    ) {
-      return BrowserIcon
-    }
-    if (value.includes('办公') || value.includes('office')) {
-      return BriefcaseIcon
-    }
-    if (
-      value.includes('开发') ||
-      value.includes('dev') ||
-      value.includes('编程')
-    ) {
-      return CodeIcon
-    }
-    if (value.includes('设计') || value.includes('创作')) {
-      return SparkleIcon
-    }
-    if (
-      value.includes('媒体') ||
-      value.includes('音乐') ||
-      value.includes('视频')
-    ) {
-      return MediaIcon
-    }
-
-    return FolderIcon
+    return false
   }
 
   function deleteCategoryItem(name) {

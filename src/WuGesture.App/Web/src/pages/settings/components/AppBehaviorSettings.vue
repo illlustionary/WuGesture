@@ -28,7 +28,6 @@ function commit() {
 <template>
   <SettingsSectionCard
     title="应用行为"
-    description="启动权限、开机启动、全屏限制和关闭按钮行为。"
   >
     <SettingsFormGrid>
       <div class="app-behavior-settings__checks">

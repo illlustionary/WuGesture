@@ -20,6 +20,11 @@ internal static class WebViewMessageTypes
     public const string ReloadRules = "reload-rules";
     public const string ResetRules = "reset-rules";
     public const string PreviewLevelOsd = "preview-level-osd";
+    public const string WindowMinimize = "window-minimize";
+    public const string WindowToggleMaximize = "window-toggle-maximize";
+    public const string WindowClose = "window-close";
+    public const string WindowStartDrag = "window-start-drag";
+    public const string WindowStartResize = "window-start-resize";
 
     public const string Gesture = "gesture";
     public const string GestureRecorded = "gesture-recorded";
@@ -31,4 +36,6 @@ internal static class WebViewMessageTypes
     public const string ApplicationSelected = "application-selected";
     public const string ConfigResult = "config-result";
     public const string WebDavResult = "webdav-result";
+    public const string WindowState = "window-state";
+    public const string WindowResizeState = "window-resize-state";
 }

@@ -64,9 +64,7 @@
             @click.stop="$emit('edit', rule.id)"
           >
             <template v-if="isWindowAction(rule)">
-              <span class="keycap keycap--subtle">{{
-                getActionLabel?.(rule) || '窗口控制'
-              }}</span>
+              <span class="keycap keycap--subtle">{{ getActionLabel?.(rule) || '窗口控制' }}</span>
             </template>
             <template v-else-if="actionKeys(rule).length > 0">
               <span
@@ -107,7 +105,7 @@
 
 <script setup>
 import IconActionButton from './IconActionButton.vue'
-import MouseIcon from '@/assets/mouse.svg'
+import MouseIcon from '@/assets/navigation/mouse.svg'
 import { ACTION_TYPES } from '@/constants/gestureEditorOptions'
 const DIRECTION_LABELS = {
   Up: '↑',
@@ -167,16 +165,12 @@ function isWindowAction(rule) {
   gap: 0;
   overflow: hidden;
   border: 1px solid var(--border-subtle);
-  border-radius: 24px;
-  background: linear-gradient(
-    180deg,
-    var(--panel-soft),
-    var(--panel-muted)
-  );
+  border-radius: 10px;
+  background: linear-gradient(180deg, var(--panel-soft), var(--panel-muted));
   box-shadow: var(--shadow-soft);
 
   &__body {
-    padding: 10px;
+    padding: 0;
   }
 
   &__head,
@@ -211,11 +205,7 @@ function isWindowAction(rule) {
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    background: linear-gradient(
-      180deg,
-      var(--panel-soft),
-      var(--interactive-hover-bg)
-    );
+    background: linear-gradient(180deg, var(--panel-soft), var(--interactive-hover-bg));
     border-bottom: 1px solid var(--border-muted);
     & > :not(:last-child) {
       margin-left: 11px;
@@ -224,14 +214,14 @@ function isWindowAction(rule) {
 
   &__rows {
     display: grid;
-    gap: 8px;
+    gap: 0;
   }
 
   &__row {
     min-height: 66px;
     padding-block: 2px;
     border: 1px solid var(--border-muted);
-    border-radius: 18px;
+    border-radius: 0;
     background: var(--interactive-bg);
     transition:
       background-color 140ms ease,
@@ -241,6 +231,10 @@ function isWindowAction(rule) {
       background: var(--interactive-hover-bg);
       border-color: var(--border-strong);
     }
+  }
+
+  &__row + &__row {
+    border-top-width: 0;
   }
 
   &__cell {
@@ -256,6 +250,7 @@ function isWindowAction(rule) {
     padding-inline: 14px;
     border: 1px solid transparent;
     color: var(--text);
+    text-align: center;
     transition:
       border-color 120ms ease,
       box-shadow 120ms ease,
@@ -293,10 +288,10 @@ function isWindowAction(rule) {
     min-height: 146px;
     align-content: center;
     justify-items: center;
-    margin: 4px 0 0;
+    margin: 0;
     padding: 20px 18px;
     border: 1px dashed var(--border-dashed);
-    border-radius: 18px;
+    border-radius: 0;
     background: var(--panel-soft);
     color: var(--muted);
     text-align: center;
@@ -318,6 +313,7 @@ function isWindowAction(rule) {
   flex: 2;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   min-height: 40px;
   padding: 10px 12px;
@@ -326,7 +322,7 @@ function isWindowAction(rule) {
   appearance: none;
   background: transparent;
   color: inherit;
-  text-align: left;
+  text-align: center;
   cursor: pointer;
   transition:
     background-color 140ms ease,
@@ -351,6 +347,7 @@ function isWindowAction(rule) {
   &__keys {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     flex-wrap: wrap;
     gap: 6px;
     min-width: 0;
@@ -364,13 +361,14 @@ function isWindowAction(rule) {
 .command-button {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   overflow: hidden;
   border: none;
   appearance: none;
   background: transparent;
   color: inherit;
-  text-align: left;
+  text-align: center;
   white-space: normal;
   cursor: pointer;
   color: var(--text);

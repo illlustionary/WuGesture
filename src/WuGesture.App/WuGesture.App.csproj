@@ -9,6 +9,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);MSB3277</NoWarn>
     <AssemblyName>WuGesture</AssemblyName>
+    <Version>1.1.11</Version>
     <Title>WuGesture</Title>
     <Product>WuGesture</Product>
     <ApplicationIcon>Resources\wu.ico</ApplicationIcon>

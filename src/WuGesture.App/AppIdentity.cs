@@ -15,4 +15,17 @@ internal static class AppIdentity
     {
         return Application.ExecutablePath;
     }
+
+    public static string GetDisplayVersion()
+    {
+        var version = typeof(AppIdentity).Assembly.GetName().Version;
+        if (version is null)
+        {
+            return "v0.0.0";
+        }
+
+        return version.Build >= 0
+            ? $"v{version.Major}.{version.Minor}.{version.Build}"
+            : $"v{version.Major}.{version.Minor}";
+    }
 }

@@ -1,9 +1,11 @@
 import { ref } from 'vue'
 import { SCOPE_KINDS } from '@/constants/gestureEditorOptions'
 
-export function useAppPage(editor) {
+export function useAppPage(editor, options = {}) {
   const scopeKind = SCOPE_KINDS.app
-  editor.setActiveScope(scopeKind)
+  if (options.activate !== false) {
+    editor.setActiveScope(scopeKind)
+  }
 
   const appRenameDialogOpen = ref(false)
   const appRenameDraft = ref('')
@@ -44,18 +46,21 @@ export function useAppPage(editor) {
   function confirmAppRenameDialog() {
     const nextName = String(appRenameDraft.value ?? '').trim()
     if (!nextName) {
-      return
+      return false
     }
 
     if (nextName === appRenameSource.value) {
       closeAppRenameDialog()
-      return
+      return true
     }
 
     if (editor.renameSelectedScope(scopeKind, nextName, appRenameSource.value)) {
       editor.updateApplicationDisplayName(nextName, nextName)
       closeAppRenameDialog()
+      return true
     }
+
+    return false
   }
 
   return {

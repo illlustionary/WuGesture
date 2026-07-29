@@ -1,28 +1,14 @@
 <script setup>
 import { computed } from 'vue'
-import addIcon from '@/assets/add.svg'
-import briefcaseIcon from '@/assets/briefcase.svg'
-import browserIcon from '@/assets/browser.svg'
-import circleDashedIcon from '@/assets/circle-dashed.svg'
-import closeIcon from '@/assets/close.svg'
-import closeAltIcon from '@/assets/close-alt.svg'
-import codeIcon from '@/assets/code.svg'
-import cloudDownloadIcon from '@/assets/cloud-download.svg'
-import cloudUploadIcon from '@/assets/cloud-upload.svg'
-import crosshairIcon from '@/assets/crosshair.svg'
-import deleteIcon from '@/assets/delete.svg'
-import downloadIcon from '@/assets/download.svg'
-import folderIcon from '@/assets/folder.svg'
-import keyboardIcon from '@/assets/keyboard.svg'
-import mediaIcon from '@/assets/media.svg'
-import mouseIcon from '@/assets/mouse.svg'
-import recordIcon from '@/assets/record.svg'
-import resetIcon from '@/assets/reset.svg'
-import searchIcon from '@/assets/search.svg'
-import settingIcon from '@/assets/setting.svg'
-import sparkleIcon from '@/assets/sparkle.svg'
-import testIcon from '@/assets/test.svg'
-import uploadIcon from '@/assets/upload.svg'
+import addIcon from '@/assets/actions/add.svg'
+import closeIcon from '@/assets/window/close.svg'
+import cloudDownloadIcon from '@/assets/actions/cloud-download.svg'
+import cloudUploadIcon from '@/assets/actions/cloud-upload.svg'
+import deleteIcon from '@/assets/actions/delete.svg'
+import downloadIcon from '@/assets/actions/download.svg'
+import resetIcon from '@/assets/actions/reset.svg'
+import testIcon from '@/assets/actions/test.svg'
+import uploadIcon from '@/assets/actions/upload.svg'
 
 const props = defineProps({
   icon: {
@@ -40,31 +26,21 @@ const props = defineProps({
   color: {
     type: String,
     default: ''
+  },
+  nativeTooltip: {
+    type: Boolean,
+    default: true
   }
 })
 
 const iconMap = {
   add: addIcon,
-  briefcase: briefcaseIcon,
-  browser: browserIcon,
-  'circle-dashed': circleDashedIcon,
   close: closeIcon,
-  'close-alt': closeAltIcon,
-  code: codeIcon,
   'cloud-download': cloudDownloadIcon,
   'cloud-upload': cloudUploadIcon,
-  crosshair: crosshairIcon,
   delete: deleteIcon,
   download: downloadIcon,
-  folder: folderIcon,
-  keyboard: keyboardIcon,
-  media: mediaIcon,
-  mouse: mouseIcon,
-  record: recordIcon,
   reset: resetIcon,
-  search: searchIcon,
-  setting: settingIcon,
-  sparkle: sparkleIcon,
   test: testIcon,
   upload: uploadIcon
 }
@@ -77,7 +53,7 @@ const iconComponent = computed(() => iconMap[props.icon] ?? addIcon)
     type="button"
     class="icon-action-button"
     :aria-label="label"
-    :title="label"
+    :title="nativeTooltip ? label : undefined"
     :class="[icon]"
     :data-tone="tone"
     :style="{ color }"

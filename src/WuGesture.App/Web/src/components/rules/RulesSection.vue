@@ -1,7 +1,6 @@
 <script setup>
 defineProps({
   title: { type: String, required: true },
-  description: { type: String, default: '' },
   compact: { type: Boolean, default: false },
   flex: { type: Boolean, default: false }
 })
@@ -18,12 +17,6 @@ defineProps({
     <div class="rules-section__head">
       <div>
         <h3 class="section-title">{{ title }}</h3>
-        <p
-          v-if="description"
-          class="section-desc"
-        >
-          {{ description }}
-        </p>
       </div>
       <div
         v-if="$slots.actions"

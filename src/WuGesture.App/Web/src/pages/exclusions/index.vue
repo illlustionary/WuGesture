@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
 import IconActionButton from '@/components/IconActionButton.vue'
 import ToggleCheckbox from '@/components/ToggleCheckbox.vue'
+import RulesSection from '@/components/rules/RulesSection.vue'
 import { useGestureExclusionsStore } from '@/gestureEditor/stores/useGestureExclusionsStore'
 import { getApplicationKey } from '@/gestureEditor/stores/useGestureQuickSearchStore'
 
@@ -19,75 +20,74 @@ function toggleDisableEdgeActions(application) {
 </script>
 
 <template>
-  <AppShell
-    title="排除项"
-    description="命中的程序不执行鼠标手势，可单独禁用边缘操作。"
-    layout-class="page-shell__grid--single"
-  >
-    <template #actions>
-      <IconActionButton
-        icon="add"
-        label="添加程序"
-        color="var(--accent-strong)"
-        class="exclusion-add-button"
-        @click="exclusionsStore.openExcludedApplicationPicker()"
-      />
-    </template>
-
+  <AppShell layout-class="page-shell__grid--single page-shell__grid--editor">
     <template #right>
-      <section
-        v-if="exclusionsStore.hasExclusions"
-        class="exclusion-list"
-      >
-        <article
-          v-for="(
-            { application, icon, fallbackGlyph }, index
-          ) in exclusionsStore.exclusionsWithIcons"
-          :key="application.path || application.name || index"
-          class="exclusion-item"
-          :class="{
-            'exclusion-item--selected': getApplicationKey(application, index) === selectedExclusion
-          }"
+      <section class="rules-panel">
+        <RulesSection
+          title="排除项"
+          flex
         >
-          <span
-            class="exclusion-item__icon"
-            aria-hidden="true"
-          >
-            <img
-              v-if="icon"
-              class="app-icon app-icon--small"
-              :src="icon"
-              alt=""
+          <template #actions>
+            <IconActionButton
+              icon="add"
+              label="添加程序"
+              color="var(--accent-strong)"
+              class="exclusion-add-button"
+              @click="exclusionsStore.openExcludedApplicationPicker()"
             />
-            <span v-else>{{ fallbackGlyph }}</span>
-          </span>
-          <div class="exclusion-item__main">
-            <strong>{{
-              application.displayName || application.name || application.path
-            }}</strong>
-            <span>{{ application.path || application.name }}</span>
-          </div>
-          <ToggleCheckbox
-            v-model="application.disableEdgeActions"
-            label="同时禁用边缘操作"
-            @change="toggleDisableEdgeActions(application)"
-          />
-          <IconActionButton
-            icon="delete"
-            label="删除排除项"
-            class="ghost-button"
-            tone="danger"
-            @click="exclusionsStore.removeExcludedApplication(index)"
-          />
-        </article>
-      </section>
+          </template>
 
-      <p
-        v-else
-        class="exclusion-empty"
-      >
-        暂无排除项。
-      </p>
+          <section
+            v-if="exclusionsStore.hasExclusions"
+            class="exclusion-list"
+          >
+            <article
+              v-for="({ application, icon, fallbackGlyph }, index) in exclusionsStore.exclusionsWithIcons"
+              :key="application.path || application.name || index"
+              class="exclusion-item"
+              :class="{
+                'exclusion-item--selected': getApplicationKey(application, index) === selectedExclusion
+              }"
+            >
+              <span
+                class="exclusion-item__icon"
+                aria-hidden="true"
+              >
+                <img
+                  v-if="icon"
+                  class="app-icon app-icon--small"
+                  :src="icon"
+                  alt=""
+                />
+                <span v-else>{{ fallbackGlyph }}</span>
+              </span>
+              <div class="exclusion-item__main">
+                <strong>{{ application.displayName || application.name || application.path }}</strong>
+                <span>{{ application.path || application.name }}</span>
+              </div>
+              <ToggleCheckbox
+                v-model="application.disableEdgeActions"
+                label="同时禁用边缘操作"
+                @change="toggleDisableEdgeActions(application)"
+              />
+              <IconActionButton
+                icon="delete"
+                label="删除排除项"
+                class="ghost-button"
+                tone="danger"
+                @click="exclusionsStore.removeExcludedApplication(index)"
+              />
+            </article>
+          </section>
+
+          <p
+            v-else
+            class="exclusion-empty"
+          >
+            暂无排除项。
+          </p>
+        </RulesSection>
+      </section>
     </template>
   </AppShell>
 </template>
@@ -95,13 +95,20 @@ function toggleDisableEdgeActions(application) {
 <style scoped lang="scss">
 .exclusion-list {
   display: grid;
-  gap: 10px;
+  gap: 0;
 }
 
 .exclusion-add-button {
   width: 36px;
   height: 36px;
-  border-radius: 14px;
+}
+
+.rules-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+  min-height: 100%;
 }
 
 .exclusion-item {
@@ -111,13 +118,17 @@ function toggleDisableEdgeActions(application) {
   gap: 12px;
   padding: 12px;
   border: 1px solid var(--border-subtle);
-  border-radius: 16px;
+  border-radius: 0;
   background: var(--panel-inset);
 
   &--selected {
     border-color: var(--accent-border);
     box-shadow: 0 0 0 3px var(--focus-ring);
   }
+}
+
+.exclusion-item + .exclusion-item {
+  border-top-width: 0;
 }
 
 .exclusion-item__icon {
@@ -155,12 +166,14 @@ function toggleDisableEdgeActions(application) {
     font-size: 12px;
   }
 }
-
+.exclusion-item,
+.exclusion-empty {
+  border-radius: 10px;
+}
 .exclusion-empty {
   margin: 0;
   padding: 18px;
   border: 1px dashed var(--border);
-  border-radius: 16px;
   color: var(--muted);
   background: var(--panel-inset);
   font-size: 13px;

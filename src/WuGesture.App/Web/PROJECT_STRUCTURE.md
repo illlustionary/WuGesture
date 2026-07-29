@@ -42,6 +42,7 @@ src\WuGesture.App\Web
 src
 ├─ main.js
 ├─ App.vue
+├─ router
 ├─ styles.scss
 ├─ assets
 ├─ components
@@ -52,8 +53,13 @@ src
 └─ pages
 ```
 
-- `src\main.js`：Vue 应用入口，设置 hash 路由、加载 `virtual:uno.css` 并挂载应用。
-- `src\App.vue`：路由壳、页面切换过渡、全局弹窗挂载和规则编辑弹窗挂载；通过 `useQuickSearch` 绑定顶部搜索入口，设置入口会跳转到设置页。
+- `src\main.js`：Vue 应用入口，加载全局样式与插件并挂载应用；路由定义集中在 `router` 目录。
+- `src\router\index.js`：创建 hash 路由实例。
+- `src\router\routes\index.js`：组合基础页面、作用域、边缘操作和设置路由模块；页面组件和嵌套路由承载组件均通过动态 `import()` 懒加载。
+- `src\router\routes\scopeRoutes.js`：分类和程序动态子路由。
+- `src\router\routes\edgeRoutes.js`：触发角、摩擦边和边缘滚动子路由。
+- `src\router\routes\settingsRoutes.js`：各设置项子路由。
+- `src\App.vue`：固定自定义顶部栏、侧栏/页面工作区、路由切换过渡和全局弹窗挂载；顶部栏及右下角缩放把手通过生命周期 store 控制宿主窗口。
 - `src\styles.scss`：编辑器全局设计 token、reset、通用按钮、输入框、弹窗和图标样式；常用布局/区块/表单/列表样式优先用 UnoCSS shortcuts，复杂动态样式和组件专属样式放在对应 `.vue` 文件的 scoped SCSS 中。
 
 ## Assets
@@ -64,31 +70,13 @@ src
 src\assets
 ```
 
-当前 SVG 图标：
+SVG 按使用位置分目录：
 
-- `add.svg`
-- `briefcase.svg`
-- `browser.svg`
-- `circle-dashed.svg`
-- `close.svg`
-- `close-alt.svg`
-- `code.svg`
-- `cloud-download.svg`
-- `cloud-upload.svg`
-- `crosshair.svg`
-- `delete.svg`
-- `download.svg`
-- `folder.svg`
-- `keyboard.svg`
-- `media.svg`
-- `mouse.svg`
-- `record.svg`
-- `reset.svg`
-- `search.svg`
-- `setting.svg`
-- `sparkle.svg`
-- `test.svg`
-- `upload.svg`
+- `actions\`：通用操作，包括新增、删除、导入导出、重置、测试和 WebDAV 上传下载。
+- `category\`：分类显示图标，包括浏览器、代码、媒体和星光。
+- `gesture\`：手势录制与选择图标，包括准星、键盘和录制。
+- `navigation\`：侧栏、搜索和应用状态图标。
+- `window\`：窗口标题栏与对话框的关闭、最小化、最大化、还原和缩放把手图标。
 
 这些 SVG 通过 `vite-svg-loader` 作为 Vue 组件导入。图标文件名统一使用小写 kebab-case，路径颜色应使用 `currentColor`，便于按钮和状态样式控制。
 
@@ -100,8 +88,10 @@ src\assets
 src\components
 ```
 
-- `AppHeader.vue`：顶部栏和规则 tab / 搜索 / 设置入口；左侧运行状态标识可点击，切换临时用户暂停或恢复。
-- `AppShell.vue`：页面布局壳，提供主体区域和插槽。
+- `AppTitleBar.vue`：固定自定义窗口顶部栏；左侧承载应用图标、构建版本和暂停/恢复入口，右侧承载最小化、最大化/还原和关闭，空白区负责窗口拖动与双击最大化。
+- `AppSidebar.vue`：顶部栏下方的贴边满高多级左侧导航，支持分类/程序动态子项、子菜单搜索、分组折叠、项目重命名/删除以及设置配置导入导出/恢复默认操作。底部左侧按钮可折叠为仅图标导航，搜索和规则优先级帮助入口位于底部右侧。
+- `NestedRouteView.vue`：嵌套路由的轻量承载组件，使分类、程序、边缘操作和设置的子路由在同一工作区内独立渲染。
+- `AppShell.vue`：无外层卡片样式的页面布局壳，提供主体区域和插槽，由应用壳层负责右侧工作区滚动。
 - `BaseDialog.vue`：共享对话框外壳，统一遮罩关闭、可选关闭按钮、默认取消/确认操作区及上移淡出关闭动画；搜索和自动保存编辑器可关闭默认操作区。
 - `BaseInput.vue`：共享原生文本、数字、密码、URL 和颜色输入控件的 `v-model` 事件与基础宽度约束。
 - `BaseRange.vue`：共享范围滑块，集中维护进度填充样式、`v-model` 和原生输入/变更事件。
@@ -109,16 +99,17 @@ src\components
 - `GestureRuleList.vue`：规则表、规则展示和规则操作入口。
 - `HoverBubble.vue`：悬浮提示气泡。
 - `IconActionButton.vue`：共享图标按钮，集中导入 `src\assets` 下的 SVG，并通过 `icon` key 映射到按钮图标。
+- `WindowResizeGrip.vue`：右下角窗口缩放把手，使用旋转后的三角点阵图标，通过生命周期 store 发起宿主系统缩放，并在缩放周期内抑制标题栏提示。
 - `QuickSearchDialog.vue`：全局快速搜索弹层，按配置类型显示匹配结果，包含带搜索图标和焦点反馈的输入字段。
 - `ConfirmDialog.vue`：重大操作确认弹窗，带缩放进入/退出动画。
 - `CustomSelect.vue`：共享弹层式自定义单选下拉控件，不复用浏览器默认 select。
 - `ToggleCheckbox.vue`：共享自定义复选控件，用于替代浏览器默认 checkbox。
 - `ScopeCreateDialog.vue`：分类或作用域名称创建/编辑弹窗。
-- `ScopeSidebar.vue`：分类和程序等作用域列表侧栏。
+- `ScopeSidebar.vue`：旧版分类和程序作用域列表侧栏，当前分类/程序页面由 `AppSidebar.vue` 提供作用域导航。
 - `applications\ApplicationListItem.vue`：分类页右侧程序关联列表项。
 - `rules\RulesSection.vue`：规则页右侧复用区块，统一标题、说明、操作区和内容面板。
 - `ScopePriorityNotice.vue`：全局、分类和程序规则页共享的作用域优先级与继承提示。
-- `scope\ScopeListItem.vue`：分类页和程序页左侧作用域列表项，统一选中态、键盘选择、双击重命名和删除操作。
+- `scope\ScopeListItem.vue`：旧版分类和程序页作用域列表项，当前页面的动态作用域条目由 `AppSidebar.vue` 直接渲染。
 
 ## Composables
 
@@ -194,18 +185,18 @@ src\pages
 页面按目录组织，目录名就是页面名，入口统一为 `index.vue`。页面私有组件放在同级 `components`，页面私有逻辑放在同级 `composables`。
 
 - `global\index.vue`：全局规则页，单列表布局直接编辑全局规则表。
-- `category\index.vue`：分类规则页，左侧分类列表，右侧包含分类下应用程序和手势列表。
+- `category\index.vue`：分类规则子页，通过 `/category/:name` 显示当前分类关联的应用程序和手势列表；分类列表由全局多级侧栏提供。
   - `category\composables\useCategoryPage.js`：分类页私有弹窗草稿、分类新增/重命名/删除编排和分类图标选择。
-- `app\index.vue`：程序规则页，左侧程序列表，右侧展示当前程序的手势列表。
+- `app\index.vue`：程序规则子页，通过 `/app/:name` 显示当前程序的分类优先级和手势列表；程序列表由全局多级侧栏提供。
   - `app\composables\useAppPage.js`：程序页私有重命名弹窗、删除编排和程序图标 fallback 文本。
-- `edge\index.vue`：边缘操作页，按触发角、摩擦边、边缘滚动三组展示配置。
+- `edge\index.vue`：边缘操作子页，通过路由参数只展示触发角、摩擦边或边缘滚动其中一组配置。
   - `edge\components\EdgeActionSection.vue`：边缘操作大项区块。
   - `edge\components\EdgeActionCard.vue`：单个边缘操作卡片。
   - `edge\components\EdgeActionDialog.vue`：边缘操作编辑弹窗。
   - `edge\components\EdgeActionCommandFields.vue`：快捷键、窗口、音量、亮度命令字段。
   - `edge\composables\useEdgeActionDraft.js`：边缘操作编辑草稿、打开、关闭和保存逻辑。
 - `exclusions\index.vue`：排除项页，用于维护不执行鼠标手势的程序列表，并可对单个排除项禁用边缘操作。
-- `settings\index.vue`：设置页，用于组合轨迹线、底部提示窗、音量/亮度 OSD、应用行为和 WebDAV 配置区块；顶部提供本地主配置导入、导出和恢复默认入口。
+- `settings\index.vue`：设置子页，通过路由参数只展示轨迹线、手势提示、音量/亮度 OSD、灵敏度、应用行为或 WebDAV 中的一项；配置导入、导出和恢复默认入口由全局多级侧栏提供。
   - `settings\components\SettingsSectionCard.vue`：设置页大项标题、说明、操作区和内容布局。
   - `settings\components\SettingsFormGrid.vue`：设置项双列表单布局。
   - `settings\components\SettingsField.vue`：设置项卡片。
@@ -219,28 +210,30 @@ src\pages
 
 ## Routing
 
-路由使用 hash 模式，当前页面包括：
+路由使用 hash 模式，页面路由按层级组织，当前页面包括：
 
 - `global`
-- `category`
-- `app`
-- `edge`
+- `category/:name`
+- `app/:name`
+- `edge/corner`、`edge/friction`、`edge/wheel`
 - `exclusions`
-- `settings`
+- `settings/mouse-trail`、`settings/gesture-hint`、`settings/level-osd`、`settings/sensitivity`、`settings/app-behavior`、`settings/webdav`
 
-顶部规则 tab 包含 `全局`、`分类`、`程序`、`边缘操作`、`排除项`。左上运行状态标识可点击，临时暂停或恢复 WuGesture；顶部放大镜按钮及 `Ctrl+K` 打开全局快速搜索，设置按钮打开独立的 `settings` 页面。
+页面组件通过动态 `import()` 加载，`router/routes` 下的路由模块只在路由命中时加载对应页面 chunk。
+
+自定义顶部栏左侧运行状态标识可点击，临时暂停或恢复 WuGesture；右侧提供宿主窗口控制。下方侧栏包含 `全局`、`分类`、`程序`、`边缘操作`、`排除项` 和 `设置`，分类/程序子项动态来自当前配置，边缘操作和设置子项对应独立嵌套路由。
 
 ## 当前 UI
 
 - `全局` 采用单列表布局，直接编辑整张全局规则表，不显示左侧作用域区域。
 - 页面切换使用方向感过渡：按顶部标签顺序向右切换时新页面从右侧滑入并渐显，向左切换时从左侧滑入并渐显，旧页面会轻微反向淡出。
-- `分类` 和 `程序` 采用左右布局：左侧是分类/程序列表和底部新增按钮，右侧是对应内容区。
+- `分类` 和 `程序` 使用全局多级侧栏管理动态作用域，页面主体只展示当前分类/程序内容，不再重复显示内部作用域列表。
 - `分类` 页右侧包含“应用程序”和“手势列表”两个区块；程序可同时加入多个分类，分类关联顺序决定相同手势的覆盖顺序，越靠前的分类优先级越高。
-- `程序` 页右侧展示关联分类排序和手势列表；关联分类越靠上优先级越高，可通过拖拽或上移、下移调整同手势冲突时的覆盖顺序。程序页左侧会列出已保存的全部程序，程序规则仍按 app 作用域单独维护。
-- `边缘操作` 页按触发角、摩擦边、边缘滚动三组展示配置；点击卡片打开独立弹窗编辑启用状态、命令和参数，名称由触发类型、位置与滚轮方向自动生成，关闭弹窗后自动保存。
+- `程序` 页展示关联分类排序和手势列表；关联分类越靠上优先级越高，可通过拖拽或上移、下移调整同手势冲突时的覆盖顺序，程序规则仍按 app 作用域单独维护。
+- `边缘操作` 的触发角、摩擦边、边缘滚动分别通过独立子路由展示配置；点击卡片打开独立弹窗编辑启用状态、命令和参数，名称由触发类型、位置与滚轮方向自动生成，关闭弹窗后自动保存。
 - `排除项` 页维护不执行鼠标手势的程序列表；可通过拖动准星或浏览 exe 添加程序，也可为单个排除项勾选“同时禁用边缘操作”，列表会展示从 exe 路径动态提取的应用图标。
 - `全局`、`分类` 和 `程序` 规则页会显示共享的作用域优先级提示，明确 `程序 > 分类 > 全局` 以及未命中当前层级时的继承关系。
-- `设置` 页右上角提供本地导出、本地导入和恢复默认按钮；恢复默认会通过确认弹窗二次确认。本地导入/导出只处理主配置 JSON，不包含窗口状态。标题说明会固定提示“更改配置后会自动保存”。页面中的调整会在输入变化时 debounce 自动保存，并在控件变更结束或离开页面时强制提交最后一次修改；普通自动保存成功不弹出 toast，保存失败仍会提示。本地编辑期间会避免宿主回传覆盖当前滑块值。设置页也包含开机自启动、以管理员身份打开、暂停 WuGesture、关闭按钮行为，以及 WebDAV 地址、账号、密码和远程路径。开机自启动、以管理员身份打开和暂停 WuGesture 等布尔项使用共享自定义复选控件，单选下拉使用共享弹层式 `CustomSelect`。轨迹线、音量/亮度 OSD 和底部提示窗预览分别内置在对应设置区块顶部，音量/亮度 OSD 区块还提供实际桌面测试按钮；手势灵敏度使用宽松、标准、严格三档。WebDAV 区域提供测试、恢复和保存按钮；当前 WebDAV 参数测试成功后，才允许把当前配置保存到远程或从远程恢复本地配置。
+- `设置` 的每个配置项通过独立子路由展示；本地导出、本地导入和恢复默认按钮位于侧栏设置分组。恢复默认会通过确认弹窗二次确认。本地导入/导出只处理主配置 JSON，不包含窗口状态。页面中的调整会在输入变化时 debounce 自动保存，并在控件变更结束或离开页面时强制提交最后一次修改；普通自动保存成功不弹出 toast，保存失败仍会提示。本地编辑期间会避免宿主回传覆盖当前滑块值。设置页也包含开机自启动、以管理员身份打开、暂停 WuGesture、关闭按钮行为，以及 WebDAV 地址、账号、密码和远程路径。开机自启动、以管理员身份打开和暂停 WuGesture 等布尔项使用共享自定义复选控件，单选下拉使用共享弹层式 `CustomSelect`。轨迹线、音量/亮度 OSD 和底部提示窗预览分别内置在对应独立设置页顶部，音量/亮度 OSD 区块还提供实际桌面测试按钮；手势灵敏度使用宽松、标准、严格三档。WebDAV 区域提供测试、恢复和保存按钮；当前 WebDAV 参数测试成功后，才允许把当前配置保存到远程或从远程恢复本地配置。
 - 分类新增通过名称弹窗完成，不再使用左侧内联输入框；分类和程序名称都通过双击列表项后在弹窗里重命名。
 - 分类页、程序页和排除项页添加程序时都会先显示前端弹窗，用户可按住“拖动准星选择窗口”拖到目标窗口松开，或选择“浏览 exe 文件”作为备用方式。
 - 程序列表和详情会展示从 exe 路径动态提取的应用图标；图标通过 WebView 消息传递，不写入配置文件。
@@ -273,10 +266,17 @@ src\pages
 - `{ type: "reload-rules" }`
 - `{ type: "reset-rules" }`
 - `{ type: "preview-level-osd", kind: "volume|brightness" }`
+- `{ type: "window-minimize" }`
+- `{ type: "window-toggle-maximize" }`
+- `{ type: "window-close" }`
+- `{ type: "window-start-drag" }`
+- `{ type: "window-start-resize" }`
 
 后端发送：
 
 - `{ type: "status", status: "running|paused|..." }`
+- `{ type: "window-state", maximized: true|false }`
+- `{ type: "window-resize-state", resizing: true|false }`：宿主在原生缩放周期内通知前端抑制标题栏提示。
 - `{ type: "rules", rules: [...], applications: [{ name, displayName, path, categories, icon }, ...], edgeActions: [...], uiSettings: {...}, ... }`；`categories` 的顺序决定分类规则冲突时的覆盖顺序，越靠前优先级越高，其中 `uiSettings.appBehavior.excludedApplications` 的运行态消息项会额外带 `icon`，不写入配置文件。
 - `{ type: "application-selected", requestId: "...", name: "...", displayName: "...", path: "...", category: "...", icon: "..." }`
 - `{ type: "gesture-recorded", requestId: "...", button: "right|middle", pattern: ["Down", "Right"] }`

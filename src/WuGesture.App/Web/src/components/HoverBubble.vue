@@ -17,6 +17,10 @@ const props = defineProps({
   maxWidth: {
     type: Number,
     default: 320
+  },
+  disabled: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -116,18 +120,13 @@ function updateBubblePosition() {
     top: `${Math.round(top)}px`,
     left: `${Math.round(left)}px`,
     maxWidth: `min(${bubbleMaxWidth.value}, calc(100vw - 20px))`,
-    '--hover-bubble-arrow-left': `${Math.round(
-      Math.max(
-        18,
-        Math.min(triggerCenter - left, bubbleRect.width - 18)
-      )
-    )}px`
+    '--hover-bubble-arrow-left': `${Math.round(Math.max(18, Math.min(triggerCenter - left, bubbleRect.width - 18)))}px`
   }
   bubbleVisible.value = true
 }
 
 function openBubble() {
-  if (!isHovered.value) {
+  if (props.disabled || !isHovered.value) {
     return
   }
 
@@ -141,7 +140,7 @@ function openBubble() {
 }
 
 function queueOpen() {
-  if (!props.text?.trim()) {
+  if (props.disabled || !props.text?.trim()) {
     return
   }
 
@@ -154,6 +153,15 @@ watch(
   () => props.text,
   () => {
     if (!props.text?.trim()) {
+      hideBubble()
+    }
+  }
+)
+
+watch(
+  () => props.disabled,
+  (disabled) => {
+    if (disabled) {
       hideBubble()
     }
   }
@@ -210,15 +218,9 @@ onBeforeUnmount(() => {
   display: inline-flex;
   padding: 10px 12px;
   border: 1px solid var(--border);
-  border-radius: 16px;
-  background:
-    linear-gradient(
-      180deg,
-      var(--panel-strong),
-      var(--panel-hover)
-    );
+  border-radius: 10px;
+  background-color: #fff;
   box-shadow: var(--shadow-popover);
-  backdrop-filter: blur(24px) saturate(1.18);
   color: var(--text);
   font-size: 13px;
   font-weight: 600;

@@ -18,17 +18,11 @@ const activeIndex = ref(-1)
 const menuStyle = ref({})
 const placement = ref('below')
 
-const currentValue = computed(() =>
-  props.value === undefined ? props.modelValue : props.value
-)
+const currentValue = computed(() => (props.value === undefined ? props.modelValue : props.value))
 
-const selectedIndex = computed(() =>
-  props.options.findIndex(option => option.value === currentValue.value)
-)
+const selectedIndex = computed(() => props.options.findIndex(option => option.value === currentValue.value))
 
-const selectedOption = computed(
-  () => props.options[selectedIndex.value] ?? null
-)
+const selectedOption = computed(() => props.options[selectedIndex.value] ?? null)
 
 const listboxId = `custom-select-${Math.random().toString(36).slice(2)}`
 
@@ -67,10 +61,7 @@ function close() {
 }
 
 function handleOutsidePointerDown(event) {
-  if (
-    !rootRef.value?.contains(event.target) &&
-    !listRef.value?.contains(event.target)
-  ) {
+  if (!rootRef.value?.contains(event.target) && !listRef.value?.contains(event.target)) {
     close()
   }
 }
@@ -166,24 +157,14 @@ function updateMenuPosition() {
   const gap = 6
   const availableBelow = window.innerHeight - buttonRect.bottom - gap - viewportPadding
   const availableAbove = buttonRect.top - gap - viewportPadding
-  const shouldOpenAbove =
-    availableBelow < Math.min(menu.scrollHeight, 240) &&
-    availableAbove > availableBelow
-  const availableHeight = Math.max(
-    80,
-    Math.min(240, shouldOpenAbove ? availableAbove : availableBelow)
-  )
+  const shouldOpenAbove = availableBelow < Math.min(menu.scrollHeight, 240) && availableAbove > availableBelow
+  const availableHeight = Math.max(80, Math.min(240, shouldOpenAbove ? availableAbove : availableBelow))
   const menuHeight = Math.min(menu.scrollHeight, availableHeight)
   const left = Math.max(
     viewportPadding,
-    Math.min(
-      buttonRect.left,
-      window.innerWidth - buttonRect.width - viewportPadding
-    )
+    Math.min(buttonRect.left, window.innerWidth - buttonRect.width - viewportPadding)
   )
-  const top = shouldOpenAbove
-    ? buttonRect.top - gap - menuHeight
-    : buttonRect.bottom + gap
+  const top = shouldOpenAbove ? buttonRect.top - gap - menuHeight : buttonRect.bottom + gap
 
   placement.value = shouldOpenAbove ? 'above' : 'below'
   menuStyle.value = {
@@ -196,11 +177,7 @@ function updateMenuPosition() {
 </script>
 
 <template>
-  <div
-    ref="rootRef"
-    class="custom-select"
-    :class="{ 'is-open': open, 'is-disabled': disabled }"
-  >
+  <div ref="rootRef" class="custom-select" :class="{ 'is-open': open, 'is-disabled': disabled }">
     <button
       type="button"
       class="custom-select__button"
@@ -211,16 +188,10 @@ function updateMenuPosition() {
       @click="toggleOpen"
       @keydown="handleKeydown"
     >
-      <span
-        class="custom-select__value"
-        :class="{ 'is-placeholder': !selectedOption }"
-      >
+      <span class="custom-select__value" :class="{ 'is-placeholder': !selectedOption }">
         {{ selectedOption?.label || placeholder }}
       </span>
-      <span
-        class="custom-select__chevron"
-        aria-hidden="true"
-      />
+      <span class="custom-select__chevron" aria-hidden="true" />
     </button>
 
     <Teleport to="body">
@@ -344,7 +315,6 @@ function updateMenuPosition() {
 
 .custom-select__menu {
   position: fixed;
-  z-index: 1000;
   display: grid;
   gap: 4px;
   max-height: min(240px, 45vh);
