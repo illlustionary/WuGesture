@@ -53,7 +53,8 @@ desktop.ini
 *.swp
 *.swo
 .idea/
-.vscode/
+.vscode/*
+!.vscode/settings.json
 
 # Local environment files
 .env
