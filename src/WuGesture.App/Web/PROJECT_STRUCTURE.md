@@ -235,8 +235,8 @@ src\pages
 - `全局` 采用单列表布局，直接编辑整张全局规则表，不显示左侧作用域区域。
 - 页面切换使用方向感过渡：按顶部标签顺序向右切换时新页面从右侧滑入并渐显，向左切换时从左侧滑入并渐显，旧页面会轻微反向淡出。
 - `分类` 和 `程序` 采用左右布局：左侧是分类/程序列表和底部新增按钮，右侧是对应内容区。
-- `分类` 页右侧包含“应用程序”和“手势列表”两个区块；程序可同时加入多个分类，分类关联顺序决定相同手势的覆盖顺序，后关联者覆盖前者。
-- `程序` 页右侧展示关联分类排序和手势列表；关联分类越靠下优先级越高，可通过拖拽或上移、下移调整同手势冲突时的覆盖顺序。程序页左侧会列出已保存的全部程序，程序规则仍按 app 作用域单独维护。
+- `分类` 页右侧包含“应用程序”和“手势列表”两个区块；程序可同时加入多个分类，分类关联顺序决定相同手势的覆盖顺序，越靠前的分类优先级越高。
+- `程序` 页右侧展示关联分类排序和手势列表；关联分类越靠上优先级越高，可通过拖拽或上移、下移调整同手势冲突时的覆盖顺序。程序页左侧会列出已保存的全部程序，程序规则仍按 app 作用域单独维护。
 - `边缘操作` 页按触发角、摩擦边、边缘滚动三组展示配置；点击卡片打开独立弹窗编辑启用状态、命令和参数，名称由触发类型、位置与滚轮方向自动生成，关闭弹窗后自动保存。
 - `排除项` 页维护不执行鼠标手势的程序列表；可通过拖动准星或浏览 exe 添加程序，也可为单个排除项勾选“同时禁用边缘操作”，列表会展示从 exe 路径动态提取的应用图标。
 - `全局`、`分类` 和 `程序` 规则页会显示共享的作用域优先级提示，明确 `程序 > 分类 > 全局` 以及未命中当前层级时的继承关系。
@@ -277,7 +277,7 @@ src\pages
 后端发送：
 
 - `{ type: "status", status: "running|paused|..." }`
-- `{ type: "rules", rules: [...], applications: [{ name, displayName, path, categories, icon }, ...], edgeActions: [...], uiSettings: {...}, ... }`；`categories` 的顺序决定分类规则冲突时的覆盖顺序，其中 `uiSettings.appBehavior.excludedApplications` 的运行态消息项会额外带 `icon`，不写入配置文件。
+- `{ type: "rules", rules: [...], applications: [{ name, displayName, path, categories, icon }, ...], edgeActions: [...], uiSettings: {...}, ... }`；`categories` 的顺序决定分类规则冲突时的覆盖顺序，越靠前优先级越高，其中 `uiSettings.appBehavior.excludedApplications` 的运行态消息项会额外带 `icon`，不写入配置文件。
 - `{ type: "application-selected", requestId: "...", name: "...", displayName: "...", path: "...", category: "...", icon: "..." }`
 - `{ type: "gesture-recorded", requestId: "...", button: "right|middle", pattern: ["Down", "Right"] }`
 - `{ type: "hotkey-recorded", requestId: "...", keys: ["Control", "W"] }`

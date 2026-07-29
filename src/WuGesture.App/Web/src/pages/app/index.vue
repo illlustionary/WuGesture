@@ -84,7 +84,7 @@ const {
       <section class="rules-panel rules-panel--app-only">
         <RulesSection
           title="关联分类"
-          description="越靠下优先级越高；同一手势冲突时，后面的分类会覆盖前面的分类。"
+          description="越靠上优先级越高；同一手势冲突时，前面的分类会覆盖后面的分类。"
           compact
         >
           <div

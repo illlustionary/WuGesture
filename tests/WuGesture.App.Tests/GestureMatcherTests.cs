@@ -20,7 +20,7 @@ public sealed class GestureMatcherTests
     }
 
     [Fact]
-    public void Match_PrefersTheLastAssociatedCategory()
+    public void Match_PrefersTheFirstAssociatedCategory()
     {
         var firstCategory = CreateRule("category:work", "Work");
         var laterCategory = CreateRule("category:browser", "Browser");
@@ -28,7 +28,7 @@ public sealed class GestureMatcherTests
 
         var result = matcher.Match(RightPattern, new GestureScopeContext("chrome.exe", ["work", "browser"]));
 
-        Assert.Same(laterCategory, result);
+        Assert.Same(firstCategory, result);
     }
 
     [Fact]

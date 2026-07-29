@@ -76,7 +76,7 @@ const {
       <section class="rules-panel">
         <RulesSection
           title="程序"
-          description="同一程序在多个分类有相同手势，前面的分类手势会被覆盖。"
+          description="同一程序在多个分类有相同手势，后面的分类手势会被覆盖。"
           compact
         >
           <template #actions>

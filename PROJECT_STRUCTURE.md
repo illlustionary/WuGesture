@@ -12,7 +12,7 @@
 - WebView2 前端负责配置界面，当前是独立的 Vue3 + Vite 工程，构建产物由桌面宿主加载。
 - 手势使用 8 个方向。
 - 动作当前支持快捷键、窗口控制、音量控制和亮度控制；快捷键通过 `SendInput` 执行，窗口控制通过 Win32 窗口 API 执行，音量通过 Core Audio API 执行并带按键回退，静音状态下执行音量增减会先取消静音，亮度通过 DDC/CI、WMI、Gamma 三段回退执行。
-- 规则当前支持 `global`、`category` 和 `app` 作用域；程序可按关联顺序归属多个分类，分类同手势以后关联的分类覆盖前者，`app` 规则仍高于分类和全局规则。
+- 规则当前支持 `global`、`category` 和 `app` 作用域；程序可按关联顺序归属多个分类，分类同手势时越靠前的关联优先级越高，`app` 规则仍高于分类和全局规则。
 - 边缘操作是独立的全局配置，支持触发角、摩擦边和边缘滚动。
 - UI 设置里的轨迹线、手势提示和音量/亮度 OSD 都支持单独关闭，运行时会按对应 `uiSettings` 节点的 `enabled` 决定是否显示。
 
@@ -177,7 +177,7 @@ MouseHook
 
 当前支持的配置：
 
-- `scope`：支持 `global`、`category:<分类名>`、`app:<进程名>`；运行时优先匹配 app，其次按程序分类关联顺序匹配 category（后关联者覆盖前者），最后匹配 global。
+- `scope`：支持 `global`、`category:<分类名>`、`app:<进程名>`；运行时优先匹配 app，其次按程序分类关联顺序匹配 category（越靠前优先级越高），最后匹配 global。
 - `mouseButton`：支持 `right`、`middle`，运行时会按当前触发的鼠标键区分规则。
 - `pattern`：手势方向列表，例如 `["Down", "Right"]`。
 - `action.type`：支持 `hotkey`、`window`、`volume` 和 `brightness`。
@@ -186,7 +186,7 @@ MouseHook
 - `action.operation`：音量控制在 `action.type` 为 `volume` 时支持 `increase`、`decrease`、`mute`；亮度控制在 `action.type` 为 `brightness` 时支持 `increase`、`decrease`。
 - `action.amount`：音量/亮度的 `increase`、`decrease` 步进值，范围 1-100。
 - `edgeActions`：独立的全局边缘操作列表；每项包含 `enabled`、`triggerType`、`location`、`wheelDirection`、`frictionCount` 和 `action`。`triggerType` 支持 `corner`、`friction`、`wheel`；`corner` 的位置为四角，`friction/wheel` 的位置为四边，`wheel` 额外区分滚轮 `up/down`。边缘操作名称不再保存，由 UI 和运行时根据触发类型、位置与滚轮方向生成。
-- `applications`：应用程序归属列表，每项包含 `name`、`displayName`、`path`、`categories`；`categories` 是有序分类列表，运行时通过前台进程名匹配 `name`，分类同手势以后关联者覆盖前者。旧配置的单个 `category` 会在加载时迁移；`displayName` 只用于 UI 展示和编辑。
+- `applications`：应用程序归属列表，每项包含 `name`、`displayName`、`path`、`categories`；`categories` 是有序分类列表，运行时通过前台进程名匹配 `name`，分类同手势时越靠前优先级越高。旧配置的单个 `category` 会在加载时迁移；`displayName` 只用于 UI 展示和编辑。
 - `uiSettings.mouseTrail`：轨迹窗设置，包含 `enabled`、`inactiveColor`、`activeColor`、`inactiveThickness`、`activeThickness`、`thickness`、`inactiveOpacity`、`activeOpacity`；`enabled` 关闭时不再绘制轨迹线，`thickness` 保留用于兼容旧配置。
 - `uiSettings.gestureHint`：提示泡泡设置，包含 `enabled`、`displayDurationMs`、`fadeDurationMs`、`fontFamily`、`fontSize`、`textColor`、`backgroundColor`、`backgroundOpacity`、`width`、`widthPercent`、`autoWidth`、`height`、`heightPercent`、`cornerRadius`、`bottomOffset`、`bottomOffsetPercent`；提示绘制在全虚拟桌面轨迹覆盖层而非独立窗体，`enabled` 关闭时不再显示手势命中文本，`displayDurationMs` 为停留时长、`fadeDurationMs` 为 0 时立即消失，百分比字段按当前鼠标屏幕工作区宽高换算，像素字段保留用于兼容旧配置。
 - `uiSettings.levelOsd`：音量/亮度 OSD 设置，包含 `enabled`、`displayDurationMs`、`fadeDurationMs`、`backgroundColor`、`backgroundOpacity`、`textColor`、`trackColor`、`volumeColor`、`brightnessColor`、`width`、`height`、`cornerRadius`、`position`、`offsetX` 和 `offsetY`；OSD 由全虚拟桌面透明覆盖层绘制，不再创建独立窗体；当前支持相对于鼠标所在屏幕工作区的居中、上/下居中和四角位置预设，`fadeDurationMs` 为 0 时立即消失。
