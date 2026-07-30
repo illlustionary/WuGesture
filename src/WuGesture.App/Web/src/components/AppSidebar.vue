@@ -378,7 +378,7 @@ watch(() => route.path, syncExpanded, { immediate: true })
             :aria-pressed="isCollapsed"
             @click="isCollapsed = !isCollapsed"
           >
-            <PanelLeftIcon aria-hidden="true" />
+            <AppIcon name="panel-left" aria-hidden="true" />
           </button>
         </HoverBubble>
         <HoverBubble :text="themeLabel">
@@ -389,12 +389,14 @@ watch(() => route.path, syncExpanded, { immediate: true })
             :aria-pressed="props.isDarkTheme"
             @click="emit('toggle-theme')"
           >
-            <SunIcon
+            <AppIcon
               v-if="props.isDarkTheme"
+              name="sun"
               aria-hidden="true"
             />
-            <MoonIcon
+            <AppIcon
               v-else
+              name="moon"
               aria-hidden="true"
             />
           </button>

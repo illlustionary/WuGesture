@@ -152,8 +152,8 @@ function confirmResetSettings() {
         >
           <AppIcon name="crosshair" class="picker-option__icon" aria-hidden="true" />
           <span class="picker-option__text">
-            <strong>拖动准星选择窗口</strong>
-            <span>使用准星拖动选择</span>
+            <strong>拖动选择窗口</strong>
+            <span>拖动鼠标到目标窗口后松开</span>
           </span>
         </button>
 
