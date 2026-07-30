@@ -709,7 +709,7 @@ public sealed partial class MainForm : Form
         try
         {
             var message = JsonSerializer.Deserialize<SelectApplicationWebMessage>(json, WebMessageJsonOptions);
-            using var picker = new ApplicationTargetPickerForm();
+            using var picker = new ApplicationTargetPickerForm(GetApplicationPickerCursorColor());
             var result = picker.ShowDialog(this);
             if (result == DialogResult.Abort)
             {
@@ -733,6 +733,23 @@ public sealed partial class MainForm : Form
         {
             PostConfigResult(false, exception.Message);
         }
+    }
+
+    private Color GetApplicationPickerCursorColor()
+    {
+        var theme = loadedConfig?.Config.UiSettings.Appearance.Theme;
+        var isDarkTheme = theme == GestureConfigContract.AppearanceThemes.Dark ||
+            (theme != GestureConfigContract.AppearanceThemes.Light && SystemPrefersDarkTheme());
+
+        return isDarkTheme
+            ? Color.FromArgb(0xED, 0xF2, 0xF7)
+            : Color.FromArgb(0x16, 0x20, 0x2B);
+    }
+
+    private static bool SystemPrefersDarkTheme()
+    {
+        using var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize");
+        return key?.GetValue("AppsUseLightTheme") is int value && value == 0;
     }
 
     private void SelectApplication(string json)
