@@ -29,6 +29,7 @@ public sealed partial class MainForm : Form
     private bool startMaximized;
     private bool isClosing;
     private bool isExiting;
+    private bool isRestoringConfiguration;
     private bool hideConfigWindowOnLaunch;
     private bool isUserPaused;
     private bool isConfigPaused;
@@ -244,28 +245,32 @@ public sealed partial class MainForm : Form
 
     private async void RestoreFromTray()
     {
-        if (isClosing || IsDisposed)
+        if (isClosing || IsDisposed || isRestoringConfiguration)
         {
             return;
         }
 
-        ShowInTaskbar = true;
-        Opacity = 1;
-        Show();
-        if (WindowState == FormWindowState.Minimized)
+        isRestoringConfiguration = true;
+        try
         {
-            WindowState = FormWindowState.Normal;
-        }
+            ShowInTaskbar = true;
+            Opacity = 1;
+            Show();
+            await EnsureWebViewAsync();
 
-        BringWindowToFront();
-        await EnsureWebViewAsync();
+            // Run after the tray menu or single-instance callback has returned so it cannot reclaim focus.
+            BeginInvokeSafe(() => BringWindowToFront());
+        }
+        finally
+        {
+            isRestoringConfiguration = false;
+        }
     }
 
     private void HideStartupWindow()
     {
         ShowInTaskbar = false;
         Hide();
-        WindowState = FormWindowState.Normal;
         Opacity = 1;
     }
 
