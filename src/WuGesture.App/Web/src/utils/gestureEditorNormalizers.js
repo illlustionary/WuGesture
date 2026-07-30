@@ -25,6 +25,7 @@ export function createDefaultUiSettings() {
 export function cloneUiSettings(settings) {
   const source = normalizeObjectKeys(settings);
   return {
+    appearance: normalizeAppearanceSettings(source.appearance),
     mouseTrail: normalizeMouseTrailSettings(source.mouseTrail),
     gestureHint: normalizeGestureHintSettings(source.gestureHint),
     levelOsd: normalizeLevelOsdSettings(source.levelOsd),
@@ -205,6 +206,16 @@ export function normalizeAppBehaviorSettings(settings) {
     closeButtonBehavior: normalizeCloseButtonBehavior(settings?.closeButtonBehavior),
     targetWindowMode: normalizeWindowTargetMode(settings?.targetWindowMode),
     excludedApplications: normalizeExcludedApplications(settings?.excludedApplications)
+  };
+}
+
+export function normalizeAppearanceSettings(settings) {
+  settings = normalizeObjectKeys(settings);
+  const theme = String(settings?.theme ?? DEFAULT_UI_SETTINGS.appearance.theme).toLowerCase();
+  return {
+    theme: ["system", "light", "dark"].includes(theme)
+      ? theme
+      : DEFAULT_UI_SETTINGS.appearance.theme
   };
 }
 

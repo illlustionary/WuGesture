@@ -58,6 +58,10 @@ internal static class WebViewRulesPayloadFactory
     {
         return new
         {
+            appearance = new
+            {
+                theme = uiSettings.Appearance.Theme
+            },
             mouseTrail = uiSettings.MouseTrail,
             gestureHint = uiSettings.GestureHint,
             levelOsd = uiSettings.LevelOsd,

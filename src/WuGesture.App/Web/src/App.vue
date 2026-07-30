@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter, RouterView } from 'vue-router'
 import AppSidebar from '@/components/AppSidebar.vue'
 import AppTitleBar from '@/components/AppTitleBar.vue'
@@ -24,6 +24,8 @@ const lifecycle = useGestureEditorLifecycleStore()
 const overlay = useGestureEditorOverlayStore()
 const rulesStore = useGestureRulesStore()
 const settingsStore = useGestureSettingsStore()
+const systemThemeQuery = window.matchMedia('(prefers-color-scheme: dark)')
+const systemPrefersDark = ref(systemThemeQuery.matches)
 const quickSearch = useQuickSearch()
 const route = useRoute()
 const router = useRouter()
@@ -32,9 +34,37 @@ const transitionDirection = ref('right')
 const priorityNoticeOpen = ref(false)
 const resetConfirmOpen = ref(false)
 const pendingAppRoute = ref(false)
+const isDarkTheme = computed(() => {
+  const theme = settingsStore.uiSettings.appearance?.theme ?? 'system'
+  return theme === 'dark' || (theme === 'system' && systemPrefersDark.value)
+})
 const routeTransitionName = computed(() =>
   transitionDirection.value === 'right' ? 'route-slide-right' : 'route-slide-left'
 )
+
+function updateSystemTheme(event) {
+  systemPrefersDark.value = event.matches
+}
+
+function toggleTheme() {
+  const settings = settingsStore.getUiSettingsSnapshot()
+  settings.appearance.theme = isDarkTheme.value ? 'light' : 'dark'
+  settingsStore.saveUiSettings(settings)
+}
+
+systemThemeQuery.addEventListener('change', updateSystemTheme)
+
+watch(
+  isDarkTheme,
+  isDark => {
+    document.documentElement.dataset.theme = isDark ? 'dark' : 'light'
+  },
+  { immediate: true }
+)
+
+onBeforeUnmount(() => {
+  systemThemeQuery.removeEventListener('change', updateSystemTheme)
+})
 
 const {
   categoryDraft,
@@ -188,6 +218,7 @@ function confirmResetSettings() {
 
     <div class="app-shell__body">
       <AppSidebar
+        :is-dark-theme="isDarkTheme"
         @open-search="quickSearch.open"
         @open-help="priorityNoticeOpen = true"
         @open-category-dialog="openCategoryDialog"
@@ -199,6 +230,7 @@ function confirmResetSettings() {
         @export-config="settingsStore.exportConfigToLocal"
         @import-config="settingsStore.importConfigFromLocal"
         @reset-settings="openResetConfirm"
+        @toggle-theme="toggleTheme"
       />
 
       <main class="app-shell__content">

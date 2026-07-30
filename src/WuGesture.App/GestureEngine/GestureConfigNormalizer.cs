@@ -9,6 +9,7 @@ internal static class GestureConfigNormalizer
         config.Applications ??= [];
         config.EdgeActions ??= [];
         config.UiSettings ??= new GestureUiSettings();
+        config.UiSettings.Appearance ??= new AppearanceUiSettings();
         config.UiSettings.MouseTrail ??= new MouseTrailUiSettings();
         config.UiSettings.GestureHint ??= new GestureHintUiSettings();
         config.UiSettings.LevelOsd ??= new LevelOsdUiSettings();
@@ -41,6 +42,9 @@ internal static class GestureConfigNormalizer
 
     private static void NormalizeUiSettings(GestureUiSettings settings)
     {
+        var appearance = settings.Appearance;
+        appearance.Theme = NormalizeAppearanceTheme(appearance.Theme);
+
         var mouseTrail = settings.MouseTrail;
         mouseTrail.Enabled ??= true;
         var legacyThickness = mouseTrail.Thickness > 0 ? mouseTrail.Thickness : 3f;
@@ -117,6 +121,16 @@ internal static class GestureConfigNormalizer
         return value is GestureConfigContract.WindowTargetModes.CurrentWindow
             ? value
             : GestureConfigContract.WindowTargetModes.StartWindow;
+    }
+
+    private static string NormalizeAppearanceTheme(string? value)
+    {
+        return value is
+            GestureConfigContract.AppearanceThemes.System or
+            GestureConfigContract.AppearanceThemes.Light or
+            GestureConfigContract.AppearanceThemes.Dark
+            ? value
+            : GestureConfigContract.AppearanceThemes.System;
     }
 
     private static string NormalizeLevelOsdPosition(string? value)

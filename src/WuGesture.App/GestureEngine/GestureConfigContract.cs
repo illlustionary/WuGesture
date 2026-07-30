@@ -72,6 +72,13 @@ public static class GestureConfigContract
         public const string CurrentWindow = "current-window";
     }
 
+    public static class AppearanceThemes
+    {
+        public const string System = "system";
+        public const string Light = "light";
+        public const string Dark = "dark";
+    }
+
     public static class LevelOsdPositions
     {
         public const string Center = "center";
