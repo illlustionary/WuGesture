@@ -1,5 +1,4 @@
 import { computed, proxyRefs, reactive, ref } from "vue";
-import { useToast } from "vue-toastification";
 import {
   BRIGHTNESS_OPERATIONS,
   EDGE_LOCATIONS,
@@ -87,11 +86,9 @@ const state = reactive({
 const activeScope = ref(SCOPE_KINDS.global);
 const initialized = ref(false);
 let autoSaveTimer = 0;
-let toast = null;
 
 const notifications = useGestureEditorNotifications({
-  state,
-  getToast: () => toast
+  state
 });
 
 const webView = useGestureEditorWebViewBridge({ notifications });
@@ -242,10 +239,6 @@ const applicationPicker = useGestureEditorApplicationPicker({
 });
 
 export function useGestureEditorContext() {
-  if (!toast) {
-    toast = useToast();
-  }
-
   const globalRules = computed(() => getRulesForScope(SCOPE_KINDS.global));
   const categoryRules = computed(() => getRulesByKind(SCOPE_KINDS.category));
   const appRules = computed(() => getRulesByKind(SCOPE_KINDS.app));

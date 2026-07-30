@@ -120,6 +120,7 @@ src\composables
 ```
 
 - `useAppearanceTheme.js`：配置界面主题解析、系统主题监听、根元素主题属性写入和主题偏好持久化。
+- `useGestureEditorEventListeners.js`：应用壳注册的事件监听层，订阅手势编辑器通知和导航意图，并分别调用 Toast 与 Vue Router。
 - `useQuickSearch.js`：全局快速搜索的弹层开关、`Ctrl+K` 生命周期与结果直达，协调搜索 store 的 scope 选择、导航层和规则编辑入口。
 - `useSidebarScopeActions.js`：侧栏分类/程序的新建、重命名、删除、应用选择完成后的 scope 选择和导航协调。
 
@@ -133,7 +134,8 @@ src\gestureEditor
 
 手势编辑器领域模块集中放在这里；`composables` 只保留 Vue 组合式入口或历史兼容 facade。
 
-- `gestureEditor\context\gestureEditorContext.js`：手势编辑器共享单例上下文，集中组装状态、WebView 桥接、通知、作用域、应用、规则编辑、持久化和应用选择器能力。
+- `gestureEditor\context\gestureEditorContext.js`：手势编辑器共享单例上下文，集中组装状态、WebView 桥接、作用域、应用、规则编辑、持久化和应用选择器能力；不直接依赖 Toast 或 Vue Router。
+- `gestureEditor\events\gestureEditorEventBus.js`：应用内跨层事件总线，当前定义通知和路由跳转意图；发送方不依赖 Toast 或 Vue Router。
 - `gestureEditor\stores\useGestureEditorLifecycleStore.js`：应用根组件使用的窄 store，只暴露初始化和运行状态栏字段。
 - `gestureEditor\stores\useGestureEditorOverlayStore.js`：应用根组件使用的窄 store，只暴露全局应用选择弹窗和规则编辑弹窗所需状态与动作。
 - `gestureEditor\stores\useGestureEdgeActionsStore.js`：边缘操作页使用的窄 store，只暴露边缘动作列表、边缘动作保存、快捷键录制和边缘操作选项。
@@ -145,8 +147,8 @@ src\gestureEditor
 - `gestureEditor\modules\useCategoryApplications.js`：分类与应用程序之间的多对多关联、重排和移除。
 - `gestureEditor\modules\useGestureRuleEditor.js`：规则新增/编辑弹窗、规则草稿提交、手势录制和快捷键录制流程。
 - `gestureEditor\modules\useGestureConfigPersistence.js`：规则保存节流、配置重载/重置、本地导入导出、WebDAV 备份恢复、UI 设置保存和边缘操作保存流程。
-- `gestureEditor\modules\useGestureEditorNotifications.js`：配置状态消息和 toast 的统一通知入口；普通自动保存成功只更新内部状态，失败和明确操作结果才显示 toast。
-- `gestureEditor\modules\useGestureEditorNavigation.js`：路由名称和 scope/exclusion 跳转的统一入口，页面与组合式函数只调用该层而不直接执行 router 跳转。
+- `gestureEditor\modules\useGestureEditorNotifications.js`：配置状态消息和通知事件的统一入口；普通自动保存成功只更新内部状态，失败和明确操作结果才发布通知事件。
+- `gestureEditor\modules\useGestureEditorNavigation.js`：路由名称和 scope/exclusion 跳转的统一入口，页面与组合式函数只发布路由意图而不直接执行 router 跳转。
 - `gestureEditor\modules\useGestureEditorWebViewBridge.js`：WebView 消息发送、静默发送、可用性判断和消息监听入口。
 
 ## Constants

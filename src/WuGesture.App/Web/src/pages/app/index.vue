@@ -1,6 +1,6 @@
 <script setup>
 import { computed, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { VueDraggable } from 'vue-draggable-plus'
 import AppShell from '@/components/AppShell.vue'
 import GestureRuleList from '@/components/GestureRuleList.vue'
@@ -12,7 +12,7 @@ import { SCOPE_KINDS } from '@/constants/gestureEditorOptions'
 
 const editor = useGestureEditorContext()
 const route = useRoute()
-const navigation = useGestureEditorNavigation({ router: useRouter() })
+const navigation = useGestureEditorNavigation()
 const scopeKind = SCOPE_KINDS.app
 const selectedName = computed(() => editor.getSelectedName(scopeKind))
 

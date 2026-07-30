@@ -1,5 +1,9 @@
+import {
+  GESTURE_EDITOR_EVENTS,
+  emitGestureEditorEvent
+} from "@/gestureEditor/events/gestureEditorEventBus";
+
 export function useGestureEditorNotifications({
-  getToast,
   state
 }) {
   function show(message, stateName = "idle", options = {}) {
@@ -21,23 +25,10 @@ export function useGestureEditorNotifications({
   }
 
   function showToast(message, stateName = "idle") {
-    const content = String(message ?? "").trim();
-    const toast = getToast();
-    if (!content || !toast) {
-      return;
-    }
-
-    if (stateName === "success") {
-      toast.success(content);
-      return;
-    }
-
-    if (stateName === "error") {
-      toast.error(content);
-      return;
-    }
-
-    toast.info(content);
+    emitGestureEditorEvent(GESTURE_EDITOR_EVENTS.notify, {
+      message,
+      stateName
+    });
   }
 
   return {
