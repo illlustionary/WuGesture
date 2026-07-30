@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter, RouterView } from 'vue-router'
 import AppSidebar from '@/components/AppSidebar.vue'
 import AppTitleBar from '@/components/AppTitleBar.vue'
@@ -10,92 +10,60 @@ import QuickSearchDialog from '@/components/QuickSearchDialog.vue'
 import GestureRuleDialog from '@/components/GestureRuleDialog.vue'
 import ScopeCreateDialog from '@/components/ScopeCreateDialog.vue'
 import ScopePriorityNotice from '@/components/ScopePriorityNotice.vue'
+import { useAppearanceTheme } from '@/composables/useAppearanceTheme'
 import { useQuickSearch } from '@/composables/useQuickSearch'
+import { useSidebarScopeActions } from '@/composables/useSidebarScopeActions'
+import { useGestureEditorContext } from '@/gestureEditor/context/gestureEditorContext'
+import { useGestureEditorNavigation } from '@/gestureEditor/modules/useGestureEditorNavigation'
 import { useGestureEditorLifecycleStore } from '@/gestureEditor/stores/useGestureEditorLifecycleStore'
 import { useGestureEditorOverlayStore } from '@/gestureEditor/stores/useGestureEditorOverlayStore'
-import { useGestureRulesStore } from '@/gestureEditor/stores/useGestureRulesStore'
-import { useGestureSettingsStore } from '@/gestureEditor/stores/useGestureSettingsStore'
-import { useCategoryPage } from '@/pages/category/composables/useCategoryPage'
-import { useAppPage } from '@/pages/app/composables/useAppPage'
 import CrosshairIcon from '@/assets/gesture/crosshair.svg'
 import FolderIcon from '@/assets/navigation/folder.svg'
 
 const lifecycle = useGestureEditorLifecycleStore()
 const overlay = useGestureEditorOverlayStore()
-const rulesStore = useGestureRulesStore()
-const settingsStore = useGestureSettingsStore()
-const systemThemeQuery = window.matchMedia('(prefers-color-scheme: dark)')
-const systemPrefersDark = ref(systemThemeQuery.matches)
-const quickSearch = useQuickSearch()
 const route = useRoute()
 const router = useRouter()
+const editor = useGestureEditorContext()
+const navigation = useGestureEditorNavigation({ router })
+const { isDarkTheme, toggleTheme } = useAppearanceTheme(editor)
+const quickSearch = useQuickSearch({ navigation })
 const routeOrder = ['global', 'category', 'app', 'edge', 'exclusions', 'settings']
 const transitionDirection = ref('right')
 const priorityNoticeOpen = ref(false)
 const resetConfirmOpen = ref(false)
-const pendingAppRoute = ref(false)
-const isDarkTheme = computed(() => {
-  const theme = settingsStore.uiSettings.appearance?.theme ?? 'system'
-  return theme === 'dark' || (theme === 'system' && systemPrefersDark.value)
-})
 const routeTransitionName = computed(() =>
   transitionDirection.value === 'right' ? 'route-slide-right' : 'route-slide-left'
 )
-
-function updateSystemTheme(event) {
-  systemPrefersDark.value = event.matches
-}
-
-function toggleTheme() {
-  const settings = settingsStore.getUiSettingsSnapshot()
-  settings.appearance.theme = isDarkTheme.value ? 'light' : 'dark'
-  settingsStore.saveUiSettings(settings)
-}
-
-systemThemeQuery.addEventListener('change', updateSystemTheme)
-
-watch(
-  isDarkTheme,
-  isDark => {
-    document.documentElement.dataset.theme = isDark ? 'dark' : 'light'
-  },
-  { immediate: true }
-)
-
-onBeforeUnmount(() => {
-  systemThemeQuery.removeEventListener('change', updateSystemTheme)
-})
 
 const {
   categoryDraft,
   categoryDialogOpen,
   categoryRenameDraft,
   categoryRenameDialogOpen,
-  openCategoryDialog,
-  closeCategoryDialog,
-  confirmCategoryDialog,
-  openCategoryRenameDialog,
-  closeCategoryRenameDialog,
-  confirmCategoryRenameDialog,
-  deleteCategoryItem
-} = useCategoryPage(rulesStore, { activate: false })
-
-const {
   appRenameDialogOpen,
   appRenameDraft,
-  openAppRenameDialog,
   closeAppRenameDialog,
-  confirmAppRenameDialog,
-  deleteAppItem
-} = useAppPage(rulesStore, { activate: false })
+  closeCategoryDialog,
+  closeCategoryRenameDialog,
+  confirmSidebarAppRename,
+  confirmSidebarCategory,
+  confirmSidebarCategoryRename,
+  openAppRenameDialog,
+  openCategoryDialog,
+  openCategoryRenameDialog,
+  openSidebarAppPicker,
+  removeSidebarApp,
+  removeSidebarCategory
+} = useSidebarScopeActions({ editor, navigation, route })
 
 lifecycle.initialize()
 
 watch(
   () => route.path,
   (nextPath, previousPath) => {
-    const nextIndex = routeOrder.indexOf(getRouteGroup(nextPath))
-    const previousIndex = routeOrder.indexOf(getRouteGroup(previousPath))
+    const nextIndex = routeOrder.indexOf(navigation.getRouteGroup(nextPath))
+    const previousIndex = routeOrder.indexOf(navigation.getRouteGroup(previousPath))
 
     if (nextIndex === -1 || previousIndex === -1 || nextIndex === previousIndex) {
       transitionDirection.value = 'right'
@@ -106,88 +74,6 @@ watch(
   }
 )
 
-watch(
-  () => [
-    rulesStore.getSelectedName('app'),
-    rulesStore.appItems.map(item => item.name).join('\u0000')
-  ],
-  ([selectedApp]) => {
-    if (!pendingAppRoute.value || !selectedApp) {
-      return
-    }
-
-    pendingAppRoute.value = false
-    navigateToApp(selectedApp)
-  }
-)
-
-function getRouteGroup(path = '') {
-  return String(path).replace(/^\//, '').split('/')[0] || 'global'
-}
-
-function navigateToCategory(name = rulesStore.getSelectedName('category')) {
-  if (name) {
-    router.push({ name: 'category-scope', params: { name } })
-  } else {
-    router.push({ name: 'category-overview' })
-  }
-}
-
-function navigateToApp(name = rulesStore.getSelectedName('app')) {
-  if (name) {
-    router.push({ name: 'app-scope', params: { name } })
-  } else {
-    router.push({ name: 'app-overview' })
-  }
-}
-
-function confirmSidebarCategory() {
-  if (confirmCategoryDialog()) {
-    navigateToCategory()
-  }
-}
-
-function confirmSidebarCategoryRename() {
-  if (confirmCategoryRenameDialog()) {
-    navigateToCategory()
-  }
-}
-
-function confirmSidebarAppRename() {
-  if (confirmAppRenameDialog()) {
-    navigateToApp()
-  }
-}
-
-function removeSidebarCategory(name) {
-  const currentName = String(route.params.name ?? '')
-  const isCurrent = route.name === 'category-scope' && currentName === name
-  deleteCategoryItem(name)
-
-  if (isCurrent) {
-    navigateToCategory()
-  } else if (currentName) {
-    rulesStore.selectScope('category', currentName)
-  }
-}
-
-function removeSidebarApp(name) {
-  const currentName = String(route.params.name ?? '')
-  const isCurrent = route.name === 'app-scope' && currentName === name
-  deleteAppItem(name)
-
-  if (isCurrent) {
-    navigateToApp()
-  } else if (currentName) {
-    rulesStore.selectScope('app', currentName)
-  }
-}
-
-function openSidebarAppPicker() {
-  pendingAppRoute.value = true
-  rulesStore.openApplicationPicker('', 'app')
-}
-
 function openResetConfirm() {
   resetConfirmOpen.value = true
 }
@@ -197,7 +83,7 @@ function closeResetConfirm() {
 }
 
 function confirmResetSettings() {
-  settingsStore.resetUiSettings()
+  editor.resetUiSettings()
   closeResetConfirm()
 }
 </script>
@@ -227,8 +113,8 @@ function confirmResetSettings() {
         @open-app-picker="openSidebarAppPicker"
         @open-app-rename="openAppRenameDialog"
         @delete-app="removeSidebarApp"
-        @export-config="settingsStore.exportConfigToLocal"
-        @import-config="settingsStore.importConfigFromLocal"
+        @export-config="editor.exportConfigToLocal"
+        @import-config="editor.importConfigFromLocal"
         @reset-settings="openResetConfirm"
         @toggle-theme="toggleTheme"
       />

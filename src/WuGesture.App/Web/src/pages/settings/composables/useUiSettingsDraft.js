@@ -66,7 +66,7 @@ export function useUiSettingsDraft(editor) {
   })
 
   watch(
-    () => editor.uiSettings,
+    () => editor.state.uiSettings,
     () => {
       const nextDraft = createDraft(editor.getUiSettingsSnapshot())
       if (

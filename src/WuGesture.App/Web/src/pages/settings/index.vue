@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import AppShell from '@/components/AppShell.vue'
-import { useGestureSettingsStore } from '@/gestureEditor/stores/useGestureSettingsStore'
+import { useGestureEditorContext } from '@/gestureEditor/context/gestureEditorContext'
 import AppBehaviorSettings from '@/pages/settings/components/AppBehaviorSettings.vue'
 import GestureHintSettings from '@/pages/settings/components/GestureHintSettings.vue'
 import GestureSensitivitySettings from '@/pages/settings/components/GestureSensitivitySettings.vue'
@@ -14,7 +14,7 @@ const props = defineProps({
   section: { type: String, default: 'mouse-trail' }
 })
 
-const settingsStore = useGestureSettingsStore()
+const settingsStore = useGestureEditorContext()
 const {
   draft,
   trailPreviewStyle,
@@ -26,7 +26,7 @@ const {
 
 const webDavDraftSignature = computed(() => settingsStore.getWebDavSignature(draft.webDav))
 const webDavReady = computed(
-  () => Boolean(draft.webDav.address) && settingsStore.webDavTestedSignature === webDavDraftSignature.value
+  () => Boolean(draft.webDav.address) && settingsStore.state.webDavTestedSignature === webDavDraftSignature.value
 )
 function saveToWebDav() {
   flushPersistDraft()
@@ -92,8 +92,8 @@ function previewLevelOsd(kind) {
           v-else-if="props.section === 'webdav'"
           :draft="draft"
           :ready="webDavReady"
-          :test-state="settingsStore.webDavTestState"
-          :testing="settingsStore.webDavTesting"
+          :test-state="settingsStore.state.webDavTestState"
+          :testing="settingsStore.state.webDavTesting"
           @queue-persist="queuePersistDraft"
           @flush-persist="flushPersistDraft"
           @test="testWebDav"

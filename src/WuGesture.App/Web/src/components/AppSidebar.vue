@@ -1,7 +1,7 @@
 <script setup>
 import { computed, reactive, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
-import { useGestureRulesStore } from '@/gestureEditor/stores/useGestureRulesStore'
+import { useGestureEditorContext } from '@/gestureEditor/context/gestureEditorContext'
 import HoverBubble from '@/components/HoverBubble.vue'
 import IconActionButton from '@/components/IconActionButton.vue'
 import BriefcaseIcon from '@/assets/navigation/briefcase.svg'
@@ -35,7 +35,7 @@ const emit = defineEmits([
   'toggle-theme'
 ])
 
-const rulesStore = useGestureRulesStore()
+const rulesStore = useGestureEditorContext()
 const route = useRoute()
 const isCollapsed = ref(false)
 const searchValues = reactive({ category: '', app: '' })
