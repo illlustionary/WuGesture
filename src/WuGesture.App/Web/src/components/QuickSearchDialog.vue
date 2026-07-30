@@ -1,7 +1,7 @@
 <script setup>
 import { computed, nextTick, ref, watch } from 'vue'
+import AppIcon from '@/components/AppIcon.vue'
 import BaseDialog from '@/components/BaseDialog.vue'
-import SearchIcon from '@/assets/navigation/search.svg'
 
 const props = defineProps({
   open: { type: Boolean, required: true },
@@ -80,7 +80,7 @@ function handleKeydown(event) {
     @keydown="handleKeydown"
   >
     <div class="quick-search-dialog__field">
-      <SearchIcon class="quick-search-dialog__search-icon" aria-hidden="true" />
+      <AppIcon name="search" class="quick-search-dialog__search-icon" aria-hidden="true" />
       <input
         ref="input"
         v-model="query"

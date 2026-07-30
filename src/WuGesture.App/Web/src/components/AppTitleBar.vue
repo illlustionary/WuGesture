@@ -1,11 +1,7 @@
 <script setup>
 import { computed } from 'vue'
+import AppIcon from '@/components/AppIcon.vue'
 import HoverBubble from '@/components/HoverBubble.vue'
-import CloseIcon from '@/assets/window/close.svg'
-import MaximizeIcon from '@/assets/window/maximize.svg'
-import MinimizeIcon from '@/assets/window/minimize.svg'
-import MouseIcon from '@/assets/navigation/mouse.svg'
-import RestoreIcon from '@/assets/window/restore.svg'
 
 const props = defineProps({
   appInfo: {
@@ -67,8 +63,9 @@ function toggleWindowMaximize() {
               :src="appInfo.icon"
               alt=""
             />
-            <MouseIcon
+            <AppIcon
               v-else
+              name="mouse"
               aria-hidden="true"
             />
           </span>
@@ -91,7 +88,7 @@ function toggleWindowMaximize() {
         aria-label="最小化"
         @click="emit('minimize-window')"
       >
-        <MinimizeIcon aria-hidden="true" />
+        <AppIcon name="minimize" aria-hidden="true" />
       </button>
       <button
         type="button"
@@ -99,12 +96,14 @@ function toggleWindowMaximize() {
         :aria-label="maximizeLabel"
         @click="toggleWindowMaximize"
       >
-        <RestoreIcon
+        <AppIcon
           v-if="isMaximized"
+          name="restore"
           aria-hidden="true"
         />
-        <MaximizeIcon
+        <AppIcon
           v-else
+          name="maximize"
           aria-hidden="true"
         />
       </button>
@@ -114,7 +113,7 @@ function toggleWindowMaximize() {
         aria-label="关闭"
         @click="emit('close-window')"
       >
-        <CloseIcon aria-hidden="true" />
+        <AppIcon name="close" aria-hidden="true" />
       </button>
     </div>
   </header>

@@ -1,11 +1,4 @@
 import { ref } from 'vue'
-import BriefcaseIcon from '@/assets/navigation/briefcase.svg'
-import BrowserIcon from '@/assets/category/browser.svg'
-import CircleDashedIcon from '@/assets/navigation/circle-dashed.svg'
-import CodeIcon from '@/assets/category/code.svg'
-import FolderIcon from '@/assets/navigation/folder.svg'
-import MediaIcon from '@/assets/category/media.svg'
-import SparkleIcon from '@/assets/category/sparkle.svg'
 import { SCOPE_KINDS } from '@/constants/gestureEditorOptions'
 
 export function getCategoryIcon(name) {
@@ -13,7 +6,7 @@ export function getCategoryIcon(name) {
     .trim()
     .toLowerCase()
   if (!value) {
-    return CircleDashedIcon
+    return 'circle-dashed'
   }
 
   if (
@@ -21,30 +14,30 @@ export function getCategoryIcon(name) {
     value.includes('browser') ||
     value.includes('网页')
   ) {
-    return BrowserIcon
+    return 'browser'
   }
   if (value.includes('办公') || value.includes('office')) {
-    return BriefcaseIcon
+    return 'briefcase'
   }
   if (
     value.includes('开发') ||
     value.includes('dev') ||
     value.includes('编程')
   ) {
-    return CodeIcon
+    return 'code'
   }
   if (value.includes('设计') || value.includes('创作')) {
-    return SparkleIcon
+    return 'sparkle'
   }
   if (
     value.includes('媒体') ||
     value.includes('音乐') ||
     value.includes('视频')
   ) {
-    return MediaIcon
+    return 'media'
   }
 
-  return FolderIcon
+  return 'folder'
 }
 
 export function useCategoryPage(editor, options = {}) {

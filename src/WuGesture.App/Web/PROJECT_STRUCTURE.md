@@ -49,6 +49,7 @@ src
 ├─ composables
 ├─ constants
 ├─ gestureEditor
+├─ icons
 ├─ utils
 └─ pages
 ```
@@ -60,6 +61,7 @@ src
 - `src\router\routes\edgeRoutes.js`：触发角、摩擦边和边缘滚动子路由。
 - `src\router\routes\settingsRoutes.js`：各设置项子路由。
 - `src\App.vue`：固定自定义顶部栏、侧栏/页面工作区、路由切换过渡和全局弹窗挂载；顶部栏及右下角缩放把手通过生命周期 store 控制宿主窗口，分类/程序侧栏操作和主题状态由组合式函数协调。
+- `src\icons\appIcons.js`：本地 SVG 图标的唯一显式注册表；使用文件名作为图标名称，供 `AppIcon` 和业务组件按名称查找。
 - `src\styles.scss`：编辑器全局设计 token、reset、通用按钮、输入框、弹窗和图标样式；常用布局/区块/表单/列表样式优先用 UnoCSS shortcuts，复杂动态样式和组件专属样式放在对应 `.vue` 文件的 scoped SCSS 中。
 
 ## Assets
@@ -78,7 +80,7 @@ SVG 按使用位置分目录：
 - `navigation\`：侧栏、搜索和应用状态图标。
 - `window\`：窗口标题栏与对话框的关闭、最小化、最大化、还原和缩放把手图标。
 
-这些 SVG 通过 `vite-svg-loader` 作为 Vue 组件导入。图标文件名统一使用小写 kebab-case，路径颜色应使用 `currentColor`，便于按钮和状态样式控制。
+这些 SVG 只由 `icons\appIcons.js` 通过 `vite-svg-loader` 作为 Vue 组件导入。图标文件名就是对外的图标名称，统一使用小写 kebab-case；路径颜色应使用 `currentColor`，便于按钮和状态样式控制。
 
 ## Components
 
@@ -98,7 +100,8 @@ src\components
 - `GestureRuleDialog.vue`：添加和编辑手势规则的弹窗。
 - `GestureRuleList.vue`：规则表、规则展示和规则操作入口。
 - `HoverBubble.vue`：悬浮提示气泡。
-- `IconActionButton.vue`：共享图标按钮，集中导入 `src\assets` 下的 SVG，并通过 `icon` key 映射到按钮图标。
+- `AppIcon.vue`：本地图标展示入口，只接收图标名称并从 `appIcons.js` 查找 SVG；未知名称回退为 `circle-dashed`。
+- `IconActionButton.vue`：共享图标按钮，通过 `AppIcon` 按 `icon` 名称展示图标。
 - `WindowResizeGrip.vue`：右下角窗口缩放把手，使用旋转后的三角点阵图标，通过生命周期 store 发起宿主系统缩放，并在缩放周期内抑制标题栏提示。
 - `QuickSearchDialog.vue`：全局快速搜索弹层，按配置类型显示匹配结果，包含带搜索图标和焦点反馈的输入字段。
 - `ConfirmDialog.vue`：重大操作确认弹窗，带缩放进入/退出动画。

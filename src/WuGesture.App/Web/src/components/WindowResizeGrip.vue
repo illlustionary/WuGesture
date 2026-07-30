@@ -1,6 +1,6 @@
 <script setup>
 import { useGestureEditorLifecycleStore } from '@/gestureEditor/stores/useGestureEditorLifecycleStore'
-import TriangleIcon from '@/assets/window/triangle.svg'
+import AppIcon from '@/components/AppIcon.vue'
 
 const lifecycle = useGestureEditorLifecycleStore()
 
@@ -16,7 +16,8 @@ function startResize() {
     aria-label="调整窗口大小"
     @pointerdown.prevent="startResize"
   >
-    <TriangleIcon
+    <AppIcon
+      name="triangle"
       class="window-resize-grip__icon"
       aria-hidden="true"
     />

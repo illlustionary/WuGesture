@@ -1,5 +1,5 @@
 <script setup>
-import KeyboardIcon from '@/assets/gesture/keyboard.svg'
+import AppIcon from '@/components/AppIcon.vue'
 import CustomSelect from '@/components/CustomSelect.vue'
 import { ACTION_TYPES, OPERATIONS } from '@/constants/gestureEditorOptions'
 import { GESTURE_EDITOR_LIMITS } from '@/constants/gestureEditorLimits'
@@ -27,7 +27,8 @@ const emit = defineEmits(['record-hotkey', 'update-operation'])
         :class="{ 'is-recording': isRecordingHotkey(draft) }"
         @click="emit('record-hotkey')"
       >
-        <KeyboardIcon
+        <AppIcon
+          name="keyboard"
           class="hotkey-record-button__icon"
           aria-hidden="true"
         />

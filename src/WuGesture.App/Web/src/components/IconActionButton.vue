@@ -1,14 +1,5 @@
 <script setup>
-import { computed } from 'vue'
-import addIcon from '@/assets/actions/add.svg'
-import closeIcon from '@/assets/window/close.svg'
-import cloudDownloadIcon from '@/assets/actions/cloud-download.svg'
-import cloudUploadIcon from '@/assets/actions/cloud-upload.svg'
-import deleteIcon from '@/assets/actions/delete.svg'
-import downloadIcon from '@/assets/actions/download.svg'
-import resetIcon from '@/assets/actions/reset.svg'
-import testIcon from '@/assets/actions/test.svg'
-import uploadIcon from '@/assets/actions/upload.svg'
+import AppIcon from '@/components/AppIcon.vue'
 
 const props = defineProps({
   icon: {
@@ -33,19 +24,6 @@ const props = defineProps({
   }
 })
 
-const iconMap = {
-  add: addIcon,
-  close: closeIcon,
-  'cloud-download': cloudDownloadIcon,
-  'cloud-upload': cloudUploadIcon,
-  delete: deleteIcon,
-  download: downloadIcon,
-  reset: resetIcon,
-  test: testIcon,
-  upload: uploadIcon
-}
-
-const iconComponent = computed(() => iconMap[props.icon] ?? addIcon)
 </script>
 
 <template>
@@ -58,8 +36,8 @@ const iconComponent = computed(() => iconMap[props.icon] ?? addIcon)
     :data-tone="tone"
     :style="{ color }"
   >
-    <component
-      :is="iconComponent"
+    <AppIcon
+      :name="icon"
       class="icon-action-button__icon"
       aria-hidden="true"
     />

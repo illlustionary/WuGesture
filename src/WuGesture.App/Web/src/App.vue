@@ -10,6 +10,7 @@ import QuickSearchDialog from '@/components/QuickSearchDialog.vue'
 import GestureRuleDialog from '@/components/GestureRuleDialog.vue'
 import ScopeCreateDialog from '@/components/ScopeCreateDialog.vue'
 import ScopePriorityNotice from '@/components/ScopePriorityNotice.vue'
+import AppIcon from '@/components/AppIcon.vue'
 import { useAppearanceTheme } from '@/composables/useAppearanceTheme'
 import { useGestureEditorEventListeners } from '@/composables/useGestureEditorEventListeners'
 import { useQuickSearch } from '@/composables/useQuickSearch'
@@ -18,8 +19,6 @@ import { useGestureEditorContext } from '@/gestureEditor/context/gestureEditorCo
 import { useGestureEditorNavigation } from '@/gestureEditor/modules/useGestureEditorNavigation'
 import { useGestureEditorLifecycleStore } from '@/gestureEditor/stores/useGestureEditorLifecycleStore'
 import { useGestureEditorOverlayStore } from '@/gestureEditor/stores/useGestureEditorOverlayStore'
-import CrosshairIcon from '@/assets/gesture/crosshair.svg'
-import FolderIcon from '@/assets/navigation/folder.svg'
 
 const lifecycle = useGestureEditorLifecycleStore()
 const overlay = useGestureEditorOverlayStore()
@@ -151,7 +150,7 @@ function confirmResetSettings() {
           @pointerdown.prevent="overlay.pickApplicationWindow()"
           @click.prevent
         >
-          <CrosshairIcon class="picker-option__icon" aria-hidden="true" />
+          <AppIcon name="crosshair" class="picker-option__icon" aria-hidden="true" />
           <span class="picker-option__text">
             <strong>拖动准星选择窗口</strong>
             <span>使用准星拖动选择</span>
@@ -159,7 +158,7 @@ function confirmResetSettings() {
         </button>
 
         <button type="button" class="picker-option" @click="overlay.selectApplication()">
-          <FolderIcon class="picker-option__icon" aria-hidden="true" />
+          <AppIcon name="folder" class="picker-option__icon" aria-hidden="true" />
           <span class="picker-option__text">
             <strong>浏览 exe 文件</strong>
             <span>使用文件资源管理器选择</span>
