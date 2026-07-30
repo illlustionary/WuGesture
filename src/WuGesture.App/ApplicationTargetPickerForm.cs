@@ -7,32 +7,41 @@ namespace WuGesture.App;
 
 public sealed class ApplicationTargetPickerForm : Form
 {
-    private readonly System.Windows.Forms.Timer followCursorTimer = new() { Interval = 15 };
+    private const int WsExToolWindow = 0x00000080;
+    private const int WsExTransparent = 0x00000020;
+    private const int WmNcHitTest = 0x0084;
+    private const int HtTransparent = -1;
+
+    private readonly Cursor pickerCursor = Cursors.Cross;
+    private readonly Bitmap pickerImage;
     private readonly int currentProcessId = Environment.ProcessId;
     private LowLevelMouseProc? mouseProc;
     private IntPtr mouseHook;
+    private bool cursorHidden;
     private bool completed;
 
     public PickedApplication? PickedApplication { get; private set; }
     public string ErrorMessage { get; private set; } = "";
 
-    public ApplicationTargetPickerForm()
+    public ApplicationTargetPickerForm(Color cursorColor)
     {
-        Width = 52;
-        Height = 52;
+        pickerImage = CreatePickerImage(cursorColor);
+        ClientSize = pickerCursor.Size;
         FormBorderStyle = FormBorderStyle.None;
         StartPosition = FormStartPosition.Manual;
         TopMost = true;
         ShowInTaskbar = false;
         KeyPreview = true;
-        BackColor = Color.White;
-        TransparencyKey = Color.White;
-        Cursor = Cursors.Cross;
+        BackColor = Color.Fuchsia;
+        TransparencyKey = Color.Fuchsia;
 
         Paint += OnPaint;
         Shown += OnShown;
-        FormClosed += (_, _) => StopPicking();
-        followCursorTimer.Tick += (_, _) => FollowCursor();
+        FormClosed += (_, _) =>
+        {
+            StopPicking();
+            pickerImage.Dispose();
+        };
         KeyDown += (_, args) =>
         {
             if (args.KeyCode == Keys.Escape)
@@ -42,10 +51,39 @@ public sealed class ApplicationTargetPickerForm : Form
         };
     }
 
+    protected override CreateParams CreateParams
+    {
+        get
+        {
+            var createParams = base.CreateParams;
+            createParams.ExStyle |= WsExToolWindow | WsExTransparent;
+            return createParams;
+        }
+    }
+
+    protected override void WndProc(ref Message m)
+    {
+        if (m.Msg == WmNcHitTest)
+        {
+            m.Result = new IntPtr(HtTransparent);
+            return;
+        }
+
+        base.WndProc(ref m);
+    }
+
     private void OnShown(object? sender, EventArgs e)
     {
-        StartPicking();
-        FollowCursor();
+        try
+        {
+            StartPicking();
+            UpdatePickerCursor(Cursor.Position);
+        }
+        catch
+        {
+            StopPicking();
+            throw;
+        }
     }
 
     private void StartPicking()
@@ -57,25 +95,41 @@ public sealed class ApplicationTargetPickerForm : Form
             throw new Win32Exception(Marshal.GetLastWin32Error(), "未能开始窗口拾取。");
         }
 
-        followCursorTimer.Start();
+        Cursor.Hide();
+        cursorHidden = true;
     }
 
     private void StopPicking()
     {
-        followCursorTimer.Stop();
         if (mouseHook != IntPtr.Zero)
         {
             UnhookWindowsHookEx(mouseHook);
             mouseHook = IntPtr.Zero;
         }
+
+        if (cursorHidden)
+        {
+            Cursor.Show();
+            cursorHidden = false;
+            SetCursor(Cursors.Default.Handle);
+        }
     }
 
     private IntPtr MouseHookCallback(int nCode, IntPtr wParam, IntPtr lParam)
     {
-        if (nCode >= 0 && wParam == WmLButtonUp)
+        if (nCode >= 0)
         {
-            PickAtCursor();
-            return new IntPtr(1);
+            if (wParam == WmMouseMove)
+            {
+                var mouseData = Marshal.PtrToStructure<MouseHookData>(lParam);
+                UpdatePickerCursor(mouseData.Point);
+            }
+
+            if (wParam == WmLButtonUp)
+            {
+                PickAtCursor();
+                return new IntPtr(1);
+            }
         }
 
         return CallNextHookEx(mouseHook, nCode, wParam, lParam);
@@ -118,19 +172,36 @@ public sealed class ApplicationTargetPickerForm : Form
         Close();
     }
 
-    private void FollowCursor()
+    private void UpdatePickerCursor(Point cursorPosition)
     {
-        var cursorPosition = Cursor.Position;
-        Location = new Point(cursorPosition.X - Width / 2, cursorPosition.Y - Height / 2);
+        var hotspot = pickerCursor.HotSpot;
+        Location = new Point(cursorPosition.X - hotspot.X, cursorPosition.Y - hotspot.Y);
     }
 
     private void OnPaint(object? sender, PaintEventArgs e)
     {
-        using var pen = new Pen(Color.FromArgb(30, 30, 30), 2);
-        var center = new Point(ClientSize.Width / 2, ClientSize.Height / 2);
-        e.Graphics.DrawEllipse(pen, center.X - 14, center.Y - 14, 28, 28);
-        e.Graphics.DrawLine(pen, center.X, 4, center.X, ClientSize.Height - 4);
-        e.Graphics.DrawLine(pen, 4, center.Y, ClientSize.Width - 4, center.Y);
+        e.Graphics.DrawImageUnscaled(pickerImage, Point.Empty);
+    }
+
+    private Bitmap CreatePickerImage(Color cursorColor)
+    {
+        var image = new Bitmap(pickerCursor.Size.Width, pickerCursor.Size.Height);
+        using var graphics = Graphics.FromImage(image);
+        graphics.Clear(Color.Fuchsia);
+        pickerCursor.Draw(graphics, new Rectangle(Point.Empty, pickerCursor.Size));
+
+        for (var y = 0; y < image.Height; y++)
+        {
+            for (var x = 0; x < image.Width; x++)
+            {
+                if (image.GetPixel(x, y).ToArgb() != Color.Fuchsia.ToArgb())
+                {
+                    image.SetPixel(x, y, cursorColor);
+                }
+            }
+        }
+
+        return image;
     }
 
     private PickedApplication ResolveApplication(IntPtr windowHandle)
@@ -187,11 +258,22 @@ public sealed class ApplicationTargetPickerForm : Form
     }
 
     private const int WhMouseLl = 14;
+    private static readonly IntPtr WmMouseMove = new(0x0200);
     private static readonly IntPtr WmLButtonUp = new(0x0202);
     private const uint ProcessQueryLimitedInformation = 0x1000;
     private const uint GetAncestorRoot = 2;
 
     private delegate IntPtr LowLevelMouseProc(int nCode, IntPtr wParam, IntPtr lParam);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MouseHookData
+    {
+        public Point Point;
+        public uint MouseData;
+        public uint Flags;
+        public uint Time;
+        public IntPtr ExtraInfo;
+    }
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern IntPtr SetWindowsHookEx(int idHook, LowLevelMouseProc lpfn, IntPtr hMod, uint dwThreadId);
@@ -201,6 +283,9 @@ public sealed class ApplicationTargetPickerForm : Form
 
     [DllImport("user32.dll")]
     private static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr SetCursor(IntPtr hCursor);
 
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern IntPtr GetModuleHandle(string? lpModuleName);
