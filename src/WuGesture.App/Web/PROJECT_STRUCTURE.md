@@ -59,7 +59,7 @@ src
 - `src\router\routes\scopeRoutes.js`：分类和程序动态子路由。
 - `src\router\routes\edgeRoutes.js`：触发角、摩擦边和边缘滚动子路由。
 - `src\router\routes\settingsRoutes.js`：各设置项子路由。
-- `src\App.vue`：固定自定义顶部栏、侧栏/页面工作区、路由切换过渡和全局弹窗挂载；顶部栏及右下角缩放把手通过生命周期 store 控制宿主窗口。
+- `src\App.vue`：固定自定义顶部栏、侧栏/页面工作区、路由切换过渡和全局弹窗挂载；顶部栏及右下角缩放把手通过生命周期 store 控制宿主窗口，分类/程序侧栏操作和主题状态由组合式函数协调。
 - `src\styles.scss`：编辑器全局设计 token、reset、通用按钮、输入框、弹窗和图标样式；常用布局/区块/表单/列表样式优先用 UnoCSS shortcuts，复杂动态样式和组件专属样式放在对应 `.vue` 文件的 scoped SCSS 中。
 
 ## Assets
@@ -119,7 +119,9 @@ src\components
 src\composables
 ```
 
-- `useQuickSearch.js`：全局快速搜索的弹层开关、`Ctrl+K` 生命周期与结果直达路由，协调搜索 store 的 scope 选择和规则编辑入口。
+- `useAppearanceTheme.js`：配置界面主题解析、系统主题监听、根元素主题属性写入和主题偏好持久化。
+- `useQuickSearch.js`：全局快速搜索的弹层开关、`Ctrl+K` 生命周期与结果直达，协调搜索 store 的 scope 选择、导航层和规则编辑入口。
+- `useSidebarScopeActions.js`：侧栏分类/程序的新建、重命名、删除、应用选择完成后的 scope 选择和导航协调。
 
 ## Gesture Editor
 
@@ -134,9 +136,7 @@ src\gestureEditor
 - `gestureEditor\context\gestureEditorContext.js`：手势编辑器共享单例上下文，集中组装状态、WebView 桥接、通知、作用域、应用、规则编辑、持久化和应用选择器能力。
 - `gestureEditor\stores\useGestureEditorLifecycleStore.js`：应用根组件使用的窄 store，只暴露初始化和运行状态栏字段。
 - `gestureEditor\stores\useGestureEditorOverlayStore.js`：应用根组件使用的窄 store，只暴露全局应用选择弹窗和规则编辑弹窗所需状态与动作。
-- `gestureEditor\stores\useGestureRulesStore.js`：全局、分类和程序规则页使用的窄 store，只暴露规则列表、作用域管理、应用关联和规则编辑入口。
 - `gestureEditor\stores\useGestureEdgeActionsStore.js`：边缘操作页使用的窄 store，只暴露边缘动作列表、边缘动作保存、快捷键录制和边缘操作选项。
-- `gestureEditor\stores\useGestureSettingsStore.js`：设置页使用的窄 store，只暴露 UI 设置草稿保存、恢复默认、本地导入导出和 WebDAV 状态/操作。
 - `gestureEditor\stores\useGestureExclusionsStore.js`：排除项页使用的窄 store，只暴露排除项列表、应用图标匹配和排除项增删改入口。
 - `gestureEditor\stores\useGestureQuickSearchStore.js`：全局快速搜索使用的窄 store，从现有编辑器状态汇总规则、作用域、程序和排除项。
 - `gestureEditor\modules\useGestureEditorApplicationPicker.js`：共享 context 内部使用的应用选择器流程，包括打开选择器、发起窗口/文件选择请求，以及处理宿主返回的程序信息。
@@ -146,6 +146,7 @@ src\gestureEditor
 - `gestureEditor\modules\useGestureRuleEditor.js`：规则新增/编辑弹窗、规则草稿提交、手势录制和快捷键录制流程。
 - `gestureEditor\modules\useGestureConfigPersistence.js`：规则保存节流、配置重载/重置、本地导入导出、WebDAV 备份恢复、UI 设置保存和边缘操作保存流程。
 - `gestureEditor\modules\useGestureEditorNotifications.js`：配置状态消息和 toast 的统一通知入口；普通自动保存成功只更新内部状态，失败和明确操作结果才显示 toast。
+- `gestureEditor\modules\useGestureEditorNavigation.js`：路由名称和 scope/exclusion 跳转的统一入口，页面与组合式函数只调用该层而不直接执行 router 跳转。
 - `gestureEditor\modules\useGestureEditorWebViewBridge.js`：WebView 消息发送、静默发送、可用性判断和消息监听入口。
 
 ## Constants

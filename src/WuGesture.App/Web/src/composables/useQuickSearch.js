@@ -1,10 +1,8 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, proxyRefs, ref } from 'vue'
-import { useRouter } from 'vue-router'
 import { SCOPE_KINDS } from '@/constants/gestureEditorOptions'
 import { useGestureQuickSearchStore } from '@/gestureEditor/stores/useGestureQuickSearchStore'
 
-export function useQuickSearch() {
-  const router = useRouter()
+export function useQuickSearch({ navigation }) {
   const quickSearchStore = useGestureQuickSearchStore()
   const isOpen = ref(false)
   const searchItems = computed(() => quickSearchStore.searchItems)
@@ -25,7 +23,7 @@ export function useQuickSearch() {
         quickSearchStore.setActiveScope(item.scopeKind)
         quickSearchStore.selectScope(item.scopeKind, item.scopeName)
       }
-      await router.push(getRuleRoute(item.scopeKind, item.scopeName))
+      await navigation.navigateToScope(item.scopeKind, item.scopeName)
       await nextTick()
       quickSearchStore.openEditRule(item.target)
       return
@@ -34,18 +32,18 @@ export function useQuickSearch() {
     if (item.type === 'category') {
       quickSearchStore.setActiveScope(SCOPE_KINDS.category)
       quickSearchStore.selectScope(SCOPE_KINDS.category, item.target)
-      await router.push({ name: 'category-scope', params: { name: item.target } })
+      await navigation.navigateToScope(SCOPE_KINDS.category, item.target)
       return
     }
 
     if (item.type === 'app') {
       quickSearchStore.setActiveScope(SCOPE_KINDS.app)
       quickSearchStore.selectScope(SCOPE_KINDS.app, item.target)
-      await router.push({ name: 'app-scope', params: { name: item.target } })
+      await navigation.navigateToScope(SCOPE_KINDS.app, item.target)
       return
     }
 
-    await router.push({ path: '/exclusions', query: { selected: item.target } })
+    await navigation.navigateToExclusion(item.target)
   }
 
   function handleGlobalKeydown(event) {
@@ -65,16 +63,4 @@ export function useQuickSearch() {
     close,
     select
   })
-}
-
-function getRuleRoute(scopeKind, scopeName) {
-  if (scopeKind === SCOPE_KINDS.category) {
-    return { name: 'category-scope', params: { name: scopeName } }
-  }
-
-  if (scopeKind === SCOPE_KINDS.app) {
-    return { name: 'app-scope', params: { name: scopeName } }
-  }
-
-  return '/global'
 }

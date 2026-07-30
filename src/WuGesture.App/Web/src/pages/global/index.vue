@@ -3,10 +3,10 @@ import AppShell from '@/components/AppShell.vue'
 import GestureRuleList from '@/components/GestureRuleList.vue'
 import IconActionButton from '@/components/IconActionButton.vue'
 import RulesSection from '@/components/rules/RulesSection.vue'
-import { useGestureRulesStore } from '@/gestureEditor/stores/useGestureRulesStore'
+import { useGestureEditorContext } from '@/gestureEditor/context/gestureEditorContext'
 import { SCOPE_KINDS } from '@/constants/gestureEditorOptions'
 
-const rulesStore = useGestureRulesStore()
+const rulesStore = useGestureEditorContext()
 const scopeKind = SCOPE_KINDS.global
 rulesStore.setActiveScope(scopeKind)
 </script>

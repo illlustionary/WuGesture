@@ -6,42 +6,43 @@ import AppShell from '@/components/AppShell.vue'
 import GestureRuleList from '@/components/GestureRuleList.vue'
 import RulesSection from '@/components/rules/RulesSection.vue'
 import IconActionButton from '@/components/IconActionButton.vue'
-import { useGestureRulesStore } from '@/gestureEditor/stores/useGestureRulesStore'
+import { useGestureEditorContext } from '@/gestureEditor/context/gestureEditorContext'
+import { useGestureEditorNavigation } from '@/gestureEditor/modules/useGestureEditorNavigation'
 import { SCOPE_KINDS } from '@/constants/gestureEditorOptions'
 
-const rulesStore = useGestureRulesStore()
+const editor = useGestureEditorContext()
 const route = useRoute()
-const router = useRouter()
+const navigation = useGestureEditorNavigation({ router: useRouter() })
 const scopeKind = SCOPE_KINDS.app
-const selectedName = computed(() => rulesStore.getSelectedName(scopeKind))
+const selectedName = computed(() => editor.getSelectedName(scopeKind))
 
-rulesStore.setActiveScope(scopeKind)
+editor.setActiveScope(scopeKind)
 
 watch(
-  () => [String(route.params.name ?? ''), rulesStore.appItems.map(item => item.name).join('\u0000')],
+  () => [String(route.params.name ?? ''), editor.appItems.map(item => item.name).join('\u0000')],
   ([requestedName]) => {
-    const names = rulesStore.appItems.map(item => item.name)
+    const names = editor.appItems.map(item => item.name)
     if (requestedName && names.includes(requestedName)) {
-      rulesStore.selectScope(scopeKind, requestedName)
+      editor.selectScope(scopeKind, requestedName)
       return
     }
 
     if (!requestedName && names.length > 0) {
-      router.replace({ name: 'app-scope', params: { name: names[0] } })
+      navigation.replaceScope(scopeKind, names[0])
       return
     }
 
-    rulesStore.selectScope(scopeKind, '')
+    editor.selectScope(scopeKind, '')
   },
   { immediate: true }
 )
 
 const orderedCategories = computed({
   get() {
-    return rulesStore.getCategoriesForApplication()
+    return editor.getCategoriesForApplication()
   },
   set(categories) {
-    rulesStore.setApplicationCategories(selectedName.value, categories)
+    editor.setApplicationCategories(selectedName.value, categories)
   }
 })
 </script>
@@ -89,7 +90,7 @@ const orderedCategories = computed({
                   class="category-order-item__button"
                   :disabled="index === 0"
                   aria-label="上移分类"
-                  @click="rulesStore.moveApplicationCategory(selectedName, category, 'up')"
+                @click="editor.moveApplicationCategory(selectedName, category, 'up')"
                 >
                   上移
                 </button>
@@ -98,7 +99,7 @@ const orderedCategories = computed({
                   class="category-order-item__button"
                   :disabled="index === orderedCategories.length - 1"
                   aria-label="下移分类"
-                  @click="rulesStore.moveApplicationCategory(selectedName, category, 'down')"
+                @click="editor.moveApplicationCategory(selectedName, category, 'down')"
                 >
                   下移
                 </button>
@@ -116,17 +117,17 @@ const orderedCategories = computed({
               icon="add"
               label="添加手势"
               class="primary-button"
-              @click="rulesStore.openAddRule(scopeKind)"
+              @click="editor.openAddRule(scopeKind)"
             />
           </template>
 
           <GestureRuleList
-            :rules="rulesStore.getRulesForScope(scopeKind)"
-            :get-gesture-mnemonic="rulesStore.getGestureMnemonic"
-            :get-action-label="rulesStore.getActionLabel"
-            @remove="rulesStore.removeRule"
-            @edit="rulesStore.openEditRule"
-            @rename="rulesStore.updateRuleActionName"
+            :rules="editor.getRulesForScope(scopeKind)"
+            :get-gesture-mnemonic="editor.getGestureMnemonic"
+            :get-action-label="editor.getActionLabel"
+            @remove="editor.removeRule"
+            @edit="editor.openEditRule"
+            @rename="editor.updateRuleActionName"
           />
         </RulesSection>
       </section>
