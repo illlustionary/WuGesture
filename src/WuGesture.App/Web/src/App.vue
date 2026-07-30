@@ -35,12 +35,6 @@ const pendingAppRoute = ref(false)
 const routeTransitionName = computed(() =>
   transitionDirection.value === 'right' ? 'route-slide-right' : 'route-slide-left'
 )
-const routeTransitionKey = computed(() => {
-  const routeGroup = getRouteGroup(route.path)
-  return routeGroup === 'category' || routeGroup === 'app'
-    ? routeGroup
-    : route.fullPath
-})
 
 const {
   categoryDraft,
@@ -208,10 +202,10 @@ function confirmResetSettings() {
       />
 
       <main class="app-shell__content">
-        <RouterView v-slot="{ Component }">
+        <RouterView v-slot="{ Component, route: viewRoute }">
           <div class="route-transition-frame">
             <Transition :name="routeTransitionName">
-              <div :key="routeTransitionKey" class="app-route-view">
+              <div :key="viewRoute.fullPath" class="app-route-view">
                 <component :is="Component" />
               </div>
             </Transition>

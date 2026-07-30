@@ -126,11 +126,6 @@ function toggleGroup(key) {
   expanded[key] = !expanded[key]
 }
 
-function selectScope(kind, name) {
-  rulesStore.setActiveScope(kind)
-  rulesStore.selectScope(kind, name)
-}
-
 function filteredChildren(group) {
   const value = String(searchValues[group.key] ?? '').trim().toLowerCase()
   if (!value) return group.children
@@ -183,12 +178,6 @@ function handleChildDblClick(group, item) {
     emit('open-category-rename', item)
   } else if (group.key === 'app') {
     emit('open-app-rename', item)
-  }
-}
-
-function handleChildClick(group, item) {
-  if (group.key === 'category' || group.key === 'app') {
-    selectScope(group.key, item.name)
   }
 }
 
@@ -312,7 +301,6 @@ watch(() => route.path, syncExpanded, { immediate: true })
                   :to="childTo(group, item)"
                   class="sidebar-child__link"
                   exact-active-class="is-active"
-                  @click="handleChildClick(group, item)"
                 >
                   <img
                     v-if="group.key === 'app' && item.icon"
