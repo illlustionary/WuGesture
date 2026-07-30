@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Diagnostics;
 using WuGesture.App.GestureEngine;
 
 namespace WuGesture.App;
@@ -13,6 +14,7 @@ internal sealed class GestureFeedbackCoordinator : IDisposable
     private readonly Action<string> postWebMessage;
     private readonly Func<bool> canUseUi;
     private long latestSessionId;
+    private long latestFirstTrailFrameSessionId;
     private bool disposed;
 
     public GestureFeedbackCoordinator(
@@ -60,7 +62,7 @@ internal sealed class GestureFeedbackCoordinator : IDisposable
     {
         RunOnUi(() =>
         {
-            if (!AcceptSession(e.SessionId))
+            if (!AcceptVisualSession(e.SessionId))
             {
                 return;
             }
@@ -82,7 +84,7 @@ internal sealed class GestureFeedbackCoordinator : IDisposable
     {
         RunOnUi(() =>
         {
-            if (!AcceptSession(e.SessionId))
+            if (!AcceptVisualSession(e.SessionId))
             {
                 return;
             }
@@ -104,22 +106,19 @@ internal sealed class GestureFeedbackCoordinator : IDisposable
     {
         RunOnUi(() =>
         {
-            if (!AcceptSession(e.SessionId))
+            if (!AcceptVisualSession(e.SessionId))
             {
                 return;
             }
 
-            postWebMessage(JsonSerializer.Serialize(new
-            {
-                type = WebViewMessageTypes.Gesture,
-                pattern = e.Pattern.Select(x => x.ToString()).ToArray(),
-                action = e.ActionName
-            }));
-
             if (IsEnabled(getUiSettings()?.GestureHint.Enabled))
             {
-                ensureMouseTrailForm().ShowGestureHint(e.ActionName, e.Path[^1], autoHide: true);
+                var timing = ensureMouseTrailForm().CompletePathWithHint(e.ActionName, e.Path[^1]);
+                GestureStartDiagnostics.ReportFinalOverlay(e.SessionId, timing);
+                return;
             }
+
+            getMouseTrailForm()?.EndPath();
         });
     }
 
@@ -127,7 +126,7 @@ internal sealed class GestureFeedbackCoordinator : IDisposable
     {
         RunOnUi(() =>
         {
-            if (!AcceptSession(e.SessionId))
+            if (!AcceptVisualSession(e.SessionId))
             {
                 return;
             }
@@ -147,11 +146,6 @@ internal sealed class GestureFeedbackCoordinator : IDisposable
     {
         RunOnUi(() =>
         {
-            if (!AcceptSession(e.SessionId))
-            {
-                return;
-            }
-
             postWebMessage(JsonSerializer.Serialize(new
             {
                 type = WebViewMessageTypes.GestureActionFailed,
@@ -166,7 +160,8 @@ internal sealed class GestureFeedbackCoordinator : IDisposable
     {
         RunOnUi(() =>
         {
-            if (!AcceptSession(e.SessionId))
+            var callbackStartedAt = Stopwatch.GetTimestamp();
+            if (!AcceptVisualSession(e.SessionId))
             {
                 return;
             }
@@ -188,7 +183,18 @@ internal sealed class GestureFeedbackCoordinator : IDisposable
 
             if (isTrailEnabled)
             {
-                ensureMouseTrailForm().ShowPath(e.Path, e.Button);
+                var timing = ensureMouseTrailForm().ShowPath(e.Path, e.Button);
+                if (e.SourceTimestamp is { } moveReceivedAt &&
+                    timing.IsPresented &&
+                    latestFirstTrailFrameSessionId != e.SessionId)
+                {
+                    latestFirstTrailFrameSessionId = e.SessionId;
+                    GestureStartDiagnostics.ReportFirstTrailFrame(
+                        e.SessionId,
+                        moveReceivedAt,
+                        callbackStartedAt,
+                        timing);
+                }
             }
         });
     }
@@ -224,6 +230,11 @@ internal sealed class GestureFeedbackCoordinator : IDisposable
 
         latestSessionId = sessionId;
         return true;
+    }
+
+    private bool AcceptVisualSession(long sessionId)
+    {
+        return !gestureService.HasNewerSession(sessionId) && AcceptSession(sessionId);
     }
 
     private static bool IsEnabled(bool? enabled) => enabled ?? true;

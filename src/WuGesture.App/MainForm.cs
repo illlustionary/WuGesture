@@ -1122,6 +1122,11 @@ public sealed partial class MainForm : Form
             trailForm.ApplySettings(uiSettings.MouseTrail);
             trailForm.ApplyHintSettings(uiSettings.GestureHint);
             trailForm.ApplyLevelOsdSettings(uiSettings.LevelOsd);
+            if (hasEnabledOverlay)
+            {
+                trailForm.Preload();
+            }
+
             if (!hasEnabledOverlay)
             {
                 trailForm.HideTrail();

@@ -287,7 +287,6 @@ src\pages
 - `{ type: "application-selected", requestId: "...", name: "...", displayName: "...", path: "...", category: "...", icon: "..." }`
 - `{ type: "gesture-recorded", requestId: "...", button: "right|middle", pattern: ["Down", "Right"] }`
 - `{ type: "hotkey-recorded", requestId: "...", keys: ["Control", "W"] }`
-- `{ type: "gesture", ... }`
 - `{ type: "gesture-action-failed", ... }`
 - `{ type: "edge-action-failed", ... }`
 - `{ type: "config-result", operation: "save|export|import|reload|reset|action", success: true|false, message: "..." }`；`save` 成功只更新内部状态，其余明确操作结果显示 toast，任意失败均显示错误 toast。
