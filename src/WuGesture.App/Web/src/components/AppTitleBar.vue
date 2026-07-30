@@ -58,6 +58,7 @@ function toggleWindowMaximize() {
           :data-state="statusState"
           :aria-label="statusLabel"
           :aria-pressed="statusState === 'paused'"
+          tabindex="-1"
           @click="emit('toggle-gesture-paused')"
         >
           <span class="app-titlebar__brand-icon">
@@ -84,43 +85,37 @@ function toggleWindowMaximize() {
     />
 
     <div class="app-titlebar__window-actions">
-      <HoverBubble text="最小化">
-        <button
-          type="button"
-          class="app-titlebar__window-button"
-          aria-label="最小化"
-          @click="emit('minimize-window')"
-        >
-          <MinimizeIcon aria-hidden="true" />
-        </button>
-      </HoverBubble>
-      <HoverBubble :text="maximizeLabel">
-        <button
-          type="button"
-          class="app-titlebar__window-button"
-          :aria-label="maximizeLabel"
-          @click="toggleWindowMaximize"
-        >
-          <RestoreIcon
-            v-if="isMaximized"
-            aria-hidden="true"
-          />
-          <MaximizeIcon
-            v-else
-            aria-hidden="true"
-          />
-        </button>
-      </HoverBubble>
-      <HoverBubble text="关闭">
-        <button
-          type="button"
-          class="app-titlebar__window-button app-titlebar__window-button--close"
-          aria-label="关闭"
-          @click="emit('close-window')"
-        >
-          <CloseIcon aria-hidden="true" />
-        </button>
-      </HoverBubble>
+      <button
+        type="button"
+        class="app-titlebar__window-button"
+        aria-label="最小化"
+        @click="emit('minimize-window')"
+      >
+        <MinimizeIcon aria-hidden="true" />
+      </button>
+      <button
+        type="button"
+        class="app-titlebar__window-button"
+        :aria-label="maximizeLabel"
+        @click="toggleWindowMaximize"
+      >
+        <RestoreIcon
+          v-if="isMaximized"
+          aria-hidden="true"
+        />
+        <MaximizeIcon
+          v-else
+          aria-hidden="true"
+        />
+      </button>
+      <button
+        type="button"
+        class="app-titlebar__window-button app-titlebar__window-button--close"
+        aria-label="关闭"
+        @click="emit('close-window')"
+      >
+        <CloseIcon aria-hidden="true" />
+      </button>
     </div>
   </header>
 </template>
@@ -231,10 +226,6 @@ function toggleWindowMaximize() {
 .app-titlebar__window-actions {
   display: flex;
   align-items: stretch;
-}
-
-.app-titlebar__window-actions > :deep(.hover-bubble-trigger) {
-  display: flex;
 }
 
 .app-titlebar__window-button {
