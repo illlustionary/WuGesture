@@ -315,6 +315,7 @@ function updateMenuPosition() {
 
 .custom-select__menu {
   position: fixed;
+  z-index: 30;
   display: grid;
   gap: 4px;
   max-height: min(240px, 45vh);
