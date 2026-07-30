@@ -347,7 +347,7 @@ function commit() {
     display: block;
     width: 5px;
     border-radius: 999px;
-    background: #9edfff;
+    background: var(--level-preview-signal);
 
     &:nth-child(1) {
       height: 12px;

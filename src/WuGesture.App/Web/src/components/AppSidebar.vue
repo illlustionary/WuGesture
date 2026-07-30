@@ -12,7 +12,13 @@ import MouseIcon from '@/assets/navigation/mouse.svg'
 import PanelLeftIcon from '@/assets/navigation/panel-left.svg'
 import SearchIcon from '@/assets/navigation/search.svg'
 import SettingIcon from '@/assets/navigation/setting.svg'
+import MoonIcon from '@/assets/navigation/moon.svg'
+import SunIcon from '@/assets/navigation/sun.svg'
 import { getCategoryIcon } from '@/pages/category/composables/useCategoryPage'
+
+const props = defineProps({
+  isDarkTheme: { type: Boolean, default: false }
+})
 
 const emit = defineEmits([
   'open-help',
@@ -25,7 +31,8 @@ const emit = defineEmits([
   'delete-app',
   'export-config',
   'import-config',
-  'reset-settings'
+  'reset-settings',
+  'toggle-theme'
 ])
 
 const rulesStore = useGestureRulesStore()
@@ -99,12 +106,10 @@ const dynamicGroups = computed(() => [
   }
 ])
 
-const allGroups = computed(() => [
-  ...dynamicGroups.value,
-  ...fixedGroups
-])
+const allGroups = computed(() => [...dynamicGroups.value, ...fixedGroups])
 
 const collapseLabel = computed(() => (isCollapsed.value ? '展开侧栏' : '收起侧栏'))
+const themeLabel = computed(() => (props.isDarkTheme ? '切换到浅色模式' : '切换到深色模式'))
 
 function getTabIcon(icon) {
   return iconMap[icon] ?? MouseIcon
@@ -127,13 +132,13 @@ function toggleGroup(key) {
 }
 
 function filteredChildren(group) {
-  const value = String(searchValues[group.key] ?? '').trim().toLowerCase()
+  const value = String(searchValues[group.key] ?? '')
+    .trim()
+    .toLowerCase()
   if (!value) return group.children
 
-  return group.children.filter((item) => {
-    const text = group.key === 'app'
-      ? [item.displayName, item.name, item.path].join(' ')
-      : item.name
+  return group.children.filter(item => {
+    const text = group.key === 'app' ? [item.displayName, item.name, item.path].join(' ') : item.name
     return text.toLowerCase().includes(value)
   })
 }
@@ -198,8 +203,14 @@ watch(() => route.path, syncExpanded, { immediate: true })
 </script>
 
 <template>
-  <aside class="app-sidebar" :class="{ 'is-collapsed': isCollapsed }">
-    <nav class="app-sidebar__nav" aria-label="应用页面">
+  <aside
+    class="app-sidebar"
+    :class="{ 'is-collapsed': isCollapsed }"
+  >
+    <nav
+      class="app-sidebar__nav"
+      aria-label="应用页面"
+    >
       <HoverBubble
         v-for="item in directItems"
         :key="item.to"
@@ -211,7 +222,11 @@ watch(() => route.path, syncExpanded, { immediate: true })
           exact-active-class="is-active"
           :aria-label="isCollapsed ? item.label : undefined"
         >
-          <component :is="getTabIcon(item.icon)" class="app-sidebar__item-icon" aria-hidden="true" />
+          <component
+            :is="getTabIcon(item.icon)"
+            class="app-sidebar__item-icon"
+            aria-hidden="true"
+          />
           <span v-if="!isCollapsed">{{ item.label }}</span>
         </RouterLink>
       </HoverBubble>
@@ -229,14 +244,32 @@ watch(() => route.path, syncExpanded, { immediate: true })
           :aria-label="isCollapsed ? group.label : undefined"
           @click="toggleGroup(group.key)"
         >
-          <component :is="getTabIcon(group.icon)" class="app-sidebar__item-icon" aria-hidden="true" />
-          <span v-if="!isCollapsed" class="sidebar-group__title">{{ group.label }}</span>
-          <span v-if="!isCollapsed" class="sidebar-group__chevron" aria-hidden="true" />
+          <component
+            :is="getTabIcon(group.icon)"
+            class="app-sidebar__item-icon"
+            aria-hidden="true"
+          />
+          <span
+            v-if="!isCollapsed"
+            class="sidebar-group__title"
+            >{{ group.label }}</span
+          >
+          <span
+            v-if="!isCollapsed"
+            class="sidebar-group__chevron"
+            aria-hidden="true"
+          />
         </button>
 
-        <div v-if="!isCollapsed && expanded[group.key]" class="sidebar-group__body">
+        <div
+          v-if="!isCollapsed && expanded[group.key]"
+          class="sidebar-group__body"
+        >
           <div class="sidebar-group__toolbar">
-            <div v-if="group.searchable" class="sidebar-group__search">
+            <div
+              v-if="group.searchable"
+              class="sidebar-group__search"
+            >
               <SearchIcon aria-hidden="true" />
               <input
                 v-model="searchValues[group.key]"
@@ -289,7 +322,10 @@ watch(() => route.path, syncExpanded, { immediate: true })
             </template>
           </div>
 
-          <div v-if="group.children.length" class="sidebar-group__children">
+          <div
+            v-if="group.children.length"
+            class="sidebar-group__children"
+          >
             <template v-if="filteredChildren(group).length">
               <div
                 v-for="item in filteredChildren(group)"
@@ -314,12 +350,20 @@ watch(() => route.path, syncExpanded, { immediate: true })
                     class="sidebar-child__icon sidebar-child__svg-icon"
                     aria-hidden="true"
                   />
-                  <span v-else class="sidebar-child__icon sidebar-child__icon--fallback" aria-hidden="true">
+                  <span
+                    v-else
+                    class="sidebar-child__icon sidebar-child__icon--fallback"
+                    aria-hidden="true"
+                  >
                     {{ group.key === 'app' ? childLabel(group, item).slice(0, 1).toUpperCase() : '·' }}
                   </span>
                   <span class="sidebar-child__copy">
                     <span class="sidebar-child__label">{{ childLabel(group, item) }}</span>
-                    <span v-if="childMeta(group, item)" class="sidebar-child__meta">{{ childMeta(group, item) }}</span>
+                    <span
+                      v-if="childMeta(group, item)"
+                      class="sidebar-child__meta"
+                      >{{ childMeta(group, item) }}</span
+                    >
                   </span>
                 </RouterLink>
                 <IconActionButton
@@ -331,34 +375,71 @@ watch(() => route.path, syncExpanded, { immediate: true })
                 />
               </div>
             </template>
-            <span v-else class="sidebar-group__empty">没有匹配项</span>
+            <span
+              v-else
+              class="sidebar-group__empty"
+              >没有匹配项</span
+            >
           </div>
-          <span v-else class="sidebar-group__empty">暂无{{ group.label }}</span>
+          <span
+            v-else
+            class="sidebar-group__empty"
+            >暂无{{ group.label }}</span
+          >
         </div>
       </section>
-
     </nav>
 
     <div class="app-sidebar__footer">
-      <HoverBubble :text="collapseLabel">
-        <button
-          type="button"
-          class="app-sidebar__collapse"
-          :aria-label="collapseLabel"
-          :aria-pressed="isCollapsed"
-          @click="isCollapsed = !isCollapsed"
-        >
-          <PanelLeftIcon aria-hidden="true" />
-        </button>
-      </HoverBubble>
+      <div class="app-sidebar__footer-controls">
+        <HoverBubble :text="collapseLabel">
+          <button
+            type="button"
+            class="app-sidebar__collapse"
+            :aria-label="collapseLabel"
+            :aria-pressed="isCollapsed"
+            @click="isCollapsed = !isCollapsed"
+          >
+            <PanelLeftIcon aria-hidden="true" />
+          </button>
+        </HoverBubble>
+        <HoverBubble :text="themeLabel">
+          <button
+            type="button"
+            class="app-sidebar__theme"
+            :aria-label="themeLabel"
+            :aria-pressed="props.isDarkTheme"
+            @click="emit('toggle-theme')"
+          >
+            <SunIcon
+              v-if="props.isDarkTheme"
+              aria-hidden="true"
+            />
+            <MoonIcon
+              v-else
+              aria-hidden="true"
+            />
+          </button>
+        </HoverBubble>
+      </div>
       <div class="app-sidebar__footer-actions">
         <HoverBubble text="搜索">
-          <button type="button" class="app-sidebar__search" aria-label="搜索" @click="emit('open-search')">
+          <button
+            type="button"
+            class="app-sidebar__search"
+            aria-label="搜索"
+            @click="emit('open-search')"
+          >
             <SearchIcon aria-hidden="true" />
           </button>
         </HoverBubble>
         <HoverBubble text="规则生效顺序">
-          <button type="button" class="app-sidebar__help" aria-label="规则生效顺序" @click="emit('open-help')">
+          <button
+            type="button"
+            class="app-sidebar__help"
+            aria-label="规则生效顺序"
+            @click="emit('open-help')"
+          >
             ?
           </button>
         </HoverBubble>
@@ -669,7 +750,13 @@ watch(() => route.path, syncExpanded, { immediate: true })
   gap: 2px;
 }
 
+.app-sidebar__footer-controls {
+  display: flex;
+  gap: 2px;
+}
+
 .app-sidebar__collapse,
+.app-sidebar__theme,
 .app-sidebar__search,
 .app-sidebar__help {
   display: grid;
@@ -727,6 +814,10 @@ watch(() => route.path, syncExpanded, { immediate: true })
   }
 
   .app-sidebar__footer-actions {
+    flex-direction: column;
+  }
+
+  .app-sidebar__footer-controls {
     flex-direction: column;
   }
 }

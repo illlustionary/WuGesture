@@ -4,6 +4,8 @@ namespace WuGesture.App.GestureEngine;
 
 public sealed class GestureUiSettings
 {
+    public AppearanceUiSettings Appearance { get; set; } = new();
+
     public MouseTrailUiSettings MouseTrail { get; set; } = new();
 
     public GestureHintUiSettings GestureHint { get; set; } = new();
@@ -15,6 +17,11 @@ public sealed class GestureUiSettings
     public AppBehaviorUiSettings AppBehavior { get; set; } = new();
 
     public WebDavUiSettings WebDav { get; set; } = new();
+}
+
+public sealed class AppearanceUiSettings
+{
+    public string Theme { get; set; } = GestureConfigContract.AppearanceThemes.System;
 }
 
 public sealed class AppBehaviorUiSettings

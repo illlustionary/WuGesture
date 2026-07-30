@@ -39,6 +39,9 @@ export const DEFAULT_APPLICATIONS = [
 ];
 
 export const DEFAULT_UI_SETTINGS = {
+  appearance: {
+    theme: "system"
+  },
   mouseTrail: {
     enabled: true,
     inactiveColor: "#AAAAAA",

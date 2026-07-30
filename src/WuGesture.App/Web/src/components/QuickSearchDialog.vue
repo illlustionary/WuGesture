@@ -119,7 +119,7 @@ function handleKeydown(event) {
   display: grid;
   place-items: start center;
   padding: min(12vh, 96px) 20px 20px;
-  background: rgb(20 27 39 / 36%);
+  background: var(--scrim);
 }
 
 :deep(.quick-search-dialog) {

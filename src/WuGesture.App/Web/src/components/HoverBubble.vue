@@ -219,7 +219,7 @@ onBeforeUnmount(() => {
   padding: 10px 12px;
   border: 1px solid var(--border);
   border-radius: 10px;
-  background-color: #fff;
+  background-color: var(--panel-solid);
   box-shadow: var(--shadow-popover);
   color: var(--text);
   font-size: 13px;

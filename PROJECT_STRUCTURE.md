@@ -14,7 +14,7 @@
 - 动作当前支持快捷键、窗口控制、音量控制和亮度控制；快捷键通过 `SendInput` 执行，窗口控制通过 Win32 窗口 API 执行，音量通过 Core Audio API 执行并带按键回退，静音状态下执行音量增减会先取消静音，亮度通过 DDC/CI、WMI、Gamma 三段回退执行。
 - 规则当前支持 `global`、`category` 和 `app` 作用域；程序可按关联顺序归属多个分类，分类同手势时越靠前的关联优先级越高，`app` 规则仍高于分类和全局规则。
 - 边缘操作是独立的全局配置，支持触发角、摩擦边和边缘滚动。
-- UI 设置里的轨迹线、手势提示和音量/亮度 OSD 都支持单独关闭，运行时会按对应 `uiSettings` 节点的 `enabled` 决定是否显示。
+- UI 设置里的轨迹线、手势提示和音量/亮度 OSD 都支持单独关闭，运行时会按对应 `uiSettings` 节点的 `enabled` 决定是否显示；配置界面外观支持跟随系统、浅色和深色主题，用户选择会随主配置同步。
 
 ## 根目录
 
@@ -65,7 +65,7 @@ src\WuGesture.App
 - `MainForm.Windowing.cs`：`MainForm` 的无边框窗口职责，集中自定义标题栏的最小化、最大化/还原、关闭、拖动和缩放，以及窗口状态持久化、带系统动画的任务栏原生最小化/激活、右下角系统缩放、Win11 DWM 标准圆角和单实例唤醒时临时关联输入队列的前置激活；Windows 10 保持兼容的无边框外观。
 - `WebViewHost.cs`：负责 WebView2 控件的创建、销毁、虚拟主机映射、导航和消息事件订阅；入站消息仍同步交由 `MainForm` 的业务处理器执行，宿主不存在时出站消息直接丢弃。
 - `WebViewMessageDtos.cs`：集中 WebView 入站消息 DTO。
-- `WebViewRulesPayloadFactory.cs`：把已加载的手势配置转换为 WebView `rules` 消息 payload；其中 `appInfo` 补充宿主应用构建版本和应用图标 PNG data URL，供前端侧栏展示。
+- `WebViewRulesPayloadFactory.cs`：把已加载的手势配置转换为 WebView `rules` 消息 payload；其中 `appInfo` 补充宿主应用构建版本和应用图标 PNG data URL，供前端侧栏展示；`uiSettings.appearance` 将配置界面主题偏好传给前端。
 - `ApplicationIconDataUrl.cs`：从可执行文件提取图标并转换为 WebView 可用的 PNG data URL。
 - `WindowStateStore.cs`：负责配置窗口位置、尺寸和最大化状态的读写、校验与屏幕边界规范化。
 - `AppIdentity.cs` 集中应用显示名、AppData 子目录、自启动注册表值、单实例 IPC 请求/确认事件名和内部启动参数；开机自启动和管理员重启会直接调用当前 `WuGesture.exe`。
@@ -117,7 +117,7 @@ src\WuGesture.App\GestureEngine
 - `MouseInput.cs`：当移动距离太小，不足以构成手势时，重放一次普通右键或中键。
 - `GestureDirection.cs`：8 方向枚举。
 - `GestureRule.cs`：运行时规则和热键动作模型。
-- `GestureUiSettings.cs`：持久化的运行时 UI 设置模型，包括轨迹窗、提示泡泡、音量/亮度 OSD 和手势灵敏度配置。
+- `GestureUiSettings.cs`：持久化的 UI 设置模型，包括配置界面外观、轨迹窗、提示泡泡、音量/亮度 OSD 和手势灵敏度配置。
 - `MouseTrailForm.cs`：全虚拟桌面的透明分层覆盖窗，负责窗口生命周期、鼠标穿透、DIB/HDC 缓冲和画面提交；启动后预热并在手势结束时隐藏复用，避免独立提示窗的创建和定位时序问题。即使轨迹线关闭，提示仍可单独使用此覆盖层显示。
 - `MouseTrailRenderer.cs`：管理手势路径、轨迹画笔和增量轨迹绘制。
 - `GestureHintRenderer.cs`：管理规则命中提示的样式、尺寸定位、显示/淡出计时和同层绘制；最终提示无缝接续预览，并按配置时长淡出。
@@ -189,6 +189,7 @@ MouseHook
 - `edgeActions`：独立的全局边缘操作列表；每项包含 `enabled`、`triggerType`、`location`、`wheelDirection`、`frictionCount` 和 `action`。`triggerType` 支持 `corner`、`friction`、`wheel`；`corner` 的位置为四角，`friction/wheel` 的位置为四边，`wheel` 额外区分滚轮 `up/down`。边缘操作名称不再保存，由 UI 和运行时根据触发类型、位置与滚轮方向生成。
 - `applications`：应用程序归属列表，每项包含 `name`、`displayName`、`path`、`categories`；`categories` 是有序分类列表，运行时通过前台进程名匹配 `name`，分类同手势时越靠前优先级越高。旧配置的单个 `category` 会在加载时迁移；`displayName` 只用于 UI 展示和编辑。
 - `uiSettings.mouseTrail`：轨迹窗设置，包含 `enabled`、`inactiveColor`、`activeColor`、`inactiveThickness`、`activeThickness`、`thickness`、`inactiveOpacity`、`activeOpacity`；`enabled` 关闭时不再绘制轨迹线，`thickness` 保留用于兼容旧配置。
+- `uiSettings.appearance`：配置界面外观设置，包含 `theme`；支持 `system`、`light`、`dark`，默认 `system` 跟随 Windows 主题，用户点击侧栏底部的主题按钮后保存明确的浅色或深色偏好。
 - `uiSettings.gestureHint`：提示泡泡设置，包含 `enabled`、`displayDurationMs`、`fadeDurationMs`、`fontFamily`、`fontSize`、`textColor`、`backgroundColor`、`backgroundOpacity`、`width`、`widthPercent`、`autoWidth`、`height`、`heightPercent`、`cornerRadius`、`bottomOffset`、`bottomOffsetPercent`；提示绘制在全虚拟桌面轨迹覆盖层而非独立窗体，`enabled` 关闭时不再显示手势命中文本，`displayDurationMs` 为停留时长、`fadeDurationMs` 为 0 时立即消失，百分比字段按当前鼠标屏幕工作区宽高换算，像素字段保留用于兼容旧配置。
 - `uiSettings.levelOsd`：音量/亮度 OSD 设置，包含 `enabled`、`displayDurationMs`、`fadeDurationMs`、`backgroundColor`、`backgroundOpacity`、`textColor`、`trackColor`、`volumeColor`、`brightnessColor`、`width`、`height`、`cornerRadius`、`position`、`offsetX` 和 `offsetY`；OSD 由全虚拟桌面透明覆盖层绘制，不再创建独立窗体；当前支持相对于鼠标所在屏幕工作区的居中、上/下居中和四角位置预设，`fadeDurationMs` 为 0 时立即消失。
 - `uiSettings.gestureSensitivity`：手势灵敏度配置，包含 `percent`，范围 0-200，默认 110；100 对应标准手感，数值越高越容易识别短距离手势。
