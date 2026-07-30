@@ -1,4 +1,5 @@
 <script setup>
+import AppIcon from '@/components/AppIcon.vue'
 import IconActionButton from '@/components/IconActionButton.vue'
 
 const props = defineProps({
@@ -6,7 +7,7 @@ const props = defineProps({
   active: { type: Boolean, default: false },
   label: { type: String, default: '' },
   icon: { type: String, default: '' },
-  iconComponent: { type: [Object, Function], default: null },
+  iconName: { type: String, default: '' },
   fallbackGlyph: { type: String, default: '' },
   deleteLabel: { type: String, required: true },
   iconMode: { type: String, default: 'category' }
@@ -41,9 +42,9 @@ function displayLabel() {
         :src="icon"
         alt=""
       />
-      <component
-        :is="iconComponent"
-        v-else-if="iconComponent"
+      <AppIcon
+        v-else-if="iconName"
+        :name="iconName"
         class="scope-item__icon scope-item__svg-icon"
         aria-hidden="true"
       />

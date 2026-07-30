@@ -2,18 +2,9 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { useGestureEditorContext } from '@/gestureEditor/context/gestureEditorContext'
+import AppIcon from '@/components/AppIcon.vue'
 import HoverBubble from '@/components/HoverBubble.vue'
 import IconActionButton from '@/components/IconActionButton.vue'
-import BriefcaseIcon from '@/assets/navigation/briefcase.svg'
-import CircleDashedIcon from '@/assets/navigation/circle-dashed.svg'
-import CloseAltIcon from '@/assets/navigation/close-alt.svg'
-import FolderIcon from '@/assets/navigation/folder.svg'
-import MouseIcon from '@/assets/navigation/mouse.svg'
-import PanelLeftIcon from '@/assets/navigation/panel-left.svg'
-import SearchIcon from '@/assets/navigation/search.svg'
-import SettingIcon from '@/assets/navigation/setting.svg'
-import MoonIcon from '@/assets/navigation/moon.svg'
-import SunIcon from '@/assets/navigation/sun.svg'
 import { getCategoryIcon } from '@/pages/category/composables/useCategoryPage'
 
 const props = defineProps({
@@ -45,15 +36,6 @@ const expanded = reactive({
   edge: false,
   settings: false
 })
-
-const iconMap = {
-  mouse: MouseIcon,
-  folder: FolderIcon,
-  briefcase: BriefcaseIcon,
-  'circle-dashed': CircleDashedIcon,
-  'close-alt': CloseAltIcon,
-  setting: SettingIcon
-}
 
 const directItems = [
   { to: '/global', label: '全局', icon: 'mouse' },
@@ -110,10 +92,6 @@ const allGroups = computed(() => [...dynamicGroups.value, ...fixedGroups])
 
 const collapseLabel = computed(() => (isCollapsed.value ? '展开侧栏' : '收起侧栏'))
 const themeLabel = computed(() => (props.isDarkTheme ? '切换到浅色模式' : '切换到深色模式'))
-
-function getTabIcon(icon) {
-  return iconMap[icon] ?? MouseIcon
-}
 
 function routeGroup(path) {
   if (path.startsWith('/category')) return 'category'
@@ -222,8 +200,8 @@ watch(() => route.path, syncExpanded, { immediate: true })
           exact-active-class="is-active"
           :aria-label="isCollapsed ? item.label : undefined"
         >
-          <component
-            :is="getTabIcon(item.icon)"
+          <AppIcon
+            :name="item.icon"
             class="app-sidebar__item-icon"
             aria-hidden="true"
           />
@@ -244,8 +222,8 @@ watch(() => route.path, syncExpanded, { immediate: true })
           :aria-label="isCollapsed ? group.label : undefined"
           @click="toggleGroup(group.key)"
         >
-          <component
-            :is="getTabIcon(group.icon)"
+          <AppIcon
+            :name="group.icon"
             class="app-sidebar__item-icon"
             aria-hidden="true"
           />
@@ -270,7 +248,7 @@ watch(() => route.path, syncExpanded, { immediate: true })
               v-if="group.searchable"
               class="sidebar-group__search"
             >
-              <SearchIcon aria-hidden="true" />
+              <AppIcon name="search" aria-hidden="true" />
               <input
                 v-model="searchValues[group.key]"
                 type="search"
@@ -344,8 +322,8 @@ watch(() => route.path, syncExpanded, { immediate: true })
                     class="sidebar-child__icon app-icon"
                     alt=""
                   />
-                  <component
-                    :is="group.key === 'category' ? getCategoryIcon(item.name) : getTabIcon(item.icon)"
+                  <AppIcon
+                    :name="group.key === 'category' ? getCategoryIcon(item.name) : item.icon"
                     v-else-if="group.key === 'category' || item.icon"
                     class="sidebar-child__icon sidebar-child__svg-icon"
                     aria-hidden="true"
@@ -430,7 +408,7 @@ watch(() => route.path, syncExpanded, { immediate: true })
             aria-label="搜索"
             @click="emit('open-search')"
           >
-            <SearchIcon aria-hidden="true" />
+            <AppIcon name="search" aria-hidden="true" />
           </button>
         </HoverBubble>
         <HoverBubble text="规则生效顺序">

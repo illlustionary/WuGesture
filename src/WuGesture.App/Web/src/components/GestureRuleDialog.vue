@@ -1,9 +1,8 @@
 <script setup>
 import { computed } from 'vue'
+import AppIcon from '@/components/AppIcon.vue'
 import BaseDialog from './BaseDialog.vue'
 import CustomSelect from './CustomSelect.vue'
-import KeyboardIcon from '@/assets/gesture/keyboard.svg'
-import RecordIcon from '@/assets/gesture/record.svg'
 import { ACTION_TYPE_OPTIONS, ACTION_TYPES, OPERATIONS } from '@/constants/gestureEditorOptions'
 import { GESTURE_EDITOR_LIMITS } from '@/constants/gestureEditorLimits'
 
@@ -129,7 +128,8 @@ const actionTypeOptions = ACTION_TYPE_OPTIONS
               @click="$emit('record-hotkey', draft)"
               @blur="$emit('persist')"
             >
-              <KeyboardIcon
+              <AppIcon
+                name="keyboard"
                 class="hotkey-record-button__icon"
                 aria-hidden="true"
               />
@@ -150,7 +150,8 @@ const actionTypeOptions = ACTION_TYPE_OPTIONS
           :class="{ 'is-recording': isRecordingGesture }"
           @click="$emit('record')"
         >
-          <RecordIcon
+          <AppIcon
+            name="record"
             class="gesture-recorder__icon"
             aria-hidden="true"
           />

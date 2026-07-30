@@ -34,7 +34,7 @@
               class="gesture-pattern-button__mouse"
               aria-hidden="true"
             >
-              <MouseIcon class="gesture-pattern-button__mouse-icon" />
+              <AppIcon name="mouse" class="gesture-pattern-button__mouse-icon" />
             </span>
             <span
               v-if="gestureSegments(rule).length > 0"
@@ -105,7 +105,7 @@
 
 <script setup>
 import IconActionButton from './IconActionButton.vue'
-import MouseIcon from '@/assets/navigation/mouse.svg'
+import AppIcon from '@/components/AppIcon.vue'
 import { ACTION_TYPES } from '@/constants/gestureEditorOptions'
 const DIRECTION_LABELS = {
   Up: '↑',
