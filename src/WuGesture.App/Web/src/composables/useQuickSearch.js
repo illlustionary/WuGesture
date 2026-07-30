@@ -1,9 +1,11 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, proxyRefs, ref } from 'vue'
 import { SCOPE_KINDS } from '@/constants/gestureEditorOptions'
+import { useGestureEditorNavigation } from '@/gestureEditor/modules/useGestureEditorNavigation'
 import { useGestureQuickSearchStore } from '@/gestureEditor/stores/useGestureQuickSearchStore'
 
-export function useQuickSearch({ navigation }) {
+export function useQuickSearch() {
   const quickSearchStore = useGestureQuickSearchStore()
+  const navigation = useGestureEditorNavigation()
   const isOpen = ref(false)
   const searchItems = computed(() => quickSearchStore.searchItems)
 

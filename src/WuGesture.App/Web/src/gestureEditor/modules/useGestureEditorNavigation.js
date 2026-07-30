@@ -1,20 +1,24 @@
 import { SCOPE_KINDS } from '@/constants/gestureEditorOptions'
+import {
+  GESTURE_EDITOR_EVENTS,
+  emitGestureEditorEvent
+} from '@/gestureEditor/events/gestureEditorEventBus'
 
-export function useGestureEditorNavigation({ router }) {
+export function useGestureEditorNavigation() {
   function getRouteGroup(path = '') {
     return String(path).replace(/^\//, '').split('/')[0] || SCOPE_KINDS.global
   }
 
   function navigateToScope(scopeKind, scopeName = '') {
-    return router.push(getScopeRoute(scopeKind, scopeName))
+    return navigate(getScopeRoute(scopeKind, scopeName))
   }
 
   function replaceScope(scopeKind, scopeName = '') {
-    return router.replace(getScopeRoute(scopeKind, scopeName))
+    return navigate(getScopeRoute(scopeKind, scopeName), { replace: true })
   }
 
   function navigateToExclusion(selected = '') {
-    return router.push({
+    return navigate({
       path: '/exclusions',
       query: selected ? { selected } : undefined
     })
@@ -26,6 +30,13 @@ export function useGestureEditorNavigation({ router }) {
     navigateToScope,
     replaceScope
   }
+}
+
+function navigate(route, { replace = false } = {}) {
+  return emitGestureEditorEvent(GESTURE_EDITOR_EVENTS.navigate, {
+    replace,
+    route
+  })
 }
 
 function getScopeRoute(scopeKind, scopeName) {

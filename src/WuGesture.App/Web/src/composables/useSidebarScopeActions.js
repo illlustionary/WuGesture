@@ -1,9 +1,11 @@
 import { ref, watch } from 'vue'
 import { useAppPage } from '@/pages/app/composables/useAppPage'
 import { useCategoryPage } from '@/pages/category/composables/useCategoryPage'
+import { useGestureEditorNavigation } from '@/gestureEditor/modules/useGestureEditorNavigation'
 
-export function useSidebarScopeActions({ editor, navigation, route }) {
+export function useSidebarScopeActions({ editor, route }) {
   const pendingAppRoute = ref(false)
+  const navigation = useGestureEditorNavigation()
   const category = useCategoryPage(editor, { activate: false })
   const application = useAppPage(editor, { activate: false })
 

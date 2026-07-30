@@ -11,6 +11,7 @@ import GestureRuleDialog from '@/components/GestureRuleDialog.vue'
 import ScopeCreateDialog from '@/components/ScopeCreateDialog.vue'
 import ScopePriorityNotice from '@/components/ScopePriorityNotice.vue'
 import { useAppearanceTheme } from '@/composables/useAppearanceTheme'
+import { useGestureEditorEventListeners } from '@/composables/useGestureEditorEventListeners'
 import { useQuickSearch } from '@/composables/useQuickSearch'
 import { useSidebarScopeActions } from '@/composables/useSidebarScopeActions'
 import { useGestureEditorContext } from '@/gestureEditor/context/gestureEditorContext'
@@ -24,10 +25,11 @@ const lifecycle = useGestureEditorLifecycleStore()
 const overlay = useGestureEditorOverlayStore()
 const route = useRoute()
 const router = useRouter()
+useGestureEditorEventListeners(router)
 const editor = useGestureEditorContext()
-const navigation = useGestureEditorNavigation({ router })
+const navigation = useGestureEditorNavigation()
 const { isDarkTheme, toggleTheme } = useAppearanceTheme(editor)
-const quickSearch = useQuickSearch({ navigation })
+const quickSearch = useQuickSearch()
 const routeOrder = ['global', 'category', 'app', 'edge', 'exclusions', 'settings']
 const transitionDirection = ref('right')
 const priorityNoticeOpen = ref(false)
@@ -55,7 +57,7 @@ const {
   openSidebarAppPicker,
   removeSidebarApp,
   removeSidebarCategory
-} = useSidebarScopeActions({ editor, navigation, route })
+} = useSidebarScopeActions({ editor, route })
 
 lifecycle.initialize()
 
