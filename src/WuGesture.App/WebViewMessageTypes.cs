@@ -26,7 +26,6 @@ internal static class WebViewMessageTypes
     public const string WindowStartDrag = "window-start-drag";
     public const string WindowStartResize = "window-start-resize";
 
-    public const string Gesture = "gesture";
     public const string GestureRecorded = "gesture-recorded";
     public const string GestureActionFailed = "gesture-action-failed";
     public const string EdgeActionFailed = "edge-action-failed";

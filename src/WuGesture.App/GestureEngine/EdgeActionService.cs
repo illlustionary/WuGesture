@@ -110,7 +110,7 @@ public sealed class EdgeActionService : IDisposable
 
     private void HandleMouseLocation(Point location)
     {
-        if (disposed || paused || exclusionMatcher.IsEdgeActionExcluded() || IsDisabledInFullscreen())
+        if (disposed || paused)
         {
             ResetActiveState();
             return;
@@ -121,6 +121,12 @@ public sealed class EdgeActionService : IDisposable
             activeCorner = EdgeLocation.None;
             activeFrictionEdge = EdgeLocation.None;
             frictionTracker.Reset();
+            return;
+        }
+
+        if (exclusionMatcher.IsEdgeActionExcluded() || IsDisabledInFullscreen())
+        {
+            ResetActiveState();
             return;
         }
 

@@ -1,4 +1,6 @@
+using System.Collections.Concurrent;
 using System.Drawing;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace WuGesture.App.GestureEngine;
@@ -19,7 +21,11 @@ public sealed class GestureService : IDisposable
     private readonly ActionExecutor actionExecutor = new();
     private readonly ApplicationExclusionMatcher exclusionMatcher = new();
     private readonly GestureSession session = new();
+    private readonly ConcurrentQueue<PendingAction> pendingActions = new();
+    private GestureProgressEventArgs? pendingTrackingProgress;
     private int minimumGestureDistance = GestureRuntimeDefaults.MinimumGestureDistance;
+    private int actionWorkerScheduled;
+    private int trackingProgressPostScheduled;
     private string? recordingRequestId;
     private string targetWindowMode = GestureConfigContract.WindowTargetModes.StartWindow;
     private GestureExecutionContext activeGestureContext = GestureExecutionContext.Empty;
@@ -31,6 +37,14 @@ public sealed class GestureService : IDisposable
     private long nextSessionId;
     private bool started;
     private bool disposed;
+
+    private sealed record PendingAction(
+        long SessionId,
+        IReadOnlyList<Point> Path,
+        IReadOnlyList<GestureDirection> Pattern,
+        GestureRule Rule,
+        IntPtr TargetWindow,
+        bool ActivateTargetWindow);
 
     private sealed record GestureExecutionContext(
         string TargetWindowMode,
@@ -166,6 +180,7 @@ public sealed class GestureService : IDisposable
         mouseHook.RightButtonUp += OnRightButtonUp;
         mouseHook.MiddleButtonUp += OnMiddleButtonUp;
         mouseHook.Start();
+        GestureStartDiagnostics.ReportServiceStarted();
         started = true;
     }
 
@@ -209,9 +224,17 @@ public sealed class GestureService : IDisposable
 
     private void StartTracking(MouseHookEventArgs e, ActiveMouseButton button, bool swallowInput)
     {
-        if (disposed || (isPaused && recordingRequestId is null) || session.IsCompleting)
+        if (disposed || (isPaused && recordingRequestId is null))
         {
             return;
+        }
+
+        if (session.IsCompleting)
+        {
+            GestureStartDiagnostics.ReportButtonDownRecoveredWhileCompleting(
+                ToPublicButton(button),
+                session.Id);
+            session.Cancel();
         }
 
         if (session.IsTracking)
@@ -225,14 +248,48 @@ public sealed class GestureService : IDisposable
             }
         }
 
+        var startTimestamp = Stopwatch.GetTimestamp();
         var gestureContext = recordingRequestId is null
             ? CreateGestureContext(e.Location)
             : GestureExecutionContext.Empty;
+        var contextCompletedAt = Stopwatch.GetTimestamp();
 
-        if (recordingRequestId is null &&
-            (IsGestureExcluded(gestureContext) || IsDisabledInFullscreen()))
+        var isExcluded = recordingRequestId is null && IsGestureExcluded(gestureContext);
+        var exclusionCompletedAt = Stopwatch.GetTimestamp();
+        var fullscreenChecked = recordingRequestId is null && !isExcluded;
+        var isFullscreen = fullscreenChecked && IsDisabledInFullscreen();
+        var fullscreenCompletedAt = Stopwatch.GetTimestamp();
+        if (recordingRequestId is null && (isExcluded || isFullscreen))
         {
+            GestureStartDiagnostics.ReportButtonDown(
+                startTimestamp,
+                contextCompletedAt,
+                exclusionCompletedAt,
+                fullscreenCompletedAt,
+                ToPublicButton(button),
+                gestureContext.TargetWindowMode,
+                gestureContext.StartWindow,
+                gestureContext.ScopeContext,
+                isExcluded,
+                isFullscreen,
+                fullscreenChecked);
             return;
+        }
+
+        if (recordingRequestId is null)
+        {
+            GestureStartDiagnostics.ReportButtonDown(
+                startTimestamp,
+                contextCompletedAt,
+                exclusionCompletedAt,
+                fullscreenCompletedAt,
+                ToPublicButton(button),
+                gestureContext.TargetWindowMode,
+                gestureContext.StartWindow,
+                gestureContext.ScopeContext,
+                isExcluded,
+                isFullscreen,
+                fullscreenChecked);
         }
 
         e.Handled = swallowInput;
@@ -242,8 +299,9 @@ public sealed class GestureService : IDisposable
         }
 
         activeMouseButton = button;
-        session.Start(++nextSessionId, e.Location);
+        session.Start(Interlocked.Increment(ref nextSessionId), e.Location);
         activeGestureContext = gestureContext;
+        RaisePreviewCleared(session.Id);
         RaiseProgress(session.Id, session.Snapshot(), [], true, ToPublicButton(button), force: true);
     }
 
@@ -266,8 +324,9 @@ public sealed class GestureService : IDisposable
             return;
         }
 
+        var moveReceivedAt = Stopwatch.GetTimestamp();
         session.Append(e.Location);
-        PublishProgress();
+        PublishProgress(moveReceivedAt);
     }
 
     private void OnRightButtonUp(object? sender, MouseHookEventArgs e)
@@ -314,6 +373,7 @@ public sealed class GestureService : IDisposable
 
     private void FinishTracking(Point location, ActiveMouseButton button)
     {
+        var completionStartedAt = Stopwatch.GetTimestamp();
         var sessionId = session.Id;
         var recordingId = recordingRequestId;
         var gestureContext = activeGestureContext;
@@ -329,9 +389,10 @@ public sealed class GestureService : IDisposable
             var recordingPattern = recognizer.Recognize(session.Points);
             RaiseProgress(sessionId, path, recordingPattern, false, ToPublicButton(button), force: true);
             ClearPreviewMatch(sessionId);
+            CompleteSession(sessionId);
             Post(() =>
             {
-                if (!CanCompleteSession(sessionId))
+                if (disposed)
                 {
                     return;
                 }
@@ -339,7 +400,6 @@ public sealed class GestureService : IDisposable
                 GestureRecordingCompleted?.Invoke(
                     this,
                     new GestureRecordingCompletedEventArgs(sessionId, recordingId, path, recordingPattern, ToPublicButton(button)));
-                CompleteSession(sessionId);
             });
             return;
         }
@@ -347,30 +407,29 @@ public sealed class GestureService : IDisposable
         if (session.Points.Count < 2 || PathLength(session.Points) < minimumGestureDistance)
         {
             RaiseProgress(sessionId, path, [], false, ToPublicButton(button), force: true);
+            CompleteSession(sessionId);
             if (button == ActiveMouseButton.Right)
             {
                 Post(() =>
                 {
-                    if (!CanCompleteSession(sessionId))
+                    if (disposed)
                     {
                         return;
                     }
 
                     MouseInput.ReplayRightClick();
-                    CompleteSession(sessionId);
                 });
             }
             else if (button == ActiveMouseButton.Middle)
             {
                 Post(() =>
                 {
-                    if (!CanCompleteSession(sessionId))
+                    if (disposed)
                     {
                         return;
                     }
 
                     MouseInput.ReplayMiddleClick();
-                    CompleteSession(sessionId);
                 });
             }
 
@@ -383,14 +442,20 @@ public sealed class GestureService : IDisposable
         if (rule is null)
         {
             RaiseProgress(sessionId, path, pattern, false, publicButton, force: true);
-            Post(() => CompleteSession(sessionId));
+            CompleteSession(sessionId);
             return;
         }
 
-        RaiseProgress(sessionId, path, pattern, false, publicButton, force: true);
+        var postedAt = Stopwatch.GetTimestamp();
+        CompleteSession(sessionId);
         Post(() =>
         {
-            if (!CanCompleteSession(sessionId))
+            var callbackStartedAt = Stopwatch.GetTimestamp();
+            var feedbackCompletedAt = callbackStartedAt;
+            var targetCheckedAt = feedbackCompletedAt;
+            var foregroundActivatedAt = targetCheckedAt;
+            var outcome = "completed";
+            if (disposed)
             {
                 return;
             }
@@ -398,38 +463,73 @@ public sealed class GestureService : IDisposable
             try
             {
                 GestureRecognized?.Invoke(this, new GestureRecognizedEventArgs(sessionId, path, pattern, rule.ActionName));
+                feedbackCompletedAt = Stopwatch.GetTimestamp();
                 var targetWindow = gestureContext.UsesStartWindow
                     ? gestureContext.StartWindow
                     : GetForegroundWindow();
                 var isDesktopWindowControlTarget = rule.Action is WindowControlAction &&
                                                    targetWindow != IntPtr.Zero &&
                                                    DesktopWindowClassifier.IsDesktopSurface(targetWindow);
+                targetCheckedAt = Stopwatch.GetTimestamp();
                 if (isDesktopWindowControlTarget)
                 {
+                    outcome = "desktop-window-control-ignored";
                     return;
                 }
 
-                if (gestureContext.UsesStartWindow)
+                if (RunsInBackground(rule))
                 {
-                    if (gestureContext.StartWindow == IntPtr.Zero)
+                    if (gestureContext.UsesStartWindow && gestureContext.StartWindow == IntPtr.Zero)
                     {
+                        outcome = "start-window-unresolved";
                         return;
                     }
 
-                    SetForegroundWindow(gestureContext.StartWindow);
+                    DispatchAction(new PendingAction(
+                        sessionId,
+                        path,
+                        pattern,
+                        rule,
+                        targetWindow,
+                        gestureContext.UsesStartWindow));
+                    foregroundActivatedAt = Stopwatch.GetTimestamp();
+                    outcome = "dispatched";
                 }
+                else
+                {
+                    if (gestureContext.UsesStartWindow)
+                    {
+                        if (gestureContext.StartWindow == IntPtr.Zero)
+                        {
+                            outcome = "start-window-unresolved";
+                            return;
+                        }
 
-                actionExecutor.Execute(
-                    rule,
-                    targetWindow);
+                        SetForegroundWindow(gestureContext.StartWindow);
+                    }
+
+                    foregroundActivatedAt = Stopwatch.GetTimestamp();
+                    actionExecutor.Execute(rule, targetWindow);
+                }
             }
             catch (Exception exception)
             {
+                outcome = $"failed:{exception.GetType().Name}";
                 GestureActionFailed?.Invoke(this, new GestureActionFailedEventArgs(sessionId, path, pattern, rule.ActionName, exception));
             }
             finally
             {
-                CompleteSession(sessionId);
+                GestureStartDiagnostics.ReportMatchedCompletion(
+                    completionStartedAt,
+                    postedAt,
+                    callbackStartedAt,
+                    feedbackCompletedAt,
+                    targetCheckedAt,
+                    foregroundActivatedAt,
+                    Stopwatch.GetTimestamp(),
+                    publicButton,
+                    rule.ActionName,
+                    outcome);
             }
         });
     }
@@ -443,9 +543,92 @@ public sealed class GestureService : IDisposable
         }
     }
 
-    private bool CanCompleteSession(long sessionId)
+    private void DispatchAction(PendingAction action)
     {
-        return !disposed && session.CanComplete(sessionId);
+        pendingActions.Enqueue(action);
+        ScheduleActionWorker();
+    }
+
+    private void ScheduleActionWorker()
+    {
+        if (Interlocked.Exchange(ref actionWorkerScheduled, 1) == 0)
+        {
+            ThreadPool.UnsafeQueueUserWorkItem<object?>(static state =>
+            {
+                ((GestureService)state!).ProcessPendingActions();
+            }, this, preferLocal: false);
+        }
+    }
+
+    private void ProcessPendingActions()
+    {
+        try
+        {
+            while (pendingActions.TryDequeue(out var pendingAction))
+            {
+                if (disposed)
+                {
+                    continue;
+                }
+
+                var startedAt = Stopwatch.GetTimestamp();
+                var outcome = "completed";
+                try
+                {
+                    if (pendingAction.ActivateTargetWindow)
+                    {
+                        SetForegroundWindow(pendingAction.TargetWindow);
+                    }
+
+                    actionExecutor.Execute(pendingAction.Rule, pendingAction.TargetWindow);
+                }
+                catch (Exception exception)
+                {
+                    outcome = $"failed:{exception.GetType().Name}";
+                    Post(() =>
+                    {
+                        if (!disposed)
+                        {
+                            GestureActionFailed?.Invoke(
+                                this,
+                                new GestureActionFailedEventArgs(
+                                    pendingAction.SessionId,
+                                    pendingAction.Path,
+                                    pendingAction.Pattern,
+                                    pendingAction.Rule.ActionName,
+                                    exception));
+                        }
+                    });
+                }
+                finally
+                {
+                    GestureStartDiagnostics.ReportActionExecution(
+                        pendingAction.SessionId,
+                        startedAt,
+                        Stopwatch.GetTimestamp(),
+                        pendingAction.Rule.ActionName,
+                        outcome);
+                }
+            }
+        }
+        finally
+        {
+            Volatile.Write(ref actionWorkerScheduled, 0);
+            if (!pendingActions.IsEmpty)
+            {
+                ScheduleActionWorker();
+            }
+        }
+    }
+
+    private static bool RunsInBackground(GestureRule rule)
+    {
+        return rule.Action is HotkeyAction or WindowControlAction;
+    }
+
+    internal bool HasNewerSession(long sessionId)
+    {
+        return Volatile.Read(ref nextSessionId) > sessionId;
     }
 
     private void CompleteSession(long sessionId)
@@ -453,17 +636,17 @@ public sealed class GestureService : IDisposable
         session.Complete(sessionId);
     }
 
-    private void PublishProgress()
+    private void PublishProgress(long? sourceTimestamp = null)
     {
         if (recordingRequestId is not null)
         {
-            RaiseProgress(session.Id, session.Snapshot(), [], true, ToPublicButton(activeMouseButton));
+            RaiseProgress(session.Id, session.Snapshot(), [], true, ToPublicButton(activeMouseButton), sourceTimestamp: sourceTimestamp);
             return;
         }
 
         var pattern = recognizer.Recognize(session.Points);
         var path = session.Snapshot();
-        RaiseProgress(session.Id, path, pattern, true, ToPublicButton(activeMouseButton));
+        RaiseProgress(session.Id, path, pattern, true, ToPublicButton(activeMouseButton), sourceTimestamp: sourceTimestamp);
 
         RaisePreviewMatch(session.Id, path, pattern, activeGestureContext.ScopeContext, ToPublicButton(activeMouseButton));
     }
@@ -506,11 +689,16 @@ public sealed class GestureService : IDisposable
         }
 
         var previewSessionId = session.ClearPreview(sessionId);
+        RaisePreviewCleared(previewSessionId);
+    }
+
+    private void RaisePreviewCleared(long sessionId)
+    {
         Post(() =>
         {
             if (!disposed)
             {
-                GesturePreviewCleared?.Invoke(this, new GesturePreviewClearedEventArgs(previewSessionId));
+                GesturePreviewCleared?.Invoke(this, new GesturePreviewClearedEventArgs(sessionId));
             }
         });
     }
@@ -521,21 +709,55 @@ public sealed class GestureService : IDisposable
         IReadOnlyList<GestureDirection> pattern,
         bool isCurrentlyTracking,
         GestureMouseButton button,
-        bool force = false)
+        bool force = false,
+        long? sourceTimestamp = null)
     {
         if (!session.ShouldPublishProgress(pattern, path, force))
         {
             return;
         }
+
+        var progress = new GestureProgressEventArgs(
+            sessionId,
+            path,
+            pattern,
+            isCurrentlyTracking,
+            button,
+            sourceTimestamp);
+        if (isCurrentlyTracking && !force)
+        {
+            Volatile.Write(ref pendingTrackingProgress, progress);
+            if (Interlocked.Exchange(ref trackingProgressPostScheduled, 1) == 0)
+            {
+                Post(DispatchTrackingProgress);
+            }
+
+            return;
+        }
+
         Post(() =>
         {
             if (!disposed)
             {
-                GestureProgressChanged?.Invoke(
-                    this,
-                    new GestureProgressEventArgs(sessionId, path, pattern, isCurrentlyTracking, button));
+                GestureProgressChanged?.Invoke(this, progress);
             }
         });
+    }
+
+    private void DispatchTrackingProgress()
+    {
+        var progress = Interlocked.Exchange(ref pendingTrackingProgress, null);
+        Volatile.Write(ref trackingProgressPostScheduled, 0);
+        if (!disposed && progress is not null)
+        {
+            GestureProgressChanged?.Invoke(this, progress);
+        }
+
+        if (Volatile.Read(ref pendingTrackingProgress) is not null &&
+            Interlocked.CompareExchange(ref trackingProgressPostScheduled, 1, 0) == 0)
+        {
+            Post(DispatchTrackingProgress);
+        }
     }
 
     private void Post(Action action)

@@ -9,13 +9,15 @@ public sealed class GestureProgressEventArgs : EventArgs
         IReadOnlyList<Point> path,
         IReadOnlyList<GestureDirection> pattern,
         bool isTracking,
-        GestureMouseButton button)
+        GestureMouseButton button,
+        long? sourceTimestamp = null)
     {
         SessionId = sessionId;
         Path = path;
         Pattern = pattern;
         IsTracking = isTracking;
         Button = button;
+        SourceTimestamp = sourceTimestamp;
     }
 
     public long SessionId { get; }
@@ -27,4 +29,6 @@ public sealed class GestureProgressEventArgs : EventArgs
     public bool IsTracking { get; }
 
     public GestureMouseButton Button { get; }
+
+    public long? SourceTimestamp { get; }
 }

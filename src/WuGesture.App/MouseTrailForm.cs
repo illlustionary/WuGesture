@@ -1,4 +1,5 @@
 using System.Drawing.Drawing2D;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using WuGesture.App.GestureEngine;
 
@@ -39,8 +40,8 @@ public sealed class MouseTrailForm : Form
 
         var dpiFactor = Math.Max(1f, DeviceDpi / 96f);
         trailRenderer = new MouseTrailRenderer(dpiFactor);
-        hintRenderer = new GestureHintRenderer(RedrawOverlay, ExpireGestureHint);
-        levelOsdRenderer = new LevelOsdRenderer(RedrawOverlay, ExpireLevelOsd);
+        hintRenderer = new GestureHintRenderer(() => _ = RedrawGestureHint(), ExpireGestureHint);
+        levelOsdRenderer = new LevelOsdRenderer(() => _ = RedrawLevelOsd(), ExpireLevelOsd);
 
         screenDc = GetDC(IntPtr.Zero);
         memDc = CreateCompatibleDC(screenDc);
@@ -85,6 +86,11 @@ public sealed class MouseTrailForm : Form
         }
 
         _ = Handle;
+        if (!Visible)
+        {
+            Show();
+        }
+
         graphics.Clear(Color.Transparent);
         Present(new Rectangle(Point.Empty, bufferSize), fullWindow: true);
     }
@@ -133,23 +139,51 @@ public sealed class MouseTrailForm : Form
             return;
         }
 
+        var dirtyRect = hintRenderer.GetBounds(graphics, screenBounds);
         hintRenderer.Show(ruleName, anchor, autoHide);
+        dirtyRect = Union(dirtyRect, hintRenderer.GetBounds(graphics, screenBounds));
         if (!Visible)
         {
             Show();
         }
 
-        RedrawOverlay();
+        RedrawOverlay(dirtyRect);
+    }
+
+    internal OverlayRenderTiming CompletePathWithHint(string ruleName, Point anchor)
+    {
+        if (IsDisposed)
+        {
+            return OverlayRenderTiming.Empty;
+        }
+
+        var dirtyRect = trailRenderer.GetBounds(bufferSize);
+        dirtyRect = Union(dirtyRect, hintRenderer.GetBounds(graphics, screenBounds));
+        trailRenderer.Reset();
+        hintRenderer.Show(ruleName, anchor, autoHide: true);
+        dirtyRect = Union(dirtyRect, hintRenderer.GetBounds(graphics, screenBounds));
+        if (!Visible)
+        {
+            Show();
+        }
+
+        return RedrawOverlay(dirtyRect);
     }
 
     public void ClearGestureHint()
     {
-        if (IsDisposed || !hintRenderer.Clear())
+        if (IsDisposed)
         {
             return;
         }
 
-        RedrawOverlay();
+        var dirtyRect = hintRenderer.GetBounds(graphics, screenBounds);
+        if (!hintRenderer.Clear())
+        {
+            return;
+        }
+
+        RedrawOverlay(dirtyRect);
         HideOverlayIfEmpty();
     }
 
@@ -169,37 +203,57 @@ public sealed class MouseTrailForm : Form
         }
     }
 
-    public void ShowPath(IReadOnlyList<Point> points, GestureMouseButton button)
+    internal TrailFrameTiming ShowPath(IReadOnlyList<Point> points, GestureMouseButton button)
     {
         if (IsDisposed || points.Count < 2)
         {
             HideTrail();
-            return;
+            return TrailFrameTiming.Empty;
         }
 
+        var startedAt = Stopwatch.GetTimestamp();
+        Rectangle? dirtyRect = null;
         if (hintRenderer.IsTiming)
         {
+            dirtyRect = hintRenderer.GetBounds(graphics, screenBounds);
             hintRenderer.Clear();
-            RedrawOverlay();
         }
 
-        var current = ToLocalPoint(points[^1]);
         if (!Visible)
         {
             Show();
             graphics.Clear(Color.Transparent);
         }
+        var preparedAt = Stopwatch.GetTimestamp();
 
+        var isNewPath = !trailRenderer.IsTracking;
         if (!trailRenderer.IsTracking)
         {
             trailRenderer.StartPath();
         }
 
-        var dirtyRect = trailRenderer.AppendPoint(graphics, current, bufferSize);
+        var startIndex = isNewPath ? 0 : points.Count - 1;
+        for (var index = startIndex; index < points.Count; index++)
+        {
+            var nextDirtyRect = trailRenderer.AppendPoint(graphics, ToLocalPoint(points[index]), bufferSize);
+            if (nextDirtyRect is not null)
+            {
+                dirtyRect = dirtyRect is null ? nextDirtyRect : Union(dirtyRect.Value, nextDirtyRect.Value);
+            }
+        }
+
+        var drawnAt = Stopwatch.GetTimestamp();
+        var overlayTiming = OverlayRenderTiming.Empty;
         if (dirtyRect is not null)
         {
-            Present(dirtyRect.Value);
+            overlayTiming = RedrawOverlay(dirtyRect.Value);
         }
+
+        return new TrailFrameTiming(
+            Stopwatch.GetElapsedTime(startedAt, preparedAt).TotalMilliseconds,
+            Stopwatch.GetElapsedTime(preparedAt, drawnAt).TotalMilliseconds + overlayTiming.DrawMilliseconds,
+            overlayTiming.PresentMilliseconds,
+            dirtyRect is not null);
     }
 
     public void HideTrail()
@@ -253,22 +307,75 @@ public sealed class MouseTrailForm : Form
         base.Dispose(disposing);
     }
 
-    private void RedrawOverlay()
+    private OverlayRenderTiming RedrawOverlay(Rectangle? dirtyRect = null)
     {
         if (IsDisposed)
         {
-            return;
+            return OverlayRenderTiming.Empty;
+        }
+
+        var startedAt = Stopwatch.GetTimestamp();
+        if (dirtyRect is { } dirty)
+        {
+            dirty.Intersect(new Rectangle(Point.Empty, bufferSize));
+            if (dirty.Width <= 0 || dirty.Height <= 0)
+            {
+                return OverlayRenderTiming.Empty;
+            }
+
+            var previousMode = graphics.CompositingMode;
+            graphics.CompositingMode = CompositingMode.SourceCopy;
+            using (var clearBrush = new SolidBrush(Color.Transparent))
+            {
+                graphics.FillRectangle(clearBrush, dirty);
+            }
+
+            graphics.CompositingMode = previousMode;
+            var state = graphics.Save();
+            graphics.SetClip(dirty);
+            trailRenderer.Draw(graphics);
+            hintRenderer.Draw(graphics, screenBounds);
+            levelOsdRenderer.Draw(graphics, screenBounds);
+            graphics.Restore(state);
+            var drawnAt = Stopwatch.GetTimestamp();
+            Present(dirty);
+            var presentedAt = Stopwatch.GetTimestamp();
+            return new OverlayRenderTiming(
+                Stopwatch.GetElapsedTime(startedAt, drawnAt).TotalMilliseconds,
+                Stopwatch.GetElapsedTime(drawnAt, presentedAt).TotalMilliseconds,
+                dirty);
         }
 
         graphics.Clear(Color.Transparent);
         trailRenderer.Draw(graphics);
         hintRenderer.Draw(graphics, screenBounds);
         levelOsdRenderer.Draw(graphics, screenBounds);
+        var fullDrawnAt = Stopwatch.GetTimestamp();
 
         if (Visible)
         {
             Present(new Rectangle(Point.Empty, bufferSize), fullWindow: true);
         }
+
+        return new OverlayRenderTiming(
+            Stopwatch.GetElapsedTime(startedAt, fullDrawnAt).TotalMilliseconds,
+            Stopwatch.GetElapsedTime(fullDrawnAt).TotalMilliseconds,
+            new Rectangle(Point.Empty, bufferSize));
+    }
+
+    private static Rectangle? Union(Rectangle? first, Rectangle? second)
+    {
+        if (first is null)
+        {
+            return second;
+        }
+
+        if (second is null)
+        {
+            return first;
+        }
+
+        return Rectangle.Union(first.Value, second.Value);
     }
 
     private void Present(Rectangle dirtyRect, bool fullWindow = false)
@@ -339,36 +446,60 @@ public sealed class MouseTrailForm : Form
 
     private void ExpireGestureHint()
     {
-        if (IsDisposed || !hintRenderer.Clear())
+        if (IsDisposed)
         {
             return;
         }
 
-        RedrawOverlay();
+        var dirtyRect = hintRenderer.GetBounds(graphics, screenBounds);
+        if (!hintRenderer.Clear())
+        {
+            return;
+        }
+
+        RedrawOverlay(dirtyRect);
         HideOverlayIfEmpty();
     }
 
     private void ExpireLevelOsd()
     {
-        if (IsDisposed || !levelOsdRenderer.Clear())
+        if (IsDisposed)
         {
             return;
         }
 
-        RedrawOverlay();
+        var dirtyRect = levelOsdRenderer.GetBounds(screenBounds);
+        if (!levelOsdRenderer.Clear())
+        {
+            return;
+        }
+
+        RedrawOverlay(dirtyRect);
         HideOverlayIfEmpty();
+    }
+
+    private OverlayRenderTiming RedrawGestureHint()
+    {
+        return RedrawOverlay(hintRenderer.GetBounds(graphics, screenBounds));
+    }
+
+    private OverlayRenderTiming RedrawLevelOsd()
+    {
+        return RedrawOverlay(levelOsdRenderer.GetBounds(screenBounds));
     }
 
     private void HideOverlayIfEmpty()
     {
-        if (IsDisposed || trailRenderer.HasPath || hintRenderer.HasHint || levelOsdRenderer.HasOsd || !Visible)
+        if (IsDisposed || trailRenderer.HasPath || hintRenderer.HasHint || levelOsdRenderer.HasOsd)
         {
             return;
         }
 
         graphics.Clear(Color.Transparent);
-        Present(new Rectangle(Point.Empty, bufferSize), fullWindow: true);
-        Hide();
+        if (Visible)
+        {
+            Present(new Rectangle(Point.Empty, bufferSize), fullWindow: true);
+        }
     }
 
     private static IntPtr CreateDibSection(IntPtr hdc, Size size)
@@ -490,4 +621,21 @@ public sealed class MouseTrailForm : Form
     private static extern bool UpdateLayeredWindowIndirect(
         IntPtr hwnd,
         ref UpdateLayeredWindowInfo updateInfo);
+}
+
+internal readonly record struct OverlayRenderTiming(
+    double DrawMilliseconds,
+    double PresentMilliseconds,
+    Rectangle DirtyRect)
+{
+    public static OverlayRenderTiming Empty { get; } = new(0, 0, Rectangle.Empty);
+}
+
+internal readonly record struct TrailFrameTiming(
+    double PrepareMilliseconds,
+    double DrawMilliseconds,
+    double PresentMilliseconds,
+    bool IsPresented)
+{
+    public static TrailFrameTiming Empty { get; } = new(0, 0, 0, false);
 }

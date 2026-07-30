@@ -87,11 +87,16 @@ internal sealed class LevelOsdRenderer : IDisposable
         }
 
         var bounds = GetBounds(screenBounds);
-        var layout = GetVisualLayout(bounds);
-        var surfaceBounds = Rectangle.Inflate(bounds, 2, 2);
+        if (bounds is not { } value)
+        {
+            return;
+        }
+
+        var layout = GetVisualLayout(value);
+        var surfaceBounds = Rectangle.Inflate(value, 2, 2);
         fadeSurface.Draw(graphics, surfaceBounds, Opacity, surfaceGraphics =>
         {
-            using var backgroundPath = RoundedRect(bounds, settings.CornerRadius);
+            using var backgroundPath = RoundedRect(value, settings.CornerRadius);
             using var backgroundBrush = new SolidBrush(WithConfiguredOpacity(
                 GestureColorParser.Parse(settings.BackgroundColor, Color.FromArgb(40, 40, 44)),
                 settings.BackgroundOpacity));
@@ -116,8 +121,13 @@ internal sealed class LevelOsdRenderer : IDisposable
         fadeSurface.Dispose();
     }
 
-    private Rectangle GetBounds(Rectangle screenBounds)
+    internal Rectangle? GetBounds(Rectangle screenBounds)
     {
+        if (!HasOsd)
+        {
+            return null;
+        }
+
         var area = Screen.FromPoint(anchor).WorkingArea;
         var width = settings.Width;
         var height = settings.Height;

@@ -11,12 +11,14 @@ internal sealed class MouseTrailRenderer : IDisposable
     private readonly GraphicsPath path = new();
     private readonly GraphicsPath dirtyPath = new();
     private PointF lastPoint;
+    private float maximumThickness;
     private bool hasLastPoint;
     private bool isHighlighted;
 
     public MouseTrailRenderer(float dpiFactor)
     {
         var pathWidth = 3f * dpiFactor;
+        maximumThickness = pathWidth;
         inactivePen = CreatePen(Color.FromArgb(255, 170, 170, 170), pathWidth);
         activePen = CreatePen(Color.SkyBlue, pathWidth);
         dirtyPen = CreatePen(Color.White, pathWidth * 3.5f);
@@ -45,6 +47,7 @@ internal sealed class MouseTrailRenderer : IDisposable
         inactivePen = CreatePen(inactiveColor, inactivePathWidth);
         activePen = CreatePen(activeColor, activePathWidth);
         dirtyPen = CreatePen(Color.White, Math.Max(inactivePathWidth, activePathWidth) * 3.5f);
+        maximumThickness = Math.Max(inactivePathWidth, activePathWidth);
     }
 
     public bool SetHighlighted(bool highlighted)
@@ -106,6 +109,22 @@ internal sealed class MouseTrailRenderer : IDisposable
         isHighlighted = false;
         path.Reset();
         dirtyPath.Reset();
+    }
+
+    public Rectangle? GetBounds(Size bounds)
+    {
+        if (!hasLastPoint && path.PointCount == 0)
+        {
+            return null;
+        }
+
+        var pathBounds = path.PointCount > 0
+            ? path.GetBounds()
+            : new RectangleF(lastPoint.X, lastPoint.Y, 1, 1);
+        pathBounds.Inflate(maximumThickness * 2, maximumThickness * 2);
+        var result = Rectangle.Ceiling(pathBounds);
+        result.Intersect(new Rectangle(Point.Empty, bounds));
+        return result.Width > 0 && result.Height > 0 ? result : null;
     }
 
     public void Dispose()

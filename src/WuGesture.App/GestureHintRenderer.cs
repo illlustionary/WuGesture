@@ -90,6 +90,13 @@ internal sealed class GestureHintRenderer : IDisposable
         return true;
     }
 
+    public Rectangle? GetBounds(Graphics graphics, Rectangle screenBounds)
+    {
+        return HasHint && font is not null
+            ? Rectangle.Inflate(ResolveBounds(graphics, screenBounds), 2, 2)
+            : null;
+    }
+
     public void Draw(Graphics graphics, Rectangle screenBounds)
     {
         if (!HasHint || font is null)
@@ -97,23 +104,12 @@ internal sealed class GestureHintRenderer : IDisposable
             return;
         }
 
-        var area = Screen.FromPoint(anchor).WorkingArea;
-        var maxWidth = Math.Max(MinimumWidth, area.Width - 24);
-        var width = settings.AutoWidth
-            ? Math.Min(maxWidth, Math.Max(MinimumWidth, MeasureWidth(graphics) + HorizontalPadding * 2))
-            : Math.Max(MinimumWidth, ResolvePercent(area.Width, settings.WidthPercent, MinimumWidth, area.Width));
-        var height = Math.Max(72, ResolvePercent(area.Height, settings.HeightPercent, 72, area.Height));
-        var bottomOffset = ResolvePercent(area.Height, settings.BottomOffsetPercent, 0, area.Height);
-        var bounds = new Rectangle(
-            area.Left - screenBounds.Left + (area.Width - width) / 2,
-            area.Bottom - screenBounds.Top - height - bottomOffset,
-            width,
-            height);
+        var bounds = ResolveBounds(graphics, screenBounds);
 
         var surfaceBounds = Rectangle.Inflate(bounds, 2, 2);
         fadeSurface.Draw(graphics, surfaceBounds, Opacity, surfaceGraphics =>
         {
-            using var bubblePath = RoundedRect(bounds, Math.Min(Math.Min(width, height) / 2f, Math.Max(0f, settings.CornerRadius)));
+            using var bubblePath = RoundedRect(bounds, Math.Min(Math.Min(bounds.Width, bounds.Height) / 2f, Math.Max(0f, settings.CornerRadius)));
             using var backgroundBrush = new SolidBrush(backgroundColor);
             using var borderPen = new Pen(borderColor, 1.1f);
             surfaceGraphics.FillPath(backgroundBrush, bubblePath);
@@ -146,6 +142,22 @@ internal sealed class GestureHintRenderer : IDisposable
     {
         var measuredSize = graphics.MeasureString(string.IsNullOrWhiteSpace(title) ? "已触发" : title, font!);
         return (int)Math.Ceiling(measuredSize.Width) + 8;
+    }
+
+    private Rectangle ResolveBounds(Graphics graphics, Rectangle screenBounds)
+    {
+        var area = Screen.FromPoint(anchor).WorkingArea;
+        var maxWidth = Math.Max(MinimumWidth, area.Width - 24);
+        var width = settings.AutoWidth
+            ? Math.Min(maxWidth, Math.Max(MinimumWidth, MeasureWidth(graphics) + HorizontalPadding * 2))
+            : Math.Max(MinimumWidth, ResolvePercent(area.Width, settings.WidthPercent, MinimumWidth, area.Width));
+        var height = Math.Max(72, ResolvePercent(area.Height, settings.HeightPercent, 72, area.Height));
+        var bottomOffset = ResolvePercent(area.Height, settings.BottomOffsetPercent, 0, area.Height);
+        return new Rectangle(
+            area.Left - screenBounds.Left + (area.Width - width) / 2,
+            area.Bottom - screenBounds.Top - height - bottomOffset,
+            width,
+            height);
     }
 
     private void OnDisplayTimerTick(object? sender, EventArgs e)
