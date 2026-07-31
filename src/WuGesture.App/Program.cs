@@ -8,6 +8,8 @@ static class Program
     [STAThread]
     static void Main(string[] args)
     {
+        AppLogger.Initialize();
+        RegisterUnhandledExceptionLogging();
         var isElevatedRelaunch = args.Any(arg =>
             string.Equals(arg, AppIdentity.ElevatedRelaunchArgument, StringComparison.OrdinalIgnoreCase));
         var isStartupLaunch = args.Any(arg =>
@@ -16,12 +18,15 @@ static class Program
         var ownsMutex = mutex.WaitOne(isElevatedRelaunch ? TimeSpan.FromSeconds(15) : TimeSpan.Zero);
         if (!ownsMutex)
         {
+            AppLogger.Information("Program", "existing-instance-detected", "Forwarding the launch request to the existing instance.");
             SignalExistingInstance();
+            AppLogger.Shutdown(TimeSpan.FromSeconds(1));
             return;
         }
 
         try
         {
+            AppLogger.Information("Program", "started", $"Startup launch: {isStartupLaunch}; elevated relaunch: {isElevatedRelaunch}.");
             ApplicationConfiguration.Initialize();
             if (!EnsureWebView2RuntimeAvailable())
             {
@@ -52,14 +57,41 @@ static class Program
             {
                 listener.Wait(TimeSpan.FromSeconds(1));
             }
-            catch
+            catch (Exception exception)
             {
+                AppLogger.Warning("Program", "instance-listener-stop-failed", "The single-instance listener did not stop within the expected time.", exception);
             }
         }
         finally
         {
+            AppLogger.Information("Program", "stopped", "Application process is stopping.");
+            AppLogger.Shutdown(TimeSpan.FromSeconds(2));
             mutex.ReleaseMutex();
         }
+    }
+
+    private static void RegisterUnhandledExceptionLogging()
+    {
+        Application.ThreadException += (_, eventArgs) =>
+            AppLogger.Error("Program", "ui-thread-unhandled-exception", "An unhandled exception reached the WinForms UI thread.", eventArgs.Exception);
+        AppDomain.CurrentDomain.UnhandledException += (_, eventArgs) =>
+        {
+            if (eventArgs.ExceptionObject is Exception exception)
+            {
+                AppLogger.Error("Program", "unhandled-exception", $"Unhandled exception. Terminating: {eventArgs.IsTerminating}.", exception);
+            }
+            else
+            {
+                AppLogger.Error("Program", "unhandled-non-exception", $"Unhandled non-exception object. Terminating: {eventArgs.IsTerminating}.", new InvalidOperationException(eventArgs.ExceptionObject?.ToString() ?? "null"));
+            }
+
+            AppLogger.Shutdown(TimeSpan.FromSeconds(1));
+        };
+        TaskScheduler.UnobservedTaskException += (_, eventArgs) =>
+        {
+            AppLogger.Error("Program", "unobserved-task-exception", "An unobserved task exception was raised.", eventArgs.Exception);
+            eventArgs.SetObserved();
+        };
     }
 
     private static bool EnsureWebView2RuntimeAvailable()
@@ -69,14 +101,17 @@ static class Program
             _ = Microsoft.Web.WebView2.Core.CoreWebView2Environment.GetAvailableBrowserVersionString(null);
             return true;
         }
-        catch (Microsoft.Web.WebView2.Core.WebView2RuntimeNotFoundException)
+        catch (Microsoft.Web.WebView2.Core.WebView2RuntimeNotFoundException exception)
         {
+            AppLogger.Warning("Program", "webview2-runtime-missing", "The WebView2 Runtime was not found.", exception);
         }
-        catch (DllNotFoundException)
+        catch (DllNotFoundException exception)
         {
+            AppLogger.Warning("Program", "webview2-loader-missing", "The WebView2 loader could not be found.", exception);
         }
-        catch (BadImageFormatException)
+        catch (BadImageFormatException exception)
         {
+            AppLogger.Warning("Program", "webview2-loader-invalid", "The WebView2 loader has an invalid architecture or format.", exception);
         }
 
         var result = MessageBox.Show(
@@ -111,11 +146,14 @@ static class Program
                 showExistingInstanceCompletedEvent.WaitOne(TimeSpan.FromSeconds(3));
                 return;
             }
-            catch
+            catch (Exception exception)
             {
+                AppLogger.Warning("Program", "existing-instance-signal-retry", $"Unable to signal the existing instance on attempt {attempt + 1}.", exception);
                 Thread.Sleep(100);
             }
         }
+
+        AppLogger.Warning("Program", "existing-instance-signal-failed", "Unable to signal an existing instance after all retries.");
     }
 
     [System.Runtime.InteropServices.DllImport("user32.dll")]
@@ -162,8 +200,9 @@ static class Program
                     }
                 }));
             }
-            catch
+            catch (Exception exception)
             {
+                AppLogger.Warning("Program", "existing-instance-ui-dispatch-failed", "Unable to dispatch the existing-instance request to the UI thread.", exception);
             }
         }
     }

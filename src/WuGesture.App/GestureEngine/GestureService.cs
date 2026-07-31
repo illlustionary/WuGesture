@@ -515,6 +515,7 @@ public sealed class GestureService : IDisposable
             catch (Exception exception)
             {
                 outcome = $"failed:{exception.GetType().Name}";
+                AppLogger.Error("GestureService", "action-failed", $"Gesture action failed. Session: {sessionId}; action: {rule.ActionName}; pattern: {string.Join(",", pattern)}.", exception);
                 GestureActionFailed?.Invoke(this, new GestureActionFailedEventArgs(sessionId, path, pattern, rule.ActionName, exception));
             }
             finally
@@ -585,6 +586,7 @@ public sealed class GestureService : IDisposable
                 catch (Exception exception)
                 {
                     outcome = $"failed:{exception.GetType().Name}";
+                    AppLogger.Error("GestureService", "background-action-failed", $"Background gesture action failed. Session: {pendingAction.SessionId}; action: {pendingAction.Rule.ActionName}; pattern: {string.Join(",", pendingAction.Pattern)}.", exception);
                     Post(() =>
                     {
                         if (!disposed)
