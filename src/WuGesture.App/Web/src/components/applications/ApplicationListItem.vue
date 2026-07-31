@@ -134,7 +134,7 @@ const missingPath = computed(() => !String(props.app.path ?? '').trim())
   flex: 0 0 auto;
 }
 
-.app-list__delete {
+:deep(.app-list__delete) {
   opacity: 0;
   transform: scale(0.92);
   transition:
@@ -142,8 +142,8 @@ const missingPath = computed(() => !String(props.app.path ?? '').trim())
     transform 120ms ease;
 }
 
-.app-list__item:hover .app-list__delete,
-.app-list__item:focus-within .app-list__delete {
+.app-list__item:hover :deep(.app-list__delete),
+.app-list__item:focus-within :deep(.app-list__delete) {
   opacity: 1;
   transform: scale(1);
 }

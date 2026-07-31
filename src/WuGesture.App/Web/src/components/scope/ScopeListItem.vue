@@ -165,7 +165,7 @@ function displayLabel() {
     flex: 0 0 auto;
   }
 
-  &__delete {
+  :deep(.scope-item__delete) {
     opacity: 0;
     transform: scale(0.92);
     transition:
@@ -173,8 +173,8 @@ function displayLabel() {
       transform 120ms ease;
   }
 
-  &:hover &__delete,
-  &:focus-within &__delete {
+  &:hover :deep(.scope-item__delete),
+  &:focus-within :deep(.scope-item__delete) {
     opacity: 1;
     transform: scale(1);
   }

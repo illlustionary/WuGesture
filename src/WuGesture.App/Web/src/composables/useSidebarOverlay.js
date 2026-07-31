@@ -2,7 +2,7 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 export function useSidebarOverlay(editor) {
   const isCollapsed = ref(Boolean(editor.state.uiSettings.sidebar?.collapsed))
-  const isInLayout = ref(true)
+  const isInLayout = ref(!isCollapsed.value)
   const isCollapsing = ref(false)
   const isOverlayMounted = ref(false)
   const isOverlayVisible = ref(false)
@@ -13,7 +13,17 @@ export function useSidebarOverlay(editor) {
   watch(
     () => editor.state.uiSettings.sidebar?.collapsed,
     collapsed => {
-      isCollapsed.value = Boolean(collapsed)
+      const nextCollapsed = Boolean(collapsed)
+      if (nextCollapsed === isCollapsed.value) {
+        return
+      }
+
+      clearShowOverlayFrame()
+      isCollapsed.value = nextCollapsed
+      isCollapsing.value = false
+      isOverlayVisible.value = false
+      isOverlayMounted.value = false
+      isInLayout.value = !nextCollapsed
     }
   )
 

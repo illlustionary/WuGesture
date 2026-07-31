@@ -344,6 +344,7 @@ p {
   gap: 20px;
   padding: 22px;
   border: 1px solid var(--border);
+  border-top: none;
   border-bottom: 1px solid var(--border);
   background: var(--section-panel);
 }

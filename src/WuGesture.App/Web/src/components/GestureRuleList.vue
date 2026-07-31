@@ -264,7 +264,7 @@ function isWindowAction(rule) {
     }
   }
 
-  &__remove {
+  :deep(.gesture-table__remove) {
     flex-shrink: 0;
     justify-self: end;
     opacity: 0;
@@ -276,8 +276,8 @@ function isWindowAction(rule) {
     }
   }
 
-  &__row:hover &__remove,
-  &__row:focus-within &__remove {
+  &__row:hover :deep(.gesture-table__remove),
+  &__row:focus-within :deep(.gesture-table__remove) {
     opacity: 1;
     transform: translateY(0);
     pointer-events: auto;
