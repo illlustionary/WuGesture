@@ -38,7 +38,8 @@ const {
   isSidebarVisible,
   isSidebarHidden,
   showOverlay,
-  queueHideOverlay,
+  cancelPendingOverlay,
+  hideOverlay,
   toggleSidebar,
   completeTransition
 } = useSidebarOverlay(rulesStore)
@@ -50,7 +51,7 @@ const {
     class="app-sidebar__hotzone"
     aria-hidden="true"
     @pointerenter="showOverlay"
-    @pointerleave="queueHideOverlay"
+    @pointerleave="cancelPendingOverlay"
   />
   <aside
     class="app-sidebar"
@@ -64,7 +65,7 @@ const {
     :aria-hidden="isSidebarHidden"
     :inert="isSidebarHidden"
     @pointerenter="showOverlay"
-    @pointerleave="queueHideOverlay"
+    @pointerleave="hideOverlay"
     @transitionend.self="completeTransition"
   >
     <SidebarAppStatus />

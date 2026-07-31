@@ -50,8 +50,18 @@ internal sealed class WebViewHost : IDisposable
 
             createdWebView.CoreWebView2.WebMessageReceived += OnWebMessageReceived;
             ConfigureHostMapping(createdWebView.CoreWebView2);
-            await createdWebView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(
-                $"document.documentElement.dataset.theme = '{initialTheme}';");
+            await createdWebView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync($$"""
+                (() => {
+                    const applyTheme = () => {
+                        if (document.documentElement) {
+                            document.documentElement.dataset.theme = '{{initialTheme}}';
+                        }
+                    };
+
+                    applyTheme();
+                    document.addEventListener('DOMContentLoaded', applyTheme, { once: true });
+                })();
+                """);
             var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             navigationCompletion = completion;
             void OnNavigationCompleted(object? _, CoreWebView2NavigationCompletedEventArgs __) => completion.TrySetResult();
