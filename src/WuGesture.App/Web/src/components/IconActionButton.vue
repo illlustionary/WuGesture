@@ -1,5 +1,10 @@
 <script setup>
 import AppIcon from '@/components/AppIcon.vue'
+import HoverBubble from '@/components/HoverBubble.vue'
+
+defineOptions({
+  inheritAttrs: false
+})
 
 const props = defineProps({
   icon: {
@@ -18,7 +23,7 @@ const props = defineProps({
     type: String,
     default: ''
   },
-  nativeTooltip: {
+  showTooltip: {
     type: Boolean,
     default: true
   }
@@ -27,21 +32,26 @@ const props = defineProps({
 </script>
 
 <template>
-  <button
-    type="button"
-    class="icon-action-button"
-    :aria-label="label"
-    :title="nativeTooltip ? label : undefined"
-    :class="[icon]"
-    :data-tone="tone"
-    :style="{ color }"
+  <HoverBubble
+    :text="label"
+    :disabled="!showTooltip"
   >
-    <AppIcon
-      :name="icon"
-      class="icon-action-button__icon"
-      aria-hidden="true"
-    />
-  </button>
+    <button
+      v-bind="$attrs"
+      type="button"
+      class="icon-action-button"
+      :aria-label="label"
+      :class="[icon]"
+      :data-tone="tone"
+      :style="{ color }"
+    >
+      <AppIcon
+        :name="icon"
+        class="icon-action-button__icon"
+        aria-hidden="true"
+      />
+    </button>
+  </HoverBubble>
 </template>
 
 <style scoped lang="scss">

@@ -215,7 +215,23 @@ export function normalizeAppearanceSettings(settings) {
   return {
     theme: ["system", "light", "dark"].includes(theme)
       ? theme
-      : DEFAULT_UI_SETTINGS.appearance.theme
+      : DEFAULT_UI_SETTINGS.appearance.theme,
+    lightTitleBarColor: normalizeColor(
+      settings?.lightTitleBarColor,
+      DEFAULT_UI_SETTINGS.appearance.lightTitleBarColor
+    ),
+    lightTitleBarTextColor: normalizeColor(
+      settings?.lightTitleBarTextColor,
+      DEFAULT_UI_SETTINGS.appearance.lightTitleBarTextColor
+    ),
+    darkTitleBarColor: normalizeColor(
+      settings?.darkTitleBarColor,
+      DEFAULT_UI_SETTINGS.appearance.darkTitleBarColor
+    ),
+    darkTitleBarTextColor: normalizeColor(
+      settings?.darkTitleBarTextColor,
+      DEFAULT_UI_SETTINGS.appearance.darkTitleBarTextColor
+    )
   };
 }
 

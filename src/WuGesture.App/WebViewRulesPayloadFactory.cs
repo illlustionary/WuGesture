@@ -55,7 +55,11 @@ internal static class WebViewRulesPayloadFactory
         {
             appearance = new
             {
-                theme = uiSettings.Appearance.Theme
+                theme = uiSettings.Appearance.Theme,
+                lightTitleBarColor = uiSettings.Appearance.LightTitleBarColor,
+                lightTitleBarTextColor = uiSettings.Appearance.LightTitleBarTextColor,
+                darkTitleBarColor = uiSettings.Appearance.DarkTitleBarColor,
+                darkTitleBarTextColor = uiSettings.Appearance.DarkTitleBarTextColor
             },
             mouseTrail = uiSettings.MouseTrail,
             gestureHint = uiSettings.GestureHint,

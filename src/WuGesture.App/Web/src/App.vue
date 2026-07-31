@@ -236,6 +236,7 @@ function confirmResetSettings() {
   flex-direction: column;
   height: 100vh;
   overflow: hidden;
+
 }
 
 .app-shell__body {

@@ -22,6 +22,14 @@ public sealed class GestureUiSettings
 public sealed class AppearanceUiSettings
 {
     public string Theme { get; set; } = GestureConfigContract.AppearanceThemes.System;
+
+    public string LightTitleBarColor { get; set; } = "#FFFFFF";
+
+    public string LightTitleBarTextColor { get; set; } = "#16202B";
+
+    public string DarkTitleBarColor { get; set; } = "#1B222B";
+
+    public string DarkTitleBarTextColor { get; set; } = "#EDF2F7";
 }
 
 public sealed class AppBehaviorUiSettings
