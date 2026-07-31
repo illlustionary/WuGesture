@@ -10,6 +10,7 @@ internal static class GestureConfigNormalizer
         config.EdgeActions ??= [];
         config.UiSettings ??= new GestureUiSettings();
         config.UiSettings.Appearance ??= new AppearanceUiSettings();
+        config.UiSettings.Sidebar ??= new SidebarUiSettings();
         config.UiSettings.MouseTrail ??= new MouseTrailUiSettings();
         config.UiSettings.GestureHint ??= new GestureHintUiSettings();
         config.UiSettings.LevelOsd ??= new LevelOsdUiSettings();

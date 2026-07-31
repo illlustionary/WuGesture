@@ -61,11 +61,11 @@ src\WuGesture.App
 启动流程：
 
 - `Program.cs` 会在 .NET Host 成功启动后检查 WebView2 Runtime，缺少时显示官方下载引导；随后通过命名互斥体保证单实例运行。再次启动时不会创建第二个实例，而是先将前台切换权限授予已运行实例，再通知它在 UI 线程弹出并激活配置窗口，且等待该 UI 操作通过命名自动重置事件确认或超时后才退出。已有且可见的配置窗口收到单实例唤醒时，会临时关联当前前台线程的输入队列后激活，并在完成后立即解除关联；没有配置窗口时则保持普通启动与恢复流程，避免使用短暂置顶造成焦点回退。开机自启动会带 `--startup` 内部参数，始终只启动后台服务并驻留托盘，不打开配置窗口；普通启动是否显示配置窗口由应用行为设置控制，默认显示。
-- `MainForm.cs` 会在首次显示前加载配置并决定是否后台启动，以避免后台启动时短暂绘制主窗口；普通启动会在 WebView2 的首次导航完成后显示配置窗口，托盘恢复和单实例唤醒也会先在不可见的最小化窗体中重建 WebView2，再交由系统原生还原动画前置，避免页面白闪。后台启动则继续隐藏。关闭到托盘会先走系统原生最小化，最小化完成后隐藏窗体、移出 Alt+Tab 并释放 WebView2 以降低后台内存；最小化到任务栏则保留现有配置窗口。主窗口始终采用 Windows 系统标题栏（标题仅显示程序集版本，左侧使用应用图标）；窗口句柄创建和托盘恢复前都会从 `gesture.json` 的 `uiSettings.appearance` 解析当前应用主题，同时设置窗体底色和 Windows 11 DWM 标题栏/文字颜色，Windows 10 保持系统标题栏颜色。该文件负责生命周期、配置/服务装配、托盘、应用行为和 WebView 业务消息，也会把配置里的 `uiSettings` 应用到轨迹窗、提示窗和应用行为，并在任一覆盖层启用时预热透明轨迹窗。主窗口和托盘显示名为 `WuGesture`。
+- `MainForm.cs` 会在首次显示前加载配置并决定是否后台启动，以避免后台启动时短暂绘制主窗口；普通启动会在 WebView2 的首次导航完成后显示配置窗口，托盘恢复和单实例唤醒也会先在不可见的最小化窗体中重建 WebView2，再交由系统原生还原动画前置，避免页面白闪。后台启动则继续隐藏。关闭到托盘会先走系统原生最小化，最小化完成后隐藏窗体、移出 Alt+Tab 并释放 WebView2 以降低后台内存；最小化到任务栏则保留现有配置窗口。主窗口始终采用 Windows 系统标题栏（标题显示 `WuGesture`，左侧使用应用图标）；窗口句柄创建和托盘恢复前都会从 `gesture.json` 的 `uiSettings.appearance` 解析当前应用主题，同时设置窗体底色和 Windows 11 DWM 标题栏/文字颜色，并在 WebView2 导航前设置相同的默认底色与浅深主题标记，Windows 10 保持系统标题栏颜色。该文件负责生命周期、配置/服务装配、托盘、应用行为和 WebView 业务消息，也会把配置里的 `uiSettings` 应用到轨迹窗、提示窗和应用行为，并在任一覆盖层启用时预热透明轨迹窗。主窗口和托盘显示名为 `WuGesture`。
 - `MainForm.Windowing.cs`：`MainForm` 的窗口状态持久化、系统原生最小化/还原和单实例唤醒时的前置激活；标题栏、缩放和窗口控制按钮由 Windows 提供。
-- `WebViewHost.cs`：负责 WebView2 控件的创建、销毁、虚拟主机映射、导航和消息事件订阅；入站消息仍同步交由 `MainForm` 的业务处理器执行，宿主不存在时出站消息直接丢弃。
+- `WebViewHost.cs`：负责 WebView2 控件的创建、销毁、虚拟主机映射、导航和消息事件订阅；导航前使用宿主提供的默认底色和浅深主题标记，避免配置窗口重建时客户端区域按白色首帧绘制；入站消息仍同步交由 `MainForm` 的业务处理器执行，宿主不存在时出站消息直接丢弃。
 - `WebViewMessageDtos.cs`：集中 WebView 入站消息 DTO。
-- `WebViewRulesPayloadFactory.cs`：把已加载的手势配置转换为 WebView `rules` 消息 payload；`uiSettings.appearance` 将配置界面主题偏好传给前端，应用程序和排除项的运行态消息项会补充应用图标 PNG data URL。
+- `WebViewRulesPayloadFactory.cs`：把已加载的手势配置转换为 WebView `rules` 消息 payload；其中 `appVersion` 提供程序集版本给配置界面，`uiSettings.appearance` 将配置界面主题偏好传给前端，应用程序和排除项的运行态消息项会补充应用图标 PNG data URL。
 - `ApplicationIconDataUrl.cs`：从可执行文件提取图标并转换为 WebView 可用的 PNG data URL。
 - `WindowStateStore.cs`：负责配置窗口位置、尺寸和最大化状态的读写、校验与屏幕边界规范化。
 - `AppIdentity.cs` 集中应用显示名、AppData 子目录、自启动注册表值、单实例 IPC 请求/确认事件名和内部启动参数；开机自启动和管理员重启会直接调用当前 `WuGesture.exe`。
@@ -191,6 +191,7 @@ MouseHook
 - `applications`：应用程序归属列表，每项包含 `name`、`displayName`、`path`、`categories`；`categories` 是有序分类列表，运行时通过前台进程名匹配 `name`，分类同手势时越靠前优先级越高。旧配置的单个 `category` 会在加载时迁移；`displayName` 只用于 UI 展示和编辑。
 - `uiSettings.mouseTrail`：轨迹窗设置，包含 `enabled`、`inactiveColor`、`activeColor`、`inactiveThickness`、`activeThickness`、`thickness`、`inactiveOpacity`、`activeOpacity`；`enabled` 关闭时不再绘制轨迹线，`thickness` 保留用于兼容旧配置。
 - `uiSettings.appearance`：配置界面外观设置，包含 `theme`；支持 `system`、`light`、`dark`，默认 `system` 跟随 Windows 主题，用户点击侧栏底部的主题按钮后保存明确的浅色或深色偏好。
+- `uiSettings.sidebar`：配置界面侧栏状态，包含 `collapsed`，默认 `false`；用户收起或展开侧栏后立即保存，配置窗口和 WebView2 重建后恢复该状态。
 - `uiSettings.gestureHint`：提示泡泡设置，包含 `enabled`、`displayDurationMs`、`fadeDurationMs`、`fontFamily`、`fontSize`、`textColor`、`backgroundColor`、`backgroundOpacity`、`width`、`widthPercent`、`autoWidth`、`height`、`heightPercent`、`cornerRadius`、`bottomOffset`、`bottomOffsetPercent`；提示绘制在全虚拟桌面轨迹覆盖层而非独立窗体，`enabled` 关闭时不再显示手势命中文本，`displayDurationMs` 为停留时长、`fadeDurationMs` 为 0 时立即消失，百分比字段按当前鼠标屏幕工作区宽高换算，像素字段保留用于兼容旧配置。
 - `uiSettings.levelOsd`：音量/亮度 OSD 设置，包含 `enabled`、`displayDurationMs`、`fadeDurationMs`、`backgroundColor`、`backgroundOpacity`、`textColor`、`trackColor`、`volumeColor`、`brightnessColor`、`width`、`height`、`cornerRadius`、`position`、`offsetX` 和 `offsetY`；OSD 由全虚拟桌面透明覆盖层绘制，不再创建独立窗体；当前支持相对于鼠标所在屏幕工作区的居中、上/下居中和四角位置预设，`fadeDurationMs` 为 0 时立即消失。
 - `uiSettings.gestureSensitivity`：手势灵敏度配置，包含 `percent`，范围 0-200，默认 110；100 对应标准手感，数值越高越容易识别短距离手势。
@@ -228,8 +229,8 @@ src\WuGesture.App\Web\PROJECT_STRUCTURE.md
 
 宿主集成：
 
-- 配置界面使用 Windows 系统标题栏；标题为程序集版本，应用图标由窗体提供，系统负责最小化、最大化、关闭、拖动和缩放。下方为可折叠的左侧导航和独立滚动的右侧页面工作区，不保留外层总边距、页面壳卡片或侧栏圆角：工作区卡片使用直角连续边框而非留白分隔。侧栏顶部仅保留一个带悬浮提示的图标按钮，用于暂停/恢复 WuGesture；侧栏入口保留图标、文字、hover 状态和当前项左侧竖线动画；底部左侧按钮可折叠为仅图标导航，搜索和问号帮助入口保留在底部右侧，问号会通过基础遮罩对话框展示规则生效顺序。
-- 宿主下发的 `rules` WebView 消息包含配置、规则、程序、边缘操作和 UI 设置；运行态程序和排除项会附带应用图标，配置界面版本和应用图标由 Windows 标题栏提供。
+- 配置界面使用 Windows 系统标题栏；标题为 `WuGesture`，应用图标由窗体提供，系统负责最小化、最大化、关闭、拖动和缩放。下方为可折叠的左侧导航和独立滚动的右侧页面工作区，不保留外层总边距、页面壳卡片或侧栏圆角：工作区卡片使用直角连续边框而非留白分隔。侧栏顶部为独立的应用状态组件，带悬浮提示并提供暂停/恢复 WuGesture；组件左侧显示应用图标，右侧显示加粗名称与较小的版本号，暂停时整项置灰。侧栏入口保留图标、文字、hover 状态和当前项左侧竖线动画；底部左侧按钮可折叠为仅图标导航，搜索和问号帮助入口保留在底部右侧，问号会通过基础遮罩对话框展示规则生效顺序。
+- 宿主下发的 `rules` WebView 消息包含程序集 `appVersion`、配置、规则、程序、边缘操作和 UI 设置；运行态程序和排除项会附带应用图标。
 - 前端使用 `pnpm build` 生成根目录下的 `dist\web`。
 - `Web\src\components\BaseDialog.vue` 统一前端对话框的遮罩关闭、可选右上关闭按钮、默认操作区和关闭动画；自动保存或即时选择类弹层可复用外壳并关闭默认操作区。
 - `Web\src\components\BaseInput.vue` 和 `BaseRange.vue` 统一前端原生输入控件的 `v-model` 事件、宽度约束和滑块进度填充；页面继续保留各自的配置约束与保存时机。

@@ -26,6 +26,7 @@ export function cloneUiSettings(settings) {
   const source = normalizeObjectKeys(settings);
   return {
     appearance: normalizeAppearanceSettings(source.appearance),
+    sidebar: normalizeSidebarSettings(source.sidebar),
     mouseTrail: normalizeMouseTrailSettings(source.mouseTrail),
     gestureHint: normalizeGestureHintSettings(source.gestureHint),
     levelOsd: normalizeLevelOsdSettings(source.levelOsd),
@@ -37,6 +38,13 @@ export function cloneUiSettings(settings) {
 
 export function normalizeUiSettings(settings) {
   return cloneUiSettings(settings);
+}
+
+export function normalizeSidebarSettings(settings) {
+  settings = normalizeObjectKeys(settings);
+  return {
+    collapsed: Boolean(settings?.collapsed ?? DEFAULT_UI_SETTINGS.sidebar.collapsed)
+  };
 }
 
 export function normalizeMouseTrailSettings(settings) {

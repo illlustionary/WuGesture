@@ -48,7 +48,7 @@ public sealed partial class MainForm : Form
         loadedConfig = configStore.LoadOrCreate();
         hideConfigWindowOnLaunch = startHiddenToTray ||
             !loadedConfig.Config.UiSettings.AppBehavior.ShowConfigWindowOnLaunch;
-        Text = AppIdentity.GetDisplayVersion();
+        Text = AppIdentity.DisplayName;
         Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? SystemIcons.Application;
         FormBorderStyle = FormBorderStyle.Sizable;
         ApplyWindowTheme(loadedConfig.Config.UiSettings.Appearance);

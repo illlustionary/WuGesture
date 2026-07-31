@@ -10,6 +10,7 @@ internal static class WebViewRulesPayloadFactory
         return JsonSerializer.Serialize(new
         {
             type = WebViewMessageTypes.Rules,
+            appVersion = AppIdentity.GetDisplayVersion(),
             configPath = loadedConfig.FilePath,
             uiSettings = CreateUiSettingsPayload(loadedConfig.Config.UiSettings),
             rules = loadedConfig.Config.Rules.Select(rule => new
@@ -60,6 +61,10 @@ internal static class WebViewRulesPayloadFactory
                 lightTitleBarTextColor = uiSettings.Appearance.LightTitleBarTextColor,
                 darkTitleBarColor = uiSettings.Appearance.DarkTitleBarColor,
                 darkTitleBarTextColor = uiSettings.Appearance.DarkTitleBarTextColor
+            },
+            sidebar = new
+            {
+                collapsed = uiSettings.Sidebar.Collapsed
             },
             mouseTrail = uiSettings.MouseTrail,
             gestureHint = uiSettings.GestureHint,

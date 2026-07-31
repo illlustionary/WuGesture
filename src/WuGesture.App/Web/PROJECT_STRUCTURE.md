@@ -90,7 +90,9 @@ SVG 按使用位置分目录：
 src\components
 ```
 
-- `AppSidebar.vue`：系统标题栏下方的贴边满高多级左侧导航，顶部以单个带悬浮提示的图标暂停/恢复 WuGesture，支持分类/程序动态子项、子菜单搜索、分组折叠、项目重命名/删除以及设置配置导入导出/恢复默认操作。底部左侧按钮可折叠为仅图标导航，搜索和规则优先级帮助入口位于底部右侧。
+- `AppSidebar.vue`：系统标题栏下方的贴边满高左侧导航壳，只负责侧栏覆盖层状态、区域组装和向应用壳转发操作事件。
+- `SidebarFixedNavigation.vue`、`SidebarCategorySection.vue`、`SidebarApplicationSection.vue`、`SidebarEdgeSection.vue`、`SidebarSettingsSection.vue`：侧栏的固定导航、分类、程序、边缘操作和设置五个独立区域；各自维护展开状态、路由选中、子项、搜索或区域操作。
+- `SidebarFooter.vue`：侧栏底部的规则优先级帮助、主题切换、快速搜索和收起按钮。
 - `NestedRouteView.vue`：嵌套路由的轻量承载组件，使分类、程序、边缘操作和设置的子路由在同一工作区内独立渲染。
 - `AppShell.vue`：无外层卡片样式的页面布局壳，提供主体区域和插槽，由应用壳层负责右侧工作区滚动。
 - `BaseDialog.vue`：共享对话框外壳，统一遮罩关闭、可选关闭按钮、默认取消/确认操作区及上移淡出关闭动画；搜索和自动保存编辑器可关闭默认操作区。
@@ -225,7 +227,7 @@ src\pages
 
 页面组件通过动态 `import()` 加载，`router/routes` 下的路由模块只在路由命中时加载对应页面 chunk。
 
-Windows 系统标题栏负责窗口控制；其下方侧栏顶部的运行状态图标可点击，临时暂停或恢复 WuGesture。侧栏包含 `全局`、`分类`、`程序`、`边缘操作`、`排除项` 和 `设置`，分类/程序子项动态来自当前配置，边缘操作和设置子项对应独立嵌套路由。
+Windows 系统标题栏负责窗口控制；其下方侧栏顶部的 `SidebarAppStatus` 组件可点击，临时暂停或恢复 WuGesture，并在图标右侧显示名称与程序集版本。侧栏的导航、分类、程序、边缘操作和设置各自使用独立区域组件，页脚控制也独立封装；分类/程序子项动态来自当前配置，边缘操作和设置子项对应独立嵌套路由。侧栏收起状态保存在 `uiSettings.sidebar.collapsed`，重建配置页面后保持不变。
 
 ## 当前 UI
 
@@ -274,7 +276,7 @@ Windows 系统标题栏负责窗口控制；其下方侧栏顶部的运行状态
 后端发送：
 
 - `{ type: "status", status: "running|paused|..." }`
-- `{ type: "rules", rules: [...], applications: [{ name, displayName, path, categories, icon }, ...], edgeActions: [...], uiSettings: {...}, ... }`；`categories` 的顺序决定分类规则冲突时的覆盖顺序，越靠前优先级越高，其中 `uiSettings.appBehavior.excludedApplications` 的运行态消息项会额外带 `icon`，不写入配置文件。
+- `{ type: "rules", appVersion: "v...", rules: [...], applications: [{ name, displayName, path, categories, icon }, ...], edgeActions: [...], uiSettings: { sidebar: { collapsed }, ... }, ... }`；`appVersion` 来自程序集版本，仅用于配置界面展示，不写入配置文件；`uiSettings.sidebar.collapsed` 保存侧栏收起状态；`categories` 的顺序决定分类规则冲突时的覆盖顺序，越靠前优先级越高，其中 `uiSettings.appBehavior.excludedApplications` 的运行态消息项会额外带 `icon`，不写入配置文件。
 - `{ type: "application-selected", requestId: "...", name: "...", displayName: "...", path: "...", category: "...", icon: "..." }`
 - `{ type: "gesture-recorded", requestId: "...", button: "right|middle", pattern: ["Down", "Right"] }`
 - `{ type: "hotkey-recorded", requestId: "...", keys: ["Control", "W"] }`

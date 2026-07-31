@@ -47,6 +47,7 @@ import { useGestureScopes } from "@/gestureEditor/modules/useGestureScopes";
 const state = reactive({
   statusText: "启动中",
   statusState: "idle",
+  appVersion: "v0.0.0",
   configPath: "读取中",
   configMessage: "",
   configMessageState: "idle",
@@ -353,6 +354,7 @@ function handleMessage(message) {
   }
 
   if (message.type === WEBVIEW_MESSAGE_TYPES.rules) {
+    state.appVersion = message.appVersion ?? "v0.0.0";
     state.configPath = message.configPath;
     replaceConfig(
       message.rules ?? [],

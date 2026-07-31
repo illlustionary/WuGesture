@@ -73,7 +73,7 @@ function toggleDisableEdgeActions(application) {
               <IconActionButton
                 icon="delete"
                 label="删除排除项"
-                class="ghost-button"
+                class="exclusion-item__delete ghost-button"
                 tone="danger"
                 @click="exclusionsStore.removeExcludedApplication(index)"
               />
@@ -125,6 +125,13 @@ function toggleDisableEdgeActions(application) {
     border-color: var(--accent-border);
     box-shadow: 0 0 0 3px var(--focus-ring);
   }
+
+  &:hover :deep(.exclusion-item__delete),
+  &:focus-within :deep(.exclusion-item__delete),
+  &--selected :deep(.exclusion-item__delete) {
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
 
 .exclusion-item + .exclusion-item {
@@ -165,6 +172,12 @@ function toggleDisableEdgeActions(application) {
     color: var(--muted);
     font-size: 12px;
   }
+}
+
+:deep(.exclusion-item__delete) {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
 }
 .exclusion-item,
 .exclusion-empty {
