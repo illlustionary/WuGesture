@@ -263,7 +263,9 @@ public sealed class EdgeActionService : IDisposable
             }
             catch (Exception exception)
             {
-                EdgeActionFailed?.Invoke(this, new EdgeActionFailedEventArgs(EdgeActionNameFormatter.Format(config), exception));
+                var actionName = EdgeActionNameFormatter.Format(config);
+                AppLogger.Error("EdgeActionService", "action-failed", $"Edge action failed: {actionName}.", exception);
+                EdgeActionFailed?.Invoke(this, new EdgeActionFailedEventArgs(actionName, exception));
             }
         });
     }

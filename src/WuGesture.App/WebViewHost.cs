@@ -32,6 +32,7 @@ internal sealed class WebViewHost : IDisposable
         isInitializing = true;
         try
         {
+            AppLogger.Information("WebViewHost", "initializing", "Initializing the WebView2 configuration host.");
             Dispose();
             var createdWebView = new WebView2
             {
@@ -69,8 +70,9 @@ internal sealed class WebViewHost : IDisposable
             createdWebView.CoreWebView2.NavigationCompleted += OnNavigationCompleted;
             try
             {
-                createdWebView.Source = WebViewHostContract.EntryUri;
-                await completion.Task;
+            createdWebView.Source = WebViewHostContract.EntryUri;
+            await completion.Task;
+            AppLogger.Information("WebViewHost", "navigation-completed", "The WebView2 configuration host completed its initial navigation.");
             }
             finally
             {
@@ -107,7 +109,14 @@ internal sealed class WebViewHost : IDisposable
             return;
         }
 
-        webView.CoreWebView2.PostWebMessageAsJson(payload);
+        try
+        {
+            webView.CoreWebView2.PostWebMessageAsJson(payload);
+        }
+        catch (Exception exception)
+        {
+            AppLogger.Warning("WebViewHost", "post-message-failed", "Unable to post a message to the WebView2 host.", exception);
+        }
     }
 
     public void SetInitialAppearance(Color backgroundColor, bool useDarkTheme)

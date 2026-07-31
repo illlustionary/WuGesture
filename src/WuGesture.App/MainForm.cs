@@ -46,6 +46,7 @@ public sealed partial class MainForm : Form
         this.startHiddenToTray = startHiddenToTray;
         webViewHost = new WebViewHost(this, CanUseUi, HandleWebMessage);
         loadedConfig = configStore.LoadOrCreate();
+        AppLogger.Information("MainForm", "config-loaded", "Loaded the local gesture configuration.");
         hideConfigWindowOnLaunch = startHiddenToTray ||
             !loadedConfig.Config.UiSettings.AppBehavior.ShowConfigWindowOnLaunch;
         Text = AppIdentity.DisplayName;
@@ -85,6 +86,7 @@ public sealed partial class MainForm : Form
 
     private async void OnLoad(object? sender, EventArgs e)
     {
+        AppLogger.Information("MainForm", "initializing", $"Initializing services. Hidden startup: {hideConfigWindowOnLaunch}.");
         var config = loadedConfig ??= configStore.LoadOrCreate();
         if (hideConfigWindowOnLaunch)
         {
@@ -153,6 +155,7 @@ public sealed partial class MainForm : Form
         gestureService.Start();
         edgeActionService.Start();
         ApplyGesturePauseState();
+        AppLogger.Information("MainForm", "services-started", "Gesture and edge-action services are running.");
 
     }
 
@@ -188,6 +191,7 @@ public sealed partial class MainForm : Form
         }
 
         isClosing = true;
+        AppLogger.Information("MainForm", "closing", $"Closing with reason: {e.CloseReason}.");
         SaveWindowState();
         hotkeyRecorder.Stop();
         gestureFeedbackCoordinator?.Dispose();
@@ -468,6 +472,7 @@ public sealed partial class MainForm : Form
 
     private void OnEdgeActionFailed(object? sender, EdgeActionFailedEventArgs e)
     {
+        AppLogger.Error("MainForm", "edge-action-failed", $"Edge action failed: {e.ActionName}.", e.Exception);
         if (!CanUseUi())
         {
             return;
@@ -1013,6 +1018,11 @@ public sealed partial class MainForm : Form
 
     private void PostConfigResult(bool success, string message, string operation = "action")
     {
+        if (!success)
+        {
+            AppLogger.Warning("MainForm", "configuration-operation-failed", $"Configuration operation failed: {operation}.");
+        }
+
         var payload = JsonSerializer.Serialize(new
         {
             type = WebViewMessageTypes.ConfigResult,
