@@ -183,8 +183,6 @@ onBeforeUnmount(() => {
     :aria-describedby="isOpen ? tooltipId : undefined"
     @pointerenter="queueOpen"
     @pointerleave="hideBubble"
-    @focusin="queueOpen"
-    @focusout="hideBubble"
   >
     <slot>{{ text }}</slot>
 
