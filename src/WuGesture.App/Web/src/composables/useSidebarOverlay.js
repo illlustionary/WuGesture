@@ -1,7 +1,5 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
-const HIDE_DELAY_MS = 180
-
 export function useSidebarOverlay(editor) {
   const isCollapsed = ref(Boolean(editor.state.uiSettings.sidebar?.collapsed))
   const isInLayout = ref(true)
@@ -10,7 +8,6 @@ export function useSidebarOverlay(editor) {
   const isOverlayVisible = ref(false)
   const isSidebarVisible = computed(() => isInLayout.value || isCollapsing.value || isOverlayMounted.value)
   const isSidebarHidden = computed(() => !isSidebarVisible.value)
-  let hideOverlayTimer = 0
   let showOverlayFrame = 0
 
   watch(
@@ -19,15 +16,6 @@ export function useSidebarOverlay(editor) {
       isCollapsed.value = Boolean(collapsed)
     }
   )
-
-  function clearHideOverlayTimer() {
-    if (!hideOverlayTimer) {
-      return
-    }
-
-    window.clearTimeout(hideOverlayTimer)
-    hideOverlayTimer = 0
-  }
 
   function clearShowOverlayFrame() {
     if (!showOverlayFrame) {
@@ -43,7 +31,6 @@ export function useSidebarOverlay(editor) {
       return
     }
 
-    clearHideOverlayTimer()
     if (isOverlayVisible.value) {
       return
     }
@@ -56,20 +43,29 @@ export function useSidebarOverlay(editor) {
     })
   }
 
-  function queueHideOverlay() {
+  function cancelPendingOverlay() {
+    if (isOverlayVisible.value) {
+      return
+    }
+
+    clearShowOverlayFrame()
+    isOverlayMounted.value = false
+  }
+
+  function hideOverlay() {
     if (!isCollapsed.value || !isOverlayMounted.value) {
       return
     }
 
-    clearHideOverlayTimer()
-    hideOverlayTimer = window.setTimeout(() => {
-      isOverlayVisible.value = false
-      hideOverlayTimer = 0
-    }, HIDE_DELAY_MS)
+    clearShowOverlayFrame()
+    const wasVisible = isOverlayVisible.value
+    isOverlayVisible.value = false
+    if (!wasVisible) {
+      isOverlayMounted.value = false
+    }
   }
 
   function toggleSidebar() {
-    clearHideOverlayTimer()
     clearShowOverlayFrame()
 
     if (isCollapsed.value) {
@@ -105,7 +101,6 @@ export function useSidebarOverlay(editor) {
   }
 
   onBeforeUnmount(() => {
-    clearHideOverlayTimer()
     clearShowOverlayFrame()
   })
 
@@ -118,7 +113,8 @@ export function useSidebarOverlay(editor) {
     isSidebarVisible,
     isSidebarHidden,
     showOverlay,
-    queueHideOverlay,
+    cancelPendingOverlay,
+    hideOverlay,
     toggleSidebar,
     completeTransition
   }
