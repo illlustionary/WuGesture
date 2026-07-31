@@ -190,11 +190,13 @@ public sealed class MouseTrailForm : Form
         var dirtyRect = trailRenderer.GetBounds(bufferSize);
         trailRenderer.Reset();
         RedrawOverlay(dirtyRect);
-        if (!hintRenderer.HasHint)
+        if (hintRenderer.HasHint)
         {
-            HideOverlayIfEmpty();
+            hintRenderer.ScheduleAutoHide();
             return;
         }
+
+        HideOverlayIfEmpty();
     }
 
     internal TrailFrameTiming ShowPath(IReadOnlyList<Point> points, GestureMouseButton button)
