@@ -86,13 +86,6 @@ public sealed class MouseTrailForm : Form
         }
 
         _ = Handle;
-        if (!Visible)
-        {
-            Show();
-        }
-
-        graphics.Clear(Color.Transparent);
-        Present(new Rectangle(Point.Empty, bufferSize), fullWindow: true);
     }
 
     public void ApplySettings(MouseTrailUiSettings? settings)
@@ -194,8 +187,9 @@ public sealed class MouseTrailForm : Form
             return;
         }
 
+        var dirtyRect = trailRenderer.GetBounds(bufferSize);
         trailRenderer.Reset();
-        RedrawOverlay();
+        RedrawOverlay(dirtyRect);
         if (!hintRenderer.HasHint)
         {
             HideOverlayIfEmpty();
@@ -222,7 +216,6 @@ public sealed class MouseTrailForm : Form
         if (!Visible)
         {
             Show();
-            graphics.Clear(Color.Transparent);
         }
         var preparedAt = Stopwatch.GetTimestamp();
 
@@ -263,9 +256,12 @@ public sealed class MouseTrailForm : Form
             return;
         }
 
+        var dirtyRect = Union(
+            trailRenderer.GetBounds(bufferSize),
+            hintRenderer.GetBounds(graphics, screenBounds));
         hintRenderer.Clear();
         trailRenderer.Reset();
-        RedrawOverlay();
+        RedrawOverlay(dirtyRect);
         HideOverlayIfEmpty();
     }
 
@@ -276,18 +272,21 @@ public sealed class MouseTrailForm : Form
             return;
         }
 
+        var dirtyRect = levelOsdRenderer.GetBounds(screenBounds);
         if (!levelOsdRenderer.Show(request))
         {
             HideOverlayIfEmpty();
             return;
         }
 
+        dirtyRect = Union(dirtyRect, levelOsdRenderer.GetBounds(screenBounds));
+
         if (!Visible)
         {
             Show();
         }
 
-        RedrawOverlay();
+        RedrawOverlay(dirtyRect);
     }
 
     protected override void Dispose(bool disposing)
@@ -495,10 +494,9 @@ public sealed class MouseTrailForm : Form
             return;
         }
 
-        graphics.Clear(Color.Transparent);
         if (Visible)
         {
-            Present(new Rectangle(Point.Empty, bufferSize), fullWindow: true);
+            Hide();
         }
     }
 
