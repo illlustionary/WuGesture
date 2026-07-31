@@ -10,6 +10,7 @@ internal sealed class WebViewHost : IDisposable
     private readonly Action<string> onMessageReceived;
     private WebView2? webView;
     private bool isInitializing;
+    private TaskCompletionSource? navigationCompletion;
 
     public WebViewHost(Control owner, Func<bool> canUseUi, Action<string> onMessageReceived)
     {
@@ -45,7 +46,31 @@ internal sealed class WebViewHost : IDisposable
 
             createdWebView.CoreWebView2.WebMessageReceived += OnWebMessageReceived;
             ConfigureHostMapping(createdWebView.CoreWebView2);
-            createdWebView.Source = WebViewHostContract.EntryUri;
+            var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            navigationCompletion = completion;
+            void OnNavigationCompleted(object? _, CoreWebView2NavigationCompletedEventArgs __) => completion.TrySetResult();
+
+            createdWebView.CoreWebView2.NavigationCompleted += OnNavigationCompleted;
+            try
+            {
+                createdWebView.Source = WebViewHostContract.EntryUri;
+                await completion.Task;
+            }
+            finally
+            {
+                if (createdWebView.CoreWebView2 is not null)
+                {
+                    createdWebView.CoreWebView2.NavigationCompleted -= OnNavigationCompleted;
+                }
+
+                if (ReferenceEquals(navigationCompletion, completion))
+                {
+                    navigationCompletion = null;
+                }
+            }
+        }
+        catch (TaskCanceledException)
+        {
         }
         catch (ObjectDisposedException)
         {
@@ -71,6 +96,8 @@ internal sealed class WebViewHost : IDisposable
 
     public void Dispose()
     {
+        navigationCompletion?.TrySetCanceled();
+        navigationCompletion = null;
         if (webView is null)
         {
             return;

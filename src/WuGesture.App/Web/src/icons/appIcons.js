@@ -24,10 +24,6 @@ import SearchIcon from "@/assets/navigation/search.svg";
 import SettingIcon from "@/assets/navigation/setting.svg";
 import SunIcon from "@/assets/navigation/sun.svg";
 import CloseIcon from "@/assets/window/close.svg";
-import MaximizeIcon from "@/assets/window/maximize.svg";
-import MinimizeIcon from "@/assets/window/minimize.svg";
-import RestoreIcon from "@/assets/window/restore.svg";
-import TriangleIcon from "@/assets/window/triangle.svg";
 
 export const appIcons = Object.freeze({
   add: AddIcon,
@@ -55,9 +51,5 @@ export const appIcons = Object.freeze({
   search: SearchIcon,
   setting: SettingIcon,
   sun: SunIcon,
-  close: CloseIcon,
-  maximize: MaximizeIcon,
-  minimize: MinimizeIcon,
-  restore: RestoreIcon,
-  triangle: TriangleIcon
+  close: CloseIcon
 });

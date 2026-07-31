@@ -2,8 +2,6 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter, RouterView } from 'vue-router'
 import AppSidebar from '@/components/AppSidebar.vue'
-import AppTitleBar from '@/components/AppTitleBar.vue'
-import WindowResizeGrip from '@/components/WindowResizeGrip.vue'
 import BaseDialog from '@/components/BaseDialog.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import QuickSearchDialog from '@/components/QuickSearchDialog.vue'
@@ -17,10 +15,8 @@ import { useQuickSearch } from '@/composables/useQuickSearch'
 import { useSidebarScopeActions } from '@/composables/useSidebarScopeActions'
 import { useGestureEditorContext } from '@/gestureEditor/context/gestureEditorContext'
 import { useGestureEditorNavigation } from '@/gestureEditor/modules/useGestureEditorNavigation'
-import { useGestureEditorLifecycleStore } from '@/gestureEditor/stores/useGestureEditorLifecycleStore'
 import { useGestureEditorOverlayStore } from '@/gestureEditor/stores/useGestureEditorOverlayStore'
 
-const lifecycle = useGestureEditorLifecycleStore()
 const overlay = useGestureEditorOverlayStore()
 const route = useRoute()
 const router = useRouter()
@@ -58,7 +54,7 @@ const {
   removeSidebarCategory
 } = useSidebarScopeActions({ editor, route })
 
-lifecycle.initialize()
+editor.initialize()
 
 watch(
   () => route.path,
@@ -91,18 +87,6 @@ function confirmResetSettings() {
 
 <template>
   <div class="app-shell">
-    <AppTitleBar
-      :app-info="lifecycle.appInfo"
-      :is-maximized="lifecycle.windowMaximized"
-      :is-window-resizing="lifecycle.windowResizing"
-      :status-state="lifecycle.statusState"
-      @close-window="lifecycle.closeWindow"
-      @minimize-window="lifecycle.minimizeWindow"
-      @start-window-drag="lifecycle.startWindowDrag"
-      @toggle-gesture-paused="lifecycle.toggleGesturePaused"
-      @toggle-window-maximize="lifecycle.toggleWindowMaximize"
-    />
-
     <div class="app-shell__body">
       <AppSidebar
         :is-dark-theme="isDarkTheme"
@@ -132,8 +116,6 @@ function confirmResetSettings() {
         </RouterView>
       </main>
     </div>
-
-    <WindowResizeGrip />
 
     <BaseDialog
       :open="overlay.applicationPickerOpen"

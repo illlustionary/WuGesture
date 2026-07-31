@@ -92,6 +92,7 @@ const allGroups = computed(() => [...dynamicGroups.value, ...fixedGroups])
 
 const collapseLabel = computed(() => (isCollapsed.value ? '展开侧栏' : '收起侧栏'))
 const themeLabel = computed(() => (props.isDarkTheme ? '切换到浅色模式' : '切换到深色模式'))
+const pauseLabel = computed(() => (rulesStore.statusState === 'paused' ? '恢复 WuGesture' : '暂停 WuGesture'))
 
 function routeGroup(path) {
   if (path.startsWith('/category')) return 'category'
@@ -185,6 +186,19 @@ watch(() => route.path, syncExpanded, { immediate: true })
     class="app-sidebar"
     :class="{ 'is-collapsed': isCollapsed }"
   >
+    <HoverBubble :text="pauseLabel">
+      <button
+        type="button"
+        class="app-sidebar__pause"
+        :class="{ 'is-paused': rulesStore.statusState === 'paused' }"
+        :aria-label="pauseLabel"
+        :aria-pressed="rulesStore.statusState === 'paused'"
+        @click="rulesStore.toggleUserPaused"
+      >
+        <AppIcon name="mouse" aria-hidden="true" />
+      </button>
+    </HoverBubble>
+
     <nav
       class="app-sidebar__nav"
       aria-label="应用页面"
@@ -463,6 +477,42 @@ watch(() => route.path, syncExpanded, { immediate: true })
   > :deep(.hover-bubble-trigger) {
     display: flex;
     width: 100%;
+  }
+}
+
+.app-sidebar__pause {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  margin: 0 0 8px 12px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--accent-strong);
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+
+  &:hover {
+    background: var(--accent-soft);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+
+  &.is-paused {
+    color: var(--muted);
+  }
+
+  :deep(svg) {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
   }
 }
 
@@ -777,6 +827,10 @@ watch(() => route.path, syncExpanded, { immediate: true })
 }
 
 .app-sidebar.is-collapsed {
+  .app-sidebar__pause {
+    margin-left: 4px;
+  }
+
   .app-sidebar__collapse :deep(svg) {
     transform: rotate(180deg);
   }
