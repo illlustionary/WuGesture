@@ -92,7 +92,7 @@ src\components
 
 - `AppSidebar.vue`：系统标题栏下方的贴边满高左侧导航壳，只负责侧栏覆盖层状态、区域组装和向应用壳转发操作事件。
 - `SidebarFixedNavigation.vue`、`SidebarCategorySection.vue`、`SidebarApplicationSection.vue`、`SidebarEdgeSection.vue`、`SidebarSettingsSection.vue`：侧栏的固定导航、分类、程序、边缘操作和设置五个独立区域；各自维护展开状态、路由选中、子项、搜索或区域操作。
-- `SidebarFooter.vue`：侧栏底部的规则优先级帮助、主题切换、快速搜索和收起按钮。
+- `SidebarFooter.vue`：侧栏底部的规则优先级帮助、主题切换、快速搜索和收起按钮；收起按钮使用 `assets/navigation/sidebar.svg`，通过 180 度旋转表示展开/收起状态，不使用过渡动画。
 - `NestedRouteView.vue`：嵌套路由的轻量承载组件，使分类、程序、边缘操作和设置的子路由在同一工作区内独立渲染。
 - `AppShell.vue`：无外层卡片样式的页面布局壳，提供主体区域和插槽，由应用壳层负责右侧工作区滚动。
 - `BaseDialog.vue`：共享对话框外壳，统一遮罩关闭、可选关闭按钮、默认取消/确认操作区及上移淡出关闭动画；搜索和自动保存编辑器可关闭默认操作区。
