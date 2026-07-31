@@ -1,9 +1,9 @@
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 const HIDE_DELAY_MS = 180
 
-export function useSidebarOverlay() {
-  const isCollapsed = ref(false)
+export function useSidebarOverlay(editor) {
+  const isCollapsed = ref(Boolean(editor.state.uiSettings.sidebar?.collapsed))
   const isInLayout = ref(true)
   const isCollapsing = ref(false)
   const isOverlayMounted = ref(false)
@@ -12,6 +12,13 @@ export function useSidebarOverlay() {
   const isSidebarHidden = computed(() => !isSidebarVisible.value)
   let hideOverlayTimer = 0
   let showOverlayFrame = 0
+
+  watch(
+    () => editor.state.uiSettings.sidebar?.collapsed,
+    collapsed => {
+      isCollapsed.value = Boolean(collapsed)
+    }
+  )
 
   function clearHideOverlayTimer() {
     if (!hideOverlayTimer) {
@@ -66,7 +73,7 @@ export function useSidebarOverlay() {
     clearShowOverlayFrame()
 
     if (isCollapsed.value) {
-      isCollapsed.value = false
+      setCollapsed(false)
       isCollapsing.value = false
       isOverlayVisible.value = false
       isOverlayMounted.value = false
@@ -74,8 +81,15 @@ export function useSidebarOverlay() {
       return
     }
 
-    isCollapsed.value = true
+    setCollapsed(true)
     isCollapsing.value = true
+  }
+
+  function setCollapsed(collapsed) {
+    isCollapsed.value = collapsed
+    const uiSettings = editor.getUiSettingsSnapshot()
+    uiSettings.sidebar.collapsed = collapsed
+    editor.saveUiSettings(uiSettings)
   }
 
   function completeTransition() {

@@ -48,6 +48,22 @@ public sealed class WebViewRulesPayloadFactoryTests
     }
 
     [Fact]
+    public void Create_IncludesApplicationVersion()
+    {
+        var config = DefaultGestureConfig.Create();
+        var loadedConfig = new LoadedGestureConfig(
+            "test.json",
+            config,
+            GestureConfigMapper.ToRules(config));
+
+        using var document = JsonDocument.Parse(WebViewRulesPayloadFactory.Create(loadedConfig));
+
+        Assert.Equal(
+            AppIdentity.GetDisplayVersion(),
+            document.RootElement.GetProperty("appVersion").GetString());
+    }
+
+    [Fact]
     public void Create_IncludesNormalizedAppearanceTheme()
     {
         var config = GestureConfigNormalizer.Normalize(new GestureConfig
@@ -105,5 +121,30 @@ public sealed class WebViewRulesPayloadFactoryTests
         Assert.Equal("#445566", appearance.GetProperty("lightTitleBarTextColor").GetString());
         Assert.Equal("#778899", appearance.GetProperty("darkTitleBarColor").GetString());
         Assert.Equal("#AABBCC", appearance.GetProperty("darkTitleBarTextColor").GetString());
+    }
+
+    [Fact]
+    public void Create_IncludesSidebarCollapsedState()
+    {
+        var config = GestureConfigNormalizer.Normalize(new GestureConfig
+        {
+            UiSettings = new GestureUiSettings
+            {
+                Sidebar = new SidebarUiSettings { Collapsed = true }
+            }
+        });
+        var loadedConfig = new LoadedGestureConfig(
+            "test.json",
+            config,
+            GestureConfigMapper.ToRules(config));
+
+        using var document = JsonDocument.Parse(WebViewRulesPayloadFactory.Create(loadedConfig));
+
+        Assert.True(
+            document.RootElement
+                .GetProperty("uiSettings")
+                .GetProperty("sidebar")
+                .GetProperty("collapsed")
+                .GetBoolean());
     }
 }

@@ -276,7 +276,8 @@ function isWindowAction(rule) {
     }
   }
 
-  &__row:hover &__remove {
+  &__row:hover &__remove,
+  &__row:focus-within &__remove {
     opacity: 1;
     transform: translateY(0);
     pointer-events: auto;

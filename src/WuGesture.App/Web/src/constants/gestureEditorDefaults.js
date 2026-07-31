@@ -46,6 +46,9 @@ export const DEFAULT_UI_SETTINGS = {
     darkTitleBarColor: "#1B222B",
     darkTitleBarTextColor: "#EDF2F7"
   },
+  sidebar: {
+    collapsed: false
+  },
   mouseTrail: {
     enabled: true,
     inactiveColor: "#AAAAAA",

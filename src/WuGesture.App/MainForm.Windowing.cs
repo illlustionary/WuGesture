@@ -23,12 +23,13 @@ public sealed partial class MainForm
 
     private void ApplyWindowTheme(AppearanceUiSettings appearance)
     {
-        if (!TryResolveWindowThemeColors(appearance, out var captionColor, out var textColor))
+        if (!TryResolveWindowThemeColors(appearance, out var captionColor, out var textColor, out var useDarkPalette))
         {
             return;
         }
 
         BackColor = captionColor;
+        webViewHost.SetInitialAppearance(captionColor, useDarkPalette);
         if (!IsHandleCreated || !OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000))
         {
             return;
@@ -43,9 +44,10 @@ public sealed partial class MainForm
     private static bool TryResolveWindowThemeColors(
         AppearanceUiSettings appearance,
         out Color captionColor,
-        out Color textColor)
+        out Color textColor,
+        out bool useDarkPalette)
     {
-        var useDarkPalette = appearance.Theme == GestureConfigContract.AppearanceThemes.Dark ||
+        useDarkPalette = appearance.Theme == GestureConfigContract.AppearanceThemes.Dark ||
             (appearance.Theme == GestureConfigContract.AppearanceThemes.System && SystemPrefersDarkTheme());
         captionColor = GestureColorParser.Parse(
             useDarkPalette ? appearance.DarkTitleBarColor : appearance.LightTitleBarColor,

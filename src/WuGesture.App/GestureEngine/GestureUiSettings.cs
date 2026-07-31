@@ -6,6 +6,8 @@ public sealed class GestureUiSettings
 {
     public AppearanceUiSettings Appearance { get; set; } = new();
 
+    public SidebarUiSettings Sidebar { get; set; } = new();
+
     public MouseTrailUiSettings MouseTrail { get; set; } = new();
 
     public GestureHintUiSettings GestureHint { get; set; } = new();
@@ -30,6 +32,11 @@ public sealed class AppearanceUiSettings
     public string DarkTitleBarColor { get; set; } = "#1B222B";
 
     public string DarkTitleBarTextColor { get; set; } = "#EDF2F7";
+}
+
+public sealed class SidebarUiSettings
+{
+    public bool Collapsed { get; set; }
 }
 
 public sealed class AppBehaviorUiSettings

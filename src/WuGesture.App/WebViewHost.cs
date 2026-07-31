@@ -1,5 +1,6 @@
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.WinForms;
+using System.Drawing;
 
 namespace WuGesture.App;
 
@@ -9,6 +10,8 @@ internal sealed class WebViewHost : IDisposable
     private readonly Func<bool> canUseUi;
     private readonly Action<string> onMessageReceived;
     private WebView2? webView;
+    private Color defaultBackgroundColor = SystemColors.Window;
+    private string initialTheme = "light";
     private bool isInitializing;
     private TaskCompletionSource? navigationCompletion;
 
@@ -32,7 +35,8 @@ internal sealed class WebViewHost : IDisposable
             Dispose();
             var createdWebView = new WebView2
             {
-                Dock = DockStyle.Fill
+                Dock = DockStyle.Fill,
+                DefaultBackgroundColor = defaultBackgroundColor
             };
             webView = createdWebView;
             owner.Controls.Add(createdWebView);
@@ -46,6 +50,8 @@ internal sealed class WebViewHost : IDisposable
 
             createdWebView.CoreWebView2.WebMessageReceived += OnWebMessageReceived;
             ConfigureHostMapping(createdWebView.CoreWebView2);
+            await createdWebView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(
+                $"document.documentElement.dataset.theme = '{initialTheme}';");
             var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             navigationCompletion = completion;
             void OnNavigationCompleted(object? _, CoreWebView2NavigationCompletedEventArgs __) => completion.TrySetResult();
@@ -92,6 +98,16 @@ internal sealed class WebViewHost : IDisposable
         }
 
         webView.CoreWebView2.PostWebMessageAsJson(payload);
+    }
+
+    public void SetInitialAppearance(Color backgroundColor, bool useDarkTheme)
+    {
+        defaultBackgroundColor = backgroundColor;
+        initialTheme = useDarkTheme ? "dark" : "light";
+        if (webView is { IsDisposed: false, CoreWebView2: null })
+        {
+            webView.DefaultBackgroundColor = backgroundColor;
+        }
     }
 
     public void Dispose()
