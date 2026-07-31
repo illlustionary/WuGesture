@@ -142,7 +142,7 @@ function closeFromMask(event) {
   }
 }
 
-.base-dialog__close {
+:deep(.base-dialog__close) {
   flex: 0 0 auto;
   color: var(--muted);
 }

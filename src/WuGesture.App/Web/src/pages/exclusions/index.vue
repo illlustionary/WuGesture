@@ -98,7 +98,7 @@ function toggleDisableEdgeActions(application) {
   gap: 0;
 }
 
-.exclusion-add-button {
+:deep(.exclusion-add-button) {
   width: 36px;
   height: 36px;
 }
@@ -198,7 +198,7 @@ function toggleDisableEdgeActions(application) {
   }
 
   .exclusion-item :deep(.toggle-checkbox),
-  .exclusion-item .icon-action-button {
+  .exclusion-item :deep(.icon-action-button) {
     grid-column: 2;
   }
 }
