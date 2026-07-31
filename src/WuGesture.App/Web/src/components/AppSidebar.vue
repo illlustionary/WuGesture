@@ -32,12 +32,16 @@ const rulesStore = useGestureEditorContext()
 const route = useRoute()
 const {
   isCollapsed,
+  isInLayout,
+  isCollapsing,
+  isOverlayMounted,
   isOverlayVisible,
   isSidebarVisible,
   isSidebarHidden,
   showOverlay,
   queueHideOverlay,
-  toggleSidebar
+  toggleSidebar,
+  completeTransition
 } = useSidebarOverlay()
 const searchValues = reactive({ category: '', app: '' })
 const expanded = reactive({
@@ -204,12 +208,16 @@ watch(() => route.path, syncExpanded, { immediate: true })
     class="app-sidebar"
     :class="{
       'is-collapsed': isCollapsed,
+      'is-collapsing': isCollapsing,
+      'is-detached': !isInLayout,
+      'is-overlay-mounted': isOverlayMounted,
       'is-overlay-visible': isOverlayVisible
     }"
     :aria-hidden="isSidebarHidden"
     :inert="isSidebarHidden"
     @pointerenter="showOverlay"
     @pointerleave="queueHideOverlay"
+    @transitionend.self="completeTransition"
   >
     <HoverBubble
       :text="pauseLabel"
@@ -421,18 +429,14 @@ watch(() => route.path, syncExpanded, { immediate: true })
 
     <div class="app-sidebar__footer">
       <div class="app-sidebar__footer-controls">
-        <HoverBubble :text="collapseLabel">
+        <HoverBubble text="规则生效顺序">
           <button
             type="button"
-            class="app-sidebar__collapse"
-            :aria-label="collapseLabel"
-            :aria-pressed="isCollapsed"
-            @click="toggleSidebar"
+            class="app-sidebar__help"
+            aria-label="规则生效顺序"
+            @click="emit('open-help')"
           >
-            <AppIcon
-              name="panel-left"
-              aria-hidden="true"
-            />
+            ?
           </button>
         </HoverBubble>
         <HoverBubble :text="themeLabel">
@@ -470,14 +474,18 @@ watch(() => route.path, syncExpanded, { immediate: true })
             />
           </button>
         </HoverBubble>
-        <HoverBubble text="规则生效顺序">
+        <HoverBubble :text="collapseLabel">
           <button
             type="button"
-            class="app-sidebar__help"
-            aria-label="规则生效顺序"
-            @click="emit('open-help')"
+            class="app-sidebar__collapse"
+            :aria-label="collapseLabel"
+            :aria-pressed="isCollapsed"
+            @click="toggleSidebar"
           >
-            ?
+            <AppIcon
+              name="panel-left"
+              aria-hidden="true"
+            />
           </button>
         </HoverBubble>
       </div>
@@ -499,19 +507,30 @@ watch(() => route.path, syncExpanded, { immediate: true })
     opacity 180ms ease,
     transform 180ms ease;
 
-  &.is-collapsed {
-    position: fixed;
-    z-index: 30;
-    inset: 0 auto 0 0;
-    width: 238px;
-    min-width: 68px;
+  &.is-collapsing {
     opacity: 0;
     pointer-events: none;
     transform: translateX(-20px);
   }
 
-  &.is-overlay-visible {
+  &.is-detached {
+    position: fixed;
+    z-index: 30;
+    inset: 0 auto 0 0;
+    width: 238px;
+    min-width: 238px;
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(-20px);
+  }
+
+  &.is-overlay-mounted {
+    visibility: visible;
     box-shadow: var(--shadow-float);
+  }
+
+  &.is-overlay-visible {
     opacity: 1;
     pointer-events: auto;
     transform: translateX(0);
