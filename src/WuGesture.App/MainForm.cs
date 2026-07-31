@@ -51,7 +51,7 @@ public sealed partial class MainForm : Form
         Text = AppIdentity.GetDisplayVersion();
         Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? SystemIcons.Application;
         FormBorderStyle = FormBorderStyle.Sizable;
-        ApplyWindows11TitleBarColors(loadedConfig.Config.UiSettings.Appearance);
+        ApplyWindowTheme(loadedConfig.Config.UiSettings.Appearance);
         StartPosition = FormStartPosition.Manual;
         MinimumSize = new Size(WindowStateStore.MinimumWindowWidth, WindowStateStore.MinimumWindowHeight);
         ApplyInitialWindowState();
@@ -211,6 +211,7 @@ public sealed partial class MainForm : Form
             if (WindowState == FormWindowState.Minimized)
             {
                 ShowInTaskbar = false;
+                Hide();
                 DisposeWebView();
             }
         });
@@ -281,6 +282,7 @@ public sealed partial class MainForm : Form
             removeTaskbarButtonAfterMinimize = false;
             ShowInTaskbar = false;
             Opacity = 0;
+            ApplyWindowTheme(loadedConfig?.Config.UiSettings.Appearance ?? new AppearanceUiSettings());
             if (!Visible)
             {
                 Show();
@@ -1102,7 +1104,7 @@ public sealed partial class MainForm : Form
 
     private void ApplyUiSettings(GestureUiSettings uiSettings)
     {
-        ApplyWindows11TitleBarColors(uiSettings.Appearance);
+        ApplyWindowTheme(uiSettings.Appearance);
         gestureService?.ApplyGestureSensitivity(uiSettings.GestureSensitivity);
         var hasEnabledOverlay =
             IsFeatureEnabled(uiSettings.MouseTrail.Enabled) ||

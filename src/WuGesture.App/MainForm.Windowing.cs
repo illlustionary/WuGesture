@@ -12,23 +12,24 @@ public sealed partial class MainForm
     private const int SwMinimize = 6;
     private const int SwRestore = 9;
 
-    private void ApplyWindows11TitleBarColors(AppearanceUiSettings appearance)
+    protected override void OnHandleCreated(EventArgs e)
     {
-        if (!IsHandleCreated ||
-            !OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000))
+        base.OnHandleCreated(e);
+        if (loadedConfig is not null)
+        {
+            ApplyWindowTheme(loadedConfig.Config.UiSettings.Appearance);
+        }
+    }
+
+    private void ApplyWindowTheme(AppearanceUiSettings appearance)
+    {
+        if (!TryResolveWindowThemeColors(appearance, out var captionColor, out var textColor))
         {
             return;
         }
 
-        var useDarkPalette = appearance.Theme == GestureConfigContract.AppearanceThemes.Dark ||
-            (appearance.Theme == GestureConfigContract.AppearanceThemes.System && SystemPrefersDarkTheme());
-        var captionColor = GestureColorParser.Parse(
-            useDarkPalette ? appearance.DarkTitleBarColor : appearance.LightTitleBarColor,
-            Color.Empty);
-        var textColor = GestureColorParser.Parse(
-            useDarkPalette ? appearance.DarkTitleBarTextColor : appearance.LightTitleBarTextColor,
-            Color.Empty);
-        if (captionColor.IsEmpty || textColor.IsEmpty)
+        BackColor = captionColor;
+        if (!IsHandleCreated || !OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000))
         {
             return;
         }
@@ -39,6 +40,22 @@ public sealed partial class MainForm
         _ = DwmSetWindowAttribute(Handle, DwmwaTextColor, ref nativeTextColor, sizeof(int));
     }
 
+    private static bool TryResolveWindowThemeColors(
+        AppearanceUiSettings appearance,
+        out Color captionColor,
+        out Color textColor)
+    {
+        var useDarkPalette = appearance.Theme == GestureConfigContract.AppearanceThemes.Dark ||
+            (appearance.Theme == GestureConfigContract.AppearanceThemes.System && SystemPrefersDarkTheme());
+        captionColor = GestureColorParser.Parse(
+            useDarkPalette ? appearance.DarkTitleBarColor : appearance.LightTitleBarColor,
+            Color.Empty);
+        textColor = GestureColorParser.Parse(
+            useDarkPalette ? appearance.DarkTitleBarTextColor : appearance.LightTitleBarTextColor,
+            Color.Empty);
+        return !captionColor.IsEmpty && !textColor.IsEmpty;
+    }
+
     private void OnSystemUserPreferenceChanged(object sender, UserPreferenceChangedEventArgs e)
     {
         var uiSettings = loadedConfig?.Config.UiSettings;
@@ -47,7 +64,7 @@ public sealed partial class MainForm
             return;
         }
 
-        BeginInvokeSafe(() => ApplyWindows11TitleBarColors(uiSettings.Appearance));
+        BeginInvokeSafe(() => ApplyWindowTheme(uiSettings.Appearance));
     }
 
     private void MinimizeWindow()
