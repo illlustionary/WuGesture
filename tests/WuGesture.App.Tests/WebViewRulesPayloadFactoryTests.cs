@@ -75,4 +75,35 @@ public sealed class WebViewRulesPayloadFactoryTests
                 .GetProperty("theme")
                 .GetString());
     }
+
+    [Fact]
+    public void Create_IncludesTitleBarConfiguration()
+    {
+        var config = GestureConfigNormalizer.Normalize(new GestureConfig
+        {
+            UiSettings = new GestureUiSettings
+            {
+                Appearance = new AppearanceUiSettings
+                {
+                    LightTitleBarColor = "#112233",
+                    LightTitleBarTextColor = "#445566",
+                    DarkTitleBarColor = "#778899",
+                    DarkTitleBarTextColor = "#AABBCC"
+                }
+            }
+        });
+        var loadedConfig = new LoadedGestureConfig(
+            "test.json",
+            config,
+            GestureConfigMapper.ToRules(config));
+
+        using var document = JsonDocument.Parse(WebViewRulesPayloadFactory.Create(loadedConfig));
+        var uiSettings = document.RootElement.GetProperty("uiSettings");
+        var appearance = uiSettings.GetProperty("appearance");
+
+        Assert.Equal("#112233", appearance.GetProperty("lightTitleBarColor").GetString());
+        Assert.Equal("#445566", appearance.GetProperty("lightTitleBarTextColor").GetString());
+        Assert.Equal("#778899", appearance.GetProperty("darkTitleBarColor").GetString());
+        Assert.Equal("#AABBCC", appearance.GetProperty("darkTitleBarTextColor").GetString());
+    }
 }

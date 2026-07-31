@@ -40,7 +40,11 @@ export const DEFAULT_APPLICATIONS = [
 
 export const DEFAULT_UI_SETTINGS = {
   appearance: {
-    theme: "system"
+    theme: "system",
+    lightTitleBarColor: "#FFFFFF",
+    lightTitleBarTextColor: "#16202B",
+    darkTitleBarColor: "#1B222B",
+    darkTitleBarTextColor: "#EDF2F7"
   },
   mouseTrail: {
     enabled: true,

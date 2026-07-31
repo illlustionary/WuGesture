@@ -43,7 +43,12 @@ internal static class GestureConfigNormalizer
     private static void NormalizeUiSettings(GestureUiSettings settings)
     {
         var appearance = settings.Appearance;
+        var defaultAppearance = new AppearanceUiSettings();
         appearance.Theme = NormalizeAppearanceTheme(appearance.Theme);
+        appearance.LightTitleBarColor = NormalizeColor(appearance.LightTitleBarColor, defaultAppearance.LightTitleBarColor);
+        appearance.LightTitleBarTextColor = NormalizeColor(appearance.LightTitleBarTextColor, defaultAppearance.LightTitleBarTextColor);
+        appearance.DarkTitleBarColor = NormalizeColor(appearance.DarkTitleBarColor, defaultAppearance.DarkTitleBarColor);
+        appearance.DarkTitleBarTextColor = NormalizeColor(appearance.DarkTitleBarTextColor, defaultAppearance.DarkTitleBarTextColor);
 
         var mouseTrail = settings.MouseTrail;
         mouseTrail.Enabled ??= true;

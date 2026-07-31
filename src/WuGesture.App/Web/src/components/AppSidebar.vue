@@ -6,6 +6,7 @@ import AppIcon from '@/components/AppIcon.vue'
 import HoverBubble from '@/components/HoverBubble.vue'
 import IconActionButton from '@/components/IconActionButton.vue'
 import { getCategoryIcon } from '@/pages/category/composables/useCategoryPage'
+import appIconUrl from '../../../Resources/wu.jpg'
 
 const props = defineProps({
   isDarkTheme: { type: Boolean, default: false }
@@ -92,7 +93,8 @@ const allGroups = computed(() => [...dynamicGroups.value, ...fixedGroups])
 
 const collapseLabel = computed(() => (isCollapsed.value ? '展开侧栏' : '收起侧栏'))
 const themeLabel = computed(() => (props.isDarkTheme ? '切换到浅色模式' : '切换到深色模式'))
-const pauseLabel = computed(() => (rulesStore.statusState === 'paused' ? '恢复 WuGesture' : '暂停 WuGesture'))
+const isPaused = computed(() => rulesStore.state.statusState === 'paused')
+const pauseLabel = computed(() => (isPaused.value ? '恢复 WuGesture' : '暂停 WuGesture'))
 
 function routeGroup(path) {
   if (path.startsWith('/category')) return 'category'
@@ -186,16 +188,25 @@ watch(() => route.path, syncExpanded, { immediate: true })
     class="app-sidebar"
     :class="{ 'is-collapsed': isCollapsed }"
   >
-    <HoverBubble :text="pauseLabel">
+    <HoverBubble
+      :text="pauseLabel"
+      class="app-sidebar__pause-trigger"
+    >
       <button
         type="button"
         class="app-sidebar__pause"
-        :class="{ 'is-paused': rulesStore.statusState === 'paused' }"
+        :class="{ 'is-paused': isPaused }"
         :aria-label="pauseLabel"
-        :aria-pressed="rulesStore.statusState === 'paused'"
+        :aria-pressed="isPaused"
         @click="rulesStore.toggleUserPaused"
       >
-        <AppIcon name="mouse" aria-hidden="true" />
+        <img
+          :src="appIconUrl"
+          class="app-sidebar__pause-icon"
+          alt=""
+          aria-hidden="true"
+        />
+        <span>WuGesture</span>
       </button>
     </HoverBubble>
 
@@ -262,7 +273,10 @@ watch(() => route.path, syncExpanded, { immediate: true })
               v-if="group.searchable"
               class="sidebar-group__search"
             >
-              <AppIcon name="search" aria-hidden="true" />
+              <AppIcon
+                name="search"
+                aria-hidden="true"
+              />
               <input
                 v-model="searchValues[group.key]"
                 type="search"
@@ -277,7 +291,7 @@ watch(() => route.path, syncExpanded, { immediate: true })
               <IconActionButton
                 icon="add"
                 label="新增"
-                :native-tooltip="false"
+                :show-tooltip="false"
                 class="sidebar-group__action"
                 @click="openGroupAction(group.key)"
               />
@@ -287,7 +301,7 @@ watch(() => route.path, syncExpanded, { immediate: true })
                 <IconActionButton
                   icon="download"
                   label="导出配置"
-                  :native-tooltip="false"
+                  :show-tooltip="false"
                   class="sidebar-group__action"
                   @click="emit('export-config')"
                 />
@@ -296,7 +310,7 @@ watch(() => route.path, syncExpanded, { immediate: true })
                 <IconActionButton
                   icon="upload"
                   label="导入配置"
-                  :native-tooltip="false"
+                  :show-tooltip="false"
                   class="sidebar-group__action"
                   @click="emit('import-config')"
                 />
@@ -305,7 +319,7 @@ watch(() => route.path, syncExpanded, { immediate: true })
                 <IconActionButton
                   icon="reset"
                   label="恢复默认设置"
-                  :native-tooltip="false"
+                  :show-tooltip="false"
                   color="var(--danger)"
                   class="sidebar-group__action"
                   @click="emit('reset-settings')"
@@ -392,7 +406,10 @@ watch(() => route.path, syncExpanded, { immediate: true })
             :aria-pressed="isCollapsed"
             @click="isCollapsed = !isCollapsed"
           >
-            <AppIcon name="panel-left" aria-hidden="true" />
+            <AppIcon
+              name="panel-left"
+              aria-hidden="true"
+            />
           </button>
         </HoverBubble>
         <HoverBubble :text="themeLabel">
@@ -424,7 +441,10 @@ watch(() => route.path, syncExpanded, { immediate: true })
             aria-label="搜索"
             @click="emit('open-search')"
           >
-            <AppIcon name="search" aria-hidden="true" />
+            <AppIcon
+              name="search"
+              aria-hidden="true"
+            />
           </button>
         </HoverBubble>
         <HoverBubble text="规则生效顺序">
@@ -481,20 +501,19 @@ watch(() => route.path, syncExpanded, { immediate: true })
 }
 
 .app-sidebar__pause {
-  display: grid;
-  width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
   height: 40px;
-  margin: 0 0 8px 12px;
   padding: 0;
-  place-items: center;
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: var(--accent-strong);
+  color: var(--text);
   cursor: pointer;
-  transition:
-    background-color 120ms ease,
-    color 120ms ease;
+  transition: background-color 120ms ease;
 
   &:hover {
     background: var(--accent-soft);
@@ -507,13 +526,35 @@ watch(() => route.path, syncExpanded, { immediate: true })
 
   &.is-paused {
     color: var(--muted);
-  }
 
-  :deep(svg) {
-    width: 20px;
-    height: 20px;
-    fill: currentColor;
+    .app-sidebar__pause-icon,
+    span {
+      filter: grayscale(1);
+      opacity: 0.54;
+    }
   }
+}
+
+.app-sidebar__pause-trigger {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.app-sidebar__pause-icon {
+  display: block;
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  transition:
+    filter 120ms ease,
+    opacity 120ms ease;
+  border-radius: 50%;
+}
+
+.app-sidebar__pause span {
+  font-size: 13px;
 }
 
 .app-sidebar__item,
@@ -827,8 +868,8 @@ watch(() => route.path, syncExpanded, { immediate: true })
 }
 
 .app-sidebar.is-collapsed {
-  .app-sidebar__pause {
-    margin-left: 4px;
+  .app-sidebar__pause span {
+    display: none;
   }
 
   .app-sidebar__collapse :deep(svg) {

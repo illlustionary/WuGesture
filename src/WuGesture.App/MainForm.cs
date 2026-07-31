@@ -51,6 +51,7 @@ public sealed partial class MainForm : Form
         Text = AppIdentity.GetDisplayVersion();
         Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? SystemIcons.Application;
         FormBorderStyle = FormBorderStyle.Sizable;
+        ApplyWindows11TitleBarColors(loadedConfig.Config.UiSettings.Appearance);
         StartPosition = FormStartPosition.Manual;
         MinimumSize = new Size(WindowStateStore.MinimumWindowWidth, WindowStateStore.MinimumWindowHeight);
         ApplyInitialWindowState();
@@ -68,6 +69,7 @@ public sealed partial class MainForm : Form
         FormClosing += OnFormClosing;
         FormClosed += (_, _) =>
         {
+            SystemEvents.UserPreferenceChanged -= OnSystemUserPreferenceChanged;
             trayIcon.Visible = false;
             trayIcon.Dispose();
             trayMenu.Dispose();
@@ -78,6 +80,7 @@ public sealed partial class MainForm : Form
             gestureFeedbackCoordinator?.Dispose();
             DisposeMouseTrailForm();
         };
+        SystemEvents.UserPreferenceChanged += OnSystemUserPreferenceChanged;
     }
 
     private async void OnLoad(object? sender, EventArgs e)
@@ -1099,6 +1102,7 @@ public sealed partial class MainForm : Form
 
     private void ApplyUiSettings(GestureUiSettings uiSettings)
     {
+        ApplyWindows11TitleBarColors(uiSettings.Appearance);
         gestureService?.ApplyGestureSensitivity(uiSettings.GestureSensitivity);
         var hasEnabledOverlay =
             IsFeatureEnabled(uiSettings.MouseTrail.Enabled) ||

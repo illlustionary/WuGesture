@@ -1,12 +1,54 @@
+using Microsoft.Win32;
 using System.Runtime.InteropServices;
+using WuGesture.App.GestureEngine;
 
 namespace WuGesture.App;
 
 public sealed partial class MainForm
 {
+    private const int DwmwaCaptionColor = 35;
+    private const int DwmwaTextColor = 36;
     private const int SwShow = 5;
     private const int SwMinimize = 6;
     private const int SwRestore = 9;
+
+    private void ApplyWindows11TitleBarColors(AppearanceUiSettings appearance)
+    {
+        if (!IsHandleCreated ||
+            !OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000))
+        {
+            return;
+        }
+
+        var useDarkPalette = appearance.Theme == GestureConfigContract.AppearanceThemes.Dark ||
+            (appearance.Theme == GestureConfigContract.AppearanceThemes.System && SystemPrefersDarkTheme());
+        var captionColor = GestureColorParser.Parse(
+            useDarkPalette ? appearance.DarkTitleBarColor : appearance.LightTitleBarColor,
+            Color.Empty);
+        var textColor = GestureColorParser.Parse(
+            useDarkPalette ? appearance.DarkTitleBarTextColor : appearance.LightTitleBarTextColor,
+            Color.Empty);
+        if (captionColor.IsEmpty || textColor.IsEmpty)
+        {
+            return;
+        }
+
+        var nativeCaptionColor = ColorTranslator.ToWin32(captionColor);
+        var nativeTextColor = ColorTranslator.ToWin32(textColor);
+        _ = DwmSetWindowAttribute(Handle, DwmwaCaptionColor, ref nativeCaptionColor, sizeof(int));
+        _ = DwmSetWindowAttribute(Handle, DwmwaTextColor, ref nativeTextColor, sizeof(int));
+    }
+
+    private void OnSystemUserPreferenceChanged(object sender, UserPreferenceChangedEventArgs e)
+    {
+        var uiSettings = loadedConfig?.Config.UiSettings;
+        if (uiSettings?.Appearance.Theme != GestureConfigContract.AppearanceThemes.System)
+        {
+            return;
+        }
+
+        BeginInvokeSafe(() => ApplyWindows11TitleBarColors(uiSettings.Appearance));
+    }
 
     private void MinimizeWindow()
     {
@@ -125,6 +167,9 @@ public sealed partial class MainForm
 
     [DllImport("user32.dll")]
     private static extern bool BringWindowToTop(IntPtr hWnd);
+
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int valueSize);
 
     [DllImport("user32.dll")]
     private static extern bool DestroyIcon(IntPtr hIcon);
