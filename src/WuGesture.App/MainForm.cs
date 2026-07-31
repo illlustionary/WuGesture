@@ -30,6 +30,7 @@ public sealed partial class MainForm : Form
     private bool isClosing;
     private bool isExiting;
     private bool isRestoringConfiguration;
+    private bool removeTaskbarButtonAfterMinimize;
     private bool hideConfigWindowOnLaunch;
     private bool isUserPaused;
     private bool isConfigPaused;
@@ -47,23 +48,23 @@ public sealed partial class MainForm : Form
         loadedConfig = configStore.LoadOrCreate();
         hideConfigWindowOnLaunch = startHiddenToTray ||
             !loadedConfig.Config.UiSettings.AppBehavior.ShowConfigWindowOnLaunch;
-        Text = AppIdentity.DisplayName;
+        Text = AppIdentity.GetDisplayVersion();
         Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? SystemIcons.Application;
-        FormBorderStyle = FormBorderStyle.None;
+        FormBorderStyle = FormBorderStyle.Sizable;
         StartPosition = FormStartPosition.Manual;
         MinimumSize = new Size(WindowStateStore.MinimumWindowWidth, WindowStateStore.MinimumWindowHeight);
         ApplyInitialWindowState();
+        Opacity = 0;
         if (hideConfigWindowOnLaunch)
         {
             ShowInTaskbar = false;
             WindowState = FormWindowState.Minimized;
-            Opacity = 0;
         }
 
         InitializeTrayIcon();
 
         Load += OnLoad;
-        Resize += (_, _) => PostWindowState();
+        Resize += OnResize;
         FormClosing += OnFormClosing;
         FormClosed += (_, _) =>
         {
@@ -102,11 +103,6 @@ public sealed partial class MainForm : Form
             return;
         }
 
-        if (!hideConfigWindowOnLaunch)
-        {
-            BringWindowToFront();
-        }
-
         scopeContextProvider = new ConfiguredScopeContextProvider(config.Config.Applications);
         gestureService = new GestureService(new GestureMatcher(config.Rules), scopeContextProvider);
         gestureService.UpdateExcludedApplications(config.Config.UiSettings.AppBehavior.ExcludedApplications);
@@ -120,6 +116,13 @@ public sealed partial class MainForm : Form
         if (!hideConfigWindowOnLaunch)
         {
             await EnsureWebViewAsync();
+            if (!CanUseUi())
+            {
+                return;
+            }
+
+            Opacity = 1;
+            BringWindowToFront();
         }
 
         if (!CanUseUi())
@@ -192,6 +195,24 @@ public sealed partial class MainForm : Form
         DisposeWebView();
     }
 
+    private void OnResize(object? sender, EventArgs e)
+    {
+        if (!removeTaskbarButtonAfterMinimize || WindowState != FormWindowState.Minimized)
+        {
+            return;
+        }
+
+        removeTaskbarButtonAfterMinimize = false;
+        BeginInvokeSafe(() =>
+        {
+            if (WindowState == FormWindowState.Minimized)
+            {
+                ShowInTaskbar = false;
+                DisposeWebView();
+            }
+        });
+    }
+
     private bool HandleConfiguredUserClose()
     {
         if (isExiting)
@@ -226,9 +247,9 @@ public sealed partial class MainForm : Form
         isEditorPaused = false;
         ApplyGesturePauseState();
         mouseTrailForm?.HideTrail();
-        DisposeWebView();
-        ShowInTaskbar = false;
-        Hide();
+        ShowInTaskbar = true;
+        removeTaskbarButtonAfterMinimize = true;
+        MinimizeWindow();
     }
 
     private void MinimizeToTaskbar()
@@ -239,6 +260,7 @@ public sealed partial class MainForm : Form
         isEditorPaused = false;
         ApplyGesturePauseState();
         mouseTrailForm?.HideTrail();
+        removeTaskbarButtonAfterMinimize = false;
         ShowInTaskbar = true;
         MinimizeWindow();
     }
@@ -253,10 +275,22 @@ public sealed partial class MainForm : Form
         isRestoringConfiguration = true;
         try
         {
+            removeTaskbarButtonAfterMinimize = false;
+            ShowInTaskbar = false;
+            Opacity = 0;
+            if (!Visible)
+            {
+                Show();
+            }
+
+            await EnsureWebViewAsync();
+            if (!CanUseUi())
+            {
+                return;
+            }
+
             ShowInTaskbar = true;
             Opacity = 1;
-            Show();
-            await EnsureWebViewAsync();
 
             // Run after the tray menu or single-instance callback has returned so it cannot reclaim focus.
             BeginInvokeSafe(() => BringWindowToFront());
@@ -484,28 +518,6 @@ public sealed partial class MainForm : Form
         TryPostWebMessage(payload);
     }
 
-    private void PostWindowState()
-    {
-        var payload = JsonSerializer.Serialize(new
-        {
-            type = WebViewMessageTypes.WindowState,
-            maximized = WindowState == FormWindowState.Maximized
-        });
-
-        TryPostWebMessage(payload);
-    }
-
-    private void PostWindowResizeState(bool resizing)
-    {
-        var payload = JsonSerializer.Serialize(new
-        {
-            type = WebViewMessageTypes.WindowResizeState,
-            resizing
-        });
-
-        TryPostWebMessage(payload);
-    }
-
     private void PostRules()
     {
         if (loadedConfig is null)
@@ -531,7 +543,6 @@ public sealed partial class MainForm : Form
         {
             PostStatus(isUserPaused ? "paused" : "running");
             PostRules();
-            PostWindowState();
             return;
         }
 
@@ -594,29 +605,6 @@ public sealed partial class MainForm : Form
             case WebViewMessageTypes.PreviewLevelOsd:
                 PreviewLevelOsd(json);
                 break;
-            case WebViewMessageTypes.WindowMinimize:
-                MinimizeToTaskbar();
-                break;
-            case WebViewMessageTypes.WindowToggleMaximize:
-                ToggleWindowMaximized();
-                break;
-            case WebViewMessageTypes.WindowClose:
-                CloseFromWindowControl();
-                break;
-            case WebViewMessageTypes.WindowStartDrag:
-                StartWindowDrag();
-                break;
-            case WebViewMessageTypes.WindowStartResize:
-                StartWindowResize();
-                break;
-        }
-    }
-
-    private void CloseFromWindowControl()
-    {
-        if (!HandleConfiguredUserClose())
-        {
-            Close();
         }
     }
 

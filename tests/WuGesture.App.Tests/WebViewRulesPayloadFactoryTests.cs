@@ -33,7 +33,7 @@ public sealed class WebViewRulesPayloadFactoryTests
     }
 
     [Fact]
-    public void Create_IncludesHostAppInfoForTheSidebar()
+    public void Create_DoesNotIncludeUnusedHostAppInfo()
     {
         var config = DefaultGestureConfig.Create();
         var loadedConfig = new LoadedGestureConfig(
@@ -42,11 +42,9 @@ public sealed class WebViewRulesPayloadFactoryTests
             GestureConfigMapper.ToRules(config));
 
         using var document = JsonDocument.Parse(WebViewRulesPayloadFactory.Create(loadedConfig));
-        var appInfo = document.RootElement.GetProperty("appInfo");
 
         Assert.Equal(WebViewMessageTypes.Rules, document.RootElement.GetProperty("type").GetString());
-        Assert.Equal(AppIdentity.GetDisplayVersion(), appInfo.GetProperty("version").GetString());
-        Assert.True(appInfo.TryGetProperty("icon", out _));
+        Assert.False(document.RootElement.TryGetProperty("appInfo", out _));
     }
 
     [Fact]

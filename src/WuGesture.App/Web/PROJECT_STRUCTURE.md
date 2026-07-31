@@ -60,7 +60,7 @@ src
 - `src\router\routes\scopeRoutes.js`：分类和程序动态子路由。
 - `src\router\routes\edgeRoutes.js`：触发角、摩擦边和边缘滚动子路由。
 - `src\router\routes\settingsRoutes.js`：各设置项子路由。
-- `src\App.vue`：固定自定义顶部栏、侧栏/页面工作区、路由切换过渡和全局弹窗挂载；顶部栏及右下角缩放把手通过生命周期 store 控制宿主窗口，分类/程序侧栏操作和主题状态由组合式函数协调。
+- `src\App.vue`：侧栏/页面工作区、路由切换过渡和全局弹窗挂载；Windows 标题栏由桌面宿主提供，分类/程序侧栏操作和主题状态由组合式函数协调。
 - `src\icons\appIcons.js`：本地 SVG 图标的唯一显式注册表；使用文件名作为图标名称，供 `AppIcon` 和业务组件按名称查找。
 - `src\styles.scss`：编辑器全局设计 token、reset、通用按钮、输入框、弹窗和图标样式；常用布局/区块/表单/列表样式优先用 UnoCSS shortcuts，复杂动态样式和组件专属样式放在对应 `.vue` 文件的 scoped SCSS 中。
 
@@ -78,7 +78,7 @@ SVG 按使用位置分目录：
 - `category\`：分类显示图标，包括浏览器、代码、媒体和星光。
 - `gesture\`：手势录制与选择图标，包括准星、键盘和录制。
 - `navigation\`：侧栏、搜索和应用状态图标。
-- `window\`：窗口标题栏与对话框的关闭、最小化、最大化、还原和缩放把手图标。
+- `window\`：对话框关闭图标。
 
 这些 SVG 只由 `icons\appIcons.js` 通过 `vite-svg-loader` 作为 Vue 组件导入。图标文件名就是对外的图标名称，统一使用小写 kebab-case；路径颜色应使用 `currentColor`，便于按钮和状态样式控制。
 
@@ -90,8 +90,7 @@ SVG 按使用位置分目录：
 src\components
 ```
 
-- `AppTitleBar.vue`：固定自定义窗口顶部栏；左侧承载应用图标、构建版本和暂停/恢复入口，右侧承载最小化、最大化/还原和关闭，空白区负责窗口拖动与双击最大化。
-- `AppSidebar.vue`：顶部栏下方的贴边满高多级左侧导航，支持分类/程序动态子项、子菜单搜索、分组折叠、项目重命名/删除以及设置配置导入导出/恢复默认操作。底部左侧按钮可折叠为仅图标导航，搜索和规则优先级帮助入口位于底部右侧。
+- `AppSidebar.vue`：系统标题栏下方的贴边满高多级左侧导航，顶部以单个带悬浮提示的图标暂停/恢复 WuGesture，支持分类/程序动态子项、子菜单搜索、分组折叠、项目重命名/删除以及设置配置导入导出/恢复默认操作。底部左侧按钮可折叠为仅图标导航，搜索和规则优先级帮助入口位于底部右侧。
 - `NestedRouteView.vue`：嵌套路由的轻量承载组件，使分类、程序、边缘操作和设置的子路由在同一工作区内独立渲染。
 - `AppShell.vue`：无外层卡片样式的页面布局壳，提供主体区域和插槽，由应用壳层负责右侧工作区滚动。
 - `BaseDialog.vue`：共享对话框外壳，统一遮罩关闭、可选关闭按钮、默认取消/确认操作区及上移淡出关闭动画；搜索和自动保存编辑器可关闭默认操作区。
@@ -102,7 +101,6 @@ src\components
 - `HoverBubble.vue`：悬浮提示气泡。
 - `AppIcon.vue`：本地图标展示入口，只接收图标名称并从 `appIcons.js` 查找 SVG；未知名称回退为 `circle-dashed`。
 - `IconActionButton.vue`：共享图标按钮，通过 `AppIcon` 按 `icon` 名称展示图标。
-- `WindowResizeGrip.vue`：右下角窗口缩放把手，使用旋转后的三角点阵图标，通过生命周期 store 发起宿主系统缩放，并在缩放周期内抑制标题栏提示。
 - `QuickSearchDialog.vue`：全局快速搜索弹层，按配置类型显示匹配结果，包含带搜索图标和焦点反馈的输入字段。
 - `ConfirmDialog.vue`：重大操作确认弹窗，带缩放进入/退出动画。
 - `CustomSelect.vue`：共享弹层式自定义单选下拉控件，不复用浏览器默认 select。
@@ -227,7 +225,7 @@ src\pages
 
 页面组件通过动态 `import()` 加载，`router/routes` 下的路由模块只在路由命中时加载对应页面 chunk。
 
-自定义顶部栏左侧运行状态标识可点击，临时暂停或恢复 WuGesture；右侧提供宿主窗口控制。下方侧栏包含 `全局`、`分类`、`程序`、`边缘操作`、`排除项` 和 `设置`，分类/程序子项动态来自当前配置，边缘操作和设置子项对应独立嵌套路由。
+Windows 系统标题栏负责窗口控制；其下方侧栏顶部的运行状态图标可点击，临时暂停或恢复 WuGesture。侧栏包含 `全局`、`分类`、`程序`、`边缘操作`、`排除项` 和 `设置`，分类/程序子项动态来自当前配置，边缘操作和设置子项对应独立嵌套路由。
 
 ## 当前 UI
 
@@ -272,17 +270,10 @@ src\pages
 - `{ type: "reload-rules" }`
 - `{ type: "reset-rules" }`
 - `{ type: "preview-level-osd", kind: "volume|brightness" }`
-- `{ type: "window-minimize" }`
-- `{ type: "window-toggle-maximize" }`
-- `{ type: "window-close" }`
-- `{ type: "window-start-drag" }`
-- `{ type: "window-start-resize" }`
 
 后端发送：
 
 - `{ type: "status", status: "running|paused|..." }`
-- `{ type: "window-state", maximized: true|false }`
-- `{ type: "window-resize-state", resizing: true|false }`：宿主在原生缩放周期内通知前端抑制标题栏提示。
 - `{ type: "rules", rules: [...], applications: [{ name, displayName, path, categories, icon }, ...], edgeActions: [...], uiSettings: {...}, ... }`；`categories` 的顺序决定分类规则冲突时的覆盖顺序，越靠前优先级越高，其中 `uiSettings.appBehavior.excludedApplications` 的运行态消息项会额外带 `icon`，不写入配置文件。
 - `{ type: "application-selected", requestId: "...", name: "...", displayName: "...", path: "...", category: "...", icon: "..." }`
 - `{ type: "gesture-recorded", requestId: "...", button: "right|middle", pattern: ["Down", "Right"] }`

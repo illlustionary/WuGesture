@@ -10,11 +10,6 @@ internal static class WebViewRulesPayloadFactory
         return JsonSerializer.Serialize(new
         {
             type = WebViewMessageTypes.Rules,
-            appInfo = new
-            {
-                version = AppIdentity.GetDisplayVersion(),
-                icon = ApplicationIconDataUrl.FromExecutable(AppIdentity.GetLaunchExecutablePath())
-            },
             configPath = loadedConfig.FilePath,
             uiSettings = CreateUiSettingsPayload(loadedConfig.Config.UiSettings),
             rules = loadedConfig.Config.Rules.Select(rule => new
