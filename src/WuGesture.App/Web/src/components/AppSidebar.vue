@@ -1,10 +1,11 @@
 <script setup>
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, reactive, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { useGestureEditorContext } from '@/gestureEditor/context/gestureEditorContext'
 import AppIcon from '@/components/AppIcon.vue'
 import HoverBubble from '@/components/HoverBubble.vue'
 import IconActionButton from '@/components/IconActionButton.vue'
+import { useSidebarOverlay } from '@/composables/useSidebarOverlay'
 import { getCategoryIcon } from '@/pages/category/composables/useCategoryPage'
 import appIconUrl from '../../../Resources/wu.jpg'
 
@@ -29,7 +30,15 @@ const emit = defineEmits([
 
 const rulesStore = useGestureEditorContext()
 const route = useRoute()
-const isCollapsed = ref(false)
+const {
+  isCollapsed,
+  isOverlayVisible,
+  isSidebarVisible,
+  isSidebarHidden,
+  showOverlay,
+  queueHideOverlay,
+  toggleSidebar
+} = useSidebarOverlay()
 const searchValues = reactive({ category: '', app: '' })
 const expanded = reactive({
   category: false,
@@ -184,9 +193,23 @@ watch(() => route.path, syncExpanded, { immediate: true })
 </script>
 
 <template>
+  <div
+    v-if="isCollapsed"
+    class="app-sidebar__hotzone"
+    aria-hidden="true"
+    @pointerenter="showOverlay"
+    @pointerleave="queueHideOverlay"
+  />
   <aside
     class="app-sidebar"
-    :class="{ 'is-collapsed': isCollapsed }"
+    :class="{
+      'is-collapsed': isCollapsed,
+      'is-overlay-visible': isOverlayVisible
+    }"
+    :aria-hidden="isSidebarHidden"
+    :inert="isSidebarHidden"
+    @pointerenter="showOverlay"
+    @pointerleave="queueHideOverlay"
   >
     <HoverBubble
       :text="pauseLabel"
@@ -217,20 +240,20 @@ watch(() => route.path, syncExpanded, { immediate: true })
       <HoverBubble
         v-for="item in directItems"
         :key="item.to"
-        :text="isCollapsed ? item.label : ''"
+        :text="isSidebarHidden ? item.label : ''"
       >
         <RouterLink
           :to="item.to"
           class="app-sidebar__item"
           exact-active-class="is-active"
-          :aria-label="isCollapsed ? item.label : undefined"
+          :aria-label="isSidebarHidden ? item.label : undefined"
         >
           <AppIcon
             :name="item.icon"
             class="app-sidebar__item-icon"
             aria-hidden="true"
           />
-          <span v-if="!isCollapsed">{{ item.label }}</span>
+          <span v-if="isSidebarVisible">{{ item.label }}</span>
         </RouterLink>
       </HoverBubble>
 
@@ -243,8 +266,8 @@ watch(() => route.path, syncExpanded, { immediate: true })
         <button
           type="button"
           class="sidebar-group__head"
-          :aria-expanded="!isCollapsed && expanded[group.key]"
-          :aria-label="isCollapsed ? group.label : undefined"
+          :aria-expanded="isSidebarVisible && expanded[group.key]"
+          :aria-label="isSidebarHidden ? group.label : undefined"
           @click="toggleGroup(group.key)"
         >
           <AppIcon
@@ -253,19 +276,19 @@ watch(() => route.path, syncExpanded, { immediate: true })
             aria-hidden="true"
           />
           <span
-            v-if="!isCollapsed"
+            v-if="isSidebarVisible"
             class="sidebar-group__title"
             >{{ group.label }}</span
           >
           <span
-            v-if="!isCollapsed"
+            v-if="isSidebarVisible"
             class="sidebar-group__chevron"
             aria-hidden="true"
           />
         </button>
 
         <div
-          v-if="!isCollapsed && expanded[group.key]"
+          v-if="isSidebarVisible && expanded[group.key]"
           class="sidebar-group__body"
         >
           <div class="sidebar-group__toolbar">
@@ -404,7 +427,7 @@ watch(() => route.path, syncExpanded, { immediate: true })
             class="app-sidebar__collapse"
             :aria-label="collapseLabel"
             :aria-pressed="isCollapsed"
-            @click="isCollapsed = !isCollapsed"
+            @click="toggleSidebar"
           >
             <AppIcon
               name="panel-left"
@@ -473,16 +496,33 @@ watch(() => route.path, syncExpanded, { immediate: true })
   border-right: 1px solid var(--border);
   background: var(--panel);
   transition:
-    flex-basis 180ms ease,
-    min-width 180ms ease,
-    padding 180ms ease;
+    opacity 180ms ease,
+    transform 180ms ease;
 
   &.is-collapsed {
-    flex-basis: 68px;
+    position: fixed;
+    z-index: 30;
+    inset: 0 auto 0 0;
+    width: 238px;
     min-width: 68px;
-    padding-right: 10px;
-    padding-left: 10px;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(-20px);
   }
+
+  &.is-overlay-visible {
+    box-shadow: var(--shadow-float);
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(0);
+  }
+}
+
+.app-sidebar__hotzone {
+  position: fixed;
+  z-index: 29;
+  inset: 0 auto 0 0;
+  width: 50px;
 }
 
 .app-sidebar__nav {
@@ -789,7 +829,7 @@ watch(() => route.path, syncExpanded, { immediate: true })
   font-size: 10px;
 }
 
-.sidebar-child__delete {
+:deep(.sidebar-child__delete) {
   min-width: 28px;
   min-height: 28px;
   margin-right: 2px;
@@ -798,8 +838,8 @@ watch(() => route.path, syncExpanded, { immediate: true })
   transition: opacity 120ms ease;
 }
 
-.sidebar-child:hover .sidebar-child__delete,
-.sidebar-child:focus-within .sidebar-child__delete {
+.sidebar-child:hover :deep(.sidebar-child__delete),
+.sidebar-child:focus-within :deep(.sidebar-child__delete) {
   opacity: 1;
 }
 
@@ -868,32 +908,8 @@ watch(() => route.path, syncExpanded, { immediate: true })
 }
 
 .app-sidebar.is-collapsed {
-  .app-sidebar__pause span {
-    display: none;
-  }
-
   .app-sidebar__collapse :deep(svg) {
     transform: rotate(180deg);
-  }
-
-  .app-sidebar__item,
-  .sidebar-group__head {
-    justify-content: center;
-    padding: 0;
-  }
-
-  .app-sidebar__footer {
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-  }
-
-  .app-sidebar__footer-actions {
-    flex-direction: column;
-  }
-
-  .app-sidebar__footer-controls {
-    flex-direction: column;
   }
 }
 </style>
