@@ -2,11 +2,11 @@
 
 Windows 鼠标手势应用，基于 C# WinForms、WebView2 和原生全局鼠标钩子。
 
-<img src="docs/images/gesture-popup.png" alt="使用中的手势提示" style="zoom: 50%;" />
+<img src="docs/images/yanshi.gif" alt="使用中的手势提示" style="zoom: 50%;" />
 
-手势轨迹与命中动作会直接显示在当前桌面上，不打断正在进行的操作。
+手势轨迹与命中动作会直接作用于起始窗口，也可配置为当前窗口。
 
-<img src="docs/images/global-rules.png" alt="全局手势规则界面" style="zoom: 50%;" />
+<img src="docs/images/global-rules.webp" alt="全局手势规则界面" style="zoom: 50%;" />
 
 ## 功能
 
