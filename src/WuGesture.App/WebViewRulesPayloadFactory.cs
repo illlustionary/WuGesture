@@ -46,7 +46,8 @@ internal static class WebViewRulesPayloadFactory
                 path = application.Path,
                 categories = application.Categories,
                 icon = ApplicationIconDataUrl.FromExecutable(application.Path)
-            }).ToArray()
+            }).ToArray(),
+            categories = loadedConfig.Config.Categories
         });
     }
 

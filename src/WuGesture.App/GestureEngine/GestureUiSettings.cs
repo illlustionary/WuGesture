@@ -86,9 +86,9 @@ public sealed class MouseTrailUiSettings
 {
     public bool? Enabled { get; set; } = true;
 
-    public string InactiveColor { get; set; } = "#FFAAAAAA";
+    public string InactiveColor { get; set; } = "#BDBDBD";
 
-    public string ActiveColor { get; set; } = "#FF87CEEB";
+    public string ActiveColor { get; set; } = "#87CEEB";
 
     public float InactiveThickness { get; set; } = 3f;
 
@@ -103,7 +103,7 @@ public sealed class GestureHintUiSettings
 {
     public bool? Enabled { get; set; } = true;
 
-    public int DisplayDurationMs { get; set; } = 1800;
+    public int DisplayDurationMs { get; set; } = 300;
 
     public int FadeDurationMs { get; set; } = 240;
 
@@ -117,15 +117,15 @@ public sealed class GestureHintUiSettings
 
     public int BackgroundOpacity { get; set; } = 90;
 
-    public int WidthPercent { get; set; } = 28;
+    public int WidthPercent { get; set; } = 10;
 
-    public bool AutoWidth { get; set; }
+    public bool AutoWidth { get; set; } = true;
 
-    public int HeightPercent { get; set; } = 11;
+    public int HeightPercent { get; set; } = 5;
 
     public float CornerRadius { get; set; } = 28f;
 
-    public int BottomOffsetPercent { get; set; } = 13;
+    public int BottomOffsetPercent { get; set; } = 6;
 }
 
 public sealed class LevelOsdUiSettings

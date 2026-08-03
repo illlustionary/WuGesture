@@ -7,7 +7,8 @@ import {
   WEBVIEW_MESSAGE_TYPES,
   WINDOW_OPERATIONS
 } from '@/constants/gestureEditorOptions'
-import { DEFAULT_APPLICATIONS, DEFAULT_RULES, DEFAULT_UI_SETTINGS } from '@/constants/gestureEditorDefaults'
+import { DEFAULT_UI_SETTINGS } from '@/constants/gestureEditorUiDefaults'
+import { PREVIEW_APPLICATIONS, PREVIEW_RULES } from '@/constants/gestureEditorBrowserPreviewData'
 import {
   createDefaultUiSettings,
   isSameApplicationIdentity,
@@ -45,6 +46,7 @@ const state = reactive({
   configMessageState: 'idle',
   rules: [],
   applications: [],
+  categories: [],
   edgeActions: [],
   uiSettings: createDefaultUiSettings(),
   nextId: 1,
@@ -129,7 +131,11 @@ scopeActions = useGestureScopes({
   activeScope,
   collectAppItems: () => collectAppItemsFromState(scopeActions.getRulesByKind(SCOPE_KINDS.app), state.applications),
   collectCategoryItems: () =>
-    collectCategoryItemsFromState(scopeActions.getRulesByKind(SCOPE_KINDS.category), state.applications),
+    collectCategoryItemsFromState(
+      scopeActions.getRulesByKind(SCOPE_KINDS.category),
+      state.applications,
+      state.categories
+    ),
   createRule,
   notifications,
   scheduleSaveRules
@@ -318,7 +324,7 @@ function initialize() {
     state.statusText = '浏览器预览'
     state.statusState = 'idle'
     state.configPath = '内置默认规则'
-    replaceConfig(DEFAULT_RULES, DEFAULT_APPLICATIONS, DEFAULT_UI_SETTINGS)
+    replaceConfig(PREVIEW_RULES, PREVIEW_APPLICATIONS, [], DEFAULT_UI_SETTINGS)
     return
   }
 
@@ -349,6 +355,7 @@ function handleMessage(message) {
     replaceConfig(
       message.rules ?? [],
       message.applications ?? [],
+      message.categories ?? [],
       message.uiSettings ?? DEFAULT_UI_SETTINGS,
       message.edgeActions ?? [],
       { preserveEdgeActions: shouldPreserveLocalEdgeActions() }
@@ -381,7 +388,14 @@ function handleMessage(message) {
   }
 }
 
-function replaceConfig(rules, applications, uiSettings = DEFAULT_UI_SETTINGS, edgeActions = [], options = {}) {
+function replaceConfig(
+  rules,
+  applications,
+  categories = [],
+  uiSettings = DEFAULT_UI_SETTINGS,
+  edgeActions = [],
+  options = {}
+) {
   const currentRuleIds = new Map(state.rules.map(rule => [getRuleIdentity(rule), rule.id]))
 
   state.rules = rules.map(sourceRule => {
@@ -392,6 +406,7 @@ function replaceConfig(rules, applications, uiSettings = DEFAULT_UI_SETTINGS, ed
     }
   })
   state.applications = applications.map(application => toViewApplication(application))
+  state.categories = [...new Set(categories.map(category => String(category ?? '').trim()).filter(Boolean))]
   if (!options.preserveEdgeActions) {
     state.edgeActions = normalizeEdgeActions(edgeActions)
   }

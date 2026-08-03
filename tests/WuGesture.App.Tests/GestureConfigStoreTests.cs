@@ -6,16 +6,31 @@ namespace WuGesture.App.Tests;
 public sealed class GestureConfigStoreTests
 {
     [Fact]
-    public void LoadOrCreate_BackupsLegacyConfigAndWritesCurrentDefaults()
+    public void DefaultConfig_ContainsOnlyGlobalRulesWithoutApplicationsOrCategories()
+    {
+        var config = DefaultGestureConfig.Create();
+
+        Assert.Empty(config.Applications);
+        Assert.Empty(config.Categories);
+        Assert.All(config.Rules, rule => Assert.Equal(GestureConfigContract.Scopes.Global, rule.Scope));
+        Assert.DoesNotContain(config.Rules, rule => rule.ActionName is "剪切板" or "翻译");
+    }
+
+    [Fact]
+    public void LoadOrCreate_BackupsAndMigratesLegacyConfig()
     {
         using var directory = new TemporaryDirectory();
         var path = Path.Combine(directory.Path, "gestures.json");
-        const string legacyJson = "{\"rules\":[]}";
+        const string legacyJson = "{\"rules\":[{\"actionName\":\"保留的手势\"}],\"uiSettings\":{\"gestureHint\":{\"displayDurationMs\":\"invalid\"}}}";
         File.WriteAllText(path, legacyJson);
 
         var loaded = new GestureConfigStore(path).LoadOrCreate();
 
         Assert.Equal(GestureConfigContract.Schema.CurrentVersion, loaded.Config.SchemaVersion);
+        Assert.Equal("保留的手势", loaded.Config.Rules[0].ActionName);
+        Assert.Equal(300, loaded.Config.UiSettings.GestureHint.DisplayDurationMs);
+        Assert.Equal(10, loaded.Config.UiSettings.GestureHint.WidthPercent);
+        Assert.True(loaded.Config.UiSettings.GestureHint.AutoWidth);
         var backups = Directory.GetFiles(directory.Path, "gestures.backup-*.json");
         Assert.Single(backups);
         Assert.Equal(legacyJson, File.ReadAllText(backups[0]));
@@ -89,7 +104,21 @@ public sealed class GestureConfigStoreTests
     }
 
     [Fact]
-    public void SaveJsonAndLoad_RejectsLegacyImportWithoutTouchingLocalConfig()
+    public void SaveJsonAndLoad_MigratesLegacyImport()
+    {
+        using var directory = new TemporaryDirectory();
+        var path = Path.Combine(directory.Path, "gestures.json");
+        var store = new GestureConfigStore(path);
+        store.SaveAndLoad(DefaultGestureConfig.Create());
+        var loaded = store.SaveJsonAndLoad("{\"rules\":[{\"actionName\":\"导入的手势\"}]}");
+
+        Assert.Equal(GestureConfigContract.Schema.CurrentVersion, loaded.Config.SchemaVersion);
+        Assert.Equal("导入的手势", loaded.Config.Rules[0].ActionName);
+        Assert.Empty(Directory.GetFiles(directory.Path, "gestures.backup-*.json"));
+    }
+
+    [Fact]
+    public void SaveJsonAndLoad_RejectsFutureImportWithoutTouchingLocalConfig()
     {
         using var directory = new TemporaryDirectory();
         var path = Path.Combine(directory.Path, "gestures.json");
@@ -97,10 +126,9 @@ public sealed class GestureConfigStoreTests
         store.SaveAndLoad(DefaultGestureConfig.Create());
         var originalJson = File.ReadAllText(path);
 
-        Assert.Throws<InvalidOperationException>(() => store.SaveJsonAndLoad("{\"rules\":[]}"));
+        Assert.Throws<InvalidOperationException>(() => store.SaveJsonAndLoad("{\"schemaVersion\":2}"));
 
         Assert.Equal(originalJson, File.ReadAllText(path));
-        Assert.Empty(Directory.GetFiles(directory.Path, "gestures.backup-*.json"));
     }
 
     private sealed class TemporaryDirectory : IDisposable

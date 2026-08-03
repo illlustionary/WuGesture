@@ -56,7 +56,11 @@ export function useGestureScopes({
     }
 
     if (!getScopeItems(kind).some(item => item.name === trimmed)) {
-      state.rules.push(createRule(kind, trimmed))
+      if (kind === SCOPE_KINDS.category) {
+        state.categories.push(trimmed)
+      } else {
+        state.rules.push(createRule(kind, trimmed))
+      }
     }
 
     setSelectedName(kind, trimmed)
@@ -85,6 +89,7 @@ export function useGestureScopes({
     }
 
     if (kind === 'category') {
+      state.categories = state.categories.map(category => (category === currentName ? name : category))
       for (const application of state.applications) {
         application.categories = application.categories.map(category => (category === currentName ? name : category))
       }
@@ -109,6 +114,7 @@ export function useGestureScopes({
 
     state.rules = state.rules.filter(rule => !(rule.scopeKind === kind && rule.scopeName === name))
     if (kind === 'category') {
+      state.categories = state.categories.filter(category => category !== name)
       for (const application of state.applications) {
         application.categories = application.categories.filter(category => category !== name)
       }

@@ -6,6 +6,27 @@ namespace WuGesture.App.Tests;
 public sealed class WebViewRulesPayloadFactoryTests
 {
     [Theory]
+    [InlineData("#FFBDBDBD", "#BDBDBD")]
+    [InlineData("#FF87CEEB", "#87CEEB")]
+    public void Normalize_ConvertsLegacyOpaqueMouseTrailColorsToCssRgb(string sourceColor, string expectedColor)
+    {
+        var config = GestureConfigNormalizer.Normalize(new GestureConfig
+        {
+            UiSettings = new GestureUiSettings
+            {
+                MouseTrail = new MouseTrailUiSettings
+                {
+                    InactiveColor = sourceColor,
+                    ActiveColor = sourceColor
+                }
+            }
+        });
+
+        Assert.Equal(expectedColor, config.UiSettings.MouseTrail.InactiveColor);
+        Assert.Equal(expectedColor, config.UiSettings.MouseTrail.ActiveColor);
+    }
+
+    [Theory]
     [InlineData("invalid")]
     [InlineData("SYSTEM")]
     public void Normalize_NormalizesInvalidAppearanceThemeToSystem(string theme)
@@ -61,6 +82,21 @@ public sealed class WebViewRulesPayloadFactoryTests
         Assert.Equal(
             AppIdentity.GetDisplayVersion(),
             document.RootElement.GetProperty("appVersion").GetString());
+    }
+
+    [Fact]
+    public void Create_IncludesExplicitCategories()
+    {
+        var config = DefaultGestureConfig.Create();
+        config.Categories = ["浏览器"];
+        var loadedConfig = new LoadedGestureConfig(
+            "test.json",
+            config,
+            GestureConfigMapper.ToRules(config));
+
+        using var document = JsonDocument.Parse(WebViewRulesPayloadFactory.Create(loadedConfig));
+
+        Assert.Equal("浏览器", document.RootElement.GetProperty("categories")[0].GetString());
     }
 
     [Fact]

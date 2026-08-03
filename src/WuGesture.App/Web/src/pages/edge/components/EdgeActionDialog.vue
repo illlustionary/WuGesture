@@ -7,7 +7,7 @@ import { ACTION_TYPE_OPTIONS, EDGE_TRIGGER_TYPES } from '@/constants/gestureEdit
 import { GESTURE_EDITOR_LIMITS } from '@/constants/gestureEditorLimits'
 
 defineProps({
-  action: { type: Object, required: true },
+  open: { type: Boolean, required: true },
   draft: { type: Object, required: true },
   isRecordingHotkey: { type: Function, required: true },
   title: { type: String, required: true },
@@ -22,12 +22,13 @@ const actionTypeOptions = ACTION_TYPE_OPTIONS
 
 <template>
   <BaseDialog
-    :open="true"
+    :open="open"
     :title="title"
     description="关闭弹窗后自动保存。"
     title-id="edge-dialog-title"
     :show-close="true"
     :show-actions="false"
+    :keep-mounted="true"
     panel-class="edge-dialog"
     @close="emit('close')"
   >

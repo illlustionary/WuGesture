@@ -4,54 +4,24 @@ import {
   EDGE_LOCATIONS,
   EDGE_TRIGGER_TYPES,
   OPERATIONS,
-  SCOPE_KINDS,
   WINDOW_TARGET_MODES,
   WHEEL_DIRECTIONS
 } from './gestureEditorOptions'
 
-export const DEFAULT_RULES = [
-  {
-    scope: SCOPE_KINDS.global,
-    pattern: ['Left'],
-    actionName: 'Back',
-    actionType: ACTION_TYPES.hotkey,
-    keys: ['Alt', 'Left']
-  },
-  {
-    scope: SCOPE_KINDS.global,
-    pattern: ['Right'],
-    actionName: 'Forward',
-    actionType: ACTION_TYPES.hotkey,
-    keys: ['Alt', 'Right']
-  },
-  {
-    scope: SCOPE_KINDS.global,
-    pattern: ['Down', 'Right'],
-    actionName: 'Close Tab',
-    actionType: ACTION_TYPES.hotkey,
-    keys: ['Control', 'W']
-  }
-]
-
-export const DEFAULT_APPLICATIONS = [
-  { name: 'msedge', displayName: 'Microsoft Edge', path: '', categories: ['浏览器'], icon: '' },
-  { name: 'chrome', displayName: 'Google Chrome', path: '', categories: ['浏览器'], icon: '' }
-]
-
 export const DEFAULT_UI_SETTINGS = {
   appearance: {
-    theme: 'system',
+    theme: 'dark',
     lightTitleBarColor: '#FFFFFF',
     lightTitleBarTextColor: '#16202B',
     darkTitleBarColor: '#1B222B',
     darkTitleBarTextColor: '#EDF2F7'
   },
   sidebar: {
-    collapsed: false
+    collapsed: true
   },
   mouseTrail: {
     enabled: true,
-    inactiveColor: '#AAAAAA',
+    inactiveColor: '#BDBDBD',
     activeColor: '#87CEEB',
     inactiveThickness: 3,
     activeThickness: 3,
@@ -60,18 +30,18 @@ export const DEFAULT_UI_SETTINGS = {
   },
   gestureHint: {
     enabled: true,
-    displayDurationMs: 1800,
+    displayDurationMs: 300,
     fadeDurationMs: 240,
     fontFamily: 'Segoe UI Semibold',
     fontSize: 22,
     textColor: '#FFFFFF',
     backgroundColor: '#12181F',
     backgroundOpacity: 90,
-    widthPercent: 28,
+    widthPercent: 10,
     autoWidth: true,
-    heightPercent: 11,
+    heightPercent: 5,
     cornerRadius: 28,
-    bottomOffsetPercent: 13
+    bottomOffsetPercent: 6
   },
   levelOsd: {
     enabled: true,
@@ -94,7 +64,7 @@ export const DEFAULT_UI_SETTINGS = {
     percent: 110
   },
   appBehavior: {
-    launchAtStartup: false,
+    launchAtStartup: true,
     showConfigWindowOnLaunch: true,
     runAsAdministrator: false,
     disableGesturesInFullscreen: false,
@@ -112,18 +82,59 @@ export const DEFAULT_UI_SETTINGS = {
 }
 
 export const DEFAULT_EDGE_ACTIONS = [
-  createDefaultEdgeAction(EDGE_TRIGGER_TYPES.corner, 'top-left'),
-  createDefaultEdgeAction(EDGE_TRIGGER_TYPES.corner, 'top-right'),
-  createDefaultEdgeAction(EDGE_TRIGGER_TYPES.corner, 'bottom-left'),
+  createDefaultEdgeAction(EDGE_TRIGGER_TYPES.corner, 'top-left', '', {
+    enabled: true,
+    keysText: 'Win + Tab'
+  }),
+  createDefaultEdgeAction(EDGE_TRIGGER_TYPES.corner, 'top-right', '', {
+    enabled: true,
+    keysText: 'Win + Tab'
+  }),
+  createDefaultEdgeAction(EDGE_TRIGGER_TYPES.corner, 'bottom-left', '', {
+    enabled: true,
+    keysText: 'Win'
+  }),
   createDefaultEdgeAction(EDGE_TRIGGER_TYPES.corner, 'bottom-right'),
-  ...EDGE_LOCATIONS.edge.map(edge => createDefaultEdgeAction(EDGE_TRIGGER_TYPES.friction, edge.value)),
+  ...EDGE_LOCATIONS.edge.map(edge =>
+    createDefaultEdgeAction(EDGE_TRIGGER_TYPES.friction, edge.value, '', {
+      enabled: edge.value === 'right',
+      keysText:
+        edge.value === 'left' || edge.value === 'right'
+          ? 'Control + Shift + Escape'
+          : edge.value === 'top'
+            ? 'M + I + K + U'
+            : ''
+    })
+  ),
   ...EDGE_LOCATIONS.edge.flatMap(edge => [
-    createDefaultEdgeAction(EDGE_TRIGGER_TYPES.wheel, edge.value, WHEEL_DIRECTIONS.up),
-    createDefaultEdgeAction(EDGE_TRIGGER_TYPES.wheel, edge.value, WHEEL_DIRECTIONS.down)
+    createDefaultEdgeAction(EDGE_TRIGGER_TYPES.wheel, edge.value, WHEEL_DIRECTIONS.up, {
+      enabled: edge.value === 'right' || edge.value === 'top',
+      actionType:
+        edge.value === 'right'
+          ? ACTION_TYPES.volume
+          : edge.value === 'top'
+            ? ACTION_TYPES.brightness
+            : ACTION_TYPES.hotkey,
+      volumeOperation: OPERATIONS.increase,
+      brightnessOperation: OPERATIONS.increase,
+      amount: edge.value === 'right' ? 2 : 5
+    }),
+    createDefaultEdgeAction(EDGE_TRIGGER_TYPES.wheel, edge.value, WHEEL_DIRECTIONS.down, {
+      enabled: edge.value === 'right' || edge.value === 'top',
+      actionType:
+        edge.value === 'right'
+          ? ACTION_TYPES.volume
+          : edge.value === 'top'
+            ? ACTION_TYPES.brightness
+            : ACTION_TYPES.hotkey,
+      volumeOperation: OPERATIONS.decrease,
+      brightnessOperation: OPERATIONS.decrease,
+      amount: edge.value === 'right' ? 2 : 5
+    })
   ])
 ]
 
-export function createDefaultEdgeAction(triggerType, location, wheelDirection = '') {
+export function createDefaultEdgeAction(triggerType, location, wheelDirection = '', overrides = {}) {
   return {
     enabled: false,
     triggerType,
@@ -135,6 +146,7 @@ export function createDefaultEdgeAction(triggerType, location, wheelDirection = 
     windowOperation: OPERATIONS.toggleMaximize,
     volumeOperation: OPERATIONS.increase,
     brightnessOperation: OPERATIONS.increase,
-    amount: 5
+    amount: 5,
+    ...overrides
   }
 }

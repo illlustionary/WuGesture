@@ -161,7 +161,8 @@ src\constants
 ```
 
 - `gestureEditorOptions.js`：手势编辑器使用的契约常量和 UI 选项，包括 scope、鼠标按键、动作类型、操作名、边缘触发、关闭行为、WebView 消息类型、方向符号和选项 label。
-- `gestureEditorDefaults.js`：浏览器预览默认规则、默认应用、默认 UI 设置和默认边缘操作模板。
+- `gestureEditorUiDefaults.js`：UI 设置和边缘操作的前端默认模板；不包含手势、分类或具体程序示例。
+- `gestureEditorBrowserPreviewData.js`：仅供未连接桌面宿主时的浏览器预览使用，提供示例全局/分类规则和程序。
 - `gestureEditorLimits.js`：手势编辑器输入限制常量，供表单控件和归一化逻辑共用。
 
 ## Utils
@@ -225,7 +226,9 @@ src\pages
 
 页面组件通过动态 `import()` 加载，`router/routes` 下的路由模块只在路由命中时加载对应页面 chunk。
 
-Windows 系统标题栏负责窗口控制；其下方侧栏顶部的 `SidebarAppStatus` 组件可点击，临时暂停或恢复 WuGesture，并在图标右侧显示名称与程序集版本。侧栏的导航、分类、程序、边缘操作和设置各自使用独立区域组件，页脚控制也独立封装；分类/程序子项动态来自当前配置，边缘操作和设置子项对应独立嵌套路由。侧栏收起状态保存在 `uiSettings.sidebar.collapsed`，重建配置页面后保持不变。左侧热区进入后立即挂载并淡入，离开侧栏后立即淡出，淡出完成才卸载，不使用延迟计时器。
+Windows 系统标题栏负责窗口控制；其下方侧栏顶部的 `SidebarAppStatus` 组件可点击，临时暂停或恢复 WuGesture，并在图标右侧显示名称与程序集版本。侧栏的导航、分类、程序、边缘操作和设置各自使用独立区域组件，页脚控制也独立封装；分类/程序子项动态来自当前配置，边缘操作和设置子项对应独立嵌套路由。侧栏收起状态保存在 `uiSettings.sidebar.collapsed`，重建配置页面后保持不变。收起时热区通过 `v-show` 控制，侧栏自身以固定定位、`visibility`、透明度和鼠标事件状态隐藏；导航分组内容继续参与布局，因此不会压缩滚动高度或重置滚动位置。进入热区后淡入，离开侧栏后淡出。
+
+未连接 WebView 宿主时，`gestureEditorContext.js` 会加载 `gestureEditorBrowserPreviewData.js` 的示例数据，便于浏览器中预览分类和程序界面；桌面宿主始终以 `rules` 消息下发的真实配置为准。
 
 ## 当前 UI
 

@@ -105,7 +105,7 @@ export function useSidebarOverlay(editor) {
       return
     }
 
-    if (isCollapsed.value && isOverlayMounted.value && !isOverlayVisible.value) {
+    if (isCollapsed.value && isOverlayMounted.value && !isOverlayVisible.value && !showOverlayFrame) {
       isOverlayMounted.value = false
     }
   }
