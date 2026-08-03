@@ -129,7 +129,6 @@ function togglePause() {
   box-shadow: 0 0 0 3px rgba(98, 201, 141, 0.12);
 
   &.is-paused {
-    background: #d6a547;
     box-shadow: 0 0 0 3px rgba(214, 165, 71, 0.12);
   }
 }

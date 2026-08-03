@@ -99,6 +99,7 @@ src\components
 - `BaseInput.vue`：共享原生文本、数字、密码、URL 和颜色输入控件的 `v-model` 事件与基础宽度约束。
 - `BaseRange.vue`：共享范围滑块，集中维护进度填充样式、`v-model` 和原生输入/变更事件。
 - `GestureRuleDialog.vue`：添加和编辑手势规则的弹窗。
+  - `components\gesture-rule-dialog\`：规则弹窗的私有表单组件；分别承载名称、手势摘要，以及快捷键、窗口、音量和亮度命令字段，主弹窗只负责草稿与录制事件编排。
 - `GestureRuleList.vue`：规则表、规则展示和规则操作入口。
 - `HoverBubble.vue`：悬浮提示气泡。
 - `AppIcon.vue`：本地图标展示入口，只接收图标名称并从 `appIcons.js` 查找 SVG；未知名称回退为 `circle-dashed`。
