@@ -47,7 +47,7 @@ const {
 
 <template>
   <div
-    v-if="isCollapsed"
+    v-show="isCollapsed"
     class="app-sidebar__hotzone"
     aria-hidden="true"
     @pointerenter="showOverlay"
@@ -162,7 +162,7 @@ const {
   position: fixed;
   z-index: 29;
   inset: 0 auto 0 0;
-  width: 50px;
+  width: 15px;
 }
 
 .app-sidebar__nav {

@@ -17,6 +17,7 @@ const props = defineProps({
     validator: value => ['primary', 'danger'].includes(value)
   },
   confirmDisabled: { type: Boolean, default: false },
+  keepMounted: { type: Boolean, default: false },
   backdropClass: { type: [String, Array, Object], default: '' },
   panelClass: { type: [String, Array, Object], default: '' }
 })
@@ -33,7 +34,8 @@ function closeFromMask(event) {
 <template>
   <Transition name="base-dialog">
     <div
-      v-if="open"
+      v-if="keepMounted || open"
+      v-show="open"
       class="base-dialog__backdrop"
       :class="backdropClass"
       @pointerdown="closeFromMask"

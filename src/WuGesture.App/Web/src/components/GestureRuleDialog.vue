@@ -44,7 +44,6 @@ const actionTypeOptions = ACTION_TYPE_OPTIONS
           v-model.trim="draft.actionName"
           class="scope-input"
           placeholder="例如：关闭标签"
-          @blur="$emit('persist')"
         />
       </label>
 
@@ -54,7 +53,6 @@ const actionTypeOptions = ACTION_TYPE_OPTIONS
           v-model="draft.actionType"
           :options="actionTypeOptions"
           placeholder="选择命令类型"
-          @change="$emit('persist')"
         />
       </label>
     </div>
@@ -66,7 +64,6 @@ const actionTypeOptions = ACTION_TYPE_OPTIONS
           v-model="draft.windowOperation"
           :options="windowOperations"
           placeholder="选择窗口操作"
-          @change="$emit('persist')"
         />
       </label>
 
@@ -77,7 +74,6 @@ const actionTypeOptions = ACTION_TYPE_OPTIONS
             v-model="draft.volumeOperation"
             :options="volumeOperations"
             placeholder="选择音量操作"
-            @change="$emit('persist')"
           />
         </label>
         <label v-if="draft.volumeOperation !== OPERATIONS.mute">
@@ -88,7 +84,6 @@ const actionTypeOptions = ACTION_TYPE_OPTIONS
             type="number"
             :min="GESTURE_EDITOR_LIMITS.amount.min"
             :max="GESTURE_EDITOR_LIMITS.amount.max"
-            @blur="$emit('persist')"
           />
         </label>
       </template>
@@ -100,7 +95,6 @@ const actionTypeOptions = ACTION_TYPE_OPTIONS
             v-model="draft.brightnessOperation"
             :options="brightnessOperations"
             placeholder="选择亮度操作"
-            @change="$emit('persist')"
           />
         </label>
         <label>
@@ -111,7 +105,6 @@ const actionTypeOptions = ACTION_TYPE_OPTIONS
             type="number"
             :min="GESTURE_EDITOR_LIMITS.amount.min"
             :max="GESTURE_EDITOR_LIMITS.amount.max"
-            @blur="$emit('persist')"
           />
         </label>
       </template>
@@ -123,7 +116,6 @@ const actionTypeOptions = ACTION_TYPE_OPTIONS
           class="scope-input hotkey-record-button"
           :class="{ 'is-recording': isRecordingHotkey?.(draft) }"
           @click="$emit('record-hotkey', draft)"
-          @blur="$emit('persist')"
         >
           <AppIcon
             name="keyboard"

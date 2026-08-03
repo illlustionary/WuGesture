@@ -38,10 +38,7 @@ const triggerLabels = {
 }
 
 const dialogTitle = computed(() => {
-  const action = editingAction.value
-  if (!action) {
-    return '边缘操作'
-  }
+  const action = editingAction.value ?? draft
 
   return [locationLabel(action), wheelLabel(action) || triggerLabels[action.triggerType]].filter(Boolean).join(' · ')
 })
@@ -149,8 +146,7 @@ function recordHotkey() {
   </AppShell>
 
   <EdgeActionDialog
-    v-if="editingAction"
-    :action="editingAction"
+    :open="Boolean(editingAction)"
     :draft="draft"
     :is-recording-hotkey="edgeActionsStore.isRecordingHotkey"
     :title="dialogTitle"

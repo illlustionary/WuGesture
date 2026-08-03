@@ -53,19 +53,14 @@ watch(
         class="app-sidebar__item-icon"
         aria-hidden="true"
       />
+      <span class="sidebar-group__title">设置</span>
       <span
-        v-if="isSidebarVisible"
-        class="sidebar-group__title"
-        >设置</span
-      >
-      <span
-        v-if="isSidebarVisible"
         class="sidebar-group__chevron"
         aria-hidden="true"
       />
     </button>
     <div
-      v-if="isSidebarVisible && expanded"
+      v-show="expanded"
       class="sidebar-group__body"
     >
       <div class="sidebar-group__toolbar">

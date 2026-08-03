@@ -13,7 +13,7 @@ public static class DefaultGestureRules
             new([GestureDirection.Down, GestureDirection.Right], GestureConfigContract.Scopes.Global, "关闭窗口", new WindowControlAction(WindowControlOperation.Close)),
             new([GestureDirection.DownLeft], GestureConfigContract.Scopes.Global, "最小化", new WindowControlAction(WindowControlOperation.Minimize)),
             new([GestureDirection.Down, GestureDirection.Left], GestureConfigContract.Scopes.Global, "Enter", new HotkeyAction([Keys.Enter])),
-            new([GestureDirection.UpRight], GestureConfigContract.Scopes.Global, "最大化", new WindowControlAction(WindowControlOperation.ToggleMaximize))
+            new([GestureDirection.UpRight], GestureConfigContract.Scopes.Global, "最大化", new WindowControlAction(WindowControlOperation.ToggleMaximize)),
         ];
     }
 }

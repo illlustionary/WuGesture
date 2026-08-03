@@ -31,7 +31,7 @@ const items = [
         class="app-sidebar__item-icon"
         aria-hidden="true"
       />
-      <span v-if="isSidebarVisible">{{ item.label }}</span>
+      <span>{{ item.label }}</span>
     </RouterLink>
   </HoverBubble>
 </template>

@@ -7,6 +7,7 @@ internal static class GestureConfigNormalizer
         config ??= new GestureConfig();
         config.Rules ??= [];
         config.Applications ??= [];
+        config.Categories ??= [];
         config.EdgeActions ??= [];
         config.UiSettings ??= new GestureUiSettings();
         config.UiSettings.Appearance ??= new AppearanceUiSettings();
@@ -18,8 +19,18 @@ internal static class GestureConfigNormalizer
         config.UiSettings.AppBehavior ??= new AppBehaviorUiSettings();
         config.UiSettings.WebDav ??= new WebDavUiSettings();
         NormalizeApplications(config.Applications);
+        config.Categories = NormalizeCategories(config.Categories);
         NormalizeUiSettings(config.UiSettings);
         return config;
+    }
+
+    private static List<string> NormalizeCategories(IEnumerable<string>? categories)
+    {
+        return (categories ?? [])
+            .Select(category => category.Trim())
+            .Where(category => category.Length > 0)
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
     }
 
     private static void NormalizeApplications(IEnumerable<GestureApplicationConfig> applications)
@@ -47,14 +58,17 @@ internal static class GestureConfigNormalizer
 
         var mouseTrail = settings.MouseTrail;
         mouseTrail.Enabled ??= true;
+        var defaultMouseTrail = new MouseTrailUiSettings();
+        mouseTrail.InactiveColor = NormalizeMouseTrailColor(mouseTrail.InactiveColor, defaultMouseTrail.InactiveColor);
+        mouseTrail.ActiveColor = NormalizeMouseTrailColor(mouseTrail.ActiveColor, defaultMouseTrail.ActiveColor);
 
         var gestureHint = settings.GestureHint;
         gestureHint.Enabled ??= true;
-        gestureHint.DisplayDurationMs = ClampInteger(gestureHint.DisplayDurationMs, 0, 10000, 1800);
+        gestureHint.DisplayDurationMs = ClampInteger(gestureHint.DisplayDurationMs, 0, 10000, 300);
         gestureHint.FadeDurationMs = ClampInteger(gestureHint.FadeDurationMs, 0, 1000, 240);
-        gestureHint.WidthPercent = ClampInteger(gestureHint.WidthPercent, 10, 90, 28);
-        gestureHint.HeightPercent = ClampInteger(gestureHint.HeightPercent, 5, 40, 11);
-        gestureHint.BottomOffsetPercent = ClampInteger(gestureHint.BottomOffsetPercent, 0, 100, 13);
+        gestureHint.WidthPercent = ClampInteger(gestureHint.WidthPercent, 10, 90, 10);
+        gestureHint.HeightPercent = ClampInteger(gestureHint.HeightPercent, 5, 40, 5);
+        gestureHint.BottomOffsetPercent = ClampInteger(gestureHint.BottomOffsetPercent, 0, 100, 6);
         var levelOsd = settings.LevelOsd;
         levelOsd.Enabled ??= true;
         levelOsd.DisplayDurationMs = ClampInteger(levelOsd.DisplayDurationMs, 0, 10000, 1800);
@@ -131,6 +145,17 @@ internal static class GestureConfigNormalizer
     private static string NormalizeColor(string? value, string fallback)
     {
         return string.IsNullOrWhiteSpace(value) ? fallback : value.Trim();
+    }
+
+    private static string NormalizeMouseTrailColor(string? value, string fallback)
+    {
+        var normalized = NormalizeColor(value, fallback);
+        if (normalized.Length == 9 && normalized[0] == '#' && normalized.StartsWith("#FF", StringComparison.OrdinalIgnoreCase))
+        {
+            return $"#{normalized[3..]}";
+        }
+
+        return normalized;
     }
 
     private static List<ExcludedApplicationConfig> NormalizeExcludedApplications(IEnumerable<ExcludedApplicationConfig>? applications)

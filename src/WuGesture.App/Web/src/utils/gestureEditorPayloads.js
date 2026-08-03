@@ -90,10 +90,11 @@ export function toPayloadUiSettings(settings) {
   return payload
 }
 
-export function buildConfigPayload({ rules, applications, edgeActions, uiSettings }) {
+export function buildConfigPayload({ rules, applications, categories, edgeActions, uiSettings }) {
   return {
     rules: rules.map(toPayloadRule),
     applications: applications.map(toPayloadApplication),
+    categories: [...new Set((categories ?? []).map(category => String(category ?? '').trim()).filter(Boolean))],
     edgeActions: edgeActions.map(toPayloadEdgeAction),
     uiSettings: toPayloadUiSettings(uiSettings)
   }

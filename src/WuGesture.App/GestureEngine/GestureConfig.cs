@@ -8,6 +8,8 @@ public sealed class GestureConfig
 
     public List<GestureApplicationConfig> Applications { get; set; } = [];
 
+    public List<string> Categories { get; set; } = [];
+
     public List<EdgeActionConfig> EdgeActions { get; set; } = [];
 
     public GestureUiSettings UiSettings { get; set; } = new();

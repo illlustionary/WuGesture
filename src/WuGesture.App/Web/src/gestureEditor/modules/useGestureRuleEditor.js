@@ -59,6 +59,11 @@ export function useGestureRuleEditor({
   function closeGestureEditor() {
     stopGestureRecording()
     stopRecording()
+    commitGestureEditor({ allowIncomplete: state.gestureEditorMode === 'edit' })
+    resetGestureEditor()
+  }
+
+  function resetGestureEditor() {
     state.gestureEditorOpen = false
     state.gestureRecognitionMessage = ''
     state.gestureDraft = createEmptyGestureDraft()
@@ -66,41 +71,40 @@ export function useGestureRuleEditor({
   }
 
   function persistGestureEditor() {
-    return commitGestureEditor(false)
+    return commitGestureEditor({ allowIncomplete: state.gestureEditorMode === 'edit' })
   }
 
   function saveGestureEditor() {
-    return commitGestureEditor(true)
+    const isSaved = commitGestureEditor({ allowIncomplete: state.gestureEditorMode === 'edit' })
+    if (isSaved) {
+      resetGestureEditor()
+    }
+
+    return isSaved
   }
 
-  function commitGestureEditor(closeAfterSave) {
+  function commitGestureEditor({ allowIncomplete }) {
     const draft = state.gestureDraft
     const pattern = parsePattern(draft.patternText)
     const actionType = normalizeActionType(draft.actionType)
 
-    if (pattern.length === 0) {
-      if (closeAfterSave) {
-        state.gestureRecognitionMessage = '请先录制手势。'
-      }
+    if (pattern.length === 0 && !allowIncomplete) {
+      state.gestureRecognitionMessage = '请先录制手势。'
       return false
     }
 
-    if (actionType === ACTION_TYPES.hotkey && parseKeys(draft.keysText).length === 0) {
-      if (closeAfterSave) {
-        state.gestureRecognitionMessage = '请先录入快捷键。'
-      }
+    if (actionType === ACTION_TYPES.hotkey && parseKeys(draft.keysText).length === 0 && !allowIncomplete) {
+      state.gestureRecognitionMessage = '请先录入快捷键。'
       return false
     }
 
-    if (actionType === ACTION_TYPES.window && !normalizeWindowOperation(draft.windowOperation)) {
-      if (closeAfterSave) {
-        state.gestureRecognitionMessage = '请选择窗口控制操作。'
-      }
+    if (actionType === ACTION_TYPES.window && !normalizeWindowOperation(draft.windowOperation) && !allowIncomplete) {
+      state.gestureRecognitionMessage = '请选择窗口控制操作。'
       return false
     }
 
-    if (findDuplicateGestureRule(pattern, draft.mouseButton)) {
-      if (closeAfterSave) {
+    if (pattern.length > 0 && findDuplicateGestureRule(pattern, draft.mouseButton)) {
+      if (!allowIncomplete) {
         state.gestureRecognitionMessage = '⚠ 当前作用域已存在相同手势，请更换后再保存。'
       }
       return false
@@ -113,9 +117,6 @@ export function useGestureRuleEditor({
     if (state.gestureEditorMode === 'edit') {
       rule = state.rules.find(item => item.id === state.gestureEditorRuleId)
       if (!rule) {
-        if (closeAfterSave) {
-          closeGestureEditor()
-        }
         return false
       }
     } else {
@@ -145,10 +146,6 @@ export function useGestureRuleEditor({
     rule.brightnessOperation = normalizeBrightnessOperation(draft.brightnessOperation)
     rule.amount = normalizeAmount(draft.amount)
     scheduleSaveRules()
-
-    if (closeAfterSave) {
-      closeGestureEditor()
-    }
 
     return true
   }

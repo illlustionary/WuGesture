@@ -166,23 +166,24 @@ MouseHook
 
 配置相关文件：
 
-- `GestureConfig.cs`：JSON DTO。
+- `GestureConfig.cs`：JSON DTO；`categories` 独立保存空分类，避免以空手势规则作为分类占位。
 - `GestureConfigContract.cs`：配置和运行时共享的字符串契约常量，包括 scope、鼠标按键、动作类型、操作名、边缘触发类型/位置、滚轮方向和关闭按钮行为。
-- `GestureConfigStore.cs`：加载、保存、重置默认配置，并处理本地/WebDAV 配置的 JSON 读写与 `LoadedGestureConfig` 组装；本地配置缺少当前版本标记或损坏时会先备份再重置，导入/WebDAV 恢复遇到不支持版本时会拒绝覆盖。
+- `GestureConfigStore.cs`：加载、保存、重置默认配置，并处理本地/WebDAV 配置的 JSON 读写与 `LoadedGestureConfig` 组装；缺少或过旧版本的配置会先备份（本地配置）再按当前默认值补全可读取字段并保存为当前版本，损坏配置才重置；未来版本始终拒绝覆盖。
 - `GestureConfigNormalizer.cs`：集中当前配置 schema 的空值补全、UI 设置范围校验和排除项规范化；后端仍是配置校验的最终权威。
 - `ApplicationIdentityNormalizer.cs`：集中可执行文件名/进程名的规范化，供配置、排除项和应用分类匹配复用。
 - `ConfigStorageContract.cs`：配置文件名和窗口状态文件名常量。
 - `GestureConfigMapper.cs`：把配置 DTO 映射为运行时 `GestureRule`。
-- `DefaultGestureConfig.cs`：完整默认初始配置，包含默认全局规则、默认 UI/应用行为设置和默认关闭的边缘操作。
+- `DefaultGestureConfig.cs`：当前用户配置快照的安全默认值，包含全局规则、空分类/应用归属、UI/应用行为和边缘操作；WebDAV 凭据不写入默认配置。
 - `DefaultGestureRules.cs`：默认全局规则。
 - `WebDavConfigSyncService.cs`：WebDAV 配置备份/恢复服务，负责测试连接、上传本地完整配置、下载远端配置并按远程路径规则创建目录。
 - `WebDavProtocolContract.cs`：WebDAV 协议方法、请求头、认证 scheme、媒体类型和超时常量。
 - `WebViewMessageTypes.cs`：桌面宿主侧 WebView 入站/出站消息类型常量。
+- `rules` 消息和保存请求会携带独立 `categories` 列表，空分类无需依赖手势规则或程序归属即可保留。
 - `config-result` 消息会携带操作来源；前端仅静默 `save` 的成功结果，导入、导出、重载和恢复等明确操作仍显示结果提示，任意失败都会显示错误提示。
 
 当前支持的配置：
 
-- `schemaVersion`：当前值为 `1`；本地配置缺少版本、版本过旧或 JSON 损坏时会备份原文件并重置默认配置，未来版本配置不会被当前版本覆盖。
+- `schemaVersion`：当前值为 `1`；本地配置缺少版本或版本过旧时会备份原文件，保留类型兼容的同名字段、以当前默认值补齐缺失或无效字段，并保存为当前版本；JSON 损坏时才重置默认配置，未来版本配置不会被当前版本覆盖。
 - `scope`：支持 `global`、`category:<分类名>`、`app:<进程名>`；运行时优先匹配 app，其次按程序分类关联顺序匹配 category（越靠前优先级越高），最后匹配 global。
 - `mouseButton`：支持 `right`、`middle`，运行时会按当前触发的鼠标键区分规则。
 - `pattern`：手势方向列表，例如 `["Down", "Right"]`。
@@ -192,17 +193,18 @@ MouseHook
 - `action.operation`：音量控制在 `action.type` 为 `volume` 时支持 `increase`、`decrease`、`mute`；亮度控制在 `action.type` 为 `brightness` 时支持 `increase`、`decrease`。
 - `action.amount`：音量/亮度的 `increase`、`decrease` 步进值，范围 1-100。
 - `edgeActions`：独立的全局边缘操作列表；每项包含 `enabled`、`triggerType`、`location`、`wheelDirection`、`frictionCount` 和 `action`。`triggerType` 支持 `corner`、`friction`、`wheel`；`corner` 的位置为四角，`friction/wheel` 的位置为四边，`wheel` 额外区分滚轮 `up/down`。边缘操作名称不再保存，由 UI 和运行时根据触发类型、位置与滚轮方向生成。
+- `categories`：独立的分类名称列表，用于保留尚未配置手势或关联程序的空分类。
 - `applications`：应用程序归属列表，每项包含 `name`、`displayName`、`path`、`categories`；`categories` 是有序分类列表，运行时通过前台进程名匹配 `name`，分类同手势时越靠前优先级越高；`displayName` 只用于 UI 展示和编辑。
 - `uiSettings.mouseTrail`：轨迹窗设置，包含 `enabled`、`inactiveColor`、`activeColor`、`inactiveThickness`、`activeThickness`、`inactiveOpacity`、`activeOpacity`；`enabled` 关闭时不再绘制轨迹线。
 - `uiSettings.appearance`：配置界面外观设置，包含 `theme`；支持 `system`、`light`、`dark`，默认 `system` 跟随 Windows 主题，用户点击侧栏底部的主题按钮后保存明确的浅色或深色偏好。
-- `uiSettings.sidebar`：配置界面侧栏状态，包含 `collapsed`，默认 `false`；用户收起或展开侧栏后立即保存，配置窗口和 WebView2 重建后恢复该状态。
-- `uiSettings.gestureHint`：提示泡泡设置，包含 `enabled`、`displayDurationMs`、`fadeDurationMs`、`fontFamily`、`fontSize`、`textColor`、`backgroundColor`、`backgroundOpacity`、`widthPercent`、`autoWidth`、`heightPercent`、`cornerRadius`、`bottomOffsetPercent`；提示绘制在全虚拟桌面轨迹覆盖层而非独立窗体，`enabled` 关闭时不再显示手势命中文本，`displayDurationMs` 为停留时长、`fadeDurationMs` 为 0 时立即消失，百分比字段按当前鼠标屏幕工作区宽高换算。
+- `uiSettings.sidebar`：配置界面侧栏状态，包含 `collapsed`，当前默认 `true`；用户收起或展开侧栏后立即保存，配置窗口和 WebView2 重建后恢复该状态，侧栏淡出后会保留滚动位置。
+- `uiSettings.gestureHint`：提示泡泡设置，包含 `enabled`、`displayDurationMs`、`fadeDurationMs`、`fontFamily`、`fontSize`、`textColor`、`backgroundColor`、`backgroundOpacity`、`widthPercent`、`autoWidth`、`heightPercent`、`cornerRadius`、`bottomOffsetPercent`；默认自适应宽度（保存的宽度值为 10%）、停留 300ms。提示绘制在全虚拟桌面轨迹覆盖层而非独立窗体，`enabled` 关闭时不再显示手势命中文本，`displayDurationMs` 为停留时长、`fadeDurationMs` 为 0 时立即消失，百分比字段按当前鼠标屏幕工作区宽高换算。
 - `uiSettings.levelOsd`：音量/亮度 OSD 设置，包含 `enabled`、`displayDurationMs`、`fadeDurationMs`、`backgroundColor`、`backgroundOpacity`、`textColor`、`trackColor`、`volumeColor`、`brightnessColor`、`width`、`height`、`cornerRadius`、`position`、`offsetX` 和 `offsetY`；OSD 由全虚拟桌面透明覆盖层绘制，不再创建独立窗体；当前支持相对于鼠标所在屏幕工作区的居中、上/下居中和四角位置预设，`fadeDurationMs` 为 0 时立即消失。
 - `uiSettings.gestureSensitivity`：手势灵敏度配置，包含 `percent`，范围 0-200，默认 110；100 对应标准手感，数值越高越容易识别短距离手势。
 - `uiSettings.appBehavior`：应用行为设置，包含 `launchAtStartup`、`showConfigWindowOnLaunch`、`runAsAdministrator`、`gesturePaused`、`closeButtonBehavior`、`targetWindowMode`、`disableGesturesInFullscreen`、`disableEdgeActionsInFullscreen` 和 `excludedApplications`；`showConfigWindowOnLaunch` 默认开启，控制普通启动时是否显示配置窗口，关闭后仅后台驻留并可从托盘打开，开机自启动始终后台运行。关闭按钮行为支持 `minimize-to-tray`、`minimize-to-taskbar`、`exit`。`targetWindowMode` 支持默认的 `start-window` 和 `current-window`。全屏禁用开关默认关闭，分别停止手势识别和边缘操作。排除项包含 `name`、`displayName`、`path` 和 `disableEdgeActions`；命中的程序不执行鼠标手势，勾选 `disableEdgeActions` 时也会禁用边缘操作。
 - `uiSettings.webDav`：WebDAV 备份设置，包含 `address`、`userName`、`password` 和 `remotePath`。设置页可把当前完整配置导出到本地 JSON，或从本地 JSON 导入并覆盖主配置文件；本地导入/导出不包含窗口状态。设置页也可测试 WebDAV 连接；测试当前配置成功后，才允许把当前完整配置保存到 WebDAV，或从 WebDAV 下载配置并覆盖本地配置；恢复后会刷新规则匹配、边缘操作、应用行为和 UI 设置。
 
-默认初始配置只包含全局规则和边缘操作，不包含应用程序归属或分类规则。边缘操作会预置触发角、摩擦边和边缘滚动项，但默认全部关闭。
+默认初始配置不包含 WebDAV 凭据、分类或具体程序归属，仅保留全局规则、界面偏好及已启用的边缘操作；后续新增配置字段仍由默认值和归一化逻辑补齐。
 
 默认全局规则：
 

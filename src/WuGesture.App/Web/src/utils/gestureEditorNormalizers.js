@@ -12,7 +12,7 @@ import {
   WHEEL_DIRECTIONS,
   WINDOW_OPERATIONS
 } from '@/constants/gestureEditorOptions'
-import { DEFAULT_EDGE_ACTIONS, DEFAULT_UI_SETTINGS } from '@/constants/gestureEditorDefaults'
+import { DEFAULT_EDGE_ACTIONS, DEFAULT_UI_SETTINGS } from '@/constants/gestureEditorUiDefaults'
 import { GESTURE_EDITOR_LIMITS } from '@/constants/gestureEditorLimits'
 
 export function createDefaultUiSettings() {
@@ -48,12 +48,8 @@ export function normalizeMouseTrailSettings(settings) {
   settings = normalizeObjectKeys(settings)
   return {
     enabled: Boolean(settings?.enabled ?? DEFAULT_UI_SETTINGS.mouseTrail.enabled),
-    inactiveColor:
-      String(settings?.inactiveColor ?? DEFAULT_UI_SETTINGS.mouseTrail.inactiveColor).trim() ||
-      DEFAULT_UI_SETTINGS.mouseTrail.inactiveColor,
-    activeColor:
-      String(settings?.activeColor ?? DEFAULT_UI_SETTINGS.mouseTrail.activeColor).trim() ||
-      DEFAULT_UI_SETTINGS.mouseTrail.activeColor,
+    inactiveColor: normalizeMouseTrailColor(settings?.inactiveColor, DEFAULT_UI_SETTINGS.mouseTrail.inactiveColor),
+    activeColor: normalizeMouseTrailColor(settings?.activeColor, DEFAULT_UI_SETTINGS.mouseTrail.activeColor),
     inactiveThickness: clampFloat(
       settings?.inactiveThickness,
       GESTURE_EDITOR_LIMITS.mouseTrailThickness.min,
@@ -217,6 +213,11 @@ export function normalizeLevelOsdSettings(settings) {
 function normalizeColor(value, fallback) {
   const normalized = String(value ?? '').trim()
   return normalized || fallback
+}
+
+function normalizeMouseTrailColor(value, fallback) {
+  const normalized = normalizeColor(value, fallback)
+  return /^#ff[0-9a-f]{6}$/i.test(normalized) ? `#${normalized.slice(3)}` : normalized
 }
 
 export function normalizeGestureSensitivitySettings(settings) {

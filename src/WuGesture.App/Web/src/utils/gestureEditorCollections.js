@@ -1,5 +1,12 @@
-export function collectCategoryItems(rules, applications) {
+export function collectCategoryItems(rules, applications, categories = []) {
   const counts = new Map()
+
+  for (const category of categories) {
+    const name = String(category ?? '').trim()
+    if (name) {
+      counts.set(name, 0)
+    }
+  }
 
   for (const rule of rules) {
     if (rule.scopeName) {

@@ -813,6 +813,7 @@ public sealed partial class MainForm : Form
                 SchemaVersion = GestureConfigContract.Schema.CurrentVersion,
                 Rules = message?.Rules ?? [],
                 Applications = message?.Applications ?? [],
+                Categories = message?.Categories ?? [],
                 EdgeActions = message?.EdgeActions ?? [],
                 UiSettings = uiSettings
             };
@@ -855,6 +856,7 @@ public sealed partial class MainForm : Form
                 SchemaVersion = GestureConfigContract.Schema.CurrentVersion,
                 Rules = message?.Rules ?? [],
                 Applications = message?.Applications ?? [],
+                Categories = message?.Categories ?? [],
                 EdgeActions = message?.EdgeActions ?? [],
                 UiSettings = uiSettings
             };
@@ -907,6 +909,7 @@ public sealed partial class MainForm : Form
                 SchemaVersion = GestureConfigContract.Schema.CurrentVersion,
                 Rules = message?.Rules ?? [],
                 Applications = message?.Applications ?? [],
+                Categories = message?.Categories ?? [],
                 EdgeActions = message?.EdgeActions ?? [],
                 UiSettings = uiSettings
             };
