@@ -35,6 +35,7 @@ public sealed partial class MainForm : Form
     private bool isUserPaused;
     private bool isConfigPaused;
     private bool isEditorPaused;
+    private int overlayRecoveryScheduled;
 
     private static readonly JsonSerializerOptions WebMessageJsonOptions = new()
     {
@@ -71,6 +72,8 @@ public sealed partial class MainForm : Form
         FormClosed += (_, _) =>
         {
             SystemEvents.UserPreferenceChanged -= OnSystemUserPreferenceChanged;
+            SystemEvents.DisplaySettingsChanged -= OnDisplaySettingsChanged;
+            SystemEvents.PowerModeChanged -= OnPowerModeChanged;
             trayIcon.Visible = false;
             trayIcon.Dispose();
             trayMenu.Dispose();
@@ -82,6 +85,8 @@ public sealed partial class MainForm : Form
             DisposeMouseTrailForm();
         };
         SystemEvents.UserPreferenceChanged += OnSystemUserPreferenceChanged;
+        SystemEvents.DisplaySettingsChanged += OnDisplaySettingsChanged;
+        SystemEvents.PowerModeChanged += OnPowerModeChanged;
     }
 
     private async void OnLoad(object? sender, EventArgs e)
@@ -1102,6 +1107,7 @@ public sealed partial class MainForm : Form
 
         mouseTrailForm?.Dispose();
         mouseTrailForm = new MouseTrailForm();
+        mouseTrailForm.PresentationFailed += OnMouseTrailPresentationFailed;
         if (loadedConfig is not null)
         {
             mouseTrailForm.ApplySettings(loadedConfig.Config.UiSettings.MouseTrail);
@@ -1116,10 +1122,7 @@ public sealed partial class MainForm : Form
     {
         ApplyWindowTheme(uiSettings.Appearance);
         gestureService?.ApplyGestureSensitivity(uiSettings.GestureSensitivity);
-        var hasEnabledOverlay =
-            IsFeatureEnabled(uiSettings.MouseTrail.Enabled) ||
-            IsFeatureEnabled(uiSettings.GestureHint.Enabled) ||
-            IsFeatureEnabled(uiSettings.LevelOsd.Enabled);
+        var hasEnabledOverlay = HasEnabledOverlay(uiSettings);
         if (mouseTrailForm is not null || hasEnabledOverlay)
         {
             var trailForm = EnsureMouseTrailForm();
@@ -1157,11 +1160,75 @@ public sealed partial class MainForm : Form
 
         if (!mouseTrailForm.IsDisposed)
         {
+            mouseTrailForm.PresentationFailed -= OnMouseTrailPresentationFailed;
             mouseTrailForm.Close();
             mouseTrailForm.Dispose();
         }
 
         mouseTrailForm = null;
+    }
+
+    private void OnDisplaySettingsChanged(object? sender, EventArgs e)
+    {
+        ScheduleOverlayRecovery("display-settings-changed");
+    }
+
+    private void OnPowerModeChanged(object? sender, PowerModeChangedEventArgs e)
+    {
+        if (e.Mode == PowerModes.Resume)
+        {
+            ScheduleOverlayRecovery("power-resume");
+        }
+    }
+
+    private void OnMouseTrailPresentationFailed(object? sender, EventArgs e)
+    {
+        ScheduleOverlayRecovery("layered-window-present-failed");
+    }
+
+    private void ScheduleOverlayRecovery(string reason)
+    {
+        if (mouseTrailForm is null || !CanUseUi() ||
+            Interlocked.Exchange(ref overlayRecoveryScheduled, 1) != 0)
+        {
+            return;
+        }
+
+        try
+        {
+            BeginInvoke(() =>
+            {
+                try
+                {
+                    if (!CanUseUi() || mouseTrailForm is null)
+                    {
+                        return;
+                    }
+
+                    AppLogger.Information("MainForm", "overlay-recreated", $"Recreating the transparent overlay. Reason: {reason}.");
+                    DisposeMouseTrailForm();
+                    if (loadedConfig is not null && HasEnabledOverlay(loadedConfig.Config.UiSettings))
+                    {
+                        EnsureMouseTrailForm().Preload();
+                    }
+                }
+                finally
+                {
+                    Volatile.Write(ref overlayRecoveryScheduled, 0);
+                }
+            });
+        }
+        catch (InvalidOperationException)
+        {
+            Volatile.Write(ref overlayRecoveryScheduled, 0);
+        }
+    }
+
+    private static bool HasEnabledOverlay(GestureUiSettings uiSettings)
+    {
+        return IsFeatureEnabled(uiSettings.MouseTrail.Enabled) ||
+               IsFeatureEnabled(uiSettings.GestureHint.Enabled) ||
+               IsFeatureEnabled(uiSettings.LevelOsd.Enabled);
     }
 
     private static bool IsFeatureEnabled(bool? enabled)

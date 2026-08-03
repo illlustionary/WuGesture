@@ -25,6 +25,9 @@ public sealed class MouseTrailForm : Form
     private readonly GestureHintRenderer hintRenderer;
     private readonly LevelOsdRenderer levelOsdRenderer;
     private Rectangle screenBounds;
+    private bool presentationFailureReported;
+
+    public event EventHandler? PresentationFailed;
 
     public MouseTrailForm()
     {
@@ -248,7 +251,7 @@ public sealed class MouseTrailForm : Form
             Stopwatch.GetElapsedTime(startedAt, preparedAt).TotalMilliseconds,
             Stopwatch.GetElapsedTime(preparedAt, drawnAt).TotalMilliseconds + overlayTiming.DrawMilliseconds,
             overlayTiming.PresentMilliseconds,
-            dirtyRect is not null);
+            overlayTiming.IsPresented);
     }
 
     public void HideTrail()
@@ -339,12 +342,13 @@ public sealed class MouseTrailForm : Form
             levelOsdRenderer.Draw(graphics, screenBounds);
             graphics.Restore(state);
             var drawnAt = Stopwatch.GetTimestamp();
-            Present(dirty);
+            var isPresented = Present(dirty);
             var presentedAt = Stopwatch.GetTimestamp();
             return new OverlayRenderTiming(
                 Stopwatch.GetElapsedTime(startedAt, drawnAt).TotalMilliseconds,
                 Stopwatch.GetElapsedTime(drawnAt, presentedAt).TotalMilliseconds,
-                dirty);
+                dirty,
+                isPresented);
         }
 
         graphics.Clear(Color.Transparent);
@@ -355,13 +359,19 @@ public sealed class MouseTrailForm : Form
 
         if (Visible)
         {
-            Present(new Rectangle(Point.Empty, bufferSize), fullWindow: true);
+            var isPresented = Present(new Rectangle(Point.Empty, bufferSize), fullWindow: true);
+            return new OverlayRenderTiming(
+                Stopwatch.GetElapsedTime(startedAt, fullDrawnAt).TotalMilliseconds,
+                Stopwatch.GetElapsedTime(fullDrawnAt).TotalMilliseconds,
+                new Rectangle(Point.Empty, bufferSize),
+                isPresented);
         }
 
         return new OverlayRenderTiming(
             Stopwatch.GetElapsedTime(startedAt, fullDrawnAt).TotalMilliseconds,
             Stopwatch.GetElapsedTime(fullDrawnAt).TotalMilliseconds,
-            new Rectangle(Point.Empty, bufferSize));
+            new Rectangle(Point.Empty, bufferSize),
+            false);
     }
 
     private static Rectangle? Union(Rectangle? first, Rectangle? second)
@@ -379,7 +389,7 @@ public sealed class MouseTrailForm : Form
         return Rectangle.Union(first.Value, second.Value);
     }
 
-    private void Present(Rectangle dirtyRect, bool fullWindow = false)
+    private bool Present(Rectangle dirtyRect, bool fullWindow = false)
     {
         if (dirtyRect.Width <= 0 || dirtyRect.Height <= 0)
         {
@@ -399,7 +409,7 @@ public sealed class MouseTrailForm : Form
 
         if (fullWindow)
         {
-            UpdateLayeredWindow(
+            var succeeded = UpdateLayeredWindow(
                 Handle,
                 screenDc,
                 ref dstPoint,
@@ -409,13 +419,14 @@ public sealed class MouseTrailForm : Form
                 0,
                 ref blend,
                 UlwAlpha);
-            return;
+            var errorCode = succeeded ? 0 : Marshal.GetLastWin32Error();
+            return ReportPresentationResult(succeeded, errorCode, "UpdateLayeredWindow", dirtyRect);
         }
 
-        PresentDirty(dirtyRect, dstPoint, size, srcPoint, blend);
+        return PresentDirty(dirtyRect, dstPoint, size, srcPoint, blend);
     }
 
-    private unsafe void PresentDirty(
+    private unsafe bool PresentDirty(
         Rectangle dirtyRect,
         Point destination,
         Size size,
@@ -437,7 +448,30 @@ public sealed class MouseTrailForm : Form
             Blend = &blend
         };
 
-        UpdateLayeredWindowIndirect(Handle, ref updateInfo);
+        var succeeded = UpdateLayeredWindowIndirect(Handle, ref updateInfo);
+        var errorCode = succeeded ? 0 : Marshal.GetLastWin32Error();
+        return ReportPresentationResult(succeeded, errorCode, "UpdateLayeredWindowIndirect", dirtyRect);
+    }
+
+    private bool ReportPresentationResult(bool succeeded, int errorCode, string operation, Rectangle dirtyRect)
+    {
+        if (succeeded)
+        {
+            presentationFailureReported = false;
+            return true;
+        }
+
+        if (!presentationFailureReported)
+        {
+            presentationFailureReported = true;
+            AppLogger.Warning(
+                "MouseTrailForm",
+                "layered-window-present-failed",
+                $"{operation} failed. Error: {errorCode}; handle: 0x{Handle.ToInt64():X}; visible: {Visible}; cachedScreen: {screenBounds}; currentScreen: {SystemInformation.VirtualScreen}; dirty: {dirtyRect}.");
+            PresentationFailed?.Invoke(this, EventArgs.Empty);
+        }
+
+        return false;
     }
 
     private PointF ToLocalPoint(Point point)
@@ -626,9 +660,10 @@ public sealed class MouseTrailForm : Form
 internal readonly record struct OverlayRenderTiming(
     double DrawMilliseconds,
     double PresentMilliseconds,
-    Rectangle DirtyRect)
+    Rectangle DirtyRect,
+    bool IsPresented)
 {
-    public static OverlayRenderTiming Empty { get; } = new(0, 0, Rectangle.Empty);
+    public static OverlayRenderTiming Empty { get; } = new(0, 0, Rectangle.Empty, false);
 }
 
 internal readonly record struct TrailFrameTiming(
