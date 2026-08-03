@@ -1,9 +1,9 @@
 <template>
   <div class="gesture-table">
     <header class="gesture-table__head">
-      <span>名称</span>
+      <span class="gesture-table__head-name">名称</span>
       <span class="gesture">手势</span>
-      <span>命令</span>
+      <span class="gesture-table__head-command">命令</span>
       <span class="gesture-table__head-actions" />
     </header>
 
@@ -169,8 +169,7 @@ function isWindowAction(rule) {
   overflow: hidden;
   border: 1px solid var(--border-subtle);
   border-radius: 10px;
-  background: linear-gradient(180deg, var(--panel-soft), var(--panel-muted));
-  box-shadow: var(--shadow-soft);
+  background: var(--panel-soft);
 
   &__body {
     padding: 0;
@@ -185,33 +184,25 @@ function isWindowAction(rule) {
 
   &__head,
   &__row {
-    display: flex;
-    gap: 10px;
+    display: grid;
+    grid-template-columns: minmax(150px, 1fr) minmax(230px, 1.45fr) minmax(170px, 1.25fr) 44px;
+    gap: 8px;
     align-items: center;
-    & > :not(:last-child) {
-      flex: 1;
-    }
-    .gesture {
-      flex: 2;
-    }
-    & > :last-child {
-      flex-shrink: 0;
-      width: 44px;
-    }
   }
 
   &__head {
-    text-align: center;
+    text-align: left;
     min-height: 38px;
     color: var(--muted-strong);
     font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    background: linear-gradient(180deg, var(--panel-soft), var(--interactive-hover-bg));
+    background: var(--panel-muted);
     border-bottom: 1px solid var(--border-muted);
-    & > :not(:last-child) {
-      margin-left: 11px;
+
+    .gesture {
+      text-align: center;
     }
   }
 
@@ -221,9 +212,10 @@ function isWindowAction(rule) {
   }
 
   &__row {
-    min-height: 66px;
-    padding-block: 2px;
-    border: 1px solid var(--border-muted);
+    min-height: 60px;
+    padding-block: 1px;
+    border: 0;
+    border-bottom: 1px solid var(--border-muted);
     border-radius: 0;
     background: var(--interactive-bg);
     transition:
@@ -232,28 +224,29 @@ function isWindowAction(rule) {
 
     &:hover {
       background: var(--interactive-hover-bg);
-      border-color: var(--border-strong);
+      box-shadow: inset 2px 0 0 var(--accent);
     }
   }
 
-  &__row + &__row {
-    border-top-width: 0;
+  &__row:last-child {
+    border-bottom: 0;
   }
 
   &__cell {
     width: 100%;
     min-height: 40px;
-    padding: 10px 12px;
+    padding: 8px 12px;
     border: none;
     border-radius: 12px;
     background-color: transparent;
   }
 
   &__cell--name {
-    padding-inline: 14px;
+    padding-inline: 12px;
     border: 1px solid transparent;
     color: var(--text);
-    text-align: center;
+    text-align: left;
+    font-weight: 600;
     transition:
       border-color 120ms ease,
       box-shadow 120ms ease,
@@ -314,7 +307,6 @@ function isWindowAction(rule) {
 }
 
 .gesture-pattern-button {
-  flex: 2;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -335,16 +327,16 @@ function isWindowAction(rule) {
   &__mouse {
     display: inline-grid;
     place-items: center;
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
     flex: 0 0 auto;
     color: var(--accent-strong);
     background: var(--interactive-icon-bg);
-    border-radius: 10px;
+    border-radius: 6px;
 
     &-icon {
-      width: 18px;
-      height: 18px;
+      width: 16px;
+      height: 16px;
     }
   }
 
@@ -365,7 +357,7 @@ function isWindowAction(rule) {
 .command-button {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 6px;
   overflow: hidden;
   border: none;

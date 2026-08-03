@@ -271,7 +271,7 @@ const {
 }
 .sidebar-group.is-active .sidebar-group__head {
   color: var(--accent-strong);
-  background: var(--accent-soft);
+  background: transparent;
 
   &::after {
     transform: scaleY(1);
@@ -360,6 +360,7 @@ const {
   &.is-active {
     color: var(--accent-strong);
     font-weight: 700;
+    background: var(--accent-soft);
   }
 }
 .sidebar-child__icon {

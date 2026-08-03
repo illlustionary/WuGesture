@@ -34,7 +34,14 @@ function togglePause() {
         aria-hidden="true"
       />
       <span class="sidebar-app-status__copy">
-        <span class="sidebar-app-status__name">WuGesture</span>
+        <span class="sidebar-app-status__name-row">
+          <span
+            class="sidebar-app-status__indicator"
+            :class="{ 'is-paused': isPaused }"
+            aria-hidden="true"
+          />
+          <span class="sidebar-app-status__name">WuGesture</span>
+        </span>
         <span class="sidebar-app-status__version">{{ appVersion }}</span>
       </span>
     </button>
@@ -66,7 +73,7 @@ function togglePause() {
     color 120ms ease;
 
   &:hover {
-    background: var(--accent-soft);
+    background: var(--interactive-hover-bg);
   }
 
   &:focus-visible {
@@ -104,6 +111,27 @@ function togglePause() {
   transition:
     filter 120ms ease,
     opacity 120ms ease;
+}
+
+.sidebar-app-status__name-row {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 6px;
+}
+
+.sidebar-app-status__indicator {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #62c98d;
+  box-shadow: 0 0 0 3px rgba(98, 201, 141, 0.12);
+
+  &.is-paused {
+    background: #d6a547;
+    box-shadow: 0 0 0 3px rgba(214, 165, 71, 0.12);
+  }
 }
 
 .sidebar-app-status__name,

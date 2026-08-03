@@ -31,7 +31,7 @@ const webDavTestState = computed(() => {
 <template>
   <SettingsSectionCard
     title="WebDAV"
-    :note="ready ? '当前 WebDAV 配置已测试通过。' : '保存或恢复前需要先测试当前 WebDAV 配置。'"
+    :note="ready ? '当前 WebDAV 配置已测试通过。' : '备份或恢复前需要先测试当前 WebDAV 配置。'"
   >
     <template #actions>
       <IconActionButton
@@ -44,20 +44,20 @@ const webDavTestState = computed(() => {
         @click="emit('test')"
       />
       <IconActionButton
+        icon="cloud-upload"
+        label="备份"
+        class="primary-button webdav-action-button"
+        :color="ready ? 'var(--accent-strong)' : 'var(--muted)'"
+        :disabled="!ready || testing"
+        @click="emit('save')"
+      />
+      <IconActionButton
         icon="cloud-download"
         label="恢复"
         class="secondary-button webdav-action-button"
         :color="ready ? 'var(--accent-strong)' : 'var(--muted)'"
         :disabled="!ready || testing"
         @click="emit('restore')"
-      />
-      <IconActionButton
-        icon="cloud-upload"
-        label="保存"
-        class="primary-button webdav-action-button"
-        :color="ready ? 'var(--accent-strong)' : 'var(--muted)'"
-        :disabled="!ready || testing"
-        @click="emit('save')"
       />
     </template>
 
