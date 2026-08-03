@@ -34,7 +34,10 @@
               class="gesture-pattern-button__mouse"
               aria-hidden="true"
             >
-              <AppIcon name="mouse" class="gesture-pattern-button__mouse-icon" />
+              <AppIcon
+                name="mouse"
+                class="gesture-pattern-button__mouse-icon"
+              />
             </span>
             <span
               v-if="gestureSegments(rule).length > 0"

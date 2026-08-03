@@ -108,7 +108,10 @@ function confirmResetSettings() {
         <RouterView v-slot="{ Component, route: viewRoute }">
           <div class="route-transition-frame">
             <Transition :name="routeTransitionName">
-              <div :key="viewRoute.fullPath" class="app-route-view">
+              <div
+                :key="viewRoute.fullPath"
+                class="app-route-view"
+              >
                 <component :is="Component" />
               </div>
             </Transition>
@@ -132,15 +135,27 @@ function confirmResetSettings() {
           @pointerdown.prevent="overlay.pickApplicationWindow()"
           @click.prevent
         >
-          <AppIcon name="crosshair" class="picker-option__icon" aria-hidden="true" />
+          <AppIcon
+            name="crosshair"
+            class="picker-option__icon"
+            aria-hidden="true"
+          />
           <span class="picker-option__text">
             <strong>拖动选择窗口</strong>
             <span>拖动鼠标到目标窗口后松开</span>
           </span>
         </button>
 
-        <button type="button" class="picker-option" @click="overlay.selectApplication()">
-          <AppIcon name="folder" class="picker-option__icon" aria-hidden="true" />
+        <button
+          type="button"
+          class="picker-option"
+          @click="overlay.selectApplication()"
+        >
+          <AppIcon
+            name="folder"
+            class="picker-option__icon"
+            aria-hidden="true"
+          />
           <span class="picker-option__text">
             <strong>浏览 exe 文件</strong>
             <span>使用文件资源管理器选择</span>
@@ -236,7 +251,6 @@ function confirmResetSettings() {
   flex-direction: column;
   height: 100vh;
   overflow: hidden;
-
 }
 
 .app-shell__body {

@@ -15,14 +15,8 @@ const props = defineProps({
 })
 
 const settingsStore = useGestureEditorContext()
-const {
-  draft,
-  trailPreviewStyle,
-  hintPreviewStyle,
-  levelOsdPreviewStyle,
-  queuePersistDraft,
-  flushPersistDraft,
-} = useUiSettingsDraft(settingsStore)
+const { draft, trailPreviewStyle, hintPreviewStyle, levelOsdPreviewStyle, queuePersistDraft, flushPersistDraft } =
+  useUiSettingsDraft(settingsStore)
 
 const webDavDraftSignature = computed(() => settingsStore.getWebDavSignature(draft.webDav))
 const webDavReady = computed(

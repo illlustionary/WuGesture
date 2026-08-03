@@ -177,7 +177,11 @@ function updateMenuPosition() {
 </script>
 
 <template>
-  <div ref="rootRef" class="custom-select" :class="{ 'is-open': open, 'is-disabled': disabled }">
+  <div
+    ref="rootRef"
+    class="custom-select"
+    :class="{ 'is-open': open, 'is-disabled': disabled }"
+  >
     <button
       type="button"
       class="custom-select__button"
@@ -188,10 +192,16 @@ function updateMenuPosition() {
       @click="toggleOpen"
       @keydown="handleKeydown"
     >
-      <span class="custom-select__value" :class="{ 'is-placeholder': !selectedOption }">
+      <span
+        class="custom-select__value"
+        :class="{ 'is-placeholder': !selectedOption }"
+      >
         {{ selectedOption?.label || placeholder }}
       </span>
-      <span class="custom-select__chevron" aria-hidden="true" />
+      <span
+        class="custom-select__chevron"
+        aria-hidden="true"
+      />
     </button>
 
     <Teleport to="body">

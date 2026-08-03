@@ -9,31 +9,19 @@ export function getCategoryIcon(name) {
     return 'circle-dashed'
   }
 
-  if (
-    value.includes('浏览') ||
-    value.includes('browser') ||
-    value.includes('网页')
-  ) {
+  if (value.includes('浏览') || value.includes('browser') || value.includes('网页')) {
     return 'browser'
   }
   if (value.includes('办公') || value.includes('office')) {
     return 'briefcase'
   }
-  if (
-    value.includes('开发') ||
-    value.includes('dev') ||
-    value.includes('编程')
-  ) {
+  if (value.includes('开发') || value.includes('dev') || value.includes('编程')) {
     return 'code'
   }
   if (value.includes('设计') || value.includes('创作')) {
     return 'sparkle'
   }
-  if (
-    value.includes('媒体') ||
-    value.includes('音乐') ||
-    value.includes('视频')
-  ) {
+  if (value.includes('媒体') || value.includes('音乐') || value.includes('视频')) {
     return 'media'
   }
 

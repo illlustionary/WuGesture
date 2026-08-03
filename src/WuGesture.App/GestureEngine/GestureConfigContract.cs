@@ -2,6 +2,11 @@ namespace WuGesture.App.GestureEngine;
 
 public static class GestureConfigContract
 {
+    public static class Schema
+    {
+        public const int CurrentVersion = 1;
+    }
+
     public static class Scopes
     {
         public const string Global = "global";

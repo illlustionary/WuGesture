@@ -33,11 +33,7 @@ const emit = defineEmits(['record-hotkey', 'update-operation'])
           aria-hidden="true"
         />
         <span>
-          {{
-            isRecordingHotkey(draft)
-              ? '录制中...'
-              : draft.keysText || '点击录制快捷键'
-          }}
+          {{ isRecordingHotkey(draft) ? '录制中...' : draft.keysText || '点击录制快捷键' }}
         </span>
       </button>
     </label>

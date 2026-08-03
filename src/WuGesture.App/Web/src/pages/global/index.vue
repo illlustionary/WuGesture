@@ -15,7 +15,10 @@ rulesStore.setActiveScope(scopeKind)
   <AppShell layout-class="page-shell__grid--single page-shell__grid--editor">
     <template #right>
       <section class="rules-panel">
-        <RulesSection title="手势列表" flex>
+        <RulesSection
+          title="手势列表"
+          flex
+        >
           <template #actions>
             <IconActionButton
               icon="add"

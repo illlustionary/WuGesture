@@ -27,7 +27,7 @@ src\WuGesture.App\Web
 
 - `agents.md`：Web 子项目的代理指令。
 - `index.html`：Vite 入口 HTML，页面标题为 `WuGesture`。
-- `package.json`：前端工程依赖与脚本。
+- `package.json`：前端工程依赖与脚本；`format` 和 `format:check` 使用本地 Prettier 按仓库根目录的 `.prettierrc.json` 格式化或校验前端源码。
 - `pnpm-lock.yaml`：锁定依赖树。
 - `pnpm-workspace.yaml`：工作区配置，并放行 `@parcel/watcher` 的本地构建脚本，避免非交互环境下依赖安装中断。
 - `jsconfig.json`：配置编辑器路径提示，`@/*` 指向 `src/*`。
@@ -108,11 +108,9 @@ src\components
 - `CustomSelect.vue`：共享弹层式自定义单选下拉控件，不复用浏览器默认 select。
 - `ToggleCheckbox.vue`：共享自定义复选控件，用于替代浏览器默认 checkbox。
 - `ScopeCreateDialog.vue`：分类或作用域名称创建/编辑弹窗。
-- `ScopeSidebar.vue`：旧版分类和程序作用域列表侧栏，当前分类/程序页面由 `AppSidebar.vue` 提供作用域导航。
 - `applications\ApplicationListItem.vue`：分类页右侧程序关联列表项。
 - `rules\RulesSection.vue`：规则页右侧复用区块，统一标题、说明、操作区和内容面板。
 - `ScopePriorityNotice.vue`：全局、分类和程序规则页共享的作用域优先级与继承提示。
-- `scope\ScopeListItem.vue`：旧版分类和程序页作用域列表项，当前页面的动态作用域条目由 `AppSidebar.vue` 直接渲染。
 
 ## Composables
 
@@ -301,7 +299,6 @@ Windows 系统标题栏负责窗口控制；其下方侧栏顶部的 `SidebarApp
 - `activeColor`
 - `inactiveThickness`
 - `activeThickness`
-- `thickness`
 - `inactiveOpacity`
 - `activeOpacity`
 
@@ -315,13 +312,10 @@ Windows 系统标题栏负责窗口控制；其下方侧栏顶部的 `SidebarApp
 - `textColor`
 - `backgroundColor`
 - `backgroundOpacity`
-- `width`
 - `widthPercent`
 - `autoWidth`
-- `height`
 - `heightPercent`
 - `cornerRadius`
-- `bottomOffset`
 - `bottomOffsetPercent`
 
 `uiSettings.levelOsd` 当前包含：

@@ -5,6 +5,7 @@ public static class DefaultGestureConfig
     public static GestureConfig Create()
     {
         var config = GestureConfigMapper.FromRules(DefaultGestureRules.Create());
+        config.SchemaVersion = GestureConfigContract.Schema.CurrentVersion;
         config.EdgeActions =
         [
             CreateEdgeAction(GestureConfigContract.EdgeTriggerTypes.Corner, GestureConfigContract.EdgeLocations.TopLeft, "", new GestureActionConfig

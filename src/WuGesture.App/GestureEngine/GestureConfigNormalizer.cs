@@ -27,17 +27,11 @@ internal static class GestureConfigNormalizer
         foreach (var application in applications)
         {
             application.Categories ??= [];
-            if (application.Categories.Count == 0 && !string.IsNullOrWhiteSpace(application.Category))
-            {
-                application.Categories.Add(application.Category);
-            }
-
             application.Categories = application.Categories
                 .Select(category => category.Trim())
                 .Where(category => category.Length > 0)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
-            application.Category = null;
         }
     }
 
@@ -53,20 +47,6 @@ internal static class GestureConfigNormalizer
 
         var mouseTrail = settings.MouseTrail;
         mouseTrail.Enabled ??= true;
-        var legacyThickness = mouseTrail.Thickness > 0 ? mouseTrail.Thickness : 3f;
-        if (mouseTrail.InactiveThickness <= 0 ||
-            (Math.Abs(mouseTrail.InactiveThickness - 3f) < 0.001f && Math.Abs(legacyThickness - 3f) > 0.001f))
-        {
-            mouseTrail.InactiveThickness = legacyThickness;
-        }
-
-        if (mouseTrail.ActiveThickness <= 0 ||
-            (Math.Abs(mouseTrail.ActiveThickness - 3f) < 0.001f && Math.Abs(legacyThickness - 3f) > 0.001f))
-        {
-            mouseTrail.ActiveThickness = legacyThickness;
-        }
-
-        mouseTrail.Thickness = Math.Max(1f, mouseTrail.InactiveThickness);
 
         var gestureHint = settings.GestureHint;
         gestureHint.Enabled ??= true;
@@ -75,11 +55,6 @@ internal static class GestureConfigNormalizer
         gestureHint.WidthPercent = ClampInteger(gestureHint.WidthPercent, 10, 90, 28);
         gestureHint.HeightPercent = ClampInteger(gestureHint.HeightPercent, 5, 40, 11);
         gestureHint.BottomOffsetPercent = ClampInteger(gestureHint.BottomOffsetPercent, 0, 100, 13);
-        if (gestureHint.BottomOffset < 0)
-        {
-            gestureHint.BottomOffset = 140;
-        }
-
         var levelOsd = settings.LevelOsd;
         levelOsd.Enabled ??= true;
         levelOsd.DisplayDurationMs = ClampInteger(levelOsd.DisplayDurationMs, 0, 10000, 1800);

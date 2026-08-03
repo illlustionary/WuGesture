@@ -1,45 +1,45 @@
 <script setup>
-import { computed, nextTick, ref, watch } from "vue";
-import BaseDialog from "./BaseDialog.vue";
+import { computed, nextTick, ref, watch } from 'vue'
+import BaseDialog from './BaseDialog.vue'
 
 const props = defineProps({
   open: { type: Boolean, required: true },
   title: { type: String, required: true },
-  description: { type: String, default: "" },
+  description: { type: String, default: '' },
   label: { type: String, required: true },
-  placeholder: { type: String, default: "" },
-  modelValue: { type: String, default: "" }
-});
+  placeholder: { type: String, default: '' },
+  modelValue: { type: String, default: '' }
+})
 
-const emit = defineEmits(["close", "confirm", "update:modelValue"]);
-const titleId = "scope-create-dialog-title";
-const inputRef = ref(null);
+const emit = defineEmits(['close', 'confirm', 'update:modelValue'])
+const titleId = 'scope-create-dialog-title'
+const inputRef = ref(null)
 
 const value = computed({
   get() {
-    return props.modelValue;
+    return props.modelValue
   },
   set(nextValue) {
-    emit("update:modelValue", nextValue);
+    emit('update:modelValue', nextValue)
   }
-});
+})
 
 function confirm() {
-  emit("confirm");
+  emit('confirm')
 }
 
 watch(
   () => props.open,
-  async (isOpen) => {
+  async isOpen => {
     if (!isOpen) {
-      return;
+      return
     }
 
-    await nextTick();
-    inputRef.value?.focus?.();
-    inputRef.value?.select?.();
+    await nextTick()
+    inputRef.value?.focus?.()
+    inputRef.value?.select?.()
   }
-);
+)
 </script>
 
 <template>
@@ -62,7 +62,7 @@ watch(
         class="scope-input"
         :placeholder="placeholder"
         @keydown.enter.prevent="confirm"
-      >
+      />
     </label>
   </BaseDialog>
 </template>

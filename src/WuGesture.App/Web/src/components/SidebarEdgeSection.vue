@@ -17,24 +17,70 @@ const items = [
   { to: '/edge/wheel', label: '边缘滚动', icon: 'mouse' }
 ]
 
-function toggle() { expanded.value = !expanded.value }
+function toggle() {
+  expanded.value = !expanded.value
+}
 
-watch(isActive, active => { if (active) expanded.value = true }, { immediate: true })
+watch(
+  isActive,
+  active => {
+    if (active) expanded.value = true
+  },
+  { immediate: true }
+)
 </script>
 
 <template>
-  <section class="sidebar-group" :class="{ 'is-expanded': expanded, 'is-active': isActive }">
-    <button type="button" class="sidebar-group__head" :aria-expanded="isSidebarVisible && expanded" :aria-label="isSidebarHidden ? '边缘操作' : undefined" @click="toggle">
-      <AppIcon name="circle-dashed" class="app-sidebar__item-icon" aria-hidden="true" />
-      <span v-if="isSidebarVisible" class="sidebar-group__title">边缘操作</span>
-      <span v-if="isSidebarVisible" class="sidebar-group__chevron" aria-hidden="true" />
+  <section
+    class="sidebar-group"
+    :class="{ 'is-expanded': expanded, 'is-active': isActive }"
+  >
+    <button
+      type="button"
+      class="sidebar-group__head"
+      :aria-expanded="isSidebarVisible && expanded"
+      :aria-label="isSidebarHidden ? '边缘操作' : undefined"
+      @click="toggle"
+    >
+      <AppIcon
+        name="circle-dashed"
+        class="app-sidebar__item-icon"
+        aria-hidden="true"
+      />
+      <span
+        v-if="isSidebarVisible"
+        class="sidebar-group__title"
+        >边缘操作</span
+      >
+      <span
+        v-if="isSidebarVisible"
+        class="sidebar-group__chevron"
+        aria-hidden="true"
+      />
     </button>
-    <div v-if="isSidebarVisible && expanded" class="sidebar-group__body">
+    <div
+      v-if="isSidebarVisible && expanded"
+      class="sidebar-group__body"
+    >
       <div class="sidebar-group__children">
-        <div v-for="item in items" :key="item.to" class="sidebar-child">
-          <RouterLink :to="item.to" class="sidebar-child__link" exact-active-class="is-active">
-            <AppIcon :name="item.icon" class="sidebar-child__icon sidebar-child__svg-icon" aria-hidden="true" />
-            <span class="sidebar-child__copy"><span class="sidebar-child__label">{{ item.label }}</span></span>
+        <div
+          v-for="item in items"
+          :key="item.to"
+          class="sidebar-child"
+        >
+          <RouterLink
+            :to="item.to"
+            class="sidebar-child__link"
+            exact-active-class="is-active"
+          >
+            <AppIcon
+              :name="item.icon"
+              class="sidebar-child__icon sidebar-child__svg-icon"
+              aria-hidden="true"
+            />
+            <span class="sidebar-child__copy"
+              ><span class="sidebar-child__label">{{ item.label }}</span></span
+            >
           </RouterLink>
         </div>
       </div>

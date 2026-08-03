@@ -160,7 +160,7 @@ watch(
 
 watch(
   () => props.disabled,
-  (disabled) => {
+  disabled => {
     if (disabled) {
       hideBubble()
     }

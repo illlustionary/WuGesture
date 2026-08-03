@@ -12,9 +12,7 @@ const emit = defineEmits(['queue-persist', 'flush-persist'])
 </script>
 
 <template>
-  <SettingsSectionCard
-    title="手势灵敏度"
-  >
+  <SettingsSectionCard title="手势灵敏度">
     <SettingsField
       label="灵敏度"
       :note="`${draft.gestureSensitivity.percent}%`"

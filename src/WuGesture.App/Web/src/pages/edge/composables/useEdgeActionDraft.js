@@ -1,18 +1,12 @@
 import { computed, reactive, ref } from 'vue'
-import {
-  ACTION_TYPES,
-  EDGE_TRIGGER_TYPES,
-  OPERATIONS
-} from '@/constants/gestureEditorOptions'
+import { ACTION_TYPES, EDGE_TRIGGER_TYPES, OPERATIONS } from '@/constants/gestureEditorOptions'
 
 export function useEdgeActionDraft(edgeActionsStore) {
   const editingKey = ref('')
   const draft = reactive(createEmptyDraft())
 
   const editingAction = computed(
-    () =>
-      edgeActionsStore.edgeActions.find(action => actionKey(action) === editingKey.value) ??
-      null
+    () => edgeActionsStore.edgeActions.find(action => actionKey(action) === editingKey.value) ?? null
   )
 
   function openEditor(action) {

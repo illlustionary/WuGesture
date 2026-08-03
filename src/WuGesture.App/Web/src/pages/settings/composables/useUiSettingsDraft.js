@@ -10,31 +10,20 @@ export function useUiSettingsDraft(editor) {
   const trailPreviewStyle = computed(() => ({
     opacity: draft.mouseTrail.enabled ? 1 : 0.42,
     '--trail-inactive-color': draft.mouseTrail.inactiveColor,
-    '--trail-inactive-stroke': hexToRgba(
-      draft.mouseTrail.inactiveColor,
-      draft.mouseTrail.inactiveOpacity / 100
-    ),
+    '--trail-inactive-stroke': hexToRgba(draft.mouseTrail.inactiveColor, draft.mouseTrail.inactiveOpacity / 100),
     '--trail-inactive-width': `${draft.mouseTrail.inactiveThickness}px`,
     '--trail-active-color': draft.mouseTrail.activeColor,
-    '--trail-active-stroke': hexToRgba(
-      draft.mouseTrail.activeColor,
-      draft.mouseTrail.activeOpacity / 100
-    ),
+    '--trail-active-stroke': hexToRgba(draft.mouseTrail.activeColor, draft.mouseTrail.activeOpacity / 100),
     '--trail-active-width': `${draft.mouseTrail.activeThickness}px`
   }))
 
   const hintPreviewStyle = computed(() => ({
     opacity: draft.gestureHint.enabled ? 1 : 0.42,
-    width: draft.gestureHint.autoWidth
-      ? 'fit-content'
-      : `${draft.gestureHint.widthPercent}%`,
+    width: draft.gestureHint.autoWidth ? 'fit-content' : `${draft.gestureHint.widthPercent}%`,
     maxWidth: '100%',
     height: `${Math.max(80, draft.gestureHint.heightPercent * 3)}px`,
     '--hint-color': draft.gestureHint.textColor,
-    '--hint-background-rgba': hexToRgba(
-      draft.gestureHint.backgroundColor,
-      draft.gestureHint.backgroundOpacity / 100
-    ),
+    '--hint-background-rgba': hexToRgba(draft.gestureHint.backgroundColor, draft.gestureHint.backgroundOpacity / 100),
     '--hint-muted-color': hexToRgba(draft.gestureHint.textColor, 0.72),
     '--hint-font-size': `${draft.gestureHint.fontSize}px`,
     '--hint-radius': `${draft.gestureHint.cornerRadius}px`,
@@ -51,12 +40,9 @@ export function useUiSettingsDraft(editor) {
       width: `${Math.max(96, Math.round(width * scale))}px`,
       height: `${Math.max(80, Math.round(height * scale))}px`,
       borderRadius: `${Math.round(
-        Math.min(draft.levelOsd.cornerRadius * scale, width * scale / 2, height * scale / 2)
+        Math.min(draft.levelOsd.cornerRadius * scale, (width * scale) / 2, (height * scale) / 2)
       )}px`,
-      '--level-osd-background': hexToRgba(
-        draft.levelOsd.backgroundColor,
-        draft.levelOsd.backgroundOpacity / 100
-      ),
+      '--level-osd-background': hexToRgba(draft.levelOsd.backgroundColor, draft.levelOsd.backgroundOpacity / 100),
       '--level-osd-text': draft.levelOsd.textColor,
       '--level-osd-track': draft.levelOsd.trackColor,
       '--level-osd-accent': draft.levelOsd.volumeColor,
@@ -69,17 +55,12 @@ export function useUiSettingsDraft(editor) {
     () => editor.state.uiSettings,
     () => {
       const nextDraft = createDraft(editor.getUiSettingsSnapshot())
-      if (
-        hasPendingPersist ||
-        persistTimer ||
-        Date.now() - lastLocalPersistAt < 600
-      ) {
+      if (hasPendingPersist || persistTimer || Date.now() - lastLocalPersistAt < 600) {
         if (
           getExclusionSignature(draft.appBehavior.excludedApplications) !==
           getExclusionSignature(nextDraft.appBehavior.excludedApplications)
         ) {
-          draft.appBehavior.excludedApplications =
-            nextDraft.appBehavior.excludedApplications
+          draft.appBehavior.excludedApplications = nextDraft.appBehavior.excludedApplications
         }
         return
       }
@@ -155,8 +136,12 @@ function createDraft(settings) {
 function getExclusionSignature(applications) {
   return JSON.stringify(
     (Array.isArray(applications) ? applications : []).map(application => ({
-      name: String(application.name ?? '').trim().toLowerCase(),
-      path: String(application.path ?? '').trim().toLowerCase(),
+      name: String(application.name ?? '')
+        .trim()
+        .toLowerCase(),
+      path: String(application.path ?? '')
+        .trim()
+        .toLowerCase(),
       disableEdgeActions: Boolean(application.disableEdgeActions)
     }))
   )

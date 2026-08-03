@@ -24,9 +24,7 @@ function commit() {
 </script>
 
 <template>
-  <SettingsSectionCard
-    title="音量/亮度提示"
-  >
+  <SettingsSectionCard title="音量/亮度提示">
     <template #actions>
       <IconActionButton
         icon="test"
@@ -94,11 +92,7 @@ function commit() {
 
       <SettingsField
         label="淡出时长"
-        :note="
-          draft.levelOsd.fadeDurationMs === 0
-            ? '立即消失'
-            : `${draft.levelOsd.fadeDurationMs} ms`
-        "
+        :note="draft.levelOsd.fadeDurationMs === 0 ? '立即消失' : `${draft.levelOsd.fadeDurationMs} ms`"
       >
         <BaseRange
           v-model.number="draft.levelOsd.fadeDurationMs"
@@ -217,10 +211,12 @@ function commit() {
         <BaseRange
           v-model.number="draft.levelOsd.cornerRadius"
           :min="GESTURE_EDITOR_LIMITS.levelOsdCornerRadius.min"
-          :max="Math.min(
-            GESTURE_EDITOR_LIMITS.levelOsdCornerRadius.max,
-            Math.min(draft.levelOsd.width, draft.levelOsd.height) / 2
-          )"
+          :max="
+            Math.min(
+              GESTURE_EDITOR_LIMITS.levelOsdCornerRadius.max,
+              Math.min(draft.levelOsd.width, draft.levelOsd.height) / 2
+            )
+          "
           step="1"
           @input="emit('queue-persist')"
           @change="emit('flush-persist')"
@@ -268,8 +264,7 @@ function commit() {
   border-radius: 18px;
   background:
     linear-gradient(var(--border-muted) 1px, transparent 1px),
-    linear-gradient(90deg, var(--border-muted) 1px, transparent 1px),
-    var(--panel-inset);
+    linear-gradient(90deg, var(--border-muted) 1px, transparent 1px), var(--panel-inset);
   background-size: 24px 24px;
 }
 

@@ -17,6 +17,7 @@ public static class GestureConfigMapper
     {
         return new GestureConfig
         {
+            SchemaVersion = GestureConfigContract.Schema.CurrentVersion,
             UiSettings = new GestureUiSettings(),
             Rules = rules.Select(rule => new GestureRuleConfig
             {

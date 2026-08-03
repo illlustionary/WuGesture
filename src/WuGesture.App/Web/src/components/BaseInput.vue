@@ -45,7 +45,7 @@ function change(event) {
     @input="update"
     @change="change"
     @blur="emit('blur', $event)"
-  >
+  />
 </template>
 
 <style scoped lang="scss">

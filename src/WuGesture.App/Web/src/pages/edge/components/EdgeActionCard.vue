@@ -22,7 +22,10 @@ const emit = defineEmits(['open'])
     @keydown.enter.prevent="emit('open', action)"
   >
     <header class="edge-card__head">
-      <span class="edge-status" :class="{ 'is-enabled': action.enabled }" />
+      <span
+        class="edge-status"
+        :class="{ 'is-enabled': action.enabled }"
+      />
       <div>
         <strong>{{ title }}</strong>
         <small>{{ subtitle }}</small>

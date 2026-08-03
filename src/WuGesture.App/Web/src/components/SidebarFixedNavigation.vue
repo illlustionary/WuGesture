@@ -15,9 +15,22 @@ const items = [
 </script>
 
 <template>
-  <HoverBubble v-for="item in items" :key="item.to" :text="isSidebarHidden ? item.label : ''">
-    <RouterLink :to="item.to" class="app-sidebar__item" exact-active-class="is-active" :aria-label="isSidebarHidden ? item.label : undefined">
-      <AppIcon :name="item.icon" class="app-sidebar__item-icon" aria-hidden="true" />
+  <HoverBubble
+    v-for="item in items"
+    :key="item.to"
+    :text="isSidebarHidden ? item.label : ''"
+  >
+    <RouterLink
+      :to="item.to"
+      class="app-sidebar__item"
+      exact-active-class="is-active"
+      :aria-label="isSidebarHidden ? item.label : undefined"
+    >
+      <AppIcon
+        :name="item.icon"
+        class="app-sidebar__item-icon"
+        aria-hidden="true"
+      />
       <span v-if="isSidebarVisible">{{ item.label }}</span>
     </RouterLink>
   </HoverBubble>

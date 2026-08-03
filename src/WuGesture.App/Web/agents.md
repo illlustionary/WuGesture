@@ -27,7 +27,6 @@ This repository is a Vite + Vue 3 web frontend for the WuGesture application. It
   - `GestureRuleDialog.vue`: gesture rule creation/edit dialog.
   - `GestureRuleList.vue`: rule list and rule operations.
   - `ScopeCreateDialog.vue`: scope creation dialog.
-  - `ScopeSidebar.vue`: left-side scope navigation and management.
 - `src/assets/`: SVG assets used by the UI, including add, close, and delete icons. These are imported as Vue components.
 - `src/pages/`: route-level views.
   - `GlobalRulesPage.vue`: global rule scope page with the same split layout pattern as the other editor pages.

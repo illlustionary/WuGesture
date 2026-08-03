@@ -1,55 +1,55 @@
 export function collectCategoryItems(rules, applications) {
-  const counts = new Map();
+  const counts = new Map()
 
   for (const rule of rules) {
     if (rule.scopeName) {
-      counts.set(rule.scopeName, (counts.get(rule.scopeName) ?? 0) + 1);
+      counts.set(rule.scopeName, (counts.get(rule.scopeName) ?? 0) + 1)
     }
   }
 
   for (const application of applications) {
     for (const category of application.categories ?? []) {
-      counts.set(category, counts.get(category) ?? 0);
+      counts.set(category, counts.get(category) ?? 0)
     }
   }
 
   return [...counts.entries()]
     .map(([name, count]) => {
-      const application = applications.find((item) => item.categories?.includes(name));
+      const application = applications.find(item => item.categories?.includes(name))
       return {
         name,
         count,
         displayName: application?.displayName || name,
-        icon: application?.icon || ""
-      };
+        icon: application?.icon || ''
+      }
     })
-    .sort((left, right) => left.name.localeCompare(right.name, "zh-Hans-CN"));
+    .sort((left, right) => left.name.localeCompare(right.name, 'zh-Hans-CN'))
 }
 
 export function collectAppItems(rules, applications) {
-  const counts = new Map();
+  const counts = new Map()
 
   for (const rule of rules) {
     if (rule.scopeName) {
-      counts.set(rule.scopeName, (counts.get(rule.scopeName) ?? 0) + 1);
+      counts.set(rule.scopeName, (counts.get(rule.scopeName) ?? 0) + 1)
     }
   }
 
   for (const application of applications) {
     if (application.name) {
-      counts.set(application.name, counts.get(application.name) ?? 0);
+      counts.set(application.name, counts.get(application.name) ?? 0)
     }
   }
 
   return [...counts.entries()]
     .map(([name, count]) => {
-      const application = applications.find((item) => item.name === name);
+      const application = applications.find(item => item.name === name)
       return {
         name,
         count,
         displayName: application?.displayName || name,
-        icon: application?.icon || ""
-      };
+        icon: application?.icon || ''
+      }
     })
-    .sort((left, right) => left.name.localeCompare(right.name, "zh-Hans-CN"));
+    .sort((left, right) => left.name.localeCompare(right.name, 'zh-Hans-CN'))
 }

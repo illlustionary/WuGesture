@@ -94,8 +94,6 @@ public sealed class MouseTrailUiSettings
 
     public float ActiveThickness { get; set; } = 3f;
 
-    public float Thickness { get; set; } = 3f;
-
     public int InactiveOpacity { get; set; } = 74;
 
     public int ActiveOpacity { get; set; } = 100;
@@ -119,19 +117,13 @@ public sealed class GestureHintUiSettings
 
     public int BackgroundOpacity { get; set; } = 90;
 
-    public int Width { get; set; } = 540;
-
     public int WidthPercent { get; set; } = 28;
 
     public bool AutoWidth { get; set; }
 
-    public int Height { get; set; } = 120;
-
     public int HeightPercent { get; set; } = 11;
 
     public float CornerRadius { get; set; } = 28f;
-
-    public int BottomOffset { get; set; } = 140;
 
     public int BottomOffsetPercent { get; set; } = 13;
 }

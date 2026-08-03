@@ -21,9 +21,7 @@ function commit() {
 </script>
 
 <template>
-  <SettingsSectionCard
-    title="底部提示窗"
-  >
+  <SettingsSectionCard title="底部提示窗">
     <div class="field-card">
       <ToggleCheckbox
         v-model="draft.gestureHint.enabled"
@@ -64,11 +62,7 @@ function commit() {
       </SettingsField>
       <SettingsField
         label="淡出时长"
-        :note="
-          draft.gestureHint.fadeDurationMs === 0
-            ? '立即消失'
-            : `${draft.gestureHint.fadeDurationMs} ms`
-        "
+        :note="draft.gestureHint.fadeDurationMs === 0 ? '立即消失' : `${draft.gestureHint.fadeDurationMs} ms`"
       >
         <BaseRange
           v-model.number="draft.gestureHint.fadeDurationMs"
@@ -123,11 +117,7 @@ function commit() {
       </SettingsField>
       <SettingsField
         label="宽度"
-        :note="
-          draft.gestureHint.autoWidth
-            ? '自适应'
-            : `${draft.gestureHint.widthPercent}%`
-        "
+        :note="draft.gestureHint.autoWidth ? '自适应' : `${draft.gestureHint.widthPercent}%`"
       >
         <BaseRange
           v-model.number="draft.gestureHint.widthPercent"

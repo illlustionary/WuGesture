@@ -19,10 +19,7 @@ const selectedName = computed(() => editor.getSelectedName(scopeKind))
 editor.setActiveScope(scopeKind)
 
 watch(
-  () => [
-    String(route.params.name ?? ''),
-    editor.categoryItems.map(item => item.name).join('\u0000')
-  ],
+  () => [String(route.params.name ?? ''), editor.categoryItems.map(item => item.name).join('\u0000')],
   ([requestedName]) => {
     const names = editor.categoryItems.map(item => item.name)
     if (requestedName && names.includes(requestedName)) {
@@ -50,8 +47,14 @@ function addApplication() {
 <template>
   <AppShell layout-class="page-shell__grid--single page-shell__grid--editor">
     <template #right>
-      <section v-if="selectedName" class="rules-panel">
-        <RulesSection title="程序" compact>
+      <section
+        v-if="selectedName"
+        class="rules-panel"
+      >
+        <RulesSection
+          title="程序"
+          compact
+        >
           <template #actions>
             <IconActionButton
               icon="add"
@@ -67,7 +70,10 @@ function addApplication() {
           >
             当前分类还没有关联程序。
           </div>
-          <div v-else class="list-stack">
+          <div
+            v-else
+            class="list-stack"
+          >
             <ApplicationListItem
               v-for="app in editor.getApplicationsForCategory()"
               :key="app.name"
@@ -77,7 +83,10 @@ function addApplication() {
           </div>
         </RulesSection>
 
-        <RulesSection title="手势列表" flex>
+        <RulesSection
+          title="手势列表"
+          flex
+        >
           <template #actions>
             <IconActionButton
               icon="add"
@@ -97,7 +106,10 @@ function addApplication() {
           />
         </RulesSection>
       </section>
-      <div v-else class="scope-empty-page">
+      <div
+        v-else
+        class="scope-empty-page"
+      >
         <h2>分类</h2>
         <p>还没有分类，请从左侧菜单新增一个分类。</p>
       </div>

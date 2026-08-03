@@ -21,6 +21,7 @@
 ```text
 D:\workspace\my-gesture
 ├─ AGENTS.md
+├─ .prettierrc.json
 ├─ docs
 │  ├─ architecture.md
 │  └─ releasing.md
@@ -43,6 +44,7 @@ D:\workspace\my-gesture
 - `PROJECT_STRUCTURE.md`：本项目地图。
 - `AGENTS.md`：后续会话的代理指令。
 - `.gitignore`：忽略构建输出、WebView2 运行时缓存、IDE 状态和发布产物。
+- `.prettierrc.json`：Web 前端的仓库级 Prettier 格式规则；VS Code 与命令行格式化共用此文件。
 
 ## 桌面应用
 
@@ -100,7 +102,7 @@ src\WuGesture.App\GestureEngine
 - `EdgeActionService.cs`：轮询真实光标位置并监听滚轮，负责暂停/排除/全屏门控、触发顺序、动作筛选和 UI 线程调度；任意鼠标键按住时会立即跳过排除和全屏判断，避免与手势首帧竞争 UI 线程；摩擦边会排除角落区域，按沿边方向的反向位移计数并在触发后防重复，滚轮边命中时会吞掉原始滚轮事件。
 - `EdgeHitTester.cs`：集中四角、普通边缘和摩擦边的屏幕几何命中计算，并提供到边距离计算；保留屏幕遍历和边界优先级。
 - `FrictionTracker.cs`：维护单次摩擦边的位移方向、计数、触发后冷却和超时重置状态。
-- `EdgeActionConfigNormalizer.cs`：将边缘动作配置规范为运行时所需形态，并迁移旧版摩擦边角落位置。
+- `EdgeActionConfigNormalizer.cs`：将当前版本的边缘动作配置规范为运行时所需形态。
 - `EdgeActionFormatting.cs` 和 `EdgeLocation.cs`：分别提供边缘动作失败名称格式化及运行时边缘位置模型/配置位置映射。
 - `ForegroundWindowFullscreenDetector.cs`：判断当前前台窗口是否处于无边框全屏，供手势和边缘操作的全屏禁用设置共用。
 - `GestureRecognizer.cs`：把鼠标轨迹转换为稳定的方向模式；识别前按有效移动距离抽样，单笔手势保留 8 方向，多笔手势默认回退到更宽容的横/竖方向以贴近 WGestures 手感。
@@ -166,8 +168,8 @@ MouseHook
 
 - `GestureConfig.cs`：JSON DTO。
 - `GestureConfigContract.cs`：配置和运行时共享的字符串契约常量，包括 scope、鼠标按键、动作类型、操作名、边缘触发类型/位置、滚轮方向和关闭按钮行为。
-- `GestureConfigStore.cs`：加载、保存、重置默认配置，并处理本地/WebDAV 配置的 JSON 读写与 `LoadedGestureConfig` 组装。
-- `GestureConfigNormalizer.cs`：集中配置 schema 的空值补全、旧字段迁移、UI 设置范围校验和排除项规范化；后端仍是配置校验的最终权威。
+- `GestureConfigStore.cs`：加载、保存、重置默认配置，并处理本地/WebDAV 配置的 JSON 读写与 `LoadedGestureConfig` 组装；本地配置缺少当前版本标记或损坏时会先备份再重置，导入/WebDAV 恢复遇到不支持版本时会拒绝覆盖。
+- `GestureConfigNormalizer.cs`：集中当前配置 schema 的空值补全、UI 设置范围校验和排除项规范化；后端仍是配置校验的最终权威。
 - `ApplicationIdentityNormalizer.cs`：集中可执行文件名/进程名的规范化，供配置、排除项和应用分类匹配复用。
 - `ConfigStorageContract.cs`：配置文件名和窗口状态文件名常量。
 - `GestureConfigMapper.cs`：把配置 DTO 映射为运行时 `GestureRule`。
@@ -180,6 +182,7 @@ MouseHook
 
 当前支持的配置：
 
+- `schemaVersion`：当前值为 `1`；本地配置缺少版本、版本过旧或 JSON 损坏时会备份原文件并重置默认配置，未来版本配置不会被当前版本覆盖。
 - `scope`：支持 `global`、`category:<分类名>`、`app:<进程名>`；运行时优先匹配 app，其次按程序分类关联顺序匹配 category（越靠前优先级越高），最后匹配 global。
 - `mouseButton`：支持 `right`、`middle`，运行时会按当前触发的鼠标键区分规则。
 - `pattern`：手势方向列表，例如 `["Down", "Right"]`。
@@ -189,11 +192,11 @@ MouseHook
 - `action.operation`：音量控制在 `action.type` 为 `volume` 时支持 `increase`、`decrease`、`mute`；亮度控制在 `action.type` 为 `brightness` 时支持 `increase`、`decrease`。
 - `action.amount`：音量/亮度的 `increase`、`decrease` 步进值，范围 1-100。
 - `edgeActions`：独立的全局边缘操作列表；每项包含 `enabled`、`triggerType`、`location`、`wheelDirection`、`frictionCount` 和 `action`。`triggerType` 支持 `corner`、`friction`、`wheel`；`corner` 的位置为四角，`friction/wheel` 的位置为四边，`wheel` 额外区分滚轮 `up/down`。边缘操作名称不再保存，由 UI 和运行时根据触发类型、位置与滚轮方向生成。
-- `applications`：应用程序归属列表，每项包含 `name`、`displayName`、`path`、`categories`；`categories` 是有序分类列表，运行时通过前台进程名匹配 `name`，分类同手势时越靠前优先级越高。旧配置的单个 `category` 会在加载时迁移；`displayName` 只用于 UI 展示和编辑。
-- `uiSettings.mouseTrail`：轨迹窗设置，包含 `enabled`、`inactiveColor`、`activeColor`、`inactiveThickness`、`activeThickness`、`thickness`、`inactiveOpacity`、`activeOpacity`；`enabled` 关闭时不再绘制轨迹线，`thickness` 保留用于兼容旧配置。
+- `applications`：应用程序归属列表，每项包含 `name`、`displayName`、`path`、`categories`；`categories` 是有序分类列表，运行时通过前台进程名匹配 `name`，分类同手势时越靠前优先级越高；`displayName` 只用于 UI 展示和编辑。
+- `uiSettings.mouseTrail`：轨迹窗设置，包含 `enabled`、`inactiveColor`、`activeColor`、`inactiveThickness`、`activeThickness`、`inactiveOpacity`、`activeOpacity`；`enabled` 关闭时不再绘制轨迹线。
 - `uiSettings.appearance`：配置界面外观设置，包含 `theme`；支持 `system`、`light`、`dark`，默认 `system` 跟随 Windows 主题，用户点击侧栏底部的主题按钮后保存明确的浅色或深色偏好。
 - `uiSettings.sidebar`：配置界面侧栏状态，包含 `collapsed`，默认 `false`；用户收起或展开侧栏后立即保存，配置窗口和 WebView2 重建后恢复该状态。
-- `uiSettings.gestureHint`：提示泡泡设置，包含 `enabled`、`displayDurationMs`、`fadeDurationMs`、`fontFamily`、`fontSize`、`textColor`、`backgroundColor`、`backgroundOpacity`、`width`、`widthPercent`、`autoWidth`、`height`、`heightPercent`、`cornerRadius`、`bottomOffset`、`bottomOffsetPercent`；提示绘制在全虚拟桌面轨迹覆盖层而非独立窗体，`enabled` 关闭时不再显示手势命中文本，`displayDurationMs` 为停留时长、`fadeDurationMs` 为 0 时立即消失，百分比字段按当前鼠标屏幕工作区宽高换算，像素字段保留用于兼容旧配置。
+- `uiSettings.gestureHint`：提示泡泡设置，包含 `enabled`、`displayDurationMs`、`fadeDurationMs`、`fontFamily`、`fontSize`、`textColor`、`backgroundColor`、`backgroundOpacity`、`widthPercent`、`autoWidth`、`heightPercent`、`cornerRadius`、`bottomOffsetPercent`；提示绘制在全虚拟桌面轨迹覆盖层而非独立窗体，`enabled` 关闭时不再显示手势命中文本，`displayDurationMs` 为停留时长、`fadeDurationMs` 为 0 时立即消失，百分比字段按当前鼠标屏幕工作区宽高换算。
 - `uiSettings.levelOsd`：音量/亮度 OSD 设置，包含 `enabled`、`displayDurationMs`、`fadeDurationMs`、`backgroundColor`、`backgroundOpacity`、`textColor`、`trackColor`、`volumeColor`、`brightnessColor`、`width`、`height`、`cornerRadius`、`position`、`offsetX` 和 `offsetY`；OSD 由全虚拟桌面透明覆盖层绘制，不再创建独立窗体；当前支持相对于鼠标所在屏幕工作区的居中、上/下居中和四角位置预设，`fadeDurationMs` 为 0 时立即消失。
 - `uiSettings.gestureSensitivity`：手势灵敏度配置，包含 `percent`，范围 0-200，默认 110；100 对应标准手感，数值越高越容易识别短距离手势。
 - `uiSettings.appBehavior`：应用行为设置，包含 `launchAtStartup`、`showConfigWindowOnLaunch`、`runAsAdministrator`、`gesturePaused`、`closeButtonBehavior`、`targetWindowMode`、`disableGesturesInFullscreen`、`disableEdgeActionsInFullscreen` 和 `excludedApplications`；`showConfigWindowOnLaunch` 默认开启，控制普通启动时是否显示配置窗口，关闭后仅后台驻留并可从托盘打开，开机自启动始终后台运行。关闭按钮行为支持 `minimize-to-tray`、`minimize-to-taskbar`、`exit`。`targetWindowMode` 支持默认的 `start-window` 和 `current-window`。全屏禁用开关默认关闭，分别停止手势识别和边缘操作。排除项包含 `name`、`displayName`、`path` 和 `disableEdgeActions`；命中的程序不执行鼠标手势，勾选 `disableEdgeActions` 时也会禁用边缘操作。
@@ -236,6 +239,7 @@ src\WuGesture.App\Web\PROJECT_STRUCTURE.md
 - `Web\src\components\BaseDialog.vue` 统一前端对话框的遮罩关闭、可选右上关闭按钮、默认操作区和关闭动画；自动保存或即时选择类弹层可复用外壳并关闭默认操作区。
 - `Web\src\components\BaseInput.vue` 和 `BaseRange.vue` 统一前端原生输入控件的 `v-model` 事件、宽度约束和滑块进度填充；页面继续保留各自的配置约束与保存时机。
 - 前端 `pnpm` 构建脚本通过 `src\WuGesture.App\Web\pnpm-workspace.yaml` 放行 `@parcel/watcher` 的本地构建脚本，避免非交互环境下的依赖安装中断。
+- 前端格式化使用 `pnpm format`，校验使用 `pnpm format:check`；两者均使用仓库根目录的 `.prettierrc.json`。
 - `WuGesture.App.csproj` 会在 `.NET` 构建前自动执行前端构建。
 - `WuGesture.App.csproj` 会在前端构建后把 `dist\web` 复制到宿主输出目录中的 `Web\dist`。
 - 桌面宿主通过 WebView2 虚拟主机 `https://gesture.wu.philosophy/` 加载宿主输出目录中的 `Web\dist`。
@@ -255,6 +259,9 @@ tests\WuGesture.App.Tests
 - `GestureRecognizer`：有效移动距离、单笔 8 方向、多笔首段归一化和灵敏度。
 - `GestureMatcher`：`app > category > global` 作用域优先级、分类关联顺序、鼠标按键和完整方向模式匹配。
 - `EdgeHitTester`：多屏坐标、边缘优先级、摩擦边角落排除和到边距离计算。
+- `AppLogWriter`：异步 JSONL 写入、轮转、保留和队列溢出标记。
+- `WebViewRulesPayloadFactory`：`rules` 消息的配置映射、应用图标和应用版本字段。
+- `GestureConfigStore`：当前配置保存、旧/损坏配置的备份重置、未来版本保护和旧导入拒绝。
 
 ## 构建与发布
 

@@ -14,7 +14,6 @@ internal static class EdgeActionConfigNormalizer
     {
         if (string.Equals(action.TriggerType, GestureConfigContract.EdgeTriggerTypes.Friction, StringComparison.OrdinalIgnoreCase))
         {
-            action.Location = MigrateLegacyFrictionLocation(action.Location);
             if (!IsEdgeLocation(action.Location))
             {
                 action.Location = GestureConfigContract.EdgeLocations.Left;
@@ -38,15 +37,4 @@ internal static class EdgeActionConfigNormalizer
             GestureConfigContract.EdgeLocations.Bottom;
     }
 
-    private static string MigrateLegacyFrictionLocation(string location)
-    {
-        return location.Trim().ToLowerInvariant() switch
-        {
-            GestureConfigContract.EdgeLocations.TopLeft => GestureConfigContract.EdgeLocations.Left,
-            GestureConfigContract.EdgeLocations.TopRight => GestureConfigContract.EdgeLocations.Top,
-            GestureConfigContract.EdgeLocations.BottomLeft => GestureConfigContract.EdgeLocations.Bottom,
-            GestureConfigContract.EdgeLocations.BottomRight => GestureConfigContract.EdgeLocations.Right,
-            _ => location
-        };
-    }
 }
