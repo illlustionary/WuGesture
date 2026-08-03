@@ -4,10 +4,7 @@ import ToggleCheckbox from '@/components/ToggleCheckbox.vue'
 import SettingsField from './SettingsField.vue'
 import SettingsFormGrid from './SettingsFormGrid.vue'
 import SettingsSectionCard from './SettingsSectionCard.vue'
-import {
-  CLOSE_BUTTON_BEHAVIOR_OPTIONS,
-  WINDOW_TARGET_MODE_OPTIONS
-} from '@/constants/gestureEditorOptions'
+import { CLOSE_BUTTON_BEHAVIOR_OPTIONS, WINDOW_TARGET_MODE_OPTIONS } from '@/constants/gestureEditorOptions'
 
 defineProps({
   draft: { type: Object, required: true }
@@ -22,13 +19,10 @@ function commit() {
   emit('queue-persist')
   emit('flush-persist')
 }
-
 </script>
 
 <template>
-  <SettingsSectionCard
-    title="应用行为"
-  >
+  <SettingsSectionCard title="应用行为">
     <SettingsFormGrid>
       <div class="app-behavior-settings__checks">
         <ToggleCheckbox

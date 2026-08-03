@@ -36,7 +36,7 @@ function update(event) {
     @input="update"
     @change="emit('change', $event)"
     @blur="emit('blur', $event)"
-  >
+  />
 </template>
 
 <style scoped lang="scss">

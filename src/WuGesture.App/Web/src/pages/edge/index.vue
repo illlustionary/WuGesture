@@ -5,33 +5,27 @@ import { useGestureEdgeActionsStore } from '@/gestureEditor/stores/useGestureEdg
 import EdgeActionDialog from '@/pages/edge/components/EdgeActionDialog.vue'
 import EdgeActionSection from '@/pages/edge/components/EdgeActionSection.vue'
 import { useEdgeActionDraft } from '@/pages/edge/composables/useEdgeActionDraft'
-import {
-  ACTION_TYPES,
-  EDGE_TRIGGER_TYPES,
-  OPERATIONS,
-  WHEEL_DIRECTIONS
-} from '@/constants/gestureEditorOptions'
+import { ACTION_TYPES, EDGE_TRIGGER_TYPES, OPERATIONS, WHEEL_DIRECTIONS } from '@/constants/gestureEditorOptions'
 
 const props = defineProps({
   section: { type: String, default: 'corner' }
 })
 
 const edgeActionsStore = useGestureEdgeActionsStore()
-const { draft, editingAction, openEditor, closeEditor } =
-  useEdgeActionDraft(edgeActionsStore)
+const { draft, editingAction, openEditor, closeEditor } = useEdgeActionDraft(edgeActionsStore)
 
 const groups = [
   {
     type: EDGE_TRIGGER_TYPES.corner,
-    title: '触发角',
+    title: '触发角'
   },
   {
     type: EDGE_TRIGGER_TYPES.friction,
-    title: '摩擦边',
+    title: '摩擦边'
   },
   {
     type: EDGE_TRIGGER_TYPES.wheel,
-    title: '边缘滚动',
+    title: '边缘滚动'
   }
 ]
 
@@ -49,12 +43,7 @@ const dialogTitle = computed(() => {
     return '边缘操作'
   }
 
-  return [
-    locationLabel(action),
-    wheelLabel(action) || triggerLabels[action.triggerType]
-  ]
-    .filter(Boolean)
-    .join(' · ')
+  return [locationLabel(action), wheelLabel(action) || triggerLabels[action.triggerType]].filter(Boolean).join(' · ')
 })
 
 function groupActions(type) {
@@ -66,10 +55,7 @@ function locationLabel(action) {
     action.triggerType === EDGE_TRIGGER_TYPES.corner
       ? edgeActionsStore.edgeLocations.corner
       : edgeActionsStore.edgeLocations.edge
-  return (
-    locations.find(item => item.value === action.location)?.label ??
-    action.location
-  )
+  return locations.find(item => item.value === action.location)?.label ?? action.location
 }
 
 function wheelLabel(action) {
@@ -106,25 +92,19 @@ function operationModel(action) {
 
 function actionSummary(action) {
   if (action.actionType === ACTION_TYPES.window) {
-    const operation = edgeActionsStore.windowOperations.find(
-      item => item.value === action.windowOperation
-    )
+    const operation = edgeActionsStore.windowOperations.find(item => item.value === action.windowOperation)
     return operation?.label ?? '窗口控制'
   }
 
   if (action.actionType === ACTION_TYPES.volume) {
-    const operation = edgeActionsStore.volumeOperations.find(
-      item => item.value === action.volumeOperation
-    )
+    const operation = edgeActionsStore.volumeOperations.find(item => item.value === action.volumeOperation)
     return action.volumeOperation === OPERATIONS.mute
       ? (operation?.label ?? '静音')
       : `${operation?.label ?? '音量 +'} ${action.amount}`
   }
 
   if (action.actionType === ACTION_TYPES.brightness) {
-    const operation = edgeActionsStore.brightnessOperations.find(
-      item => item.value === action.brightnessOperation
-    )
+    const operation = edgeActionsStore.brightnessOperations.find(item => item.value === action.brightnessOperation)
     return `${operation?.label ?? '亮度 +'} ${action.amount}`
   }
 

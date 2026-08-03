@@ -18,13 +18,7 @@
   "vetur.format.defaultFormatter.postcss": "prettier",
   "vetur.format.defaultFormatter.scss": "prettier",
   "vetur.format.defaultFormatter.ts": "prettier",
-  "prettier.arrowParens": "avoid",
-  "prettier.semi": false,
-  "prettier.jsxSingleQuote": true,
-  "prettier.singleQuote": true,
-  "prettier.printWidth": 120,
-  "prettier.trailingComma": "none",
+  "prettier.configPath": "${workspaceFolder}/.prettierrc.json",
   "prettier.resolveGlobalModules": true,
-  "prettier.singleAttributePerLine": true,
   "prettier.useEditorConfig": false
 }

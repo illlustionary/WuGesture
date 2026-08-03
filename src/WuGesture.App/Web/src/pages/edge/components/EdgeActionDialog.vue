@@ -31,48 +31,47 @@ const actionTypeOptions = ACTION_TYPE_OPTIONS
     panel-class="edge-dialog"
     @close="emit('close')"
   >
-
-      <div class="edge-dialog__grid">
-        <div class="edge-field edge-dialog__enabled">
-          <span>是否启用</span>
-          <ToggleCheckbox
-            v-model="draft.enabled"
-            label="启用"
-          />
-        </div>
-
-        <label
-          v-if="draft.triggerType === EDGE_TRIGGER_TYPES.friction"
-          class="edge-field"
-        >
-          <span>摩擦次数</span>
-          <input
-            v-model.number="draft.frictionCount"
-            class="scope-input"
-            type="number"
-            :min="GESTURE_EDITOR_LIMITS.frictionCount.min"
-            :max="GESTURE_EDITOR_LIMITS.frictionCount.max"
-          />
-        </label>
-
-        <label class="edge-field">
-          <span>命令类型</span>
-          <CustomSelect
-            v-model="draft.actionType"
-            :options="actionTypeOptions"
-            placeholder="选择命令类型"
-          />
-        </label>
+    <div class="edge-dialog__grid">
+      <div class="edge-field edge-dialog__enabled">
+        <span>是否启用</span>
+        <ToggleCheckbox
+          v-model="draft.enabled"
+          label="启用"
+        />
       </div>
 
-      <EdgeActionCommandFields
-        :draft="draft"
-        :is-recording-hotkey="isRecordingHotkey"
-        :operation-options="operationOptions"
-        :operation-model="operationModel"
-        @record-hotkey="emit('record-hotkey')"
-        @update-operation="emit('update-operation', $event)"
-      />
+      <label
+        v-if="draft.triggerType === EDGE_TRIGGER_TYPES.friction"
+        class="edge-field"
+      >
+        <span>摩擦次数</span>
+        <input
+          v-model.number="draft.frictionCount"
+          class="scope-input"
+          type="number"
+          :min="GESTURE_EDITOR_LIMITS.frictionCount.min"
+          :max="GESTURE_EDITOR_LIMITS.frictionCount.max"
+        />
+      </label>
+
+      <label class="edge-field">
+        <span>命令类型</span>
+        <CustomSelect
+          v-model="draft.actionType"
+          :options="actionTypeOptions"
+          placeholder="选择命令类型"
+        />
+      </label>
+    </div>
+
+    <EdgeActionCommandFields
+      :draft="draft"
+      :is-recording-hotkey="isRecordingHotkey"
+      :operation-options="operationOptions"
+      :operation-model="operationModel"
+      @record-hotkey="emit('record-hotkey')"
+      @update-operation="emit('update-operation', $event)"
+    />
   </BaseDialog>
 </template>
 

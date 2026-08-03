@@ -7,55 +7,54 @@ import {
   SCOPE_KINDS,
   WINDOW_TARGET_MODES,
   WHEEL_DIRECTIONS
-} from "./gestureEditorOptions";
+} from './gestureEditorOptions'
 
 export const DEFAULT_RULES = [
   {
     scope: SCOPE_KINDS.global,
-    pattern: ["Left"],
-    actionName: "Back",
+    pattern: ['Left'],
+    actionName: 'Back',
     actionType: ACTION_TYPES.hotkey,
-    keys: ["Alt", "Left"]
+    keys: ['Alt', 'Left']
   },
   {
     scope: SCOPE_KINDS.global,
-    pattern: ["Right"],
-    actionName: "Forward",
+    pattern: ['Right'],
+    actionName: 'Forward',
     actionType: ACTION_TYPES.hotkey,
-    keys: ["Alt", "Right"]
+    keys: ['Alt', 'Right']
   },
   {
     scope: SCOPE_KINDS.global,
-    pattern: ["Down", "Right"],
-    actionName: "Close Tab",
+    pattern: ['Down', 'Right'],
+    actionName: 'Close Tab',
     actionType: ACTION_TYPES.hotkey,
-    keys: ["Control", "W"]
+    keys: ['Control', 'W']
   }
-];
+]
 
 export const DEFAULT_APPLICATIONS = [
-  { name: "msedge", displayName: "Microsoft Edge", path: "", categories: ["浏览器"], icon: "" },
-  { name: "chrome", displayName: "Google Chrome", path: "", categories: ["浏览器"], icon: "" }
-];
+  { name: 'msedge', displayName: 'Microsoft Edge', path: '', categories: ['浏览器'], icon: '' },
+  { name: 'chrome', displayName: 'Google Chrome', path: '', categories: ['浏览器'], icon: '' }
+]
 
 export const DEFAULT_UI_SETTINGS = {
   appearance: {
-    theme: "system",
-    lightTitleBarColor: "#FFFFFF",
-    lightTitleBarTextColor: "#16202B",
-    darkTitleBarColor: "#1B222B",
-    darkTitleBarTextColor: "#EDF2F7"
+    theme: 'system',
+    lightTitleBarColor: '#FFFFFF',
+    lightTitleBarTextColor: '#16202B',
+    darkTitleBarColor: '#1B222B',
+    darkTitleBarTextColor: '#EDF2F7'
   },
   sidebar: {
     collapsed: false
   },
   mouseTrail: {
     enabled: true,
-    inactiveColor: "#AAAAAA",
-    activeColor: "#87CEEB",
+    inactiveColor: '#AAAAAA',
+    activeColor: '#87CEEB',
     inactiveThickness: 3,
     activeThickness: 3,
-    thickness: 3,
     inactiveOpacity: 74,
     activeOpacity: 100
   },
@@ -63,34 +62,31 @@ export const DEFAULT_UI_SETTINGS = {
     enabled: true,
     displayDurationMs: 1800,
     fadeDurationMs: 240,
-    fontFamily: "Segoe UI Semibold",
+    fontFamily: 'Segoe UI Semibold',
     fontSize: 22,
-    textColor: "#FFFFFF",
-    backgroundColor: "#12181F",
+    textColor: '#FFFFFF',
+    backgroundColor: '#12181F',
     backgroundOpacity: 90,
-    width: 540,
     widthPercent: 28,
     autoWidth: true,
-    height: 120,
     heightPercent: 11,
     cornerRadius: 28,
-    bottomOffset: 140,
     bottomOffsetPercent: 13
   },
   levelOsd: {
     enabled: true,
     displayDurationMs: 1800,
     fadeDurationMs: 240,
-    backgroundColor: "#28282C",
+    backgroundColor: '#28282C',
     backgroundOpacity: 88,
-    textColor: "#DCDCDC",
-    trackColor: "#464646",
-    volumeColor: "#64C8FF",
-    brightnessColor: "#FFC828",
+    textColor: '#DCDCDC',
+    trackColor: '#464646',
+    volumeColor: '#64C8FF',
+    brightnessColor: '#FFC828',
     width: 210,
     height: 190,
     cornerRadius: 22,
-    position: "center",
+    position: 'center',
     offsetX: 0,
     offsetY: 0
   },
@@ -108,37 +104,37 @@ export const DEFAULT_UI_SETTINGS = {
     excludedApplications: []
   },
   webDav: {
-    address: "",
-    userName: "",
-    password: "",
-    remotePath: ""
+    address: '',
+    userName: '',
+    password: '',
+    remotePath: ''
   }
-};
+}
 
 export const DEFAULT_EDGE_ACTIONS = [
-  createDefaultEdgeAction(EDGE_TRIGGER_TYPES.corner, "top-left"),
-  createDefaultEdgeAction(EDGE_TRIGGER_TYPES.corner, "top-right"),
-  createDefaultEdgeAction(EDGE_TRIGGER_TYPES.corner, "bottom-left"),
-  createDefaultEdgeAction(EDGE_TRIGGER_TYPES.corner, "bottom-right"),
-  ...EDGE_LOCATIONS.edge.map((edge) => createDefaultEdgeAction(EDGE_TRIGGER_TYPES.friction, edge.value)),
-  ...EDGE_LOCATIONS.edge.flatMap((edge) => [
+  createDefaultEdgeAction(EDGE_TRIGGER_TYPES.corner, 'top-left'),
+  createDefaultEdgeAction(EDGE_TRIGGER_TYPES.corner, 'top-right'),
+  createDefaultEdgeAction(EDGE_TRIGGER_TYPES.corner, 'bottom-left'),
+  createDefaultEdgeAction(EDGE_TRIGGER_TYPES.corner, 'bottom-right'),
+  ...EDGE_LOCATIONS.edge.map(edge => createDefaultEdgeAction(EDGE_TRIGGER_TYPES.friction, edge.value)),
+  ...EDGE_LOCATIONS.edge.flatMap(edge => [
     createDefaultEdgeAction(EDGE_TRIGGER_TYPES.wheel, edge.value, WHEEL_DIRECTIONS.up),
     createDefaultEdgeAction(EDGE_TRIGGER_TYPES.wheel, edge.value, WHEEL_DIRECTIONS.down)
   ])
-];
+]
 
-export function createDefaultEdgeAction(triggerType, location, wheelDirection = "") {
+export function createDefaultEdgeAction(triggerType, location, wheelDirection = '') {
   return {
     enabled: false,
     triggerType,
     location,
     wheelDirection,
     frictionCount: 4,
-    keysText: "",
+    keysText: '',
     actionType: ACTION_TYPES.hotkey,
     windowOperation: OPERATIONS.toggleMaximize,
     volumeOperation: OPERATIONS.increase,
     brightnessOperation: OPERATIONS.increase,
     amount: 5
-  };
+  }
 }

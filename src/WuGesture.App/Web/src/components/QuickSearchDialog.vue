@@ -80,7 +80,11 @@ function handleKeydown(event) {
     @keydown="handleKeydown"
   >
     <div class="quick-search-dialog__field">
-      <AppIcon name="search" class="quick-search-dialog__search-icon" aria-hidden="true" />
+      <AppIcon
+        name="search"
+        class="quick-search-dialog__search-icon"
+        aria-hidden="true"
+      />
       <input
         ref="input"
         v-model="query"
@@ -92,7 +96,11 @@ function handleKeydown(event) {
     </div>
     <div class="quick-search-dialog__results">
       <template v-if="groupedItems.length">
-        <section v-for="group in groupedItems" :key="group.name" class="quick-search-group">
+        <section
+          v-for="group in groupedItems"
+          :key="group.name"
+          class="quick-search-group"
+        >
           <h3>{{ group.name }}</h3>
           <button
             v-for="item in group.items"
@@ -106,7 +114,12 @@ function handleKeydown(event) {
           </button>
         </section>
       </template>
-      <p v-else class="quick-search-dialog__empty">没有匹配的配置。</p>
+      <p
+        v-else
+        class="quick-search-dialog__empty"
+      >
+        没有匹配的配置。
+      </p>
     </div>
   </BaseDialog>
 </template>

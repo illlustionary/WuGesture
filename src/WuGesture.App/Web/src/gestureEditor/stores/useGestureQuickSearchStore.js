@@ -7,16 +7,14 @@ export function useGestureQuickSearchStore() {
   const editor = useGestureEditorContext()
 
   const searchItems = computed(() => {
-    const rules = editor.state.rules.map((rule) => ({
+    const rules = editor.state.rules.map(rule => ({
       id: `rule:${rule.id}`,
       type: 'rule',
       group: '手势规则',
       title: rule.actionName || getActionLabel(rule),
-      detail: [
-        getScopeLabel(rule.scopeKind, rule.scopeName),
-        getGestureMnemonic(rule),
-        getActionLabel(rule)
-      ].filter(Boolean).join(' · '),
+      detail: [getScopeLabel(rule.scopeKind, rule.scopeName), getGestureMnemonic(rule), getActionLabel(rule)]
+        .filter(Boolean)
+        .join(' · '),
       searchText: [
         rule.actionName,
         rule.patternText,
@@ -29,7 +27,7 @@ export function useGestureQuickSearchStore() {
       scopeKind: rule.scopeKind,
       scopeName: rule.scopeName
     }))
-    const categories = editor.categoryItems.map((item) => ({
+    const categories = editor.categoryItems.map(item => ({
       id: `category:${item.name}`,
       type: 'category',
       group: '分类',
@@ -38,7 +36,7 @@ export function useGestureQuickSearchStore() {
       searchText: item.name,
       target: item.name
     }))
-    const applications = editor.state.applications.map((application) => ({
+    const applications = editor.state.applications.map(application => ({
       id: `app:${application.name}`,
       type: 'app',
       group: '程序',

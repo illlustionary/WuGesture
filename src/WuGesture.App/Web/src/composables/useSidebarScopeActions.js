@@ -10,10 +10,7 @@ export function useSidebarScopeActions({ editor, route }) {
   const application = useAppPage(editor, { activate: false })
 
   watch(
-    () => [
-      editor.getSelectedName('app'),
-      editor.appItems.map(item => item.name).join('\u0000')
-    ],
+    () => [editor.getSelectedName('app'), editor.appItems.map(item => item.name).join('\u0000')],
     ([selectedApp]) => {
       if (!pendingAppRoute.value || !selectedApp) {
         return

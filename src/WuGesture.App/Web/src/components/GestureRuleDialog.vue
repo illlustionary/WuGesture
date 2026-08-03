@@ -20,9 +20,7 @@ const props = defineProps({
 
 defineEmits(['close', 'persist', 'record', 'record-hotkey'])
 
-const patternLabel = computed(
-  () => props.getGestureMnemonic?.(props.draft) || '尚未录制'
-)
+const patternLabel = computed(() => props.getGestureMnemonic?.(props.draft) || '尚未录制')
 
 const actionTypeOptions = ACTION_TYPE_OPTIONS
 </script>
@@ -39,143 +37,134 @@ const actionTypeOptions = ACTION_TYPE_OPTIONS
     panel-class="gesture-dialog"
     @close="$emit('close')"
   >
+    <div class="gesture-dialog__grid">
+      <label>
+        <span>名称</span>
+        <input
+          v-model.trim="draft.actionName"
+          class="scope-input"
+          placeholder="例如：关闭标签"
+          @blur="$emit('persist')"
+        />
+      </label>
 
-        <div class="gesture-dialog__grid">
-          <label>
-            <span>名称</span>
-            <input
-              v-model.trim="draft.actionName"
-              class="scope-input"
-              placeholder="例如：关闭标签"
-              @blur="$emit('persist')"
-            />
-          </label>
+      <label>
+        <span>命令类型</span>
+        <CustomSelect
+          v-model="draft.actionType"
+          :options="actionTypeOptions"
+          placeholder="选择命令类型"
+          @change="$emit('persist')"
+        />
+      </label>
+    </div>
 
-          <label>
-            <span>命令类型</span>
-            <CustomSelect
-              v-model="draft.actionType"
-              :options="actionTypeOptions"
-              placeholder="选择命令类型"
-              @change="$emit('persist')"
-            />
-          </label>
-        </div>
+    <div class="gesture-dialog__command">
+      <label v-if="draft.actionType === ACTION_TYPES.window">
+        <span>操作</span>
+        <CustomSelect
+          v-model="draft.windowOperation"
+          :options="windowOperations"
+          placeholder="选择窗口操作"
+          @change="$emit('persist')"
+        />
+      </label>
 
-        <div class="gesture-dialog__command">
-          <label v-if="draft.actionType === ACTION_TYPES.window">
-            <span>操作</span>
-            <CustomSelect
-              v-model="draft.windowOperation"
-              :options="windowOperations"
-              placeholder="选择窗口操作"
-              @change="$emit('persist')"
-            />
-          </label>
+      <template v-else-if="draft.actionType === ACTION_TYPES.volume">
+        <label>
+          <span>操作</span>
+          <CustomSelect
+            v-model="draft.volumeOperation"
+            :options="volumeOperations"
+            placeholder="选择音量操作"
+            @change="$emit('persist')"
+          />
+        </label>
+        <label v-if="draft.volumeOperation !== OPERATIONS.mute">
+          <span>数值</span>
+          <input
+            v-model.number="draft.amount"
+            class="scope-input"
+            type="number"
+            :min="GESTURE_EDITOR_LIMITS.amount.min"
+            :max="GESTURE_EDITOR_LIMITS.amount.max"
+            @blur="$emit('persist')"
+          />
+        </label>
+      </template>
 
-          <template v-else-if="draft.actionType === ACTION_TYPES.volume">
-            <label>
-              <span>操作</span>
-              <CustomSelect
-                v-model="draft.volumeOperation"
-                :options="volumeOperations"
-                placeholder="选择音量操作"
-                @change="$emit('persist')"
-              />
-            </label>
-            <label v-if="draft.volumeOperation !== OPERATIONS.mute">
-              <span>数值</span>
-              <input
-                v-model.number="draft.amount"
-                class="scope-input"
-                type="number"
-                :min="GESTURE_EDITOR_LIMITS.amount.min"
-                :max="GESTURE_EDITOR_LIMITS.amount.max"
-                @blur="$emit('persist')"
-              />
-            </label>
-          </template>
+      <template v-else-if="draft.actionType === ACTION_TYPES.brightness">
+        <label>
+          <span>操作</span>
+          <CustomSelect
+            v-model="draft.brightnessOperation"
+            :options="brightnessOperations"
+            placeholder="选择亮度操作"
+            @change="$emit('persist')"
+          />
+        </label>
+        <label>
+          <span>数值</span>
+          <input
+            v-model.number="draft.amount"
+            class="scope-input"
+            type="number"
+            :min="GESTURE_EDITOR_LIMITS.amount.min"
+            :max="GESTURE_EDITOR_LIMITS.amount.max"
+            @blur="$emit('persist')"
+          />
+        </label>
+      </template>
 
-          <template v-else-if="draft.actionType === ACTION_TYPES.brightness">
-            <label>
-              <span>操作</span>
-              <CustomSelect
-                v-model="draft.brightnessOperation"
-                :options="brightnessOperations"
-                placeholder="选择亮度操作"
-                @change="$emit('persist')"
-              />
-            </label>
-            <label>
-              <span>数值</span>
-              <input
-                v-model.number="draft.amount"
-                class="scope-input"
-                type="number"
-                :min="GESTURE_EDITOR_LIMITS.amount.min"
-                :max="GESTURE_EDITOR_LIMITS.amount.max"
-                @blur="$emit('persist')"
-              />
-            </label>
-          </template>
-
-          <label v-else>
-            <span>操作</span>
-            <button
-              type="button"
-              class="scope-input hotkey-record-button"
-              :class="{ 'is-recording': isRecordingHotkey?.(draft) }"
-              @click="$emit('record-hotkey', draft)"
-              @blur="$emit('persist')"
-            >
-              <AppIcon
-                name="keyboard"
-                class="hotkey-record-button__icon"
-                aria-hidden="true"
-              />
-              <span>
-                {{
-                  isRecordingHotkey?.(draft)
-                    ? '录制中...'
-                    : draft.keysText || '点击录制快捷键'
-                }}
-              </span>
-            </button>
-          </label>
-        </div>
-
+      <label v-else>
+        <span>操作</span>
         <button
           type="button"
-          class="gesture-recorder__trigger"
-          :class="{ 'is-recording': isRecordingGesture }"
-          @click="$emit('record')"
+          class="scope-input hotkey-record-button"
+          :class="{ 'is-recording': isRecordingHotkey?.(draft) }"
+          @click="$emit('record-hotkey', draft)"
+          @blur="$emit('persist')"
         >
           <AppIcon
-            name="record"
-            class="gesture-recorder__icon"
+            name="keyboard"
+            class="hotkey-record-button__icon"
             aria-hidden="true"
           />
-          <span class="gesture-recorder__text">
-            <strong>{{ isRecordingGesture ? '停止录制' : '开始录制' }}</strong>
-            <span>{{
-              isRecordingGesture
-                ? '再次点击停止录制。'
-                : '点击后立即开始录制，按住右键或中键绘制。'
-            }}</span>
+          <span>
+            {{ isRecordingHotkey?.(draft) ? '录制中...' : draft.keysText || '点击录制快捷键' }}
           </span>
         </button>
+      </label>
+    </div>
 
-        <div class="gesture-dialog__result">
-          <span>识别结果</span>
-          <strong>{{ patternLabel }}</strong>
-        </div>
+    <button
+      type="button"
+      class="gesture-recorder__trigger"
+      :class="{ 'is-recording': isRecordingGesture }"
+      @click="$emit('record')"
+    >
+      <AppIcon
+        name="record"
+        class="gesture-recorder__icon"
+        aria-hidden="true"
+      />
+      <span class="gesture-recorder__text">
+        <strong>{{ isRecordingGesture ? '停止录制' : '开始录制' }}</strong>
+        <span>{{ isRecordingGesture ? '再次点击停止录制。' : '点击后立即开始录制，按住右键或中键绘制。' }}</span>
+      </span>
+    </button>
 
-        <p
-          v-if="message"
-          class="gesture-dialog__message"
-        >
-          {{ message }}
-        </p>
+    <div class="gesture-dialog__result">
+      <span>识别结果</span>
+      <strong>{{ patternLabel }}</strong>
+    </div>
+
+    <p
+      v-if="message"
+      class="gesture-dialog__message"
+    >
+      {{ message }}
+    </p>
   </BaseDialog>
 </template>
 
@@ -315,11 +304,7 @@ const actionTypeOptions = ACTION_TYPE_OPTIONS
 
   &.is-recording {
     border-color: var(--danger-border);
-    background: linear-gradient(
-      180deg,
-      var(--recording-bg-start),
-      var(--recording-bg-end)
-    );
+    background: linear-gradient(180deg, var(--recording-bg-start), var(--recording-bg-end));
 
     strong {
       color: var(--recording-text);

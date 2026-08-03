@@ -810,6 +810,7 @@ public sealed partial class MainForm : Form
             var uiSettings = message?.UiSettings ?? loadedConfig?.Config.UiSettings ?? new GestureUiSettings();
             var config = new GestureConfig
             {
+                SchemaVersion = GestureConfigContract.Schema.CurrentVersion,
                 Rules = message?.Rules ?? [],
                 Applications = message?.Applications ?? [],
                 EdgeActions = message?.EdgeActions ?? [],
@@ -851,6 +852,7 @@ public sealed partial class MainForm : Form
             var uiSettings = message?.UiSettings ?? loadedConfig?.Config.UiSettings ?? new GestureUiSettings();
             var config = new GestureConfig
             {
+                SchemaVersion = GestureConfigContract.Schema.CurrentVersion,
                 Rules = message?.Rules ?? [],
                 Applications = message?.Applications ?? [],
                 EdgeActions = message?.EdgeActions ?? [],
@@ -902,6 +904,7 @@ public sealed partial class MainForm : Form
             var uiSettings = message?.UiSettings ?? loadedConfig?.Config.UiSettings ?? new GestureUiSettings();
             var config = new GestureConfig
             {
+                SchemaVersion = GestureConfigContract.Schema.CurrentVersion,
                 Rules = message?.Rules ?? [],
                 Applications = message?.Applications ?? [],
                 EdgeActions = message?.EdgeActions ?? [],

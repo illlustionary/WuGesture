@@ -90,7 +90,7 @@ const orderedCategories = computed({
                   class="category-order-item__button"
                   :disabled="index === 0"
                   aria-label="上移分类"
-                @click="editor.moveApplicationCategory(selectedName, category, 'up')"
+                  @click="editor.moveApplicationCategory(selectedName, category, 'up')"
                 >
                   上移
                 </button>
@@ -99,7 +99,7 @@ const orderedCategories = computed({
                   class="category-order-item__button"
                   :disabled="index === orderedCategories.length - 1"
                   aria-label="下移分类"
-                @click="editor.moveApplicationCategory(selectedName, category, 'down')"
+                  @click="editor.moveApplicationCategory(selectedName, category, 'down')"
                 >
                   下移
                 </button>

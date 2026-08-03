@@ -1,8 +1,5 @@
 import { SCOPE_KINDS } from '@/constants/gestureEditorOptions'
-import {
-  GESTURE_EDITOR_EVENTS,
-  emitGestureEditorEvent
-} from '@/gestureEditor/events/gestureEditorEventBus'
+import { GESTURE_EDITOR_EVENTS, emitGestureEditorEvent } from '@/gestureEditor/events/gestureEditorEventBus'
 
 export function useGestureEditorNavigation() {
   function getRouteGroup(path = '') {
@@ -41,15 +38,11 @@ function navigate(route, { replace = false } = {}) {
 
 function getScopeRoute(scopeKind, scopeName) {
   if (scopeKind === SCOPE_KINDS.category) {
-    return scopeName
-      ? { name: 'category-scope', params: { name: scopeName } }
-      : { name: 'category-overview' }
+    return scopeName ? { name: 'category-scope', params: { name: scopeName } } : { name: 'category-overview' }
   }
 
   if (scopeKind === SCOPE_KINDS.app) {
-    return scopeName
-      ? { name: 'app-scope', params: { name: scopeName } }
-      : { name: 'app-overview' }
+    return scopeName ? { name: 'app-scope', params: { name: scopeName } } : { name: 'app-overview' }
   }
 
   return { name: 'global' }

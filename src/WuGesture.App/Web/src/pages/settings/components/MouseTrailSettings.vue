@@ -21,9 +21,7 @@ function commit() {
 </script>
 
 <template>
-  <SettingsSectionCard
-    title="轨迹线"
-  >
+  <SettingsSectionCard title="轨迹线">
     <div class="field-card">
       <ToggleCheckbox
         v-model="draft.mouseTrail.enabled"
@@ -38,15 +36,11 @@ function commit() {
       :style="previewStyle"
     >
       <div class="mouse-trail-preview__row">
-        <span class="mouse-trail-preview__key mouse-trail-preview__key--inactive">
-          未激活
-        </span>
+        <span class="mouse-trail-preview__key mouse-trail-preview__key--inactive"> 未激活 </span>
         <div class="mouse-trail-preview__path mouse-trail-preview__path--inactive" />
       </div>
       <div class="mouse-trail-preview__row">
-        <span class="mouse-trail-preview__key mouse-trail-preview__key--active">
-          激活
-        </span>
+        <span class="mouse-trail-preview__key mouse-trail-preview__key--active"> 激活 </span>
         <div class="mouse-trail-preview__path mouse-trail-preview__path--active" />
       </div>
     </div>

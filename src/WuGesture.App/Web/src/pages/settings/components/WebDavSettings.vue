@@ -71,7 +71,10 @@ const webDavTestState = computed(() => {
           @change="emit('flush-persist')"
         />
       </SettingsField>
-      <SettingsField label="路径" note="留空时使用 gestures.json。">
+      <SettingsField
+        label="路径"
+        note="留空时使用 gestures.json。"
+      >
         <BaseInput
           v-model.trim="draft.webDav.remotePath"
           type="text"

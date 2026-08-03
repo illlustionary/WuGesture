@@ -1,14 +1,10 @@
-import { computed, proxyRefs } from "vue";
-import {
-  BRIGHTNESS_OPERATIONS,
-  VOLUME_OPERATIONS,
-  WINDOW_OPERATIONS
-} from "@/constants/gestureEditorOptions";
-import { getGestureMnemonic } from "@/utils/gestureEditorFormatters";
-import { useGestureEditorContext } from "@/gestureEditor/context/gestureEditorContext";
+import { computed, proxyRefs } from 'vue'
+import { BRIGHTNESS_OPERATIONS, VOLUME_OPERATIONS, WINDOW_OPERATIONS } from '@/constants/gestureEditorOptions'
+import { getGestureMnemonic } from '@/utils/gestureEditorFormatters'
+import { useGestureEditorContext } from '@/gestureEditor/context/gestureEditorContext'
 
 export function useGestureEditorOverlayStore() {
-  const editor = useGestureEditorContext();
+  const editor = useGestureEditorContext()
 
   return proxyRefs({
     applicationPickerOpen: computed(() => editor.state.applicationPickerOpen),
@@ -30,5 +26,5 @@ export function useGestureEditorOverlayStore() {
     selectApplication: editor.selectApplication,
     startGestureRecording: editor.startGestureRecording,
     startRecording: editor.startRecording
-  });
+  })
 }
