@@ -14,6 +14,7 @@ public sealed class GestureService : IDisposable
         Middle
     }
 
+    private readonly object stateLock = new();
     private readonly MouseHook mouseHook = new();
     private readonly GestureRecognizer recognizer = new();
     private GestureMatcher matcher;
@@ -36,7 +37,7 @@ public sealed class GestureService : IDisposable
     private ActiveMouseButton suppressedReleaseButton = ActiveMouseButton.None;
     private long nextSessionId;
     private bool started;
-    private bool disposed;
+    private volatile bool disposed;
 
     private sealed record PendingAction(
         long SessionId,
@@ -80,146 +81,187 @@ public sealed class GestureService : IDisposable
 
     public void UpdateMatcher(GestureMatcher newMatcher)
     {
-        matcher = newMatcher;
+        lock (stateLock)
+        {
+            matcher = newMatcher;
+        }
     }
 
     public void ApplyGestureSensitivity(GestureSensitivityUiSettings settings)
     {
-        recognizer.ApplySensitivity(settings.Percent);
-        minimumGestureDistance = recognizer.MinimumGestureDistance;
+        lock (stateLock)
+        {
+            recognizer.ApplySensitivity(settings.Percent);
+            minimumGestureDistance = recognizer.MinimumGestureDistance;
+        }
     }
 
     public void UpdateExcludedApplications(IEnumerable<ExcludedApplicationConfig>? applications)
     {
-        exclusionMatcher.Update(applications);
-        if (session.IsTracking && recordingRequestId is null && IsGestureExcluded(activeGestureContext))
+        lock (stateLock)
         {
-            CancelTracking();
+            exclusionMatcher.Update(applications);
+            if (session.IsTracking && recordingRequestId is null && IsGestureExcluded(activeGestureContext))
+            {
+                CancelTracking();
+            }
         }
     }
 
     public void UpdateFullscreenBehavior(bool disableGestures)
     {
-        disableGesturesInFullscreen = disableGestures;
-        if (disableGesturesInFullscreen && ForegroundWindowFullscreenDetector.IsFullscreenForegroundWindow())
+        lock (stateLock)
         {
-            CancelTracking();
+            disableGesturesInFullscreen = disableGestures;
+            if (disableGesturesInFullscreen && ForegroundWindowFullscreenDetector.IsFullscreenForegroundWindow())
+            {
+                CancelTracking();
+            }
         }
     }
 
     public void UpdateTargetWindowMode(string? mode)
     {
-        targetWindowMode = mode == GestureConfigContract.WindowTargetModes.CurrentWindow
-            ? GestureConfigContract.WindowTargetModes.CurrentWindow
-            : GestureConfigContract.WindowTargetModes.StartWindow;
+        lock (stateLock)
+        {
+            targetWindowMode = mode == GestureConfigContract.WindowTargetModes.CurrentWindow
+                ? GestureConfigContract.WindowTargetModes.CurrentWindow
+                : GestureConfigContract.WindowTargetModes.StartWindow;
+        }
     }
 
     public void SetPaused(bool paused)
     {
-        if (disposed || isPaused == paused)
+        lock (stateLock)
         {
-            return;
-        }
+            if (disposed || isPaused == paused)
+            {
+                return;
+            }
 
-        isPaused = paused;
-        if (!paused)
-        {
-            StopRecording();
-            return;
-        }
+            isPaused = paused;
+            if (!paused)
+            {
+                StopRecording();
+                return;
+            }
 
-        CancelTracking();
+            CancelTracking();
+        }
     }
 
     public void StartRecording(string requestId)
     {
-        if (disposed)
+        lock (stateLock)
         {
-            return;
-        }
+            if (disposed)
+            {
+                return;
+            }
 
-        var trimmed = requestId.Trim();
-        if (trimmed.Length == 0)
-        {
-            return;
-        }
+            var trimmed = requestId.Trim();
+            if (trimmed.Length == 0)
+            {
+                return;
+            }
 
-        CancelTracking();
-        recordingRequestId = trimmed;
-        ClearPreviewMatch();
+            CancelTracking();
+            recordingRequestId = trimmed;
+            ClearPreviewMatch();
+        }
     }
 
     public void StopRecording()
     {
-        if (recordingRequestId is null)
+        lock (stateLock)
         {
-            return;
-        }
+            if (recordingRequestId is null)
+            {
+                return;
+            }
 
-        recordingRequestId = null;
-        if (session.IsTracking)
-        {
-            CancelTracking();
-            return;
-        }
+            recordingRequestId = null;
+            if (session.IsTracking)
+            {
+                CancelTracking();
+                return;
+            }
 
-        ClearPreviewMatch();
+            ClearPreviewMatch();
+        }
     }
 
     public void Start()
     {
-        if (disposed || started)
+        lock (stateLock)
         {
-            return;
-        }
+            if (disposed || started)
+            {
+                return;
+            }
 
-        synchronizationContext = SynchronizationContext.Current;
-        mouseHook.RightButtonDown += OnRightButtonDown;
-        mouseHook.MiddleButtonDown += OnMiddleButtonDown;
-        mouseHook.MouseMove += OnMouseMove;
-        mouseHook.RightButtonUp += OnRightButtonUp;
-        mouseHook.MiddleButtonUp += OnMiddleButtonUp;
-        mouseHook.Start();
-        GestureStartDiagnostics.ReportServiceStarted();
-        started = true;
+            synchronizationContext = SynchronizationContext.Current;
+            mouseHook.RightButtonDown += OnRightButtonDown;
+            mouseHook.MiddleButtonDown += OnMiddleButtonDown;
+            mouseHook.MouseMove += OnMouseMove;
+            mouseHook.RightButtonUp += OnRightButtonUp;
+            mouseHook.MiddleButtonUp += OnMiddleButtonUp;
+            mouseHook.Start();
+            GestureStartDiagnostics.ReportServiceStarted();
+            started = true;
+        }
     }
 
     public void Stop()
     {
-        if (!started)
+        lock (stateLock)
         {
-            return;
+            if (!started)
+            {
+                return;
+            }
+
+            CancelTracking();
+            mouseHook.RightButtonDown -= OnRightButtonDown;
+            mouseHook.MiddleButtonDown -= OnMiddleButtonDown;
+            mouseHook.MouseMove -= OnMouseMove;
+            mouseHook.RightButtonUp -= OnRightButtonUp;
+            mouseHook.MiddleButtonUp -= OnMiddleButtonUp;
+            started = false;
         }
 
-        CancelTracking();
-        mouseHook.RightButtonDown -= OnRightButtonDown;
-        mouseHook.MiddleButtonDown -= OnMiddleButtonDown;
-        mouseHook.MouseMove -= OnMouseMove;
-        mouseHook.RightButtonUp -= OnRightButtonUp;
-        mouseHook.MiddleButtonUp -= OnMiddleButtonUp;
         mouseHook.Dispose();
-        started = false;
     }
 
     public void Dispose()
     {
-        if (disposed)
+        lock (stateLock)
         {
-            return;
+            if (disposed)
+            {
+                return;
+            }
+
+            disposed = true;
         }
 
-        disposed = true;
         Stop();
     }
 
     private void OnRightButtonDown(object? sender, MouseHookEventArgs e)
     {
-        StartTracking(e, ActiveMouseButton.Right, swallowInput: true);
+        lock (stateLock)
+        {
+            StartTracking(e, ActiveMouseButton.Right, swallowInput: true);
+        }
     }
 
     private void OnMiddleButtonDown(object? sender, MouseHookEventArgs e)
     {
-        StartTracking(e, ActiveMouseButton.Middle, swallowInput: true);
+        lock (stateLock)
+        {
+            StartTracking(e, ActiveMouseButton.Middle, swallowInput: true);
+        }
     }
 
     private void StartTracking(MouseHookEventArgs e, ActiveMouseButton button, bool swallowInput)
@@ -307,50 +349,59 @@ public sealed class GestureService : IDisposable
 
     private void OnMouseMove(object? sender, MouseHookEventArgs e)
     {
-        if (disposed || !session.IsTracking)
+        lock (stateLock)
         {
-            return;
-        }
+            if (disposed || !session.IsTracking)
+            {
+                return;
+            }
 
-        if (recordingRequestId is null && IsDisabledInFullscreen())
-        {
-            CancelTracking();
-            return;
-        }
+            if (recordingRequestId is null && IsDisabledInFullscreen())
+            {
+                CancelTracking();
+                return;
+            }
 
-        var lastPoint = session.LastPoint;
-        if (Distance(lastPoint, e.Location) < GestureRuntimeDefaults.MinimumPointDistance)
-        {
-            return;
-        }
+            var lastPoint = session.LastPoint;
+            if (Distance(lastPoint, e.Location) < GestureRuntimeDefaults.MinimumPointDistance)
+            {
+                return;
+            }
 
-        var moveReceivedAt = Stopwatch.GetTimestamp();
-        session.Append(e.Location);
-        PublishProgress(moveReceivedAt);
+            var moveReceivedAt = Stopwatch.GetTimestamp();
+            session.Append(e.Location);
+            PublishProgress(moveReceivedAt);
+        }
     }
 
     private void OnRightButtonUp(object? sender, MouseHookEventArgs e)
     {
-        if (disposed || !session.IsTracking || activeMouseButton != ActiveMouseButton.Right)
+        lock (stateLock)
         {
-            SuppressAbandonedButtonUp(e, ActiveMouseButton.Right);
-            return;
-        }
+            if (disposed || !session.IsTracking || activeMouseButton != ActiveMouseButton.Right)
+            {
+                SuppressAbandonedButtonUp(e, ActiveMouseButton.Right);
+                return;
+            }
 
-        e.Handled = true;
-        FinishTracking(e.Location, ActiveMouseButton.Right);
+            e.Handled = true;
+            FinishTracking(e.Location, ActiveMouseButton.Right);
+        }
     }
 
     private void OnMiddleButtonUp(object? sender, MouseHookEventArgs e)
     {
-        if (disposed || !session.IsTracking || activeMouseButton != ActiveMouseButton.Middle)
+        lock (stateLock)
         {
-            SuppressAbandonedButtonUp(e, ActiveMouseButton.Middle);
-            return;
-        }
+            if (disposed || !session.IsTracking || activeMouseButton != ActiveMouseButton.Middle)
+            {
+                SuppressAbandonedButtonUp(e, ActiveMouseButton.Middle);
+                return;
+            }
 
-        e.Handled = true;
-        FinishTracking(e.Location, ActiveMouseButton.Middle);
+            e.Handled = true;
+            FinishTracking(e.Location, ActiveMouseButton.Middle);
+        }
     }
 
     private void CancelTracking()
