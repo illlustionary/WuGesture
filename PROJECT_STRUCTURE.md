@@ -93,7 +93,7 @@ src\WuGesture.App\GestureEngine
 
 关键文件：
 
-- `MouseHook.cs`：低级全局鼠标钩子。
+- `MouseHook.cs`：低级全局鼠标钩子；在独立的高优先级后台消息线程中安装和接收回调，服务层再按需要把 UI 工作投递回 WinForms 线程，避免前台窗口/WebView 消息阻塞全局输入 hook 链。
 - `KeyboardShortcutRecorder.cs`：低级键盘 hook，用于配置界面录制快捷键并吞掉录制期间的原生键盘事件。
 - `GestureService.cs`：接入右键和中键低级 hook，协调会话、识别器、匹配器和执行器，并向 UI 发送事件；跟踪中的轨迹进度只保留尚未处理的最新一帧，避免快速移动堆积 WinForms UI 队列，松键和最终识别事件仍按原顺序投递；命中手势会先完成提示，再将快捷键和窗口控制动作顺序投递到后台队列，避免动作执行阻塞桌面反馈；`start-window` 的目标前置和快捷键注入在同一个后台任务中完成，音量/亮度继续在原线程执行；也支持录制会话，把识别结果回传给前端。
 - `GestureStartDiagnostics.cs`：异步记录诊断启动标记、每次手势起始分段耗时、首条有效移动到轨迹首帧提交的分段耗时，以及命中规则后从松键到 UI 反馈和动作完成的分段耗时；日志位于 `%LocalAppData%\WuGesture\diagnostics\gesture-start-latency.log`，单文件达到 1MB 时保留上一份轮转日志，主日志写入失败时会把错误写入 `%TEMP%\WuGesture-gesture-diagnostics-error.log`。

@@ -6,6 +6,7 @@ namespace WuGesture.App.GestureEngine;
 
 public sealed class EdgeActionService : IDisposable
 {
+    private readonly object stateLock = new();
     private readonly MouseHook mouseHook = new();
     private readonly ActionExecutor actionExecutor = new();
     private readonly ApplicationExclusionMatcher exclusionMatcher = new();
@@ -18,7 +19,7 @@ public sealed class EdgeActionService : IDisposable
     private bool started;
     private bool paused;
     private bool disableEdgeActionsInFullscreen;
-    private bool disposed;
+    private volatile bool disposed;
 
     public EdgeActionService(IEnumerable<EdgeActionConfig> actions)
     {
@@ -29,36 +30,48 @@ public sealed class EdgeActionService : IDisposable
 
     public void UpdateActions(IEnumerable<EdgeActionConfig> nextActions)
     {
-        actions = EdgeActionConfigNormalizer.Normalize(nextActions);
-        frictionTracker.Reset();
+        lock (stateLock)
+        {
+            actions = EdgeActionConfigNormalizer.Normalize(nextActions);
+            frictionTracker.Reset();
+        }
     }
 
     public void UpdateExcludedApplications(IEnumerable<ExcludedApplicationConfig>? applications)
     {
-        exclusionMatcher.Update(applications);
-        if (exclusionMatcher.IsEdgeActionExcluded())
+        lock (stateLock)
         {
-            activeCorner = EdgeLocation.None;
-            activeFrictionEdge = EdgeLocation.None;
-            frictionTracker.Reset();
+            exclusionMatcher.Update(applications);
+            if (exclusionMatcher.IsEdgeActionExcluded())
+            {
+                activeCorner = EdgeLocation.None;
+                activeFrictionEdge = EdgeLocation.None;
+                frictionTracker.Reset();
+            }
         }
     }
 
     public void UpdateFullscreenBehavior(bool disableEdgeActions)
     {
-        disableEdgeActionsInFullscreen = disableEdgeActions;
-        if (IsDisabledInFullscreen())
+        lock (stateLock)
         {
-            ResetActiveState();
+            disableEdgeActionsInFullscreen = disableEdgeActions;
+            if (IsDisabledInFullscreen())
+            {
+                ResetActiveState();
+            }
         }
     }
 
     public void SetPaused(bool isPaused)
     {
-        paused = isPaused;
-        if (paused)
+        lock (stateLock)
         {
-            ResetActiveState();
+            paused = isPaused;
+            if (paused)
+            {
+                ResetActiveState();
+            }
         }
     }
 
@@ -105,7 +118,10 @@ public sealed class EdgeActionService : IDisposable
 
     private void OnMousePollTimerTick(object? sender, EventArgs e)
     {
-        HandleMouseLocation(Cursor.Position);
+        lock (stateLock)
+        {
+            HandleMouseLocation(Cursor.Position);
+        }
     }
 
     private void HandleMouseLocation(Point location)
@@ -194,29 +210,32 @@ public sealed class EdgeActionService : IDisposable
 
     private void OnMouseWheel(object? sender, MouseWheelHookEventArgs e)
     {
-        if (disposed || paused || exclusionMatcher.IsEdgeActionExcluded() || IsDisabledInFullscreen())
+        lock (stateLock)
         {
-            return;
-        }
+            if (disposed || paused || exclusionMatcher.IsEdgeActionExcluded() || IsDisabledInFullscreen())
+            {
+                return;
+            }
 
-        var edge = EdgeHitTester.GetEdge(e.Location);
-        if (edge == EdgeLocation.None)
-        {
-            return;
-        }
+            var edge = EdgeHitTester.GetEdge(e.Location);
+            if (edge == EdgeLocation.None)
+            {
+                return;
+            }
 
-        var wheelDirection = e.Delta > 0
-            ? GestureConfigContract.WheelDirections.Up
-            : GestureConfigContract.WheelDirections.Down;
-        var matched = GetActions(GestureConfigContract.EdgeTriggerTypes.Wheel, edge)
-            .FirstOrDefault(action => string.Equals(action.WheelDirection, wheelDirection, StringComparison.OrdinalIgnoreCase));
-        if (matched is null)
-        {
-            return;
-        }
+            var wheelDirection = e.Delta > 0
+                ? GestureConfigContract.WheelDirections.Up
+                : GestureConfigContract.WheelDirections.Down;
+            var matched = GetActions(GestureConfigContract.EdgeTriggerTypes.Wheel, edge)
+                .FirstOrDefault(action => string.Equals(action.WheelDirection, wheelDirection, StringComparison.OrdinalIgnoreCase));
+            if (matched is null)
+            {
+                return;
+            }
 
-        e.Handled = true;
-        Execute(matched);
+            e.Handled = true;
+            Execute(matched);
+        }
     }
 
     private void ExecuteFirst(string triggerType, EdgeLocation location)
