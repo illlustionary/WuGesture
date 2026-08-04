@@ -131,8 +131,8 @@ src\WuGesture.App\GestureEngine
 手势流水线：
 
 ```text
-MouseHook
--> GestureService
+MouseHook (high-priority hook callback: capture decision and event enqueue only)
+-> GestureService (dedicated high-priority parser thread)
 -> GestureRecognizer
 -> GestureMatcher
 -> ActionExecutor
@@ -153,7 +153,7 @@ MouseHook
 - `GestureService` 会读取应用行为里的排除项；`start-window` 在鼠标按下时按起始窗口判断排除项，`current-window` 则按当前前台窗口判断。命中排除项时不启动手势跟踪，也不吞掉原始鼠标输入。
 - 托盘暂停和配置界面左上角状态标识共用同一个临时用户暂停状态，配置界面录制暂停则是独立暂停来源；运行时按用户、配置和录制暂停合并后的状态控制 `GestureService` 和 `EdgeActionService`。
 - 快捷键录制由后端低级键盘 hook 完成；录制期间会阻止 `Win` 等系统级按键继续传递，松开所有按键后回传组合键。
-- 钩子回调必须保持快速；动作会切回 WinForms 消息线程执行。
+- 钩子回调必须保持快速：只做捕获决定、按键吞入状态和路径事件投递，不会等待手势解析、透明覆盖层或 WebView。`GestureService` 在独立的最高优先级解析线程中串行处理路径、规则和会话状态；轨迹、提示、OSD 与 WebView 通知仍通过异步 WinForms 消息投递，不等待返回。动作会切回 WinForms 消息线程或后台动作队列执行。
 - 动作执行失败会被捕获，并通过 `GestureActionFailed` 上报。
 
 ## 配置

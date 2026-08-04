@@ -3,7 +3,7 @@ namespace WuGesture.App.GestureEngine;
 public sealed class ConfiguredScopeContextProvider : IGestureScopeContextProvider
 {
     private readonly IGestureScopeContextProvider innerProvider;
-    private Dictionary<string, IReadOnlyList<string>> appCategories;
+    private volatile Dictionary<string, IReadOnlyList<string>> appCategories;
 
     public ConfiguredScopeContextProvider(
         IEnumerable<GestureApplicationConfig> applications,
