@@ -360,7 +360,6 @@ const {
   &.is-active {
     color: var(--accent-strong);
     font-weight: 700;
-    background: var(--accent-soft);
   }
 }
 .sidebar-child__icon {

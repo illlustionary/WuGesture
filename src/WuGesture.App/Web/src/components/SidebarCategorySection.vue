@@ -93,7 +93,7 @@ watch(
           <div
             v-for="item in filteredItems"
             :key="item.name"
-            class="sidebar-child"
+            class="sidebar-child sidebar-category-child"
             @dblclick.prevent="emit('open-rename', item)"
           >
             <RouterLink
