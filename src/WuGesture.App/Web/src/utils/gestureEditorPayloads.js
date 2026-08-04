@@ -50,6 +50,16 @@ export function toPayloadAction(rule) {
     }
   }
 
+  if (normalizeActionType(rule.actionType) === ACTION_TYPES.program) {
+    return {
+      type: ACTION_TYPES.program,
+      path: String(rule.programPath ?? '').trim(),
+      arguments: (Array.isArray(rule.programArguments) ? rule.programArguments : [])
+        .map(argument => String(argument ?? '').trim())
+        .filter(Boolean)
+    }
+  }
+
   return {
     type: ACTION_TYPES.hotkey,
     keys: parseKeys(rule.keysText)

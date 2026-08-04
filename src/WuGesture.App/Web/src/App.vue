@@ -122,10 +122,17 @@ function confirmResetSettings() {
 
     <BaseDialog
       :open="overlay.applicationPickerOpen"
-      :title="overlay.applicationPickerTarget === 'exclusion' ? '添加排除项' : '添加程序'"
+      :title="
+        overlay.applicationPickerTarget === 'exclusion'
+          ? '添加排除项'
+          : overlay.applicationPickerTarget === 'program'
+            ? '选择程序'
+            : '添加程序'
+      "
       title-id="application-picker-title"
       :show-close="true"
       :show-actions="false"
+      backdrop-class="application-picker-backdrop"
       @close="overlay.closeApplicationPicker()"
     >
       <div class="picker-options">
@@ -189,6 +196,8 @@ function confirmResetSettings() {
       @persist="overlay.persistGestureEditor"
       @record="overlay.startGestureRecording"
       @record-hotkey="overlay.startRecording"
+      @select-program="overlay.openProgramPicker"
+      @open-application-folder="overlay.openApplicationFolder"
     />
 
     <QuickSearchDialog
@@ -331,6 +340,10 @@ function confirmResetSettings() {
 .picker-options {
   display: grid;
   gap: 10px;
+}
+
+:deep(.application-picker-backdrop) {
+  z-index: 30;
 }
 
 .picker-option {

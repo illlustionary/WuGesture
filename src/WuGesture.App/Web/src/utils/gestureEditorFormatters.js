@@ -53,6 +53,10 @@ export function getActionLabel(rule) {
     return `亮度控制：${operation?.label ?? '亮度 +'} ${normalizeAmount(rule?.amount)}`
   }
 
+  if (actionType === ACTION_TYPES.program) {
+    return rule?.programName || '运行程序'
+  }
+
   return rule?.keysText || '点击设置'
 }
 

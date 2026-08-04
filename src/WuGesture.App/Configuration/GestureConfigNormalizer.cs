@@ -19,9 +19,24 @@ internal static class GestureConfigNormalizer
         config.UiSettings.AppBehavior ??= new AppBehaviorUiSettings();
         config.UiSettings.WebDav ??= new WebDavUiSettings();
         NormalizeApplications(config.Applications);
+        NormalizeRules(config.Rules);
         config.Categories = NormalizeCategories(config.Categories);
         NormalizeUiSettings(config.UiSettings);
         return config;
+    }
+
+    private static void NormalizeRules(IEnumerable<GestureRuleConfig> rules)
+    {
+        foreach (var rule in rules)
+        {
+            rule.Action ??= new GestureActionConfig();
+            rule.Action.Path = (rule.Action.Path ?? "").Trim();
+            rule.Action.Arguments ??= [];
+            rule.Action.Arguments = rule.Action.Arguments
+                .Select(argument => (argument ?? "").Trim())
+                .Where(argument => argument.Length > 0)
+                .ToList();
+        }
     }
 
     private static List<string> NormalizeCategories(IEnumerable<string>? categories)

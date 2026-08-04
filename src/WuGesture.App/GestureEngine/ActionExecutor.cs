@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
@@ -39,6 +40,9 @@ public sealed class ActionExecutor
                 break;
             case BrightnessControlAction brightness:
                 ExecuteBrightnessControl(brightness);
+                break;
+            case ProgramAction program:
+                ExecuteProgram(program);
                 break;
         }
     }
@@ -152,6 +156,35 @@ public sealed class ActionExecutor
     private static void ExecuteBrightnessControl(BrightnessControlAction action)
     {
         BrightnessAdjustmentQueue.Enqueue(action);
+    }
+
+    private static void ExecuteProgram(ProgramAction action)
+    {
+        var path = action.Path.Trim();
+        if (path.Length == 0)
+        {
+            return;
+        }
+
+        var startInfo = CreateProgramStartInfo(action);
+        _ = Process.Start(startInfo) ?? throw new InvalidOperationException("Failed to start program.");
+    }
+
+    internal static ProcessStartInfo CreateProgramStartInfo(ProgramAction action)
+    {
+        var path = action.Path.Trim();
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = path,
+            UseShellExecute = false,
+            WorkingDirectory = Path.GetDirectoryName(path) ?? ""
+        };
+        foreach (var argument in action.Arguments)
+        {
+            startInfo.ArgumentList.Add(argument);
+        }
+
+        return startInfo;
     }
 
     private static void ToggleTopMost(IntPtr targetWindow)

@@ -18,7 +18,8 @@ export const ACTION_TYPES = {
   hotkey: 'hotkey',
   window: 'window',
   volume: 'volume',
-  brightness: 'brightness'
+  brightness: 'brightness',
+  program: 'program'
 }
 
 export const OPERATIONS = {
@@ -65,6 +66,7 @@ export const LEVEL_OSD_POSITIONS = [
 
 export const WEBVIEW_MESSAGE_TYPES = {
   getStatus: 'get-status',
+  openApplicationFolder: 'open-application-folder',
   selectApplication: 'select-application',
   pickApplicationWindow: 'pick-application-window',
   startGestureRecording: 'start-gesture-recording',
@@ -139,7 +141,8 @@ export const ACTION_TYPE_OPTIONS = [
   { value: ACTION_TYPES.hotkey, label: '快捷键' },
   { value: ACTION_TYPES.window, label: '窗口控制' },
   { value: ACTION_TYPES.volume, label: '音量控制' },
-  { value: ACTION_TYPES.brightness, label: '亮度控制' }
+  { value: ACTION_TYPES.brightness, label: '亮度控制' },
+  { value: ACTION_TYPES.program, label: '运行程序' }
 ]
 
 export const CLOSE_BUTTON_BEHAVIOR_OPTIONS = [

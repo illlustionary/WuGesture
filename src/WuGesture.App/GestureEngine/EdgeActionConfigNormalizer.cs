@@ -12,6 +12,15 @@ internal static class EdgeActionConfigNormalizer
 
     private static EdgeActionConfig NormalizeAction(EdgeActionConfig action)
     {
+        action.Action ??= new GestureActionConfig();
+        if (string.Equals(action.Action.Type, GestureConfigContract.ActionTypes.Program, StringComparison.OrdinalIgnoreCase))
+        {
+            action.Action.Type = GestureConfigContract.ActionTypes.Hotkey;
+            action.Action.Keys = [];
+            action.Action.Path = "";
+            action.Action.Arguments = [];
+        }
+
         if (string.Equals(action.TriggerType, GestureConfigContract.EdgeTriggerTypes.Friction, StringComparison.OrdinalIgnoreCase))
         {
             if (!IsEdgeLocation(action.Location))

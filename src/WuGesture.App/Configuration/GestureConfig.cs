@@ -49,6 +49,10 @@ public sealed class GestureActionConfig
     public string Operation { get; set; } = "";
 
     public int Amount { get; set; } = 5;
+
+    public string Path { get; set; } = "";
+
+    public List<string> Arguments { get; set; } = [];
 }
 
 public sealed class EdgeActionConfig

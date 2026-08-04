@@ -25,7 +25,12 @@ export function toViewRule(rule, id) {
     windowOperation: normalizeWindowOperation(rule.operation),
     volumeOperation: normalizeVolumeOperation(rule.operation),
     brightnessOperation: normalizeBrightnessOperation(rule.operation),
-    amount: normalizeAmount(rule.amount)
+    amount: normalizeAmount(rule.amount),
+    programPath: String(rule.path ?? '').trim(),
+    programArguments: normalizeProgramArguments(rule.arguments),
+    programName: String(rule.programName ?? '').trim(),
+    programIcon: String(rule.programIcon ?? '').trim(),
+    programMissing: Boolean(rule.programMissing)
   }
 }
 
@@ -63,7 +68,12 @@ export function createRuleModel(scopeKind, scopeName, values = {}, id) {
     windowOperation: normalizeWindowOperation(values.windowOperation),
     volumeOperation: normalizeVolumeOperation(values.volumeOperation),
     brightnessOperation: normalizeBrightnessOperation(values.brightnessOperation),
-    amount: normalizeAmount(values.amount)
+    amount: normalizeAmount(values.amount),
+    programPath: String(values.programPath ?? '').trim(),
+    programArguments: normalizeProgramArguments(values.programArguments),
+    programName: String(values.programName ?? '').trim(),
+    programIcon: String(values.programIcon ?? '').trim(),
+    programMissing: Boolean(values.programMissing)
   }
 }
 
@@ -77,6 +87,15 @@ export function createEmptyGestureDraft() {
     windowOperation: OPERATIONS.toggleMaximize,
     volumeOperation: OPERATIONS.increase,
     brightnessOperation: OPERATIONS.increase,
-    amount: 5
+    amount: 5,
+    programPath: '',
+    programArguments: [],
+    programName: '',
+    programIcon: '',
+    programMissing: false
   }
+}
+
+function normalizeProgramArguments(argumentsList) {
+  return (Array.isArray(argumentsList) ? argumentsList : []).map(value => String(value ?? '').trim()).filter(Boolean)
 }

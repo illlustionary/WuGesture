@@ -118,6 +118,7 @@ const {
 } = persistenceActions
 
 let scopeActions
+let applicationPickerContext = null
 
 const applicationActions = useGestureApplications({
   state,
@@ -201,6 +202,7 @@ const {
   addRule,
   applyRecordedGesture,
   applyRecordedHotkey,
+  applySelectedProgram,
   closeGestureEditor,
   isRecordingHotkey,
   openAddRule,
@@ -217,15 +219,9 @@ const {
 
 const applicationPicker = useGestureEditorApplicationPicker({
   state,
-  addExcludedApplication,
   closeApplicationPickerState,
   createRequestId,
-  createRule,
-  ensureApplication,
-  getScopeItems,
   notifications,
-  scheduleSaveRules,
-  setSelectedName,
   webView
 })
 
@@ -277,6 +273,8 @@ export function useGestureEditorContext() {
     renameSelectedScope,
     deleteSelectedScope,
     openApplicationPicker,
+    openProgramPicker,
+    openApplicationFolder,
     closeApplicationPicker,
     openExcludedApplicationPicker,
     selectApplication,
@@ -417,15 +415,42 @@ function replaceConfig(
 }
 
 function openApplicationPicker(categoryName = '', scopeKind = SCOPE_KINDS.category) {
-  applicationPicker.openApplicationPicker(categoryName, scopeKind)
+  applicationPickerContext = {
+    target: 'scope',
+    category: String(categoryName ?? '').trim(),
+    scopeKind: scopeKind === SCOPE_KINDS.app ? SCOPE_KINDS.app : SCOPE_KINDS.category
+  }
+  state.applicationPickerTarget = 'scope'
+  applicationPicker.open()
+}
+
+function openApplicationFolder(path) {
+  const normalizedPath = String(path ?? '').trim()
+  if (!normalizedPath) {
+    return
+  }
+
+  webView.postSilent({
+    type: WEBVIEW_MESSAGE_TYPES.openApplicationFolder,
+    path: normalizedPath
+  })
 }
 
 function openExcludedApplicationPicker() {
-  applicationPicker.openExcludedApplicationPicker()
+  applicationPickerContext = { target: 'exclusion' }
+  state.applicationPickerTarget = 'exclusion'
+  applicationPicker.open()
+}
+
+function openProgramPicker() {
+  applicationPickerContext = { target: 'program' }
+  state.applicationPickerTarget = 'program'
+  applicationPicker.open()
 }
 
 function closeApplicationPicker() {
-  applicationPicker.closeApplicationPicker()
+  applicationPickerContext = null
+  applicationPicker.close()
 }
 
 function closeApplicationPickerState() {
@@ -435,16 +460,55 @@ function closeApplicationPickerState() {
   state.applicationPickerTarget = 'scope'
 }
 
-function selectApplication(categoryName = '') {
-  applicationPicker.selectApplication(categoryName)
+function selectApplication() {
+  applicationPicker.selectApplication()
 }
 
-function pickApplicationWindow(categoryName = '') {
-  applicationPicker.pickApplicationWindow(categoryName)
+function pickApplicationWindow() {
+  applicationPicker.pickApplicationWindow()
 }
 
 function addSelectedApplication(message) {
-  applicationPicker.addSelectedApplication(message)
+  const application = applicationPicker.takeSelectedApplication(message)
+  const selection = applicationPickerContext
+  applicationPickerContext = null
+  if (!application || !selection) {
+    return
+  }
+
+  if (selection.target === 'program') {
+    applySelectedProgram(application)
+    return
+  }
+
+  if (selection.target === 'exclusion') {
+    addExcludedApplication(application)
+    return
+  }
+
+  const scopedApplication = ensureApplication(application.name)
+  scopedApplication.displayName = application.displayName
+  scopedApplication.path = application.path
+  if (selection.category) {
+    scopedApplication.categories = scopedApplication.categories.filter(category => category !== selection.category)
+    scopedApplication.categories.push(selection.category)
+  }
+  scopedApplication.icon = application.icon
+
+  if (
+    selection.scopeKind === SCOPE_KINDS.app &&
+    !getScopeItems(SCOPE_KINDS.app).some(item => item.name === scopedApplication.name)
+  ) {
+    state.rules.push(createRule(SCOPE_KINDS.app, scopedApplication.name))
+  }
+
+  setSelectedName(SCOPE_KINDS.app, scopedApplication.name)
+  if (scopedApplication.categories.length > 0) {
+    setSelectedName(SCOPE_KINDS.category, scopedApplication.categories.at(-1))
+  }
+
+  notifications.show('已添加程序。', 'success')
+  scheduleSaveRules()
 }
 
 function addExcludedApplication(message) {

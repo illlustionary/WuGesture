@@ -56,7 +56,7 @@ const actionTypeOptions = ACTION_TYPE_OPTIONS
           :operations="brightnessOperations"
         />
         <GestureRuleHotkeyFields
-          v-else
+          v-else-if="draft.actionType === ACTION_TYPES.hotkey"
           :draft="draft"
           :is-recording="isRecordingHotkey"
           @record="$emit('record-hotkey')"

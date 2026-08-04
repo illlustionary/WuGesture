@@ -689,7 +689,7 @@ public sealed class GestureService : IDisposable
 
     private static bool RunsInBackground(GestureRule rule)
     {
-        return rule.Action is HotkeyAction or WindowControlAction;
+        return rule.Action is HotkeyAction or WindowControlAction or ProgramAction;
     }
 
     internal bool HasNewerSession(long sessionId)

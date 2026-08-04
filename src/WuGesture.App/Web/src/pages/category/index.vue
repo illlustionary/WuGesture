@@ -4,7 +4,7 @@ import { useRoute } from 'vue-router'
 import AppShell from '@/components/layout/AppShell.vue'
 import GestureRuleList from '@/components/gesture/GestureRuleList.vue'
 import IconActionButton from '@/components/ui/IconActionButton.vue'
-import ApplicationListItem from '@/pages/category/components/ApplicationListItem.vue'
+import ApplicationListItem from '@/components/scope/ApplicationListItem.vue'
 import RulesSection from '@/components/rules/RulesSection.vue'
 import { useGestureEditorContext } from '@/gestureEditor/context/gestureEditorContext'
 import { useGestureEditorNavigation } from '@/gestureEditor/modules/useGestureEditorNavigation'
@@ -78,6 +78,8 @@ function addApplication() {
               v-for="app in editor.getApplicationsForCategory()"
               :key="app.name"
               :app="app"
+              removable
+              @open-path="editor.openApplicationFolder"
               @remove="editor.removeAppFromCategory($event.name)"
             />
           </div>
