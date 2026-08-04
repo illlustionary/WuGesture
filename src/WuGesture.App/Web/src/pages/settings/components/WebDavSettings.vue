@@ -31,12 +31,16 @@ const webDavTestState = computed(() => {
 <template>
   <SettingsSectionCard
     title="WebDAV"
-    :note="ready ? '当前 WebDAV 配置已测试通过。' : '备份或恢复前需要先测试当前 WebDAV 配置。'"
+    :note="
+      ready
+        ? '当前 WebDAV 配置已测试通过，可备份或恢复配置。'
+        : '备份或恢复前，请先测试当前 WebDAV 配置。测试可能会创建尚不存在的远程目录。'
+    "
   >
     <template #actions>
       <IconActionButton
         icon="test"
-        :label="testing ? '测试中' : '测试'"
+        :label="testing ? '测试中...' : '测试连接'"
         class="secondary-button webdav-test-button"
         :class="`webdav-test-button--${webDavTestState}`"
         color="var(--accent-strong)"
@@ -73,7 +77,7 @@ const webDavTestState = computed(() => {
       </SettingsField>
       <SettingsField
         label="路径"
-        note="留空时使用 gestures.json。"
+        note="可填写备份文件名或目录；目录末尾加 /。留空时使用 gestures.json。"
       >
         <BaseInput
           v-model.trim="draft.webDav.remotePath"

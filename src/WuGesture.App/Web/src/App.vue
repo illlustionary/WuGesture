@@ -243,7 +243,7 @@ function confirmResetSettings() {
     <ConfirmDialog
       :open="resetConfirmOpen"
       title="恢复默认设置"
-      message="这会把轨迹线、底部提示窗、应用行为、排除项和 WebDAV 设置恢复为默认值。"
+      message="这会恢复轨迹线、底部提示窗、应用行为、排除项和 WebDAV 设置。手势规则、分类、程序和边缘操作不会改变。"
       confirm-text="恢复默认"
       cancel-text="取消"
       tone="danger"

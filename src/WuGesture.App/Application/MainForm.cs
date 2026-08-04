@@ -849,11 +849,11 @@ public sealed partial class MainForm : Form
             ApplyLoadedConfig();
 
             PostRules();
-            PostConfigResult(true, "已保存", "save");
+            PostConfigResult(true, "配置已保存。", "save");
         }
         catch (Exception exception)
         {
-            PostConfigResult(false, exception.Message, "save");
+            PostConfigResult(false, $"保存配置失败：{exception.Message}", "save");
         }
     }
 
@@ -864,16 +864,18 @@ public sealed partial class MainForm : Form
             var message = JsonSerializer.Deserialize<RulesWebMessage>(json, WebMessageJsonOptions);
             var settings = message?.UiSettings?.WebDav ?? loadedConfig?.Config.UiSettings.WebDav ?? new WebDavUiSettings();
             await webDavConfigSyncService.TestConnectionAsync(settings);
-            PostWebDavResult("test", true, "WebDAV 连接成功");
+            PostWebDavResult("test", true, "WebDAV 连接测试成功。可以备份或恢复配置。");
         }
         catch (Exception exception)
         {
-            PostWebDavResult("test", false, exception.Message);
+            PostWebDavResult("test", false, $"WebDAV 连接测试失败：{exception.Message}");
         }
     }
 
     private async void SaveConfigToWebDav(string json)
     {
+        var localConfigSaved = false;
+
         try
         {
             var message = JsonSerializer.Deserialize<RulesWebMessage>(json, WebMessageJsonOptions);
@@ -889,15 +891,19 @@ public sealed partial class MainForm : Form
             };
 
             loadedConfig = configStore.SaveAndLoad(config);
+            localConfigSaved = true;
             ApplyLoadedConfig();
             await webDavConfigSyncService.UploadAsync(loadedConfig.FilePath, loadedConfig.Config.UiSettings.WebDav);
 
             PostRules();
-            PostWebDavResult("save", true, "已保存到 WebDAV");
+            PostWebDavResult("save", true, "当前配置已备份到 WebDAV。");
         }
         catch (Exception exception)
         {
-            PostWebDavResult("save", false, exception.Message);
+            var message = localConfigSaved
+                ? $"本地配置已保存，但备份到 WebDAV 失败：{exception.Message}"
+                : $"备份到 WebDAV 失败：{exception.Message}";
+            PostWebDavResult("save", false, message);
         }
     }
 
@@ -917,11 +923,11 @@ public sealed partial class MainForm : Form
             ApplyLoadedConfig();
 
             PostRules();
-            PostWebDavResult("restore", true, "已从 WebDAV 恢复");
+            PostWebDavResult("restore", true, "已从 WebDAV 恢复本地配置。");
         }
         catch (Exception exception)
         {
-            PostWebDavResult("restore", false, exception.Message);
+            PostWebDavResult("restore", false, $"从 WebDAV 恢复配置失败：{exception.Message}");
         }
     }
 
@@ -963,11 +969,11 @@ public sealed partial class MainForm : Form
             File.WriteAllText(dialog.FileName, configJson);
 
             PostRules();
-            PostConfigResult(true, "已导出配置", "export");
+            PostConfigResult(true, "配置已导出。", "export");
         }
         catch (Exception exception)
         {
-            PostConfigResult(false, exception.Message, "export");
+            PostConfigResult(false, $"导出配置失败：{exception.Message}", "export");
         }
     }
 
@@ -993,11 +999,11 @@ public sealed partial class MainForm : Form
             ApplyLoadedConfig();
 
             PostRules();
-            PostConfigResult(true, "已导入配置", "import");
+            PostConfigResult(true, "配置已导入。", "import");
         }
         catch (Exception exception)
         {
-            PostConfigResult(false, exception.Message, "import");
+            PostConfigResult(false, $"导入配置失败：{exception.Message}", "import");
         }
     }
 
@@ -1009,11 +1015,11 @@ public sealed partial class MainForm : Form
             ApplyLoadedConfig();
 
             PostRules();
-            PostConfigResult(true, "已重新加载", "reload");
+            PostConfigResult(true, "本地配置已重新加载。", "reload");
         }
         catch (Exception exception)
         {
-            PostConfigResult(false, exception.Message, "reload");
+            PostConfigResult(false, $"重新加载本地配置失败：{exception.Message}", "reload");
         }
     }
 
@@ -1025,11 +1031,11 @@ public sealed partial class MainForm : Form
             ApplyLoadedConfig();
 
             PostRules();
-            PostConfigResult(true, "已恢复默认", "reset");
+            PostConfigResult(true, "默认配置已恢复。", "reset");
         }
         catch (Exception exception)
         {
-            PostConfigResult(false, exception.Message, "reset");
+            PostConfigResult(false, $"恢复默认配置失败：{exception.Message}", "reset");
         }
     }
 

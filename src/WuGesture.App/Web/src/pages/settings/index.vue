@@ -1,5 +1,6 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import ConfirmDialog from '@/components/dialog/ConfirmDialog.vue'
 import AppShell from '@/components/layout/AppShell.vue'
 import { useGestureEditorContext } from '@/gestureEditor/context/gestureEditorContext'
 import AppBehaviorSettings from '@/pages/settings/components/AppBehaviorSettings.vue'
@@ -22,14 +23,21 @@ const webDavDraftSignature = computed(() => settingsStore.getWebDavSignature(dra
 const webDavReady = computed(
   () => Boolean(draft.webDav.address) && settingsStore.state.webDavTestedSignature === webDavDraftSignature.value
 )
+const restoreConfirmOpen = ref(false)
+
 function saveToWebDav() {
   flushPersistDraft()
   settingsStore.saveConfigToWebDav()
 }
 
+function requestRestoreFromWebDav() {
+  restoreConfirmOpen.value = true
+}
+
 function restoreFromWebDav() {
   flushPersistDraft()
   settingsStore.restoreConfigFromWebDav()
+  restoreConfirmOpen.value = false
 }
 
 function testWebDav() {
@@ -91,12 +99,22 @@ function previewLevelOsd(kind) {
           @queue-persist="queuePersistDraft"
           @flush-persist="flushPersistDraft"
           @test="testWebDav"
-          @restore="restoreFromWebDav"
+          @restore="requestRestoreFromWebDav"
           @save="saveToWebDav"
         />
       </section>
     </template>
   </AppShell>
+  <ConfirmDialog
+    :open="restoreConfirmOpen"
+    title="从 WebDAV 恢复配置"
+    message="这会使用 WebDAV 中的备份覆盖本地配置，当前本地更改将丢失。"
+    confirm-text="确认恢复"
+    cancel-text="取消"
+    tone="danger"
+    @close="restoreConfirmOpen = false"
+    @confirm="restoreFromWebDav"
+  />
 </template>
 
 <style lang="scss">
