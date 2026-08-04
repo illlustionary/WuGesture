@@ -1,9 +1,9 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import AppShell from '@/components/AppShell.vue'
-import IconActionButton from '@/components/IconActionButton.vue'
-import ToggleCheckbox from '@/components/ToggleCheckbox.vue'
+import AppShell from '@/components/layout/AppShell.vue'
+import IconActionButton from '@/components/ui/IconActionButton.vue'
+import ToggleCheckbox from '@/components/form/ToggleCheckbox.vue'
 import RulesSection from '@/components/rules/RulesSection.vue'
 import { useGestureExclusionsStore } from '@/gestureEditor/stores/useGestureExclusionsStore'
 import { getApplicationKey } from '@/gestureEditor/stores/useGestureQuickSearchStore'

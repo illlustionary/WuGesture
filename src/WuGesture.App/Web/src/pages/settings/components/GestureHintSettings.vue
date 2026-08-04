@@ -2,9 +2,9 @@
 import SettingsField from './SettingsField.vue'
 import SettingsFormGrid from './SettingsFormGrid.vue'
 import SettingsSectionCard from './SettingsSectionCard.vue'
-import BaseInput from '@/components/BaseInput.vue'
-import BaseRange from '@/components/BaseRange.vue'
-import ToggleCheckbox from '@/components/ToggleCheckbox.vue'
+import BaseInput from '@/components/form/BaseInput.vue'
+import BaseRange from '@/components/form/BaseRange.vue'
+import ToggleCheckbox from '@/components/form/ToggleCheckbox.vue'
 import { GESTURE_EDITOR_LIMITS } from '@/constants/gestureEditorLimits'
 
 defineProps({

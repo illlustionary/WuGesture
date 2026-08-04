@@ -31,6 +31,11 @@ D:\workspace\my-gesture
 ├─ scripts
 ├─ src
 │  └─ WuGesture.App
+│     ├─ Application
+│     ├─ Configuration
+│     ├─ GestureEngine
+│     ├─ Overlay
+│     └─ Web
 └─ tests
    └─ WuGesture.App.Tests
 ```
@@ -77,6 +82,13 @@ src\WuGesture.App
 - 配置窗口最小尺寸为 1280x720；首次启动会以至少该尺寸居中显示，关闭窗口时会保存窗口位置、大小和最大化状态，并拒绝恢复小于该尺寸（包括 0x0）的无效状态。窗口按设置选择隐藏到托盘、最小化到任务栏或直接退出。隐藏到托盘会释放 WebView2 配置界面以降低后台内存占用，托盘恢复时重建 WebView2。通过托盘菜单“退出”始终会真正释放后台手势服务并结束进程。
 - 托盘菜单提供“打开配置”、“暂停 WuGesture”和“退出”；暂停项会暂停手势识别和边缘操作，但保留后台进程和配置界面。暂停时仅系统托盘图标切换为灰阶图标，并在托盘提示文字中标记“已暂停”，任务栏窗口图标不变。
 
+职责目录：
+
+- `Application`：程序入口、主窗体生命周期、窗口状态、单实例唤醒、WebView2 宿主和宿主消息契约。
+- `Configuration`：手势配置模型、默认值、归一化、存储、WebDAV 同步和配置契约。
+- `GestureEngine`：全局输入、手势识别、规则匹配、边缘操作和动作执行核心。
+- `Overlay`：透明覆盖层、轨迹/提示/OSD 渲染及其 UI 线程反馈协调。
+
 资源：
 
 - `Resources\volume.png`、`Resources\sun.png`：音量和亮度 OSD 使用的嵌入图标资源。
@@ -90,6 +102,8 @@ src\WuGesture.App
 ```text
 src\WuGesture.App\GestureEngine
 ```
+
+该目录只保留输入、识别、匹配、边缘操作和动作执行的运行时核心；宿主、配置和透明覆盖层分别位于同级的 `Application`、`Configuration` 和 `Overlay` 目录。
 
 关键文件：
 
@@ -119,6 +133,8 @@ src\WuGesture.App\GestureEngine
 - `LevelOsdOverlay.cs`：音量和亮度 OSD 的线程安全请求入口，把手势、边缘操作和后台亮度队列的显示请求投递到主 UI 线程。
 - `ResourceNames.cs`：后端嵌入资源 manifest 名常量。
 - `MouseInput.cs`：当移动距离太小，不足以构成手势时，重放一次普通右键或中键。
+- `GestureInputCapture.cs`：在钩子回调内同步决定捕获/吞键，维护暂停、录制和迟到抬键状态，并把路径事件无等待交给解析器。
+- `GestureParserWorker.cs`：独立最高优先级解析线程的 FIFO 工作队列；合并未处理的移动事件，并保证松键事件前先处理最后一个移动点。
 - `GestureDirection.cs`：8 方向枚举。
 - `GestureRule.cs`：运行时规则和热键动作模型。
 - `GestureUiSettings.cs`：持久化的 UI 设置模型，包括配置界面外观、轨迹窗、提示泡泡、音量/亮度 OSD 和手势灵敏度配置。
@@ -131,8 +147,10 @@ src\WuGesture.App\GestureEngine
 手势流水线：
 
 ```text
-MouseHook (high-priority hook callback: capture decision and event enqueue only)
--> GestureService (dedicated high-priority parser thread)
+MouseHook
+-> GestureInputCapture (high-priority hook callback: capture decision and event enqueue only)
+-> GestureParserWorker (dedicated high-priority parser thread)
+-> GestureService
 -> GestureRecognizer
 -> GestureMatcher
 -> ActionExecutor
@@ -153,10 +171,16 @@ MouseHook (high-priority hook callback: capture decision and event enqueue only)
 - `GestureService` 会读取应用行为里的排除项；`start-window` 在鼠标按下时按起始窗口判断排除项，`current-window` 则按当前前台窗口判断。命中排除项时不启动手势跟踪，也不吞掉原始鼠标输入。
 - 托盘暂停和配置界面左上角状态标识共用同一个临时用户暂停状态，配置界面录制暂停则是独立暂停来源；运行时按用户、配置和录制暂停合并后的状态控制 `GestureService` 和 `EdgeActionService`。
 - 快捷键录制由后端低级键盘 hook 完成；录制期间会阻止 `Win` 等系统级按键继续传递，松开所有按键后回传组合键。
-- 钩子回调必须保持快速：只做捕获决定、按键吞入状态和路径事件投递，不会等待手势解析、透明覆盖层或 WebView。`GestureService` 在独立的最高优先级解析线程中串行处理路径、规则和会话状态；轨迹、提示、OSD 与 WebView 通知仍通过异步 WinForms 消息投递，不等待返回。动作会切回 WinForms 消息线程或后台动作队列执行。
+- 钩子回调必须保持快速：`GestureInputCapture` 只做捕获决定、按键吞入状态和路径事件投递，不会等待手势解析、透明覆盖层或 WebView。`GestureParserWorker` 在独立的最高优先级线程中串行调度 `GestureService` 的路径、规则和会话状态；轨迹、提示、OSD 与 WebView 通知仍通过异步 WinForms 消息投递，不等待返回。动作会切回 WinForms 消息线程或后台动作队列执行。
 - 动作执行失败会被捕获，并通过 `GestureActionFailed` 上报。
 
 ## 配置
+
+后端配置实现路径：
+
+```text
+src\WuGesture.App\Configuration
+```
 
 配置文件：
 
@@ -237,14 +261,15 @@ src\WuGesture.App\Web\PROJECT_STRUCTURE.md
 
 - 配置界面使用 Windows 系统标题栏；标题为 `WuGesture`，应用图标由窗体提供，系统负责最小化、最大化、关闭、拖动和缩放。下方为可折叠的左侧导航和独立滚动的右侧页面工作区，不保留外层总边距、页面壳卡片或侧栏圆角：工作区卡片使用直角连续边框而非留白分隔。侧栏顶部为独立的应用状态组件，带悬浮提示并提供暂停/恢复 WuGesture；组件左侧显示应用图标，右侧显示加粗名称与较小的版本号，暂停时整项置灰。侧栏入口保留图标、文字、hover 状态和当前项左侧竖线动画；底部左侧按钮可折叠为仅图标导航，搜索和问号帮助入口保留在底部右侧，问号会通过基础遮罩对话框展示规则生效顺序。
 - 宿主下发的 `rules` WebView 消息包含程序集 `appVersion`、配置、规则、程序、边缘操作和 UI 设置；运行态程序和排除项会附带应用图标。
-- 前端使用 `pnpm build` 生成根目录下的 `dist\web`。
-- `Web\src\components\BaseDialog.vue` 统一前端对话框的遮罩关闭、可选右上关闭按钮、默认操作区和关闭动画；自动保存或即时选择类弹层可复用外壳并关闭默认操作区。
-- `Web\src\components\BaseInput.vue` 和 `BaseRange.vue` 统一前端原生输入控件的 `v-model` 事件、宽度约束和滑块进度填充；页面继续保留各自的配置约束与保存时机。
+- 前端构建由 `WuGesture.App.csproj` 调用 `pnpm exec vite build --outDir`，将输出直接设为当前宿主输出目录的 `Web`；Vite 会清空该最终输出目录，源码 `Web` 目录不会被覆盖。
+- `Web\src\components\dialog\BaseDialog.vue` 统一前端对话框的遮罩关闭、可选右上关闭按钮、默认操作区和关闭动画；自动保存或即时选择类弹层可复用外壳并关闭默认操作区。
+- `Web\src\components\form\BaseInput.vue` 和 `Web\src\components\form\BaseRange.vue` 统一前端原生输入控件的 `v-model` 事件、宽度约束和滑块进度填充；页面继续保留各自的配置约束与保存时机。
+- Web 共享组件按 `sidebar`、`layout`、`dialog`、`form`、`ui`、`gesture`、`scope` 和 `rules` 分类；分类页、边缘页和设置页的私有组件分别保留在对应 `pages\*\components` 目录。
 - 前端 `pnpm` 构建脚本通过 `src\WuGesture.App\Web\pnpm-workspace.yaml` 放行 `@parcel/watcher` 的本地构建脚本，避免非交互环境下的依赖安装中断。
 - 前端格式化使用 `pnpm format`，校验使用 `pnpm format:check`；两者均使用仓库根目录的 `.prettierrc.json`。
 - `WuGesture.App.csproj` 会在 `.NET` 构建前自动执行前端构建。
-- `WuGesture.App.csproj` 会在前端构建后把 `dist\web` 复制到宿主输出目录中的 `Web\dist`。
-- 桌面宿主通过 WebView2 虚拟主机 `https://gesture.wu.philosophy/` 加载宿主输出目录中的 `Web\dist`。
+- 普通构建使用 `$(OutputPath)\Web`，`dotnet publish -o` 使用实际 `$(PublishDir)\Web`，不再生成或复制中间 `dist` 目录。
+- 桌面宿主通过 WebView2 虚拟主机 `https://gesture.wu.philosophy/` 加载宿主输出目录中的 `Web`。
 
 ## 测试
 
@@ -259,6 +284,7 @@ tests\WuGesture.App.Tests
 当前单元测试覆盖：
 
 - `GestureRecognizer`：有效移动距离、单笔 8 方向、多笔首段归一化和灵敏度。
+- `GestureParserWorker`：预启动投递与最新移动点合并，松键前先处理最后一个移动点。
 - `GestureMatcher`：`app > category > global` 作用域优先级、分类关联顺序、鼠标按键和完整方向模式匹配。
 - `EdgeHitTester`：多屏坐标、边缘优先级、摩擦边角落排除和到边距离计算。
 - `AppLogWriter`：异步 JSONL 写入、轮转、保留和队列溢出标记。
@@ -303,7 +329,7 @@ dotnet test WuGesture.slnx
 
 自动发行：
 
-- `scripts\publish-app.ps1`：发布应用目录的通用步骤，负责关闭运行实例、执行 `dotnet publish`、复制 Web 前端产物与 `WebView2Loader.dll`。
+- `scripts\publish-app.ps1`：发布应用目录的通用步骤，负责关闭运行实例、执行 `dotnet publish`、校验直接构建到输出目录的 Web 前端产物，并复制 `WebView2Loader.dll`；它会将同一个应用目录同时传给 `dotnet publish -o` 和 MSBuild `OutputPath`，避免常规编译产物落到其他目录。
 - `scripts\package-debug.ps1`：无需参数，调用 `publish-app.ps1` 生成 Debug `win-x64` 发布目录和 `WuGesture-debug-windows-x64.zip`。
 - `scripts\package-release.ps1`：基于已创建的 `v*` Git 标签生成 framework-dependent `win-x64` 发布目录、版本化 ZIP 包和从相邻标签之间提交整理的 `RELEASE_NOTES.md`；ZIP 内的根目录固定为 `WuGesture`，而 ZIP 文件名保留版本号。发行包不包含 .NET，缺少 .NET 10 Desktop Runtime 时由 .NET Host 显示系统安装提示。
 - `.github\workflows\release.yml`：GitHub 收到 `v*` 标签后构建发行包、创建 GitHub Release；配置 `GITEE_REPOSITORY` 和 `GITEE_TOKEN` secrets 后，会镜像 `main` 和标签到 Gitee，并将相同的附件和更新说明发布至 Gitee。
@@ -314,6 +340,15 @@ dotnet test WuGesture.slnx
 ```text
 artifacts\publish\WuGesture
 ```
+
+默认打包输出根目录：
+
+```text
+artifacts\debug
+artifacts\release
+```
+
+两个打包脚本都会先清空各自的输出根目录，再在其中生成应用目录 `WuGesture` 和对应 ZIP；发布脚本只清空 `artifacts\publish\WuGesture`。因此构建与发布产物仅使用 `artifacts\debug`、`artifacts\release` 和 `artifacts\publish` 三个根目录，不保留额外的中间输出目录。
 
 默认发布可执行文件名：
 

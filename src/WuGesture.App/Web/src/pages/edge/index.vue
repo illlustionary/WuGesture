@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue'
-import AppShell from '@/components/AppShell.vue'
+import AppShell from '@/components/layout/AppShell.vue'
 import { useGestureEdgeActionsStore } from '@/gestureEditor/stores/useGestureEdgeActionsStore'
 import EdgeActionDialog from '@/pages/edge/components/EdgeActionDialog.vue'
 import EdgeActionSection from '@/pages/edge/components/EdgeActionSection.vue'

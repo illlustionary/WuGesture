@@ -1,6 +1,6 @@
 <script setup>
 import { computed, nextTick, ref, watch } from 'vue'
-import BaseDialog from './BaseDialog.vue'
+import BaseDialog from '@/components/dialog/BaseDialog.vue'
 
 const props = defineProps({
   open: { type: Boolean, required: true },

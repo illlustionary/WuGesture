@@ -1,4 +1,4 @@
-const nestedRouteView = () => import('../../components/NestedRouteView.vue')
+const nestedRouteView = () => import('../../components/layout/NestedRouteView.vue')
 const categoryRulesPage = () => import('../../pages/category/index.vue')
 const appRulesPage = () => import('../../pages/app/index.vue')
 

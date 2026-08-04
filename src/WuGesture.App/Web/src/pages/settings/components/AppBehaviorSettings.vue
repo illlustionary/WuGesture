@@ -1,6 +1,6 @@
 <script setup>
-import CustomSelect from '@/components/CustomSelect.vue'
-import ToggleCheckbox from '@/components/ToggleCheckbox.vue'
+import CustomSelect from '@/components/form/CustomSelect.vue'
+import ToggleCheckbox from '@/components/form/ToggleCheckbox.vue'
 import SettingsField from './SettingsField.vue'
 import SettingsFormGrid from './SettingsFormGrid.vue'
 import SettingsSectionCard from './SettingsSectionCard.vue'

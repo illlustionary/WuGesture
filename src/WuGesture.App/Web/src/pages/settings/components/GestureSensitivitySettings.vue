@@ -1,7 +1,7 @@
 <script setup>
 import SettingsField from './SettingsField.vue'
 import SettingsSectionCard from './SettingsSectionCard.vue'
-import BaseRange from '@/components/BaseRange.vue'
+import BaseRange from '@/components/form/BaseRange.vue'
 import { GESTURE_EDITOR_LIMITS } from '@/constants/gestureEditorLimits'
 
 defineProps({

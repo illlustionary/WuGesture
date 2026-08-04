@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue'
-import AppShell from '@/components/AppShell.vue'
+import AppShell from '@/components/layout/AppShell.vue'
 import { useGestureEditorContext } from '@/gestureEditor/context/gestureEditorContext'
 import AppBehaviorSettings from '@/pages/settings/components/AppBehaviorSettings.vue'
 import GestureHintSettings from '@/pages/settings/components/GestureHintSettings.vue'

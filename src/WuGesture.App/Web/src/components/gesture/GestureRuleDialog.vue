@@ -1,9 +1,9 @@
 <script setup>
 import { computed } from 'vue'
-import BaseDialog from './BaseDialog.vue'
-import GestureRuleCommandFields from './gesture-rule-dialog/GestureRuleCommandFields.vue'
-import GestureRuleGestureField from './gesture-rule-dialog/GestureRuleGestureField.vue'
-import GestureRuleNameField from './gesture-rule-dialog/GestureRuleNameField.vue'
+import BaseDialog from '@/components/dialog/BaseDialog.vue'
+import GestureRuleCommandFields from './rule-dialog/fields/GestureRuleCommandFields.vue'
+import GestureRuleGestureField from './rule-dialog/fields/GestureRuleGestureField.vue'
+import GestureRuleNameField from './rule-dialog/fields/GestureRuleNameField.vue'
 
 const props = defineProps({
   open: { type: Boolean, required: true },

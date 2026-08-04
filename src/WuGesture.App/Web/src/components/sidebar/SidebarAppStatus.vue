@@ -1,8 +1,8 @@
 <script setup>
 import { computed } from 'vue'
 import { useGestureEditorContext } from '@/gestureEditor/context/gestureEditorContext'
-import HoverBubble from '@/components/HoverBubble.vue'
-import appIconUrl from '../../../Resources/wu.jpg'
+import HoverBubble from '@/components/ui/HoverBubble.vue'
+import appIconUrl from '@resources/wu.jpg'
 
 const rulesStore = useGestureEditorContext()
 const isPaused = computed(() => rulesStore.state.statusState === 'paused')

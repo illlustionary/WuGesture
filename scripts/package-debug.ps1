@@ -8,7 +8,7 @@ $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $rootDir = Split-Path -Parent $scriptDir
 
 if ([string]::IsNullOrWhiteSpace($OutputPath)) {
-    $OutputPath = Join-Path $rootDir "artifacts\debug-package"
+    $OutputPath = Join-Path $rootDir "artifacts\debug"
 }
 
 $publishDirectory = Join-Path $OutputPath "WuGesture"

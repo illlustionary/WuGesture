@@ -159,19 +159,18 @@ internal sealed class WebViewHost : IDisposable
 
     private static void ConfigureHostMapping(CoreWebView2 coreWebView)
     {
-        var webDistPath = Path.Combine(
+        var webOutputPath = Path.Combine(
             AppContext.BaseDirectory,
-            WebViewHostContract.OutputRootFolder,
-            WebViewHostContract.OutputDistFolder);
-        if (!Directory.Exists(webDistPath))
+            WebViewHostContract.OutputRootFolder);
+        if (!Directory.Exists(webOutputPath))
         {
             throw new DirectoryNotFoundException(
-                $"Web frontend output was not found at '{webDistPath}'. Run 'dotnet build WuGesture.slnx' from the repository root first.");
+                $"Web frontend output was not found at '{webOutputPath}'. Run 'dotnet build WuGesture.slnx' from the repository root first.");
         }
 
         coreWebView.SetVirtualHostNameToFolderMapping(
             WebViewHostContract.HostName,
-            webDistPath,
+            webOutputPath,
             CoreWebView2HostResourceAccessKind.Allow);
     }
 }

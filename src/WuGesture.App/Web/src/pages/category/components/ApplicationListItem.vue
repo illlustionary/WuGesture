@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue'
-import IconActionButton from '@/components/IconActionButton.vue'
+import IconActionButton from '@/components/ui/IconActionButton.vue'
 
 const props = defineProps({
   app: { type: Object, required: true },

@@ -40,7 +40,8 @@ $publishArguments = @(
     "publish",
     $projectPath,
     "-c", $Configuration,
-    "-o", $OutputPath
+    "-o", $OutputPath,
+    "-p:OutputPath=$OutputPath"
 )
 
 if (-not [string]::IsNullOrWhiteSpace($Version)) {
@@ -59,19 +60,10 @@ if ($LASTEXITCODE -ne 0) {
     throw "dotnet publish failed with exit code $LASTEXITCODE."
 }
 
-$webSourcePath = Join-Path $rootDir "dist\web"
-$webTargetPath = Join-Path $OutputPath "Web\dist"
-if (-not (Test-Path $webSourcePath)) {
-    throw "Web frontend output was not found at $webSourcePath."
+$webEntryPath = Join-Path $OutputPath "Web\index.html"
+if (-not (Test-Path $webEntryPath)) {
+    throw "Web frontend output was not found at $webEntryPath."
 }
-
-if (Test-Path $webTargetPath) {
-    Get-ChildItem -Path $webTargetPath -Force | Remove-Item -Recurse -Force
-} else {
-    New-Item -ItemType Directory -Path $webTargetPath -Force | Out-Null
-}
-
-Copy-Item -Path (Join-Path $webSourcePath "*") -Destination $webTargetPath -Recurse -Force
 
 $webView2LoaderSourcePath = Join-Path $OutputPath "runtimes\$webView2RuntimeIdentifier\native\WebView2Loader.dll"
 $webView2LoaderTargetPath = Join-Path $OutputPath "WebView2Loader.dll"

@@ -18,7 +18,7 @@
 .\scripts\package-debug.ps1
 ```
 
-脚本会生成 `artifacts\debug-package\WuGesture-debug-windows-x64.zip`，不需要版本号或 Git 标签。
+脚本会生成 `artifacts\debug\WuGesture\` 和 `artifacts\debug\WuGesture-debug-windows-x64.zip`，不需要版本号或 Git 标签。构建和发布阶段共用该应用目录，不会额外留下中间输出目录。
 
 ## 自动发行
 
@@ -33,6 +33,8 @@ GitHub Actions 的 `.github/workflows/release.yml` 在收到标签后生成 fram
 ```powershell
 .\scripts\package-release.ps1 -Version v0.97
 ```
+
+该命令使用 `artifacts\release\` 作为唯一输出根目录，其中包含 `WuGesture\`、版本化 ZIP 和 `RELEASE_NOTES.md`。通用发布命令单独使用 `artifacts\publish\WuGesture\`。
 
 ## Gitee 同步
 

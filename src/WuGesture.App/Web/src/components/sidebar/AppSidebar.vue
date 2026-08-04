@@ -1,11 +1,11 @@
 <script setup>
-import SidebarAppStatus from '@/components/SidebarAppStatus.vue'
-import SidebarApplicationSection from '@/components/SidebarApplicationSection.vue'
-import SidebarCategorySection from '@/components/SidebarCategorySection.vue'
-import SidebarEdgeSection from '@/components/SidebarEdgeSection.vue'
-import SidebarFixedNavigation from '@/components/SidebarFixedNavigation.vue'
-import SidebarFooter from '@/components/SidebarFooter.vue'
-import SidebarSettingsSection from '@/components/SidebarSettingsSection.vue'
+import SidebarAppStatus from '@/components/sidebar/SidebarAppStatus.vue'
+import SidebarApplicationSection from '@/components/sidebar/SidebarApplicationSection.vue'
+import SidebarCategorySection from '@/components/sidebar/SidebarCategorySection.vue'
+import SidebarEdgeSection from '@/components/sidebar/SidebarEdgeSection.vue'
+import SidebarFixedNavigation from '@/components/sidebar/SidebarFixedNavigation.vue'
+import SidebarFooter from '@/components/sidebar/SidebarFooter.vue'
+import SidebarSettingsSection from '@/components/sidebar/SidebarSettingsSection.vue'
 import { useSidebarOverlay } from '@/composables/useSidebarOverlay'
 import { useGestureEditorContext } from '@/gestureEditor/context/gestureEditorContext'
 

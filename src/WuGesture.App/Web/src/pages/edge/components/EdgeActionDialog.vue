@@ -1,7 +1,7 @@
 <script setup>
-import CustomSelect from '@/components/CustomSelect.vue'
-import BaseDialog from '@/components/BaseDialog.vue'
-import ToggleCheckbox from '@/components/ToggleCheckbox.vue'
+import CustomSelect from '@/components/form/CustomSelect.vue'
+import BaseDialog from '@/components/dialog/BaseDialog.vue'
+import ToggleCheckbox from '@/components/form/ToggleCheckbox.vue'
 import EdgeActionCommandFields from './EdgeActionCommandFields.vue'
 import { ACTION_TYPE_OPTIONS, EDGE_TRIGGER_TYPES } from '@/constants/gestureEditorOptions'
 import { GESTURE_EDITOR_LIMITS } from '@/constants/gestureEditorLimits'

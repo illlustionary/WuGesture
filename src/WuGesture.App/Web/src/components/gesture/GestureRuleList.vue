@@ -107,8 +107,8 @@
 </template>
 
 <script setup>
-import IconActionButton from './IconActionButton.vue'
-import AppIcon from '@/components/AppIcon.vue'
+import IconActionButton from '@/components/ui/IconActionButton.vue'
+import AppIcon from '@/components/ui/AppIcon.vue'
 import { ACTION_TYPES } from '@/constants/gestureEditorOptions'
 const DIRECTION_LABELS = {
   Up: '↑',

@@ -1,5 +1,5 @@
 <script setup>
-import AppIcon from '@/components/AppIcon.vue'
+import AppIcon from '@/components/ui/AppIcon.vue'
 
 defineProps({
   patternLabel: { type: String, required: true },
