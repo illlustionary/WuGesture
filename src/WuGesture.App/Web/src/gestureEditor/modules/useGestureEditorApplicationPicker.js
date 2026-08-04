@@ -1,107 +1,66 @@
-import { SCOPE_KINDS, WEBVIEW_MESSAGE_TYPES } from '@/constants/gestureEditorOptions'
+import { WEBVIEW_MESSAGE_TYPES } from '@/constants/gestureEditorOptions'
 
 export function useGestureEditorApplicationPicker({
   state,
-  addExcludedApplication,
   closeApplicationPickerState,
   createRequestId,
-  createRule,
-  ensureApplication,
-  getScopeItems,
   notifications,
-  webView,
-  scheduleSaveRules,
-  setSelectedName
+  webView
 }) {
-  const pendingRequests = new Map()
+  const pendingRequestIds = new Set()
 
-  function openApplicationPicker(categoryName = '', scopeKind = SCOPE_KINDS.category) {
-    state.applicationPickerCategory = String(categoryName ?? '').trim()
-    state.applicationPickerScopeKind = scopeKind === SCOPE_KINDS.app ? SCOPE_KINDS.app : SCOPE_KINDS.category
-    state.applicationPickerTarget = 'scope'
+  function open() {
     state.applicationPickerOpen = true
   }
 
-  function openExcludedApplicationPicker() {
-    state.applicationPickerCategory = ''
-    state.applicationPickerScopeKind = ''
-    state.applicationPickerTarget = 'exclusion'
-    state.applicationPickerOpen = true
-  }
-
-  function closeApplicationPicker() {
+  function close() {
     closeApplicationPickerState()
   }
 
-  function selectApplication(categoryName = '') {
-    requestApplication(WEBVIEW_MESSAGE_TYPES.selectApplication, categoryName)
+  function selectApplication() {
+    requestApplication(WEBVIEW_MESSAGE_TYPES.selectApplication)
   }
 
-  function pickApplicationWindow(categoryName = '') {
-    requestApplication(WEBVIEW_MESSAGE_TYPES.pickApplicationWindow, categoryName)
+  function pickApplicationWindow() {
+    requestApplication(WEBVIEW_MESSAGE_TYPES.pickApplicationWindow)
   }
 
-  function requestApplication(type, categoryName) {
-    const category = String(categoryName || state.applicationPickerCategory || '').trim()
+  function requestApplication(type) {
+    if (!webView.isAvailable()) {
+      notifications.show('浏览器预览无法选择程序，请在桌面应用中操作。', 'error')
+      return
+    }
+
     const requestId = createRequestId()
-    pendingRequests.set(requestId, {
-      target: state.applicationPickerTarget,
-      scopeKind: state.applicationPickerScopeKind,
-      category
-    })
-    closeApplicationPicker()
-    webView.post({
-      type,
-      requestId,
-      category
-    })
+    pendingRequestIds.add(requestId)
+    closeApplicationPickerState()
+    webView.post({ type, requestId, category: '' })
   }
 
-  function addSelectedApplication(message) {
-    const name = String(message.name ?? '').trim()
-    if (!name) {
-      return
+  function takeSelectedApplication(message) {
+    if (!pendingRequestIds.delete(message?.requestId)) {
+      return null
     }
 
-    const requestContext = pendingRequests.get(message.requestId) ?? null
-    pendingRequests.delete(message.requestId)
-    if (requestContext?.target === 'exclusion') {
-      addExcludedApplication(message)
-      return
+    const name = String(message?.name ?? '').trim()
+    const path = String(message?.path ?? '').trim()
+    if (!name || !path) {
+      return null
     }
 
-    const requestedCategory = String(requestContext?.category ?? message.category ?? '').trim()
-    const application = ensureApplication(name)
-    application.displayName = String(message.displayName ?? application.displayName ?? name).trim()
-    application.path = String(message.path ?? '').trim()
-    if (requestedCategory) {
-      application.categories = application.categories.filter(category => category !== requestedCategory)
-      application.categories.push(requestedCategory)
+    return {
+      name,
+      displayName: String(message?.displayName ?? name).trim() || name,
+      path,
+      icon: String(message?.icon ?? '').trim()
     }
-    application.icon = String(message.icon ?? application.icon ?? '').trim()
-
-    if (
-      requestContext?.scopeKind === SCOPE_KINDS.app &&
-      !getScopeItems(SCOPE_KINDS.app).some(item => item.name === application.name)
-    ) {
-      state.rules.push(createRule(SCOPE_KINDS.app, application.name))
-    }
-
-    setSelectedName(SCOPE_KINDS.app, application.name)
-    if (application.categories.length > 0) {
-      setSelectedName(SCOPE_KINDS.category, application.categories.at(-1))
-    }
-
-    notifications.show('已添加程序。', 'success')
-    scheduleSaveRules()
   }
 
   return {
-    openApplicationPicker,
-    openExcludedApplicationPicker,
-    closeApplicationPicker,
+    open,
+    close,
     selectApplication,
     pickApplicationWindow,
-    addSelectedApplication
+    takeSelectedApplication
   }
 }

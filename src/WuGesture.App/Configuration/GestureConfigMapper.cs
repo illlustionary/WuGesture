@@ -93,6 +93,21 @@ public static class GestureConfigMapper
                 : null;
         }
 
+        if (string.Equals(actionType, GestureConfigContract.ActionTypes.Program, StringComparison.OrdinalIgnoreCase))
+        {
+            var path = (config.Path ?? "").Trim();
+            if (path.Length == 0)
+            {
+                return null;
+            }
+
+            var arguments = (config.Arguments ?? [])
+                .Select(argument => (argument ?? "").Trim())
+                .Where(argument => argument.Length > 0)
+                .ToArray();
+            return new ProgramAction(path, arguments);
+        }
+
         return null;
     }
 
@@ -122,6 +137,12 @@ public static class GestureConfigMapper
                 Operation = ToConfigOperationName(brightness.Operation),
                 Amount = NormalizeAmount(brightness.Amount)
             },
+            ProgramAction program => new GestureActionConfig
+            {
+                Type = GestureConfigContract.ActionTypes.Program,
+                Path = program.Path,
+                Arguments = program.Arguments.ToList()
+            },
             _ => new GestureActionConfig()
         };
     }
@@ -150,6 +171,7 @@ public static class GestureConfigMapper
             WindowControlAction window => ToConfigOperationName(window.Operation),
             VolumeControlAction volume => $"{GestureConfigContract.ActionTypes.Volume}-{ToConfigOperationName(volume.Operation)}",
             BrightnessControlAction brightness => $"{GestureConfigContract.ActionTypes.Brightness}-{ToConfigOperationName(brightness.Operation)}",
+            ProgramAction program => Path.GetFileNameWithoutExtension(program.Path),
             _ => ""
         };
     }

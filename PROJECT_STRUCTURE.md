@@ -11,7 +11,7 @@
 - 原生后端负责全局鼠标钩子、手势识别、规则匹配和动作执行。
 - WebView2 前端负责配置界面，当前是独立的 Vue3 + Vite 工程，构建产物由桌面宿主加载。
 - 手势使用 8 个方向。
-- 动作当前支持快捷键、窗口控制、音量控制和亮度控制；快捷键通过 `SendInput` 执行，窗口控制通过 Win32 窗口 API 执行，音量通过 Core Audio API 执行并带按键回退，静音状态下执行音量增减会先取消静音，亮度通过 DDC/CI、WMI、Gamma 三段回退执行。
+- 动作当前支持快捷键、窗口控制、音量控制、亮度控制和运行程序；快捷键通过 `SendInput` 执行，窗口控制通过 Win32 窗口 API 执行，音量通过 Core Audio API 执行并带按键回退，静音状态下执行音量增减会先取消静音，亮度通过 DDC/CI、WMI、Gamma 三段回退执行。运行程序以非 Shell 方式在后台队列启动所选 `.exe`，参数按配置顺序传入。
 - 规则当前支持 `global`、`category` 和 `app` 作用域；程序可按关联顺序归属多个分类，分类同手势时越靠前的关联优先级越高，`app` 规则仍高于分类和全局规则。
 - 边缘操作是独立的全局配置，支持触发角、摩擦边和边缘滚动。
 - UI 设置里的轨迹线、手势提示和音量/亮度 OSD 都支持单独关闭，运行时会按对应 `uiSettings` 节点的 `enabled` 决定是否显示；配置界面外观支持跟随系统、浅色和深色主题，用户选择会随主配置同步。
@@ -109,7 +109,7 @@ src\WuGesture.App\GestureEngine
 
 - `MouseHook.cs`：低级全局鼠标钩子；在独立的高优先级后台消息线程中安装和接收回调，服务层再按需要把 UI 工作投递回 WinForms 线程，避免前台窗口/WebView 消息阻塞全局输入 hook 链。
 - `KeyboardShortcutRecorder.cs`：低级键盘 hook，用于配置界面录制快捷键并吞掉录制期间的原生键盘事件。
-- `GestureService.cs`：接入右键和中键低级 hook，协调会话、识别器、匹配器和执行器，并向 UI 发送事件；跟踪中的轨迹进度只保留尚未处理的最新一帧，避免快速移动堆积 WinForms UI 队列，松键和最终识别事件仍按原顺序投递；命中手势会先完成提示，再将快捷键和窗口控制动作顺序投递到后台队列，避免动作执行阻塞桌面反馈；`start-window` 的目标前置和快捷键注入在同一个后台任务中完成，音量/亮度继续在原线程执行；也支持录制会话，把识别结果回传给前端。
+- `GestureService.cs`：接入右键和中键低级 hook，协调会话、识别器、匹配器和执行器，并向 UI 发送事件；跟踪中的轨迹进度只保留尚未处理的最新一帧，避免快速移动堆积 WinForms UI 队列，松键和最终识别事件仍按原顺序投递；命中手势会先完成提示，再将快捷键、窗口控制和运行程序动作顺序投递到后台队列，避免动作执行阻塞桌面反馈；`start-window` 的目标前置和快捷键注入在同一个后台任务中完成，音量/亮度继续在原线程执行；也支持录制会话，把识别结果回传给前端。
 - `GestureStartDiagnostics.cs`：异步记录诊断启动标记、每次手势起始分段耗时、首条有效移动到轨迹首帧提交的分段耗时，以及命中规则后从松键到 UI 反馈和动作完成的分段耗时；日志位于 `%LocalAppData%\WuGesture\diagnostics\gesture-start-latency.log`，单文件达到 1MB 时保留上一份轮转日志，主日志写入失败时会把错误写入 `%TEMP%\WuGesture-gesture-diagnostics-error.log`。
 - `GestureSession.cs`：保存单次手势的 `Tracking -> Completing -> Idle` 生命周期、会话编号、轨迹和预览/进度缓存。松键后会先固化旧会话的 UI/动作快照并立即回到 `Idle`，因此下一笔不等待最终覆盖层收尾；旧会话的视觉回调会在已有更新会话时被丢弃。跟踪中收到任意新的手势按键按下时仍会先取消旧会话，再以新按下开始下一笔，且会吞掉被取消旧按键迟到的抬起事件。
 - `GestureFeedbackCoordinator.cs`：订阅手势 UI 事件，在 UI 线程按会话编号过滤陈旧更新，负责轨迹/提示覆盖层及手势相关 WebView 消息；`MainForm` 仅提供配置和宿主资源回调。
@@ -125,7 +125,7 @@ src\WuGesture.App\GestureEngine
 - `GestureScopeContext.cs`：用于规则匹配的窗口 app/有序分类上下文模型。
 - `ForegroundWindowScopeContextProvider.cs`：读取前台窗口或指定窗口句柄的进程名。
 - `ConfiguredScopeContextProvider.cs`：用配置里的应用程序列表把窗口进程名映射到有序分类列表，供作用域匹配使用。
-- `ActionExecutor.cs`：按动作类型执行命令；快捷键通过 Win32 `SendInput` 执行，窗口控制通过 `ShowWindow`、`SetWindowPos` 和窗口消息执行。命中桌面或桌面托管窗口的窗口控制动作会直接忽略；音量/亮度会调用对应控制器并显示 OSD。
+- `ActionExecutor.cs`：按动作类型执行命令；快捷键通过 Win32 `SendInput` 执行，窗口控制通过 `ShowWindow`、`SetWindowPos` 和窗口消息执行。运行程序使用 `ProcessStartInfo.ArgumentList` 启动指定 `.exe`，不使用 Shell、不等待退出且不主动提权。命中桌面或桌面托管窗口的窗口控制动作会直接忽略；音量/亮度会调用对应控制器并显示 OSD。
 - `DesktopWindowClassifier.cs`：通过桌面 Shell 窗口类以及父/拥有者链识别 `Progman`、`WorkerW` 和桌面视图，供窗口控制动作排除桌面目标。
 - `AudioController.cs`：通过 Windows Core Audio API 读取和设置系统主音量、静音状态。
 - `BrightnessController.cs`：通过 DDC/CI、WMI、Gamma 三段回退读取和设置显示亮度。
@@ -136,7 +136,7 @@ src\WuGesture.App\GestureEngine
 - `GestureInputCapture.cs`：在钩子回调内同步决定捕获/吞键，维护暂停、录制和迟到抬键状态，并把路径事件无等待交给解析器。
 - `GestureParserWorker.cs`：独立最高优先级解析线程的 FIFO 工作队列；合并未处理的移动事件，并保证松键事件前先处理最后一个移动点。
 - `GestureDirection.cs`：8 方向枚举。
-- `GestureRule.cs`：运行时规则和热键动作模型。
+- `GestureRule.cs`：运行时规则以及快捷键、窗口、音量、亮度和程序动作模型。
 - `GestureUiSettings.cs`：持久化的 UI 设置模型，包括配置界面外观、轨迹窗、提示泡泡、音量/亮度 OSD 和手势灵敏度配置。
 - `MouseTrailForm.cs`：全虚拟桌面的透明分层覆盖窗，负责窗口生命周期、鼠标穿透、DIB/HDC 缓冲和画面提交；启动后预热窗口句柄、DIB/HDC 缓冲和全透明分层位图，但空闲时保持隐藏，避免覆盖自动隐藏任务栏；重新显示时直接提交实际脏区域，不重新创建图形资源或清空整个虚拟桌面。新轨迹接管旧提示时会合并两者脏矩形后一次清除、重绘和提交，提示和 OSD 淡出帧也只重绘自身区域；命中手势结束时同样按旧轨迹与提示范围处理，避免重复更新整个虚拟桌面。首次 `UpdateLayeredWindow` 提交失败会记录 Win32 错误、窗口状态和缓存/当前虚拟屏幕信息，并通知主窗体异步重建整套覆盖层资源。即使轨迹线关闭，提示仍可单独使用此覆盖层显示。
 - `MouseTrailRenderer.cs`：管理手势路径、轨迹画笔和增量轨迹绘制。
@@ -211,11 +211,12 @@ src\WuGesture.App\Configuration
 - `scope`：支持 `global`、`category:<分类名>`、`app:<进程名>`；运行时优先匹配 app，其次按程序分类关联顺序匹配 category（越靠前优先级越高），最后匹配 global。
 - `mouseButton`：支持 `right`、`middle`，运行时会按当前触发的鼠标键区分规则。
 - `pattern`：手势方向列表，例如 `["Down", "Right"]`。
-- `action.type`：支持 `hotkey`、`window`、`volume` 和 `brightness`。
+- `action.type`：支持 `hotkey`、`window`、`volume`、`brightness` 和 `program`；`program` 仅用于普通鼠标手势，不适用于边缘操作。
 - `action.keys`：按键列表，例如 `["Control", "W"]`；允许为空，表示先保存手势，之后再补命令，空命令规则不会参与运行时执行。
 - `action.operation`：窗口控制操作，仅在 `action.type` 为 `window` 时使用；当前支持 `toggle-topmost`、`toggle-maximize`、`minimize`、`close`。
 - `action.operation`：音量控制在 `action.type` 为 `volume` 时支持 `increase`、`decrease`、`mute`；亮度控制在 `action.type` 为 `brightness` 时支持 `increase`、`decrease`。
 - `action.amount`：音量/亮度的 `increase`、`decrease` 步进值，范围 1-100。
+- `action.path` 与 `action.arguments`：运行程序动作的 `.exe` 路径和有序参数列表；路径为空的规则会保留配置但不参与运行，参数仅去除空白和空值，不解析格式。
 - `edgeActions`：独立的全局边缘操作列表；每项包含 `enabled`、`triggerType`、`location`、`wheelDirection`、`frictionCount` 和 `action`。`triggerType` 支持 `corner`、`friction`、`wheel`；`corner` 的位置为四角，`friction/wheel` 的位置为四边，`wheel` 额外区分滚轮 `up/down`。边缘操作名称不再保存，由 UI 和运行时根据触发类型、位置与滚轮方向生成。
 - `categories`：独立的分类名称列表，用于保留尚未配置手势或关联程序的空分类。
 - `applications`：应用程序归属列表，每项包含 `name`、`displayName`、`path`、`categories`；`categories` 是有序分类列表，运行时通过前台进程名匹配 `name`，分类同手势时越靠前优先级越高；`displayName` 只用于 UI 展示和编辑。
@@ -264,7 +265,7 @@ src\WuGesture.App\Web\PROJECT_STRUCTURE.md
 - 前端构建由 `WuGesture.App.csproj` 调用 `pnpm exec vite build --outDir`，将输出直接设为当前宿主输出目录的 `Web`；Vite 会清空该最终输出目录，源码 `Web` 目录不会被覆盖。
 - `Web\src\components\dialog\BaseDialog.vue` 统一前端对话框的遮罩关闭、可选右上关闭按钮、默认操作区和关闭动画；自动保存或即时选择类弹层可复用外壳并关闭默认操作区。
 - `Web\src\components\form\BaseInput.vue` 和 `Web\src\components\form\BaseRange.vue` 统一前端原生输入控件的 `v-model` 事件、宽度约束和滑块进度填充；页面继续保留各自的配置约束与保存时机。
-- Web 共享组件按 `sidebar`、`layout`、`dialog`、`form`、`ui`、`gesture`、`scope` 和 `rules` 分类；分类页、边缘页和设置页的私有组件分别保留在对应 `pages\*\components` 目录。
+- Web 共享组件按 `sidebar`、`layout`、`dialog`、`form`、`ui`、`gesture`、`scope` 和 `rules` 分类；`scope\ApplicationListItem.vue` 统一用于分类列表、程序详情页顶部和运行程序动作，只有路径文字可点击以打开其所在文件夹。分类页、边缘页和设置页的私有组件分别保留在对应 `pages\*\components` 目录。
 - 前端 `pnpm` 构建脚本通过 `src\WuGesture.App\Web\pnpm-workspace.yaml` 放行 `@parcel/watcher` 的本地构建脚本，避免非交互环境下的依赖安装中断。
 - 前端格式化使用 `pnpm format`，校验使用 `pnpm format:check`；两者均使用仓库根目录的 `.prettierrc.json`。
 - `WuGesture.App.csproj` 会在 `.NET` 构建前自动执行前端构建。
@@ -290,6 +291,7 @@ tests\WuGesture.App.Tests
 - `AppLogWriter`：异步 JSONL 写入、轮转、保留和队列溢出标记。
 - `WebViewRulesPayloadFactory`：`rules` 消息的配置映射、应用图标和应用版本字段。
 - `GestureConfigStore`：当前配置保存、旧/损坏配置的备份重置、未来版本保护和旧导入拒绝。
+- `ProgramActionTests`：运行程序动作的路径/参数归一化、空路径忽略和非 Shell 启动参数构造。
 
 ## 构建与发布
 

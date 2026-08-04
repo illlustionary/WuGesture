@@ -6,6 +6,7 @@ import AppShell from '@/components/layout/AppShell.vue'
 import GestureRuleList from '@/components/gesture/GestureRuleList.vue'
 import RulesSection from '@/components/rules/RulesSection.vue'
 import IconActionButton from '@/components/ui/IconActionButton.vue'
+import ApplicationListItem from '@/components/scope/ApplicationListItem.vue'
 import { useGestureEditorContext } from '@/gestureEditor/context/gestureEditorContext'
 import { useGestureEditorNavigation } from '@/gestureEditor/modules/useGestureEditorNavigation'
 import { SCOPE_KINDS } from '@/constants/gestureEditorOptions'
@@ -15,6 +16,7 @@ const route = useRoute()
 const navigation = useGestureEditorNavigation()
 const scopeKind = SCOPE_KINDS.app
 const selectedName = computed(() => editor.getSelectedName(scopeKind))
+const selectedApplication = computed(() => editor.getApplication(selectedName.value))
 
 editor.setActiveScope(scopeKind)
 
@@ -54,6 +56,17 @@ const orderedCategories = computed({
         v-if="selectedName"
         class="rules-panel"
       >
+        <RulesSection
+          title="程序"
+          compact
+        >
+          <ApplicationListItem
+            v-if="selectedApplication"
+            :app="selectedApplication"
+            @open-path="editor.openApplicationFolder"
+          />
+        </RulesSection>
+
         <RulesSection
           title="关联分类"
           compact

@@ -32,6 +32,8 @@ public sealed record VolumeControlAction(VolumeControlOperation Operation, int A
 
 public sealed record BrightnessControlAction(BrightnessControlOperation Operation, int Amount) : GestureAction;
 
+public sealed record ProgramAction(string Path, IReadOnlyList<string> Arguments) : GestureAction;
+
 public enum WindowControlOperation
 {
     ToggleTopMost,

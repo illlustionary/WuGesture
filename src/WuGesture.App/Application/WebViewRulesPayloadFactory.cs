@@ -22,7 +22,12 @@ internal static class WebViewRulesPayloadFactory
                 actionType = string.IsNullOrWhiteSpace(rule.Action.Type) ? GestureConfigContract.ActionTypes.Hotkey : rule.Action.Type,
                 keys = rule.Action.Keys,
                 operation = rule.Action.Operation,
-                amount = rule.Action.Amount
+                amount = rule.Action.Amount,
+                path = rule.Action.Path,
+                arguments = rule.Action.Arguments,
+                programName = Path.GetFileNameWithoutExtension(rule.Action.Path),
+                programIcon = ApplicationIconDataUrl.FromExecutable(rule.Action.Path),
+                programMissing = !string.IsNullOrWhiteSpace(rule.Action.Path) && !File.Exists(rule.Action.Path)
             }).ToArray(),
             edgeActions = loadedConfig.Config.EdgeActions.Select(action => new
             {

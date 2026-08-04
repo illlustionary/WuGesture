@@ -26,6 +26,7 @@ public static class GestureConfigContract
         public const string Window = "window";
         public const string Volume = "volume";
         public const string Brightness = "brightness";
+        public const string Program = "program";
     }
 
     public static class Operations

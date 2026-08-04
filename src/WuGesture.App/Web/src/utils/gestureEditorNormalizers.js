@@ -451,7 +451,7 @@ export function normalizeEdgeAction(action) {
     keysText: Array.isArray(action?.action?.keys)
       ? action.action.keys.join(' + ')
       : String(action?.keysText ?? '').trim(),
-    actionType: normalizeActionType(action?.action?.type ?? action?.actionType),
+    actionType: normalizeEdgeActionType(action?.action?.type ?? action?.actionType),
     windowOperation: normalizeWindowOperation(action?.action?.operation ?? action?.windowOperation),
     volumeOperation: normalizeVolumeOperation(action?.action?.operation ?? action?.volumeOperation),
     brightnessOperation: normalizeBrightnessOperation(action?.action?.operation ?? action?.brightnessOperation),
@@ -461,6 +461,11 @@ export function normalizeEdgeAction(action) {
   normalized.wheelDirection =
     normalized.triggerType === EDGE_TRIGGER_TYPES.wheel ? normalizeWheelDirection(action?.wheelDirection) : ''
   return normalized
+}
+
+function normalizeEdgeActionType(actionType) {
+  const normalized = normalizeActionType(actionType)
+  return normalized === ACTION_TYPES.program ? ACTION_TYPES.hotkey : normalized
 }
 
 export function normalizeEdgeActionInPlace(action) {

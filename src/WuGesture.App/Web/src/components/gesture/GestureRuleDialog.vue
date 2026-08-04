@@ -4,6 +4,8 @@ import BaseDialog from '@/components/dialog/BaseDialog.vue'
 import GestureRuleCommandFields from './rule-dialog/fields/GestureRuleCommandFields.vue'
 import GestureRuleGestureField from './rule-dialog/fields/GestureRuleGestureField.vue'
 import GestureRuleNameField from './rule-dialog/fields/GestureRuleNameField.vue'
+import GestureRuleProgramFields from './rule-dialog/fields/GestureRuleProgramFields.vue'
+import { ACTION_TYPES } from '@/constants/gestureEditorOptions'
 
 const props = defineProps({
   open: { type: Boolean, required: true },
@@ -17,7 +19,7 @@ const props = defineProps({
   brightnessOperations: { type: Array, default: () => [] }
 })
 
-defineEmits(['close', 'persist', 'record', 'record-hotkey'])
+defineEmits(['close', 'persist', 'record', 'record-hotkey', 'select-program', 'open-application-folder'])
 
 const patternLabel = computed(() => props.getGestureMnemonic?.(props.draft) || '尚未录制')
 </script>
@@ -43,6 +45,13 @@ const patternLabel = computed(() => props.getGestureMnemonic?.(props.draft) || '
         :message="message"
         @record="$emit('record')"
       />
+      <GestureRuleProgramFields
+        v-if="draft.actionType === ACTION_TYPES.program"
+        :draft="draft"
+        :show-picker="false"
+        :show-arguments="false"
+        @open-application-folder="$emit('open-application-folder', $event)"
+      />
       <GestureRuleCommandFields
         :draft="draft"
         :is-recording-hotkey="isRecordingHotkey?.(draft)"
@@ -50,6 +59,21 @@ const patternLabel = computed(() => props.getGestureMnemonic?.(props.draft) || '
         :volume-operations="volumeOperations"
         :brightness-operations="brightnessOperations"
         @record-hotkey="$emit('record-hotkey', draft)"
+      />
+      <GestureRuleProgramFields
+        v-if="draft.actionType === ACTION_TYPES.program"
+        :draft="draft"
+        :show-program="false"
+        :show-picker="true"
+        :show-arguments="false"
+        @select-program="$emit('select-program')"
+      />
+      <GestureRuleProgramFields
+        v-if="draft.actionType === ACTION_TYPES.program"
+        :draft="draft"
+        :show-program="false"
+        :show-picker="false"
+        :show-arguments="true"
       />
     </div>
   </BaseDialog>

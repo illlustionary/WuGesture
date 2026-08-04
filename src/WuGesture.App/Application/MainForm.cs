@@ -575,6 +575,9 @@ public sealed partial class MainForm : Form
             case WebViewMessageTypes.PickApplicationWindow:
                 PickApplicationWindow(json);
                 break;
+            case WebViewMessageTypes.OpenApplicationFolder:
+                OpenApplicationFolder(json);
+                break;
             case WebViewMessageTypes.StartGestureRecording:
                 StartGestureRecording(json);
                 break;
@@ -783,6 +786,30 @@ public sealed partial class MainForm : Form
         catch (Exception exception)
         {
             PostConfigResult(false, exception.Message);
+        }
+    }
+
+    private void OpenApplicationFolder(string json)
+    {
+        try
+        {
+            var message = JsonSerializer.Deserialize<OpenApplicationFolderWebMessage>(json, WebMessageJsonOptions);
+            var directory = Path.GetDirectoryName(message?.Path ?? "");
+            if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))
+            {
+                return;
+            }
+
+            _ = Process.Start(new ProcessStartInfo
+            {
+                FileName = "explorer.exe",
+                UseShellExecute = true,
+                Arguments = directory
+            });
+        }
+        catch (Exception exception)
+        {
+            AppLogger.Error("MainForm", "open-application-folder-failed", "Failed to open application folder.", exception);
         }
     }
 

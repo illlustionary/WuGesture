@@ -21,6 +21,8 @@ export function useGestureEditorOverlayStore() {
     closeGestureEditor: editor.closeGestureEditor,
     getGestureMnemonic,
     isRecordingHotkey: editor.isRecordingHotkey,
+    openApplicationFolder: editor.openApplicationFolder,
+    openProgramPicker: editor.openProgramPicker,
     persistGestureEditor: editor.persistGestureEditor,
     pickApplicationWindow: editor.pickApplicationWindow,
     selectApplication: editor.selectApplication,

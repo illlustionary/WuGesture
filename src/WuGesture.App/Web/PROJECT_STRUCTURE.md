@@ -96,10 +96,10 @@ src\components
 - `form\`：`BaseInput.vue`、`BaseRange.vue`、`CustomSelect.vue` 和 `ToggleCheckbox.vue` 等共享表单控件。
 - `ui\`：`AppIcon.vue`、`HoverBubble.vue` 和 `IconActionButton.vue` 等基础 UI 控件。
 - `gesture\`：`GestureRuleDialog.vue`、`GestureRuleList.vue` 以及 `gesture\rule-dialog\fields\` 下的规则字段组件。
-- `scope\`：`ScopeCreateDialog.vue` 和 `ScopePriorityNotice.vue` 等作用域配置共享组件。
+- `scope\`：`ScopeCreateDialog.vue`、`ScopePriorityNotice.vue` 和 `ApplicationListItem.vue` 等作用域配置共享组件；程序项仅路径文本可点击以打开所在文件夹，并以可选操作区支持分类页的移除按钮。
 - `rules\RulesSection.vue`：规则页右侧复用区块，统一标题、说明、操作区和内容面板。
 
-页面特有组件不放在这里：分类页的 `pages\category\components\ApplicationListItem.vue`、边缘页的 `pages\edge\components\` 组件和设置页的 `pages\settings\components\` 组件均只由对应页面使用，保持在页面目录内。
+页面特有组件不放在这里：边缘页的 `pages\edge\components\` 组件和设置页的 `pages\settings\components\` 组件均只由对应页面使用，保持在页面目录内。
 
 ## Composables
 
@@ -131,7 +131,7 @@ src\gestureEditor
 - `gestureEditor\stores\useGestureEdgeActionsStore.js`：边缘操作页使用的窄 store，只暴露边缘动作列表、边缘动作保存、快捷键录制和边缘操作选项。
 - `gestureEditor\stores\useGestureExclusionsStore.js`：排除项页使用的窄 store，只暴露排除项列表、应用图标匹配和排除项增删改入口。
 - `gestureEditor\stores\useGestureQuickSearchStore.js`：全局快速搜索使用的窄 store，从现有编辑器状态汇总规则、作用域、程序和排除项。
-- `gestureEditor\modules\useGestureEditorApplicationPicker.js`：共享 context 内部使用的应用选择器流程，包括打开选择器、发起窗口/文件选择请求，以及处理宿主返回的程序信息。
+- `gestureEditor\modules\useGestureEditorApplicationPicker.js`：无业务状态的应用选择器流程，只负责打开选择器、发起窗口/文件选择请求并返回宿主选中的程序信息；分类、排除项和运行程序草稿的回填由 context 分派。
 - `gestureEditor\modules\useGestureScopes.js`：分类/程序 scope 选择、新增、重命名、删除和规则查询。
 - `gestureEditor\modules\useGestureApplications.js`：应用程序视图数据读取、创建、显示名和有序分类列表更新。
 - `gestureEditor\modules\useCategoryApplications.js`：分类与应用程序之间的多对多关联、重排和移除。
@@ -181,7 +181,7 @@ src\pages
 - `global\index.vue`：全局规则页，单列表布局直接编辑全局规则表。
 - `category\index.vue`：分类规则子页，通过 `/category/:name` 显示当前分类关联的应用程序和手势列表；分类列表由全局多级侧栏提供。
   - `category\composables\useCategoryPage.js`：分类页私有弹窗草稿、分类新增/重命名/删除编排和分类图标选择。
-- `app\index.vue`：程序规则子页，通过 `/app/:name` 显示当前程序的分类优先级和手势列表；程序列表由全局多级侧栏提供。
+- `app\index.vue`：程序规则子页，通过 `/app/:name` 显示当前程序信息、分类优先级和手势列表；程序列表由全局多级侧栏提供。
   - `app\composables\useAppPage.js`：程序页私有重命名弹窗、删除编排和程序图标 fallback 文本。
 - `edge\index.vue`：边缘操作子页，通过路由参数只展示触发角、摩擦边或边缘滚动其中一组配置。
   - `edge\components\EdgeActionSection.vue`：边缘操作大项区块。
@@ -225,7 +225,7 @@ Windows 系统标题栏负责窗口控制；其下方侧栏顶部的 `SidebarApp
 - 页面切换使用方向感过渡：按顶部标签顺序向右切换时新页面从右侧滑入并渐显，向左切换时从左侧滑入并渐显，旧页面会轻微反向淡出；分类和程序子项切换与边缘操作、设置一样先完成路由切换，再由目标页面同步选中作用域，避免过渡中重复更新内容。
 - `分类` 和 `程序` 使用全局多级侧栏管理动态作用域，页面主体只展示当前分类/程序内容，不再重复显示内部作用域列表。
 - `分类` 页右侧包含“应用程序”和“手势列表”两个区块；程序可同时加入多个分类，分类关联顺序决定相同手势的覆盖顺序，越靠前的分类优先级越高。
-- `程序` 页展示关联分类排序和手势列表；关联分类越靠上优先级越高，可通过拖拽或上移、下移调整同手势冲突时的覆盖顺序，程序规则仍按 app 作用域单独维护。
+- `程序` 页顶部展示共享程序项，随后展示关联分类排序和手势列表；关联分类越靠上优先级越高，可通过拖拽或上移、下移调整同手势冲突时的覆盖顺序，程序规则仍按 app 作用域单独维护。
 - `边缘操作` 的触发角、摩擦边、边缘滚动分别通过独立子路由展示配置；点击卡片打开独立弹窗编辑启用状态、命令和参数，名称由触发类型、位置与滚轮方向自动生成，关闭弹窗后自动保存。
 - `排除项` 页维护不执行鼠标手势的程序列表；可通过拖动鼠标或浏览 exe 添加程序，也可为单个排除项勾选“同时禁用边缘操作”，列表会展示从 exe 路径动态提取的应用图标。
 - `全局`、`分类` 和 `程序` 规则页会显示共享的作用域优先级提示，明确 `程序 > 分类 > 全局` 以及未命中当前层级时的继承关系。

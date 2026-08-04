@@ -129,7 +129,12 @@ export function useGestureRuleEditor({
         windowOperation: normalizeWindowOperation(draft.windowOperation),
         volumeOperation: normalizeVolumeOperation(draft.volumeOperation),
         brightnessOperation: normalizeBrightnessOperation(draft.brightnessOperation),
-        amount: normalizeAmount(draft.amount)
+        amount: normalizeAmount(draft.amount),
+        programPath: String(draft.programPath ?? '').trim(),
+        programArguments: normalizeProgramArguments(draft.programArguments),
+        programName: String(draft.programName ?? '').trim(),
+        programIcon: String(draft.programIcon ?? '').trim(),
+        programMissing: Boolean(draft.programMissing)
       })
       state.rules.push(rule)
       state.gestureEditorRuleId = rule.id
@@ -145,6 +150,11 @@ export function useGestureRuleEditor({
     rule.volumeOperation = normalizeVolumeOperation(draft.volumeOperation)
     rule.brightnessOperation = normalizeBrightnessOperation(draft.brightnessOperation)
     rule.amount = normalizeAmount(draft.amount)
+    rule.programPath = String(draft.programPath ?? '').trim()
+    rule.programArguments = normalizeProgramArguments(draft.programArguments)
+    rule.programName = String(draft.programName ?? '').trim()
+    rule.programIcon = String(draft.programIcon ?? '').trim()
+    rule.programMissing = Boolean(draft.programMissing)
     scheduleSaveRules()
 
     return true
@@ -236,6 +246,18 @@ export function useGestureRuleEditor({
     return state.recordingHotkeyTarget === target
   }
 
+  function applySelectedProgram(message) {
+    const path = String(message.path ?? '').trim()
+    if (!path) {
+      return
+    }
+
+    state.gestureDraft.programPath = path
+    state.gestureDraft.programName = String(message.displayName ?? message.name ?? '').trim()
+    state.gestureDraft.programIcon = String(message.icon ?? '').trim()
+    state.gestureDraft.programMissing = false
+  }
+
   function openGestureEditor(mode, rule, scopeKind, scopeName) {
     setGesturePaused(true)
     state.gestureEditorMode = mode
@@ -253,7 +275,12 @@ export function useGestureRuleEditor({
       windowOperation: normalizeWindowOperation(rule?.windowOperation),
       volumeOperation: normalizeVolumeOperation(rule?.volumeOperation),
       brightnessOperation: normalizeBrightnessOperation(rule?.brightnessOperation),
-      amount: normalizeAmount(rule?.amount)
+      amount: normalizeAmount(rule?.amount),
+      programPath: String(rule?.programPath ?? '').trim(),
+      programArguments: normalizeProgramArguments(rule?.programArguments),
+      programName: String(rule?.programName ?? '').trim(),
+      programIcon: String(rule?.programIcon ?? '').trim(),
+      programMissing: Boolean(rule?.programMissing)
     }
     state.gestureRecognitionMessage = '点击开始录制。再次点击可停止。'
     state.gestureEditorOpen = true
@@ -353,6 +380,10 @@ export function useGestureRuleEditor({
       return keys.length > 0 ? `快捷键：${keys.join(' + ')}` : '快捷键'
     }
 
+    if (normalizeActionType(source?.actionType) === ACTION_TYPES.program) {
+      return source?.programName || '运行程序'
+    }
+
     return String(getActionLabel(source) || getGestureMnemonic(source)).trim()
   }
 
@@ -360,6 +391,7 @@ export function useGestureRuleEditor({
     addRule,
     applyRecordedGesture,
     applyRecordedHotkey,
+    applySelectedProgram,
     closeGestureEditor,
     isRecordingHotkey,
     openAddRule,
@@ -373,4 +405,10 @@ export function useGestureRuleEditor({
     stopRecording,
     updateRuleActionName
   }
+}
+
+function normalizeProgramArguments(argumentsList) {
+  return (Array.isArray(argumentsList) ? argumentsList : [])
+    .map(argument => String(argument ?? '').trim())
+    .filter(Boolean)
 }

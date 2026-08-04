@@ -5,6 +5,7 @@ internal static class WebViewMessageTypes
     public const string GetStatus = "get-status";
     public const string SelectApplication = "select-application";
     public const string PickApplicationWindow = "pick-application-window";
+    public const string OpenApplicationFolder = "open-application-folder";
     public const string StartGestureRecording = "start-gesture-recording";
     public const string StopGestureRecording = "stop-gesture-recording";
     public const string SetGesturePaused = "set-gesture-paused";

@@ -26,6 +26,13 @@ internal sealed class SelectApplicationWebMessage
     public string Category { get; set; } = "";
 }
 
+internal sealed class OpenApplicationFolderWebMessage
+{
+    public string Type { get; set; } = "";
+
+    public string Path { get; set; } = "";
+}
+
 internal sealed class SetGesturePausedWebMessage
 {
     public string Type { get; set; } = "";
