@@ -1,6 +1,6 @@
 <script setup>
-import AppIcon from '@/components/AppIcon.vue'
-import CustomSelect from '@/components/CustomSelect.vue'
+import AppIcon from '@/components/ui/AppIcon.vue'
+import CustomSelect from '@/components/form/CustomSelect.vue'
 import { ACTION_TYPES, OPERATIONS } from '@/constants/gestureEditorOptions'
 import { GESTURE_EDITOR_LIMITS } from '@/constants/gestureEditorLimits'
 

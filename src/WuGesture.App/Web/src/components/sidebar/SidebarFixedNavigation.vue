@@ -1,7 +1,7 @@
 <script setup>
 import { RouterLink } from 'vue-router'
-import AppIcon from '@/components/AppIcon.vue'
-import HoverBubble from '@/components/HoverBubble.vue'
+import AppIcon from '@/components/ui/AppIcon.vue'
+import HoverBubble from '@/components/ui/HoverBubble.vue'
 
 defineProps({
   isSidebarHidden: { type: Boolean, default: false },

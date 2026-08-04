@@ -10,7 +10,7 @@ This repository is a Vite + Vue 3 web frontend for the WuGesture application. It
 - `package.json`: project metadata, scripts, and dependencies.
 - `pnpm-lock.yaml`: locked dependency tree.
 - `pnpm-workspace.yaml`: workspace configuration.
-- `vite.config.js`: Vite build and dev server configuration, including `vite-svg-loader` for SVG-as-component imports.
+- `vite.config.js`: Vite build and dev server configuration, including `vite-svg-loader` and the `@`/`@resources` path aliases.
 - `src/`: application source code.
 
 ## Source Structure
@@ -19,14 +19,8 @@ This repository is a Vite + Vue 3 web frontend for the WuGesture application. It
 - `src/App.vue`: top-level shell with the main navigation, status bar, and global dialogs.
 - `src/styles.scss`: shared visual styling for the entire app.
 - `src/gestureEditor/`: gesture editor domain module, including context, narrow stores, and internal workflow modules for rule editing, scope selection, persistence, and WebView message handling.
-- `src/components/`: reusable UI pieces used by the shell and editors.
-  - `AppShell.vue`: layout wrapper for the app experience.
-  - `BaseDialog.vue`: shared dialog shell for modal behavior, optional close button, action footer, and transitions.
-  - `BaseInput.vue` and `BaseRange.vue`: shared native input controls for text/number/color and range editing.
-  - `IconActionButton.vue`: shared icon-only button for add/close/delete actions.
-  - `GestureRuleDialog.vue`: gesture rule creation/edit dialog.
-  - `GestureRuleList.vue`: rule list and rule operations.
-  - `ScopeCreateDialog.vue`: scope creation dialog.
+- `src/components/`: reusable UI pieces grouped by responsibility: `sidebar/`, `layout/`, `dialog/`, `form/`, `ui/`, `gesture/`, `scope/`, and `rules/`.
+- `src/pages/*/components/`: page-private components that are only used by their owning route, such as category application items and edge/settings form sections.
 - `src/assets/`: SVG assets used by the UI, including add, close, and delete icons. These are imported as Vue components.
 - `src/pages/`: route-level views.
   - `GlobalRulesPage.vue`: global rule scope page with the same split layout pattern as the other editor pages.

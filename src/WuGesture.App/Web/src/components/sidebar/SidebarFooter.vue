@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue'
-import AppIcon from '@/components/AppIcon.vue'
-import HoverBubble from '@/components/HoverBubble.vue'
+import AppIcon from '@/components/ui/AppIcon.vue'
+import HoverBubble from '@/components/ui/HoverBubble.vue'
 
 const props = defineProps({
   isCollapsed: { type: Boolean, default: false },

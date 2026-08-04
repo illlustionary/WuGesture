@@ -1,5 +1,5 @@
 <script setup>
-import IconActionButton from './IconActionButton.vue'
+import IconActionButton from '@/components/ui/IconActionButton.vue'
 
 const props = defineProps({
   open: { type: Boolean, required: true },

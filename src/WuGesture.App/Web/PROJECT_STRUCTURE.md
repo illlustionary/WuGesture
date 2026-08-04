@@ -30,9 +30,9 @@ src\WuGesture.App\Web
 - `package.json`：前端工程依赖与脚本；`format` 和 `format:check` 使用本地 Prettier 按仓库根目录的 `.prettierrc.json` 格式化或校验前端源码。
 - `pnpm-lock.yaml`：锁定依赖树。
 - `pnpm-workspace.yaml`：工作区配置，并放行 `@parcel/watcher` 的本地构建脚本，避免非交互环境下依赖安装中断。
-- `jsconfig.json`：配置编辑器路径提示，`@/*` 指向 `src/*`。
+- `jsconfig.json`：配置编辑器路径提示，`@/*` 指向 `src/*`，`@resources/*` 指向桌面宿主的 `Resources/*`。
 - `uno.config.js`：UnoCSS 配置，集中定义页面区块、表单、列表等常用 shortcuts。
-- `vite.config.js`：Vite 构建配置，包含 `vite-svg-loader`、UnoCSS Vite 插件和 `@` 到 `src` 的路径别名。
+- `vite.config.js`：Vite 构建配置，包含 `vite-svg-loader`、UnoCSS Vite 插件，以及 `@` 到 `src`、`@resources` 到桌面宿主 `Resources` 目录的路径别名。
 - `PROJECT_STRUCTURE.md`：当前 Web 子项目地图。
 - `node_modules`：本地依赖目录，不纳入源码维护。
 
@@ -90,28 +90,16 @@ SVG 按使用位置分目录：
 src\components
 ```
 
-- `AppSidebar.vue`：系统标题栏下方的贴边满高左侧导航壳，只负责侧栏覆盖层状态、区域组装和向应用壳转发操作事件。
-- `SidebarFixedNavigation.vue`、`SidebarCategorySection.vue`、`SidebarApplicationSection.vue`、`SidebarEdgeSection.vue`、`SidebarSettingsSection.vue`：侧栏的固定导航、分类、程序、边缘操作和设置五个独立区域；各自维护展开状态、路由选中、子项、搜索或区域操作。
-- `SidebarFooter.vue`：侧栏底部的规则优先级帮助、主题切换、快速搜索和收起按钮；收起按钮使用 `assets/navigation/sidebar.svg`，通过 180 度旋转表示展开/收起状态，不使用过渡动画。
-- `NestedRouteView.vue`：嵌套路由的轻量承载组件，使分类、程序、边缘操作和设置的子路由在同一工作区内独立渲染。
-- `AppShell.vue`：无外层卡片样式的页面布局壳，提供主体区域和插槽，由应用壳层负责右侧工作区滚动。
-- `BaseDialog.vue`：共享对话框外壳，统一遮罩关闭、可选关闭按钮、默认取消/确认操作区及上移淡出关闭动画；搜索和自动保存编辑器可关闭默认操作区。
-- `BaseInput.vue`：共享原生文本、数字、密码、URL 和颜色输入控件的 `v-model` 事件与基础宽度约束。
-- `BaseRange.vue`：共享范围滑块，集中维护进度填充样式、`v-model` 和原生输入/变更事件。
-- `GestureRuleDialog.vue`：添加和编辑手势规则的弹窗。
-  - `components\gesture-rule-dialog\`：规则弹窗的私有表单组件；分别承载名称、手势摘要，以及快捷键、窗口、音量和亮度命令字段，主弹窗只负责草稿与录制事件编排。
-- `GestureRuleList.vue`：规则表、规则展示和规则操作入口。
-- `HoverBubble.vue`：悬浮提示气泡。
-- `AppIcon.vue`：本地图标展示入口，只接收图标名称并从 `appIcons.js` 查找 SVG；未知名称回退为 `circle-dashed`。
-- `IconActionButton.vue`：共享图标按钮，通过 `AppIcon` 按 `icon` 名称展示图标。
-- `QuickSearchDialog.vue`：全局快速搜索弹层，按配置类型显示匹配结果，包含带搜索图标和焦点反馈的输入字段。
-- `ConfirmDialog.vue`：重大操作确认弹窗，带缩放进入/退出动画。
-- `CustomSelect.vue`：共享弹层式自定义单选下拉控件，不复用浏览器默认 select。
-- `ToggleCheckbox.vue`：共享自定义复选控件，用于替代浏览器默认 checkbox。
-- `ScopeCreateDialog.vue`：分类或作用域名称创建/编辑弹窗。
-- `applications\ApplicationListItem.vue`：分类页右侧程序关联列表项。
+- `sidebar\`：侧栏壳和固定导航、分类、程序、边缘操作、设置及底部区域组件。
+- `layout\`：`AppShell.vue` 页面布局壳和 `NestedRouteView.vue` 嵌套路由承载组件。
+- `dialog\`：`BaseDialog.vue`、`ConfirmDialog.vue` 和 `QuickSearchDialog.vue` 等共享对话框。
+- `form\`：`BaseInput.vue`、`BaseRange.vue`、`CustomSelect.vue` 和 `ToggleCheckbox.vue` 等共享表单控件。
+- `ui\`：`AppIcon.vue`、`HoverBubble.vue` 和 `IconActionButton.vue` 等基础 UI 控件。
+- `gesture\`：`GestureRuleDialog.vue`、`GestureRuleList.vue` 以及 `gesture\rule-dialog\fields\` 下的规则字段组件。
+- `scope\`：`ScopeCreateDialog.vue` 和 `ScopePriorityNotice.vue` 等作用域配置共享组件。
 - `rules\RulesSection.vue`：规则页右侧复用区块，统一标题、说明、操作区和内容面板。
-- `ScopePriorityNotice.vue`：全局、分类和程序规则页共享的作用域优先级与继承提示。
+
+页面特有组件不放在这里：分类页的 `pages\category\components\ApplicationListItem.vue`、边缘页的 `pages\edge\components\` 组件和设置页的 `pages\settings\components\` 组件均只由对应页面使用，保持在页面目录内。
 
 ## Composables
 
@@ -346,10 +334,9 @@ Windows 系统标题栏负责窗口控制；其下方侧栏顶部的 `SidebarApp
 
 ## 构建
 
-- 前端使用 `pnpm build` 生成仓库根目录下的 `dist\web`。
-- `WuGesture.App.csproj` 会在 `.NET` 构建前自动执行前端构建。
-- `WuGesture.App.csproj` 会在前端构建后把 `dist\web` 复制到宿主输出目录中的 `Web\dist`。
-- 桌面宿主通过 WebView2 虚拟主机 `https://gesture.wu.philosophy/` 加载宿主输出目录中的 `Web\dist`。
+- `WuGesture.App.csproj` 会在 `.NET` 构建前自动执行 `pnpm exec vite build --outDir <宿主输出目录>\Web`；Vite 会清空该最终目录，前端源码目录不会被覆盖。
+- 普通构建输出到 `$(OutputPath)\Web`，`dotnet publish -o` 输出到实际 `$(PublishDir)\Web`，不再使用中间 `dist` 目录或复制步骤。
+- 桌面宿主通过 WebView2 虚拟主机 `https://gesture.wu.philosophy/` 加载宿主输出目录中的 `Web`。
 
 ## 何时更新此文件
 

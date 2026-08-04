@@ -1,5 +1,5 @@
 <script setup>
-import CustomSelect from '@/components/CustomSelect.vue'
+import CustomSelect from '@/components/form/CustomSelect.vue'
 
 defineProps({
   draft: { type: Object, required: true },

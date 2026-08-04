@@ -8,12 +8,12 @@ export default defineConfig({
   plugins: [vue(), UnoCSS(), svgLoader()],
   base: './',
   build: {
-    outDir: '../../../dist/web',
     emptyOutDir: true
   },
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url))
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+      '@resources': fileURLToPath(new URL('../Resources', import.meta.url))
     }
   }
 })

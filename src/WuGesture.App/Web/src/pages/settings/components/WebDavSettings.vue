@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue'
-import BaseInput from '@/components/BaseInput.vue'
-import IconActionButton from '@/components/IconActionButton.vue'
+import BaseInput from '@/components/form/BaseInput.vue'
+import IconActionButton from '@/components/ui/IconActionButton.vue'
 import SettingsField from './SettingsField.vue'
 import SettingsFormGrid from './SettingsFormGrid.vue'
 import SettingsSectionCard from './SettingsSectionCard.vue'

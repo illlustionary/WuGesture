@@ -1,4 +1,4 @@
-const nestedRouteView = () => import('../../components/NestedRouteView.vue')
+const nestedRouteView = () => import('../../components/layout/NestedRouteView.vue')
 const settingsPage = () => import('../../pages/settings/index.vue')
 
 export default {

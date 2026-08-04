@@ -1,7 +1,7 @@
 <script setup>
-import AppShell from '@/components/AppShell.vue'
-import GestureRuleList from '@/components/GestureRuleList.vue'
-import IconActionButton from '@/components/IconActionButton.vue'
+import AppShell from '@/components/layout/AppShell.vue'
+import GestureRuleList from '@/components/gesture/GestureRuleList.vue'
+import IconActionButton from '@/components/ui/IconActionButton.vue'
 import RulesSection from '@/components/rules/RulesSection.vue'
 import { useGestureEditorContext } from '@/gestureEditor/context/gestureEditorContext'
 import { SCOPE_KINDS } from '@/constants/gestureEditorOptions'

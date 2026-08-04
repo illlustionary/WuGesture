@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
-import AppIcon from '@/components/AppIcon.vue'
+import AppIcon from '@/components/ui/AppIcon.vue'
 
 defineProps({
   isSidebarHidden: { type: Boolean, default: false },

@@ -1,5 +1,5 @@
 <script setup>
-import CustomSelect from '@/components/CustomSelect.vue'
+import CustomSelect from '@/components/form/CustomSelect.vue'
 import { GESTURE_EDITOR_LIMITS } from '@/constants/gestureEditorLimits'
 
 defineProps({

@@ -22,7 +22,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
-    <OutputPath>..\..\artifacts\publish\WuGesture\</OutputPath>
+    <OutputPath>..\..\artifacts\release\WuGesture\</OutputPath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -47,17 +47,18 @@
   </ItemGroup>
 
   <Target Name="BuildWebFrontend" BeforeTargets="PrepareForBuild">
-    <Exec WorkingDirectory="$(MSBuildProjectDirectory)\Web" Command="pnpm build" />
-  </Target>
+    <PropertyGroup>
+      <WebFrontendOutputPath Condition="'$(_IsPublishing)' == 'true'">$(PublishDir)\Web</WebFrontendOutputPath>
+      <WebFrontendOutputPath Condition="'$(_IsPublishing)' != 'true'">$(OutputPath)\Web</WebFrontendOutputPath>
+    </PropertyGroup>
 
-  <Target Name="CopyWebFrontendOutput" AfterTargets="BuildWebFrontend">
-    <ItemGroup>
-      <WebFrontendFiles Include="..\..\dist\web\**\*" />
-    </ItemGroup>
+    <ConvertToAbsolutePath Paths="$(WebFrontendOutputPath)">
+      <Output TaskParameter="AbsolutePaths" PropertyName="WebFrontendOutputPath" />
+    </ConvertToAbsolutePath>
 
-    <Copy
-      SourceFiles="@(WebFrontendFiles)"
-      DestinationFiles="@(WebFrontendFiles->'$(OutputPath)Web\dist\%(RecursiveDir)%(Filename)%(Extension)')" />
+    <Exec
+      WorkingDirectory="$(MSBuildProjectDirectory)\Web"
+      Command="pnpm exec vite build --outDir &quot;$(WebFrontendOutputPath)&quot;" />
   </Target>
 
 </Project>

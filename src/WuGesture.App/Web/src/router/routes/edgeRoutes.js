@@ -1,4 +1,4 @@
-const nestedRouteView = () => import('../../components/NestedRouteView.vue')
+const nestedRouteView = () => import('../../components/layout/NestedRouteView.vue')
 const edgeActionsPage = () => import('../../pages/edge/index.vue')
 
 export default {

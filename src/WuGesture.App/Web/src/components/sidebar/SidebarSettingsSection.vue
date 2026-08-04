@@ -1,9 +1,9 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
-import AppIcon from '@/components/AppIcon.vue'
-import HoverBubble from '@/components/HoverBubble.vue'
-import IconActionButton from '@/components/IconActionButton.vue'
+import AppIcon from '@/components/ui/AppIcon.vue'
+import HoverBubble from '@/components/ui/HoverBubble.vue'
+import IconActionButton from '@/components/ui/IconActionButton.vue'
 
 defineProps({
   isSidebarHidden: { type: Boolean, default: false },

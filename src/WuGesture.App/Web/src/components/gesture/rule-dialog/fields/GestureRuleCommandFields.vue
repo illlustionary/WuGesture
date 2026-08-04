@@ -1,5 +1,5 @@
 <script setup>
-import CustomSelect from '@/components/CustomSelect.vue'
+import CustomSelect from '@/components/form/CustomSelect.vue'
 import GestureRuleBrightnessFields from './GestureRuleBrightnessFields.vue'
 import GestureRuleHotkeyFields from './GestureRuleHotkeyFields.vue'
 import GestureRuleVolumeFields from './GestureRuleVolumeFields.vue'

@@ -21,14 +21,10 @@ public sealed class GestureService : IDisposable
     private readonly ActionExecutor actionExecutor = new();
     private readonly ApplicationExclusionMatcher exclusionMatcher = new();
     private readonly GestureSession session = new();
-    private readonly object parserQueueLock = new();
-    private readonly object hookStateLock = new();
-    private readonly Queue<ParserWorkItem> parserQueue = [];
+    private readonly GestureParserWorker parserWorker = new();
+    private readonly GestureInputCapture inputCapture;
     private readonly ConcurrentQueue<PendingAction> pendingActions = new();
     private GestureProgressEventArgs? pendingTrackingProgress;
-    private ParserMoveWorkItem? pendingMove;
-    private Thread? parserThread;
-    private bool parserStopRequested;
     private ApplicationExclusionMatcher captureExclusionMatcher = new();
     private int minimumGestureDistance = GestureRuntimeDefaults.MinimumGestureDistance;
     private int actionWorkerScheduled;
@@ -41,10 +37,6 @@ public sealed class GestureService : IDisposable
     private bool isPaused;
     private bool disableGesturesInFullscreen;
     private ActiveMouseButton activeMouseButton = ActiveMouseButton.None;
-    private ActiveMouseButton hookActiveMouseButton = ActiveMouseButton.None;
-    private ActiveMouseButton hookSuppressedReleaseButton = ActiveMouseButton.None;
-    private bool capturePaused;
-    private string? captureRecordingRequestId;
     private bool captureDisableGesturesInFullscreen;
     private long nextSessionId;
     private bool started;
@@ -88,6 +80,10 @@ public sealed class GestureService : IDisposable
     {
         this.matcher = matcher;
         this.scopeContextProvider = scopeContextProvider ?? new ForegroundWindowScopeContextProvider();
+        inputCapture = new GestureInputCapture(CanCaptureNormalGesture);
+        inputCapture.GestureStarted += OnGestureStarted;
+        inputCapture.GestureMoved += OnGestureMoved;
+        inputCapture.GestureEnded += OnGestureEnded;
     }
 
     public void UpdateMatcher(GestureMatcher newMatcher)
@@ -95,21 +91,11 @@ public sealed class GestureService : IDisposable
         EnqueueParserAction(service => service.matcher = newMatcher);
     }
 
-    private abstract record ParserWorkItem;
-
-    private sealed record ParserActionWorkItem(Action<GestureService> Action) : ParserWorkItem;
-
-    private sealed record ParserStartWorkItem(
+    private sealed record GestureStartInput(
         Point Location,
         ActiveMouseButton Button,
         long Timestamp,
-        string? RecordingRequestId) : ParserWorkItem;
-
-    private sealed record ParserMoveWorkItem(Point Location, long Timestamp) : ParserWorkItem;
-
-    private sealed record ParserEndWorkItem(Point Location, ActiveMouseButton Button) : ParserWorkItem;
-
-    private sealed record ParserStopWorkItem : ParserWorkItem;
+        string? RecordingRequestId);
 
     public void ApplyGestureSensitivity(GestureSensitivityUiSettings settings)
     {
@@ -157,23 +143,12 @@ public sealed class GestureService : IDisposable
 
     public void SetPaused(bool paused)
     {
-        if (disposed || Volatile.Read(ref capturePaused) == paused)
+        if (disposed)
         {
             return;
         }
 
-        Volatile.Write(ref capturePaused, paused);
-        if (paused)
-        {
-            lock (hookStateLock)
-            {
-                if (hookActiveMouseButton != ActiveMouseButton.None)
-                {
-                    hookSuppressedReleaseButton = hookActiveMouseButton;
-                    hookActiveMouseButton = ActiveMouseButton.None;
-                }
-            }
-        }
+        inputCapture.SetPaused(paused);
         if (!paused)
         {
             StopRecording();
@@ -202,7 +177,7 @@ public sealed class GestureService : IDisposable
             return;
         }
 
-        Volatile.Write(ref captureRecordingRequestId, trimmed);
+        inputCapture.SetRecordingRequest(trimmed);
         EnqueueParserAction(service =>
         {
             if (service.recordingRequestId == trimmed)
@@ -218,7 +193,7 @@ public sealed class GestureService : IDisposable
 
     public void StopRecording()
     {
-        Volatile.Write(ref captureRecordingRequestId, null);
+        inputCapture.SetRecordingRequest(null);
         EnqueueParserAction(service =>
         {
             if (service.recordingRequestId is null)
@@ -245,7 +220,7 @@ public sealed class GestureService : IDisposable
         }
 
         synchronizationContext = SynchronizationContext.Current;
-        StartParserThread();
+        parserWorker.Start();
         mouseHook.RightButtonDown += OnRightButtonDown;
         mouseHook.MiddleButtonDown += OnMiddleButtonDown;
         mouseHook.MouseMove += OnMouseMove;
@@ -262,7 +237,7 @@ public sealed class GestureService : IDisposable
             mouseHook.MouseMove -= OnMouseMove;
             mouseHook.RightButtonUp -= OnRightButtonUp;
             mouseHook.MiddleButtonUp -= OnMiddleButtonUp;
-            StopParserThread();
+            parserWorker.Dispose();
             throw;
         }
         GestureStartDiagnostics.ReportServiceStarted();
@@ -282,7 +257,7 @@ public sealed class GestureService : IDisposable
         mouseHook.RightButtonUp -= OnRightButtonUp;
         mouseHook.MiddleButtonUp -= OnMiddleButtonUp;
         mouseHook.Dispose();
-        StopParserThread();
+        parserWorker.Dispose();
         started = false;
     }
 
@@ -294,56 +269,53 @@ public sealed class GestureService : IDisposable
         }
 
         disposed = true;
+        inputCapture.Dispose();
         Stop();
     }
 
     private void OnRightButtonDown(object? sender, MouseHookEventArgs e)
     {
-        CaptureButtonDown(e, ActiveMouseButton.Right);
+        inputCapture.HandleButtonDown(e, GestureInputButton.Right);
     }
 
     private void OnMiddleButtonDown(object? sender, MouseHookEventArgs e)
     {
-        CaptureButtonDown(e, ActiveMouseButton.Middle);
+        inputCapture.HandleButtonDown(e, GestureInputButton.Middle);
     }
 
-    private void CaptureButtonDown(MouseHookEventArgs e, ActiveMouseButton button)
+    private void OnMouseMove(object? sender, MouseHookEventArgs e)
     {
-        if (disposed || !CanCaptureInput(e.Location))
-        {
-            return;
-        }
-
-        string? captureRecordingId;
-        lock (hookStateLock)
-        {
-            captureRecordingId = Volatile.Read(ref captureRecordingRequestId);
-            if (disposed || (Volatile.Read(ref capturePaused) && captureRecordingId is null))
-            {
-                return;
-            }
-
-            if (hookActiveMouseButton != ActiveMouseButton.None && hookActiveMouseButton != button)
-            {
-                hookSuppressedReleaseButton = hookActiveMouseButton;
-            }
-
-            hookActiveMouseButton = button;
-            if (hookSuppressedReleaseButton == button)
-            {
-                hookSuppressedReleaseButton = ActiveMouseButton.None;
-            }
-        }
-
-        e.Handled = true;
-        EnqueueParserWorkItem(new ParserStartWorkItem(
-            e.Location,
-            button,
-            Stopwatch.GetTimestamp(),
-            captureRecordingId));
+        inputCapture.HandleMove(e);
     }
 
-    private void StartTracking(ParserStartWorkItem item)
+    private void OnRightButtonUp(object? sender, MouseHookEventArgs e)
+    {
+        inputCapture.HandleButtonUp(e, GestureInputButton.Right);
+    }
+
+    private void OnMiddleButtonUp(object? sender, MouseHookEventArgs e)
+    {
+        inputCapture.HandleButtonUp(e, GestureInputButton.Middle);
+    }
+
+    private void OnGestureStarted(Point location, GestureInputButton button, long timestamp, string? recordingId)
+    {
+        var start = new GestureStartInput(location, ToActiveMouseButton(button), timestamp, recordingId);
+        parserWorker.Enqueue(() => StartTracking(start));
+    }
+
+    private void OnGestureMoved(Point location, long timestamp)
+    {
+        parserWorker.EnqueueLatestMove(() => ProcessMove(location, timestamp));
+    }
+
+    private void OnGestureEnded(Point location, GestureInputButton button)
+    {
+        var activeButton = ToActiveMouseButton(button);
+        parserWorker.EnqueueAfterLatestMove(() => ProcessEnd(location, activeButton));
+    }
+
+    private void StartTracking(GestureStartInput item)
     {
         var button = item.Button;
         var recordingId = item.RecordingRequestId;
@@ -416,58 +388,7 @@ public sealed class GestureService : IDisposable
         RaiseProgress(session.Id, session.Snapshot(), [], true, ToPublicButton(button), force: true);
     }
 
-    private void OnMouseMove(object? sender, MouseHookEventArgs e)
-    {
-        lock (hookStateLock)
-        {
-            if (disposed || hookActiveMouseButton == ActiveMouseButton.None)
-            {
-                return;
-            }
-        }
-
-        EnqueueLatestMove(e.Location, Stopwatch.GetTimestamp());
-    }
-
-    private void OnRightButtonUp(object? sender, MouseHookEventArgs e)
-    {
-        CaptureButtonUp(e, ActiveMouseButton.Right);
-    }
-
-    private void OnMiddleButtonUp(object? sender, MouseHookEventArgs e)
-    {
-        CaptureButtonUp(e, ActiveMouseButton.Middle);
-    }
-
-    private void CaptureButtonUp(MouseHookEventArgs e, ActiveMouseButton button)
-    {
-        var shouldFinish = false;
-        lock (hookStateLock)
-        {
-            if (hookSuppressedReleaseButton == button)
-            {
-                hookSuppressedReleaseButton = ActiveMouseButton.None;
-                e.Handled = true;
-                return;
-            }
-
-            if (disposed || hookActiveMouseButton != button)
-            {
-                return;
-            }
-
-            hookActiveMouseButton = ActiveMouseButton.None;
-            e.Handled = true;
-            shouldFinish = true;
-        }
-
-        if (shouldFinish)
-        {
-            EnqueueParserWorkItem(new ParserEndWorkItem(e.Location, button));
-        }
-    }
-
-    private void ProcessMove(ParserMoveWorkItem item)
+    private void ProcessMove(Point location, long timestamp)
     {
         if (disposed || !session.IsTracking)
         {
@@ -480,135 +401,20 @@ public sealed class GestureService : IDisposable
             return;
         }
 
-        if (Distance(session.LastPoint, item.Location) < GestureRuntimeDefaults.MinimumPointDistance)
+        if (Distance(session.LastPoint, location) < GestureRuntimeDefaults.MinimumPointDistance)
         {
             return;
         }
 
-        session.Append(item.Location);
-        PublishProgress(item.Timestamp);
+        session.Append(location);
+        PublishProgress(timestamp);
     }
 
-    private void ProcessEnd(ParserEndWorkItem item)
+    private void ProcessEnd(Point location, ActiveMouseButton button)
     {
-        if (!disposed && session.IsTracking && activeMouseButton == item.Button)
+        if (!disposed && session.IsTracking && activeMouseButton == button)
         {
-            FinishTracking(item.Location, item.Button);
-        }
-    }
-
-    private void StartParserThread()
-    {
-        lock (parserQueueLock)
-        {
-            if (parserThread is not null)
-            {
-                return;
-            }
-
-            parserStopRequested = false;
-            parserThread = new Thread(ParserThreadMain)
-            {
-                IsBackground = true,
-                Priority = ThreadPriority.Highest,
-                Name = "WuGesture Parser"
-            };
-            parserThread.Start();
-        }
-    }
-
-    private void StopParserThread()
-    {
-        Thread? thread;
-        lock (parserQueueLock)
-        {
-            parserStopRequested = true;
-            parserQueue.Clear();
-            pendingMove = null;
-            thread = parserThread;
-            Monitor.PulseAll(parserQueueLock);
-        }
-
-        if (thread is not null && thread != Thread.CurrentThread)
-        {
-            thread.Join(TimeSpan.FromSeconds(3));
-        }
-    }
-
-    private void ParserThreadMain()
-    {
-        try
-        {
-            while (true)
-            {
-                var item = TakeParserWorkItem();
-                if (item is null || item is ParserStopWorkItem)
-                {
-                    return;
-                }
-
-                switch (item)
-                {
-                    case ParserActionWorkItem action:
-                        action.Action(this);
-                        break;
-                    case ParserStartWorkItem start:
-                        StartTracking(start);
-                        break;
-                    case ParserMoveWorkItem move:
-                        ProcessMove(move);
-                        break;
-                    case ParserEndWorkItem end:
-                        ProcessEnd(end);
-                        break;
-                }
-            }
-        }
-        catch (Exception exception)
-        {
-            if (!disposed)
-            {
-                AppLogger.Error(
-                    "GestureService",
-                    "parser-thread-failed",
-                    "The dedicated gesture parser stopped unexpectedly.",
-                    exception);
-            }
-        }
-        finally
-        {
-            lock (parserQueueLock)
-            {
-                parserThread = null;
-                parserStopRequested = true;
-                parserQueue.Clear();
-                pendingMove = null;
-            }
-        }
-    }
-
-    private ParserWorkItem? TakeParserWorkItem()
-    {
-        lock (parserQueueLock)
-        {
-            while (!parserStopRequested && parserQueue.Count == 0 && pendingMove is null)
-            {
-                Monitor.Wait(parserQueueLock);
-            }
-
-            if (parserStopRequested)
-            {
-                return null;
-            }
-
-            if (parserQueue.Count > 0)
-            {
-                return parserQueue.Dequeue();
-            }
-
-            var move = pendingMove;
-            pendingMove = null;
-            return move;
+            FinishTracking(location, button);
         }
     }
 
@@ -616,41 +422,7 @@ public sealed class GestureService : IDisposable
     {
         if (!disposed)
         {
-            EnqueueParserWorkItem(new ParserActionWorkItem(action));
-        }
-    }
-
-    private void EnqueueLatestMove(Point location, long timestamp)
-    {
-        lock (parserQueueLock)
-        {
-            if (parserStopRequested)
-            {
-                return;
-            }
-
-            pendingMove = new ParserMoveWorkItem(location, timestamp);
-            Monitor.Pulse(parserQueueLock);
-        }
-    }
-
-    private void EnqueueParserWorkItem(ParserWorkItem item)
-    {
-        lock (parserQueueLock)
-        {
-            if (parserStopRequested)
-            {
-                return;
-            }
-
-            if (item is ParserEndWorkItem && pendingMove is not null)
-            {
-                parserQueue.Enqueue(pendingMove);
-                pendingMove = null;
-            }
-
-            parserQueue.Enqueue(item);
-            Monitor.Pulse(parserQueueLock);
+            parserWorker.Enqueue(() => action(this));
         }
     }
 
@@ -1066,19 +838,8 @@ public sealed class GestureService : IDisposable
         context.Post(_ => action(), null);
     }
 
-    private bool CanCaptureInput(Point location)
+    private bool CanCaptureNormalGesture(Point location)
     {
-        var recordingId = Volatile.Read(ref captureRecordingRequestId);
-        if (Volatile.Read(ref capturePaused) && recordingId is null)
-        {
-            return false;
-        }
-
-        if (recordingId is not null)
-        {
-            return true;
-        }
-
         var exclusionMatcher = Volatile.Read(ref captureExclusionMatcher);
         var targetWindowMode = Volatile.Read(ref captureTargetWindowMode);
         var targetWindow = targetWindowMode == GestureConfigContract.WindowTargetModes.StartWindow
@@ -1165,6 +926,13 @@ public sealed class GestureService : IDisposable
     private static GestureMouseButton ToPublicButton(ActiveMouseButton button)
     {
         return button == ActiveMouseButton.Middle ? GestureMouseButton.Middle : GestureMouseButton.Right;
+    }
+
+    private static ActiveMouseButton ToActiveMouseButton(GestureInputButton button)
+    {
+        return button == GestureInputButton.Middle
+            ? ActiveMouseButton.Middle
+            : ActiveMouseButton.Right;
     }
 
     [DllImport("user32.dll")]

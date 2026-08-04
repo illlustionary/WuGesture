@@ -1,7 +1,7 @@
 <script setup>
 import { computed, nextTick, ref, watch } from 'vue'
-import AppIcon from '@/components/AppIcon.vue'
-import BaseDialog from '@/components/BaseDialog.vue'
+import AppIcon from '@/components/ui/AppIcon.vue'
+import BaseDialog from '@/components/dialog/BaseDialog.vue'
 
 const props = defineProps({
   open: { type: Boolean, required: true },

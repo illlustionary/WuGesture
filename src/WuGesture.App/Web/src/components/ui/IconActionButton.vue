@@ -1,6 +1,6 @@
 <script setup>
-import AppIcon from '@/components/AppIcon.vue'
-import HoverBubble from '@/components/HoverBubble.vue'
+import AppIcon from '@/components/ui/AppIcon.vue'
+import HoverBubble from '@/components/ui/HoverBubble.vue'
 
 defineOptions({
   inheritAttrs: false
