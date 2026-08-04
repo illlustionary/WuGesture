@@ -90,7 +90,7 @@ export function useGestureConfigPersistence({
     }
 
     if (!webView.isAvailable()) {
-      setMessage('浏览器预览中无法导出本地配置。', 'error')
+      setMessage('浏览器预览不支持导出本地配置，请在 WuGesture 桌面应用中操作。', 'error')
       return
     }
 
@@ -102,7 +102,7 @@ export function useGestureConfigPersistence({
 
   function importConfigFromLocal() {
     if (!webView.isAvailable()) {
-      setMessage('浏览器预览中无法导入本地配置。', 'error')
+      setMessage('浏览器预览不支持导入本地配置，请在 WuGesture 桌面应用中操作。', 'error')
       return
     }
 
@@ -131,7 +131,7 @@ export function useGestureConfigPersistence({
     state.webDavTestedSignature = ''
     pendingWebDavTestSignature = ''
     saveRules({ notifyPreview: false })
-    setMessage('已恢复默认设置。', 'success')
+    setMessage('已恢复默认设置，手势和边缘操作未改变。', 'success')
   }
 
   function previewLevelOsd(kind) {
@@ -150,12 +150,12 @@ export function useGestureConfigPersistence({
     const payload = getConfigPayload()
     const signature = getWebDavSignature(payload.uiSettings.webDav)
     if (!payload.uiSettings.webDav.address) {
-      setMessage('请先填写 WebDAV 地址。', 'error')
+      setMessage('请先填写 WebDAV 地址，再测试连接。', 'error')
       return
     }
 
     if (!webView.isAvailable()) {
-      setMessage('浏览器预览中无法测试 WebDAV。', 'error')
+      setMessage('浏览器预览不支持测试 WebDAV 连接，请在 WuGesture 桌面应用中操作。', 'error')
       return
     }
 
@@ -177,7 +177,7 @@ export function useGestureConfigPersistence({
     }
 
     if (!isWebDavTested(payload.uiSettings.webDav)) {
-      setMessage('请先测试 WebDAV 连接。', 'error')
+      setMessage('请先测试连接，确认当前 WebDAV 配置可用。', 'error')
       return
     }
 
@@ -190,7 +190,7 @@ export function useGestureConfigPersistence({
   function restoreConfigFromWebDav() {
     const payload = getConfigPayload()
     if (!isWebDavTested(payload.uiSettings.webDav)) {
-      setMessage('请先测试 WebDAV 连接。', 'error')
+      setMessage('请先测试连接，确认当前 WebDAV 配置可用。', 'error')
       return
     }
 

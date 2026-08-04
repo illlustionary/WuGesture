@@ -27,7 +27,7 @@ public sealed class WebDavConfigSyncService
             Content = content
         };
         using var response = await client.SendAsync(request, cancellationToken);
-        EnsureSuccess(response, "保存到 WebDAV 失败");
+        EnsureSuccess(response, "备份到 WebDAV 失败");
     }
 
     public async Task<string> DownloadAsync(WebDavUiSettings settings, CancellationToken cancellationToken = default)
@@ -35,7 +35,7 @@ public sealed class WebDavConfigSyncService
         var targetUri = BuildTargetUri(settings);
         using var client = CreateHttpClient(settings);
         using var response = await client.GetAsync(targetUri, cancellationToken);
-        EnsureSuccess(response, "从 WebDAV 恢复失败");
+        EnsureSuccess(response, "从 WebDAV 恢复配置失败");
         return await response.Content.ReadAsStringAsync(cancellationToken);
     }
 
