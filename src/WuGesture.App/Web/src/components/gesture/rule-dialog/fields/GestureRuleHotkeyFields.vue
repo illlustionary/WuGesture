@@ -1,5 +1,6 @@
 <script setup>
 import AppIcon from '@/components/ui/AppIcon.vue'
+import GestureRuleField from './GestureRuleField.vue'
 
 defineProps({
   draft: { type: Object, required: true },
@@ -10,8 +11,7 @@ defineEmits(['record'])
 </script>
 
 <template>
-  <label class="gesture-rule-command-field">
-    <span>快捷键</span>
+  <GestureRuleField label="快捷键">
     <button
       type="button"
       class="scope-input gesture-rule-hotkey-fields__record"
@@ -25,18 +25,10 @@ defineEmits(['record'])
       />
       <span>{{ isRecording ? '录制中...' : draft.keysText || '点击录制快捷键' }}</span>
     </button>
-  </label>
+  </GestureRuleField>
 </template>
 
 <style scoped lang="scss">
-.gesture-rule-command-field {
-  display: grid;
-  min-width: 0;
-  gap: 6px;
-  color: var(--muted);
-  font-size: 13px;
-}
-
 .gesture-rule-hotkey-fields__record {
   display: inline-flex;
   align-items: center;

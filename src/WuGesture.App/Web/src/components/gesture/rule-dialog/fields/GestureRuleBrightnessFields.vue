@@ -1,6 +1,7 @@
 <script setup>
 import CustomSelect from '@/components/form/CustomSelect.vue'
 import { GESTURE_EDITOR_LIMITS } from '@/constants/gestureEditorLimits'
+import GestureRuleField from './GestureRuleField.vue'
 
 defineProps({
   draft: { type: Object, required: true },
@@ -10,16 +11,14 @@ defineProps({
 
 <template>
   <div class="gesture-rule-brightness-fields">
-    <label class="gesture-rule-command-field">
-      <span>执行操作</span>
+    <GestureRuleField label="执行操作">
       <CustomSelect
         v-model="draft.brightnessOperation"
         :options="operations"
         placeholder="选择亮度操作"
       />
-    </label>
-    <label class="gesture-rule-command-field gesture-rule-command-field--amount">
-      <span>数值</span>
+    </GestureRuleField>
+    <GestureRuleField label="数值">
       <input
         v-model.number="draft.amount"
         class="scope-input"
@@ -27,7 +26,7 @@ defineProps({
         :min="GESTURE_EDITOR_LIMITS.amount.min"
         :max="GESTURE_EDITOR_LIMITS.amount.max"
       />
-    </label>
+    </GestureRuleField>
   </div>
 </template>
 
@@ -36,14 +35,6 @@ defineProps({
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(104px, 0.42fr);
   gap: 10px;
-}
-
-.gesture-rule-command-field {
-  display: grid;
-  min-width: 0;
-  gap: 6px;
-  color: var(--muted);
-  font-size: 13px;
 }
 
 @media (max-width: 720px) {

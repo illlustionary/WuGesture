@@ -1,5 +1,6 @@
 <script setup>
 import CustomSelect from '@/components/form/CustomSelect.vue'
+import GestureRuleField from './GestureRuleField.vue'
 
 defineProps({
   draft: { type: Object, required: true },
@@ -8,22 +9,11 @@ defineProps({
 </script>
 
 <template>
-  <label class="gesture-rule-command-field">
-    <span>执行操作</span>
+  <GestureRuleField label="执行操作">
     <CustomSelect
       v-model="draft.windowOperation"
       :options="operations"
       placeholder="选择窗口操作"
     />
-  </label>
+  </GestureRuleField>
 </template>
-
-<style scoped lang="scss">
-.gesture-rule-command-field {
-  display: grid;
-  min-width: 0;
-  gap: 6px;
-  color: var(--muted);
-  font-size: 13px;
-}
-</style>

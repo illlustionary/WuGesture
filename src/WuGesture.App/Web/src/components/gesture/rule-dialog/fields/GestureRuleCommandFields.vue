@@ -1,6 +1,7 @@
 <script setup>
 import CustomSelect from '@/components/form/CustomSelect.vue'
 import GestureRuleBrightnessFields from './GestureRuleBrightnessFields.vue'
+import GestureRuleField from './GestureRuleField.vue'
 import GestureRuleHotkeyFields from './GestureRuleHotkeyFields.vue'
 import GestureRuleVolumeFields from './GestureRuleVolumeFields.vue'
 import GestureRuleWindowFields from './GestureRuleWindowFields.vue'
@@ -30,14 +31,16 @@ const actionTypeOptions = ACTION_TYPE_OPTIONS
       >执行命令</span
     >
     <div class="gesture-rule-command-fields__grid">
-      <label class="gesture-rule-command-fields__type">
-        <span>命令类型</span>
+      <GestureRuleField
+        class="gesture-rule-command-fields__type"
+        label="命令类型"
+      >
         <CustomSelect
           v-model="draft.actionType"
           :options="actionTypeOptions"
           placeholder="选择命令类型"
         />
-      </label>
+      </GestureRuleField>
 
       <div class="gesture-rule-command-fields__detail">
         <GestureRuleWindowFields
@@ -84,14 +87,6 @@ const actionTypeOptions = ACTION_TYPE_OPTIONS
   display: grid;
   grid-template-columns: minmax(150px, 0.8fr) minmax(0, 1.6fr);
   gap: 12px;
-}
-
-.gesture-rule-command-fields__type {
-  display: grid;
-  min-width: 0;
-  gap: 6px;
-  color: var(--muted);
-  font-size: 13px;
 }
 
 .gesture-rule-command-fields__detail {
