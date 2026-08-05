@@ -113,7 +113,7 @@ src\WuGesture.App\GestureEngine
 - `GestureStartDiagnostics.cs`：异步记录诊断启动标记、每次手势起始分段耗时、首条有效移动到轨迹首帧提交的分段耗时，以及命中规则后从松键到 UI 反馈和动作完成的分段耗时；日志位于 `%LocalAppData%\WuGesture\diagnostics\gesture-start-latency.log`，单文件达到 1MB 时保留上一份轮转日志，主日志写入失败时会把错误写入 `%TEMP%\WuGesture-gesture-diagnostics-error.log`。
 - `GestureSession.cs`：保存单次手势的 `Tracking -> Completing -> Idle` 生命周期、会话编号、轨迹和预览/进度缓存。松键后会先固化旧会话的 UI/动作快照并立即回到 `Idle`，因此下一笔不等待最终覆盖层收尾；旧会话的视觉回调会在已有更新会话时被丢弃。跟踪中收到任意新的手势按键按下时仍会先取消旧会话，再以新按下开始下一笔，且会吞掉被取消旧按键迟到的抬起事件。
 - `GestureFeedbackCoordinator.cs`：订阅手势 UI 事件，在 UI 线程按会话编号过滤陈旧更新，负责轨迹/提示覆盖层及手势相关 WebView 消息；`MainForm` 仅提供配置和宿主资源回调。
-- `EdgeActionService.cs`：轮询真实光标位置并监听滚轮，负责暂停/排除/全屏门控、触发顺序、动作筛选和 UI 线程调度；任意鼠标键按住时会立即跳过排除和全屏判断，避免与手势首帧竞争 UI 线程；摩擦边会排除角落区域，按沿边方向的反向位移计数并在触发后防重复，滚轮边命中时会吞掉原始滚轮事件。
+- `EdgeActionService.cs`：轮询真实光标位置并监听滚轮，负责暂停/排除/全屏门控、触发顺序和动作筛选；轮询会刷新滚轮专用的门控状态快照，因此低级滚轮 hook 回调只做快照读取、边缘规则命中和同步吞键，命中的动作由独立串行工作队列执行，避免前台进程/全屏查询、WinForms UI 队列或安全软件介入拖住全局滚轮链。任意鼠标键按住时会立即跳过排除和全屏判断，避免与手势首帧竞争 UI 线程；摩擦边会排除角落区域，按沿边方向的反向位移计数并在触发后防重复，滚轮边命中时会吞掉原始滚轮事件。
 - `EdgeHitTester.cs`：集中四角、普通边缘和摩擦边的屏幕几何命中计算，并提供到边距离计算；保留屏幕遍历和边界优先级。
 - `FrictionTracker.cs`：维护单次摩擦边的位移方向、计数、触发后冷却和超时重置状态。
 - `EdgeActionConfigNormalizer.cs`：将当前版本的边缘动作配置规范为运行时所需形态。

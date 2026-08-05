@@ -11,14 +11,18 @@ public sealed class EdgeActionService : IDisposable
     private readonly ActionExecutor actionExecutor = new();
     private readonly ApplicationExclusionMatcher exclusionMatcher = new();
     private readonly System.Windows.Forms.Timer mousePollTimer = new() { Interval = EdgeActionRuntimeDefaults.MousePollIntervalMs };
+    private readonly object wheelQueueLock = new();
+    private readonly LinkedList<WheelActionWorkItem> wheelActionQueue = new();
     private IReadOnlyList<EdgeActionConfig> actions;
     private SynchronizationContext? synchronizationContext;
     private EdgeLocation activeCorner = EdgeLocation.None;
     private EdgeLocation activeFrictionEdge = EdgeLocation.None;
     private readonly FrictionTracker frictionTracker = new();
     private bool started;
-    private bool paused;
+    private volatile bool paused;
     private bool disableEdgeActionsInFullscreen;
+    private volatile bool wheelActionsBlocked = true;
+    private bool wheelWorkerRunning;
     private volatile bool disposed;
 
     public EdgeActionService(IEnumerable<EdgeActionConfig> actions)
@@ -42,6 +46,7 @@ public sealed class EdgeActionService : IDisposable
         lock (stateLock)
         {
             exclusionMatcher.Update(applications);
+            wheelActionsBlocked = true;
             if (exclusionMatcher.IsEdgeActionExcluded())
             {
                 activeCorner = EdgeLocation.None;
@@ -56,6 +61,7 @@ public sealed class EdgeActionService : IDisposable
         lock (stateLock)
         {
             disableEdgeActionsInFullscreen = disableEdgeActions;
+            wheelActionsBlocked = true;
             if (IsDisabledInFullscreen())
             {
                 ResetActiveState();
@@ -68,6 +74,7 @@ public sealed class EdgeActionService : IDisposable
         lock (stateLock)
         {
             paused = isPaused;
+            wheelActionsBlocked = isPaused;
             if (paused)
             {
                 ResetActiveState();
@@ -101,6 +108,10 @@ public sealed class EdgeActionService : IDisposable
         mousePollTimer.Tick -= OnMousePollTimerTick;
         mouseHook.MouseWheel -= OnMouseWheel;
         mouseHook.Dispose();
+        lock (wheelQueueLock)
+        {
+            wheelActionQueue.Clear();
+        }
         started = false;
     }
 
@@ -128,6 +139,7 @@ public sealed class EdgeActionService : IDisposable
     {
         if (disposed || paused)
         {
+            wheelActionsBlocked = true;
             ResetActiveState();
             return;
         }
@@ -142,9 +154,12 @@ public sealed class EdgeActionService : IDisposable
 
         if (exclusionMatcher.IsEdgeActionExcluded() || IsDisabledInFullscreen())
         {
+            wheelActionsBlocked = true;
             ResetActiveState();
             return;
         }
+
+        wheelActionsBlocked = false;
 
         var corner = EdgeHitTester.GetCorner(location);
         var frictionEdge = EdgeHitTester.GetFrictionEdge(location);
@@ -210,32 +225,30 @@ public sealed class EdgeActionService : IDisposable
 
     private void OnMouseWheel(object? sender, MouseWheelHookEventArgs e)
     {
-        lock (stateLock)
+        if (disposed || paused || wheelActionsBlocked)
         {
-            if (disposed || paused || exclusionMatcher.IsEdgeActionExcluded() || IsDisabledInFullscreen())
-            {
-                return;
-            }
-
-            var edge = EdgeHitTester.GetEdge(e.Location);
-            if (edge == EdgeLocation.None)
-            {
-                return;
-            }
-
-            var wheelDirection = e.Delta > 0
-                ? GestureConfigContract.WheelDirections.Up
-                : GestureConfigContract.WheelDirections.Down;
-            var matched = GetActions(GestureConfigContract.EdgeTriggerTypes.Wheel, edge)
-                .FirstOrDefault(action => string.Equals(action.WheelDirection, wheelDirection, StringComparison.OrdinalIgnoreCase));
-            if (matched is null)
-            {
-                return;
-            }
-
-            e.Handled = true;
-            Execute(matched);
+            return;
         }
+
+        var edge = EdgeHitTester.GetEdge(e.Location);
+        if (edge == EdgeLocation.None)
+        {
+            return;
+        }
+
+        var wheelDirection = e.Delta > 0
+            ? GestureConfigContract.WheelDirections.Up
+            : GestureConfigContract.WheelDirections.Down;
+        var matched = GetActions(GestureConfigContract.EdgeTriggerTypes.Wheel, edge)
+            .FirstOrDefault(action => string.Equals(action.WheelDirection, wheelDirection, StringComparison.OrdinalIgnoreCase));
+        if (matched is null)
+        {
+            return;
+        }
+
+        // The hook must decide whether to swallow the native wheel event before returning.
+        e.Handled = true;
+        EnqueueWheelAction(matched);
     }
 
     private void ExecuteFirst(string triggerType, EdgeLocation location)
@@ -250,7 +263,8 @@ public sealed class EdgeActionService : IDisposable
     private IEnumerable<EdgeActionConfig> GetActions(string triggerType, EdgeLocation location)
     {
         var locationName = EdgeActionLocationMapper.ToConfigLocation(location);
-        return actions.Where(action =>
+        var currentActions = Volatile.Read(ref actions);
+        return currentActions.Where(action =>
             action.Enabled &&
             string.Equals(action.TriggerType, triggerType, StringComparison.OrdinalIgnoreCase) &&
             string.Equals(action.Location, locationName, StringComparison.OrdinalIgnoreCase) &&
@@ -259,34 +273,94 @@ public sealed class EdgeActionService : IDisposable
 
     private void Execute(EdgeActionConfig config)
     {
+        Post(() => ExecuteCore(config));
+    }
+
+    private void ExecuteCore(EdgeActionConfig config)
+    {
         var action = GestureConfigMapper.ToAction(config.Action);
         if (action is null)
         {
             return;
         }
 
-        Post(() =>
+        try
         {
             if (disposed)
             {
                 return;
             }
 
-            try
+            var actionName = EdgeActionNameFormatter.Format(config);
+            actionExecutor.Execute(
+                new GestureRule([], GestureConfigContract.Scopes.Global, actionName, action),
+                IntPtr.Zero,
+                useCurrentWindowWhenTargetMissing: true);
+        }
+        catch (Exception exception)
+        {
+            var actionName = EdgeActionNameFormatter.Format(config);
+            AppLogger.Error("EdgeActionService", "action-failed", $"Edge action failed: {actionName}.", exception);
+            Post(() => EdgeActionFailed?.Invoke(this, new EdgeActionFailedEventArgs(actionName, exception)));
+        }
+    }
+
+    private void EnqueueWheelAction(EdgeActionConfig config)
+    {
+        lock (wheelQueueLock)
+        {
+            if (wheelActionQueue.Last is { Value: var pending } && ReferenceEquals(pending.Config, config))
             {
-                var actionName = EdgeActionNameFormatter.Format(config);
-                actionExecutor.Execute(
-                    new GestureRule([], GestureConfigContract.Scopes.Global, actionName, action),
-                    IntPtr.Zero,
-                    useCurrentWindowWhenTargetMissing: true);
+                pending.Count++;
             }
-            catch (Exception exception)
+            else
             {
-                var actionName = EdgeActionNameFormatter.Format(config);
-                AppLogger.Error("EdgeActionService", "action-failed", $"Edge action failed: {actionName}.", exception);
-                EdgeActionFailed?.Invoke(this, new EdgeActionFailedEventArgs(actionName, exception));
+                wheelActionQueue.AddLast(new WheelActionWorkItem(config));
             }
-        });
+
+            if (wheelWorkerRunning)
+            {
+                return;
+            }
+
+            wheelWorkerRunning = true;
+        }
+
+        _ = Task.Run(ProcessWheelActionQueue);
+    }
+
+    private void ProcessWheelActionQueue()
+    {
+        while (true)
+        {
+            WheelActionWorkItem? workItem;
+            lock (wheelQueueLock)
+            {
+                if (wheelActionQueue.Count == 0)
+                {
+                    wheelWorkerRunning = false;
+                    return;
+                }
+
+                workItem = wheelActionQueue.First!.Value;
+                wheelActionQueue.RemoveFirst();
+            }
+
+            if (disposed || paused || wheelActionsBlocked)
+            {
+                continue;
+            }
+
+            for (var index = 0; index < workItem.Count; index++)
+            {
+                if (disposed || paused || wheelActionsBlocked)
+                {
+                    break;
+                }
+
+                ExecuteCore(workItem.Config);
+            }
+        }
     }
 
     private void Post(Action action)
@@ -325,6 +399,18 @@ public sealed class EdgeActionService : IDisposable
 
     [DllImport("user32.dll")]
     private static extern short GetAsyncKeyState(int vKey);
+
+    private sealed class WheelActionWorkItem
+    {
+        public WheelActionWorkItem(EdgeActionConfig config)
+        {
+            Config = config;
+        }
+
+        public EdgeActionConfig Config { get; }
+
+        public int Count { get; set; } = 1;
+    }
 
 }
 
