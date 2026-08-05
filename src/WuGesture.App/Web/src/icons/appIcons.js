@@ -11,6 +11,7 @@ import CodeIcon from '@/assets/category/code.svg'
 import MediaIcon from '@/assets/category/media.svg'
 import SparkleIcon from '@/assets/category/sparkle.svg'
 import CrosshairIcon from '@/assets/gesture/crosshair.svg'
+import ArrowIcon from '@/assets/gesture/arrow.svg'
 import KeyboardIcon from '@/assets/gesture/keyboard.svg'
 import RecordIcon from '@/assets/gesture/record.svg'
 import BriefcaseIcon from '@/assets/navigation/briefcase.svg'
@@ -39,6 +40,7 @@ export const appIcons = Object.freeze({
   code: CodeIcon,
   media: MediaIcon,
   sparkle: SparkleIcon,
+  arrow: ArrowIcon,
   crosshair: CrosshairIcon,
   keyboard: KeyboardIcon,
   record: RecordIcon,

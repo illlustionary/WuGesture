@@ -31,15 +31,6 @@
             @click="$emit('edit', rule.id)"
           >
             <span
-              class="gesture-pattern-button__mouse"
-              aria-hidden="true"
-            >
-              <AppIcon
-                name="mouse"
-                class="gesture-pattern-button__mouse-icon"
-              />
-            </span>
-            <span
               v-if="gestureSegments(rule).length > 0"
               class="gesture-pattern-button__keys"
             >
@@ -47,11 +38,24 @@
                 {{ mouseButtonLabel(rule) }}
               </span>
               <span
-                v-for="segment in gestureSegments(rule)"
-                :key="segment"
+                v-for="(segment, index) in gestureSegments(rule)"
+                :key="`${rule.id}-${segment.value}-${index}`"
                 class="keycap"
               >
-                {{ segment }}
+                <template v-if="segment.isDirection">
+                  <AppIcon
+                    name="arrow"
+                    class="gesture-pattern-button__arrow"
+                    :style="{ '--gesture-arrow-rotation': `${segment.rotation}deg` }"
+                    aria-hidden="true"
+                  />
+                  <span class="gesture-pattern-button__screen-reader-text">
+                    {{ segment.label }}
+                  </span>
+                </template>
+                <template v-else>
+                  {{ segment.label }}
+                </template>
               </span>
             </span>
             <span
@@ -107,18 +111,18 @@
 </template>
 
 <script setup>
-import IconActionButton from '@/components/ui/IconActionButton.vue'
 import AppIcon from '@/components/ui/AppIcon.vue'
+import IconActionButton from '@/components/ui/IconActionButton.vue'
 import { ACTION_TYPES } from '@/constants/gestureEditorOptions'
-const DIRECTION_LABELS = {
-  Up: '↑',
-  Down: '↓',
-  Left: '←',
-  Right: '→',
-  UpLeft: '↖',
-  UpRight: '↗',
-  DownLeft: '↙',
-  DownRight: '↘'
+const DIRECTION_DETAILS = {
+  Up: { label: '向上', rotation: 180 },
+  Down: { label: '向下', rotation: 0 },
+  Left: { label: '向左', rotation: 90 },
+  Right: { label: '向右', rotation: -90 },
+  UpLeft: { label: '向左上', rotation: 135 },
+  UpRight: { label: '向右上', rotation: -135 },
+  DownLeft: { label: '向左下', rotation: 45 },
+  DownRight: { label: '向右下', rotation: -45 }
 }
 
 const BUTTON_LABELS = {
@@ -137,8 +141,13 @@ defineEmits(['remove', 'edit', 'rename'])
 function gestureSegments(rule) {
   return String(rule?.patternText ?? '')
     .split(/[\s,，]+/)
-    .map(part => DIRECTION_LABELS[part.trim()] ?? part.trim())
+    .map(part => part.trim())
     .filter(Boolean)
+    .map(value => {
+      const direction = DIRECTION_DETAILS[value]
+
+      return direction ? { value, ...direction, isDirection: true } : { value, label: value, isDirection: false }
+    })
 }
 
 function mouseButtonLabel(rule) {
@@ -204,6 +213,11 @@ function isWindowAction(rule) {
     .gesture {
       text-align: center;
     }
+  }
+
+  &__head-name,
+  &__head-command {
+    padding-inline: 12px;
   }
 
   &__rows {
@@ -324,22 +338,6 @@ function isWindowAction(rule) {
     background-color 140ms ease,
     color 140ms ease;
 
-  &__mouse {
-    display: inline-grid;
-    place-items: center;
-    width: 24px;
-    height: 24px;
-    flex: 0 0 auto;
-    color: var(--accent-strong);
-    background: var(--interactive-icon-bg);
-    border-radius: 6px;
-
-    &-icon {
-      width: 16px;
-      height: 16px;
-    }
-  }
-
   &__keys {
     display: inline-flex;
     align-items: center;
@@ -347,6 +345,24 @@ function isWindowAction(rule) {
     flex-wrap: wrap;
     gap: 6px;
     min-width: 0;
+  }
+
+  &__arrow {
+    display: block;
+    width: 14px;
+    height: 14px;
+    fill: currentColor;
+    transform: rotate(var(--gesture-arrow-rotation));
+  }
+
+  &__screen-reader-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
   }
 
   &__empty {
@@ -364,7 +380,7 @@ function isWindowAction(rule) {
   appearance: none;
   background: transparent;
   color: inherit;
-  text-align: center;
+  text-align: left;
   white-space: normal;
   cursor: pointer;
   color: var(--text);
