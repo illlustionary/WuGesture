@@ -64,7 +64,7 @@ defineEmits(['record'])
   min-height: 52px;
   overflow: hidden;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: var(--panel-inset);
 
   strong {

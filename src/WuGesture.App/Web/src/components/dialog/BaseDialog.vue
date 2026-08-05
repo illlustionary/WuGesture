@@ -115,7 +115,7 @@ function closeFromMask(event) {
   overflow: auto;
   padding: 16px;
   border: 1px solid var(--border-medium);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   background: var(--panel);
   box-shadow: var(--shadow-float);
   backdrop-filter: blur(28px) saturate(1.2);
@@ -166,7 +166,7 @@ function closeFromMask(event) {
   min-height: 34px;
   padding: 0 14px;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: opacity 120ms ease;
   font-size: 13px;

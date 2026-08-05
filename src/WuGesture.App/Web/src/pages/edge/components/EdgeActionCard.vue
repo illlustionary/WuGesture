@@ -47,7 +47,7 @@ const emit = defineEmits(['open'])
   min-width: 0;
   padding: 14px;
   border: 1px solid var(--border-subtle);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--panel-soft);
   text-align: left;
   cursor: pointer;
@@ -107,7 +107,7 @@ const emit = defineEmits(['open'])
 .edge-status {
   width: 12px;
   height: 12px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   flex: 0 0 auto;
   background: var(--disabled-bg);
 

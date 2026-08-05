@@ -353,7 +353,7 @@ function confirmResetSettings() {
   width: 100%;
   padding: 16px;
   text-align: left;
-  border-radius: 18px;
+  border-radius: var(--radius-lg);
   border: 1px solid var(--border);
   background: var(--interactive-bg);
   transition:

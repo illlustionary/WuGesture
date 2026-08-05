@@ -143,7 +143,7 @@ function toggleDisableEdgeActions(application) {
   place-items: center;
   width: 34px;
   height: 34px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: var(--interactive-icon-bg);
   color: var(--accent-strong);
   font-size: 14px;
@@ -181,7 +181,7 @@ function toggleDisableEdgeActions(application) {
 }
 .exclusion-item,
 .exclusion-empty {
-  border-radius: 10px;
+  border-radius: var(--radius-md);
 }
 .exclusion-empty {
   margin: 0;

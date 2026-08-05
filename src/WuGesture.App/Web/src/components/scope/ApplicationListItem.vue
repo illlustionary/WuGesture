@@ -113,7 +113,7 @@ const hasActions = computed(() => props.removable || Boolean(slots.actions))
   place-items: center;
   width: 32px;
   height: 32px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: var(--interactive-icon-bg);
   color: var(--accent-strong);
   overflow: hidden;
@@ -127,7 +127,7 @@ const hasActions = computed(() => props.removable || Boolean(slots.actions))
     place-items: center;
     width: 14px;
     height: 14px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: var(--warning-bg);
     color: var(--warning-text);
     font-size: 10px;

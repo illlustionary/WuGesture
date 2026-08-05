@@ -184,7 +184,7 @@ function commit() {
   margin-bottom: 14px;
   padding: 18px;
   border: 1px solid var(--border-subtle);
-  border-radius: 18px;
+  border-radius: var(--radius-lg);
   background: var(--panel-inset);
   overflow: hidden;
 }

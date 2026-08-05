@@ -190,7 +190,7 @@ const {
   min-height: 40px;
   padding: 0 12px;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   color: var(--muted);
   font-size: 14px;
   font-weight: 600;
@@ -296,7 +296,7 @@ const {
   min-height: 30px;
   padding: 0 8px;
   border: 1px solid var(--border-subtle);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: var(--panel-control);
   color: var(--muted);
 
@@ -334,7 +334,7 @@ const {
   display: flex;
   align-items: center;
   min-width: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
 
   &:hover,
   &:focus-within {
@@ -349,7 +349,7 @@ const {
   flex: 1;
   min-height: 34px;
   padding: 4px 5px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   color: var(--muted);
   font-size: 12px;
   text-decoration: none;
@@ -368,7 +368,7 @@ const {
   height: 22px;
   flex: 0 0 auto;
   place-items: center;
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   background: var(--interactive-icon-bg);
   color: var(--accent-strong);
   font-size: 11px;
@@ -431,7 +431,7 @@ const {
   height: 36px;
   place-items: center;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: transparent;
   color: var(--muted);
   cursor: pointer;

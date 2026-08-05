@@ -60,7 +60,7 @@ function updateValue(event) {
   min-height: 44px;
   padding: 10px 12px;
   border: 1px solid var(--border-subtle);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   background: var(--panel-inset);
   cursor: pointer;
   transition:
@@ -105,7 +105,7 @@ function updateValue(event) {
   height: 22px;
   flex: 0 0 auto;
   border: 1px solid var(--border-strong);
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
   background: var(--panel-solid);
   color: var(--text-inverse);
   box-shadow: var(--shadow-control);

@@ -261,7 +261,7 @@ function updateMenuPosition() {
   min-height: 42px;
   padding: 0 12px;
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   background: var(--panel-control);
   color: var(--text);
   text-align: left;
@@ -332,7 +332,7 @@ function updateMenuPosition() {
   padding: 6px;
   overflow-y: auto;
   border: 1px solid var(--border-strong);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   background: var(--panel-solid);
   box-shadow: var(--shadow-popover);
 }
@@ -343,7 +343,7 @@ function updateMenuPosition() {
   min-height: 34px;
   padding: 7px 10px;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: transparent;
   color: var(--text);
   text-align: left;
