@@ -261,7 +261,7 @@ function commit() {
   margin-bottom: 14px;
   overflow: hidden;
   border: 1px solid var(--border-subtle);
-  border-radius: 18px;
+  border-radius: var(--radius-lg);
   background:
     linear-gradient(var(--border-muted) 1px, transparent 1px),
     linear-gradient(90deg, var(--border-muted) 1px, transparent 1px), var(--panel-inset);
@@ -341,7 +341,7 @@ function commit() {
   span {
     display: block;
     width: 5px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: var(--level-preview-signal);
 
     &:nth-child(1) {
@@ -362,7 +362,7 @@ function commit() {
   width: 76%;
   height: 7px;
   overflow: hidden;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--level-osd-track);
 
   span {

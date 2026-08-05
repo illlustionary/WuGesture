@@ -177,7 +177,7 @@ function isWindowAction(rule) {
   gap: 0;
   overflow: hidden;
   border: 1px solid var(--border-subtle);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--panel-soft);
 
   &__body {
@@ -251,7 +251,7 @@ function isWindowAction(rule) {
     min-height: 40px;
     padding: 8px 12px;
     border: none;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     background-color: transparent;
   }
 

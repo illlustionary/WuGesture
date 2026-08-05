@@ -181,7 +181,7 @@ const orderedCategories = computed({
 .category-order-list {
   display: grid;
   gap: 0;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   overflow: hidden;
   border: 1px solid var(--border);
 }
@@ -219,7 +219,7 @@ const orderedCategories = computed({
     width: 24px;
     height: 24px;
     place-items: center;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: var(--interactive-icon-bg);
     color: var(--accent-strong);
     font-size: 12px;
@@ -243,7 +243,7 @@ const orderedCategories = computed({
   &__button {
     padding: 5px 8px;
     border: 1px solid var(--border-subtle);
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     background: transparent;
     color: var(--text-subtle);
     font-size: 12px;

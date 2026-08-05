@@ -140,7 +140,7 @@ function handleKeydown(event) {
   min-height: 0;
   max-height: min(70vh, 620px);
   overflow: hidden;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
 }
 
 .quick-search-dialog__field {
@@ -150,7 +150,7 @@ function handleKeydown(event) {
   margin: 0;
   padding: 0 12px;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--interactive-bg);
   color: var(--muted);
   transition:
@@ -220,7 +220,7 @@ function handleKeydown(event) {
   width: 100%;
   padding: 10px 12px;
   border: 1px solid var(--border-subtle);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--interactive-bg);
   color: var(--text);
   text-align: left;

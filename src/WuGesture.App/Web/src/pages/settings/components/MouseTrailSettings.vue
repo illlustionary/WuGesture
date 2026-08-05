@@ -124,7 +124,7 @@ function commit() {
   margin-bottom: 14px;
   padding: 24px;
   border: 1px solid var(--border-subtle);
-  border-radius: 18px;
+  border-radius: var(--radius-lg);
   background: var(--panel-inset);
 }
 
@@ -140,7 +140,7 @@ function commit() {
   min-height: 28px;
   flex-basis: 80px;
   padding: 0 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   color: var(--text-preview);
   font-size: 12px;
   font-weight: 700;
@@ -157,7 +157,7 @@ function commit() {
 
 .mouse-trail-preview__path {
   height: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 
   &--inactive {
     width: 72%;

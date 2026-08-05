@@ -32,6 +32,7 @@ defineEmits(['record'])
 .gesture-rule-hotkey-fields__record {
   display: inline-flex;
   align-items: center;
+  height: 42px;
   gap: 8px;
   overflow: hidden;
   text-align: left;

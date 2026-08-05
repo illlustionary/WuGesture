@@ -123,7 +123,7 @@ function previewLevelOsd(kind) {
   min-height: 44px;
   padding: 4px;
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   background: var(--panel-control);
 }
 
@@ -133,7 +133,7 @@ function previewLevelOsd(kind) {
   min-height: 42px;
   padding: 0 12px;
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   background: var(--panel-control);
   color: var(--text);
 }

@@ -171,7 +171,7 @@ function removeArgument(index) {
 .gesture-rule-program-fields__row {
   display: grid;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: var(--interactive-bg);
 }
 
@@ -245,7 +245,7 @@ function removeArgument(index) {
   padding: 12px 14px;
   align-content: center;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: var(--interactive-bg);
 }
 
@@ -264,7 +264,7 @@ function removeArgument(index) {
   align-items: center;
   gap: 4px;
   border: 1px solid var(--border-subtle);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: var(--interactive-bg);
   transition:
     opacity 160ms ease,

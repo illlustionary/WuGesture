@@ -216,7 +216,7 @@ onBeforeUnmount(() => {
   display: inline-flex;
   padding: 10px 12px;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background-color: var(--panel-solid);
   box-shadow: var(--shadow-popover);
   color: var(--text);
