@@ -7,6 +7,8 @@ namespace WuGesture.App.GestureEngine;
 
 public sealed class ActionExecutor
 {
+    public static event Action<IntPtr>? WindowCloseRequested;
+
     private const uint InputKeyboard = 1;
     private const uint KeyEventFExtendedKey = 0x0001;
     private const uint KeyEventFKeyUp = 0x0002;
@@ -105,6 +107,7 @@ public sealed class ActionExecutor
                 ShowWindow(targetWindow, SwMinimize);
                 break;
             case WindowControlOperation.Close:
+                WindowCloseRequested?.Invoke(targetWindow);
                 PostMessage(targetWindow, WmClose, IntPtr.Zero, IntPtr.Zero);
                 break;
         }
