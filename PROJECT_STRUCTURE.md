@@ -79,7 +79,7 @@ src\WuGesture.App
 - `AppIdentity.cs` 集中应用显示名、AppData 子目录、自启动注册表值、单实例 IPC 请求/确认事件名和内部启动参数；开机自启动和管理员重启会直接调用当前 `WuGesture.exe`。
 - `ConfigStorageContract.cs` 集中本地配置文件名和窗口状态文件名；本地导入/导出只处理主配置文件，不包含窗口状态文件。
 - `WebViewHostContract.cs` 集中 WebView2 虚拟主机、入口 URL 和宿主输出目录中的 Web 前端路径片段。
-- 配置窗口最小尺寸为 1280x720；首次启动会以至少该尺寸居中显示，关闭窗口时会保存窗口位置、大小和最大化状态，并拒绝恢复小于该尺寸（包括 0x0）的无效状态。窗口按设置选择隐藏到托盘、最小化到任务栏或直接退出。隐藏到托盘会释放 WebView2 配置界面以降低后台内存占用，托盘恢复时重建 WebView2。通过托盘菜单“退出”始终会真正释放后台手势服务并结束进程。
+- 配置窗口最小尺寸为 1280x720；首次启动会以至少该尺寸居中显示，关闭窗口时会保存窗口位置、大小和最大化状态，并拒绝恢复小于该尺寸（包括 0x0）的无效状态。窗口收到用户关闭或普通 `WM_CLOSE` 消息时，均按设置选择隐藏到托盘、最小化到任务栏或直接退出；提权重启和托盘菜单“退出”仍会绕过该拦截并真正结束当前进程。隐藏到托盘会释放 WebView2 配置界面以降低后台内存占用，托盘恢复时重建 WebView2。
 - 托盘菜单提供“打开配置”、“暂停 WuGesture”和“退出”；暂停项会暂停手势识别和边缘操作，但保留后台进程和配置界面。暂停时仅系统托盘图标切换为灰阶图标，并在托盘提示文字中标记“已暂停”，任务栏窗口图标不变。
 
 职责目录：
@@ -125,7 +125,7 @@ src\WuGesture.App\GestureEngine
 - `GestureScopeContext.cs`：用于规则匹配的窗口 app/有序分类上下文模型。
 - `ForegroundWindowScopeContextProvider.cs`：读取前台窗口或指定窗口句柄的进程名。
 - `ConfiguredScopeContextProvider.cs`：用配置里的应用程序列表把窗口进程名映射到有序分类列表，供作用域匹配使用。
-- `ActionExecutor.cs`：按动作类型执行命令；快捷键通过 Win32 `SendInput` 执行，窗口控制通过 `ShowWindow`、`SetWindowPos` 和窗口消息执行。运行程序使用 `ProcessStartInfo.ArgumentList` 启动指定 `.exe`，不使用 Shell、不等待退出且不主动提权。命中桌面或桌面托管窗口的窗口控制动作会直接忽略；音量/亮度会调用对应控制器并显示 OSD。
+- `ActionExecutor.cs`：按动作类型执行命令；快捷键通过 Win32 `SendInput` 执行，窗口控制通过 `ShowWindow`、`SetWindowPos` 和窗口消息执行；手势发出关闭当前 WuGesture 窗口的 `WM_CLOSE` 前会通知宿主，使主窗体仍能按关闭行为设置转入托盘或任务栏。运行程序使用 `ProcessStartInfo.ArgumentList` 启动指定 `.exe`，不使用 Shell、不等待退出且不主动提权。命中桌面或桌面托管窗口的窗口控制动作会直接忽略；音量/亮度会调用对应控制器并显示 OSD。
 - `DesktopWindowClassifier.cs`：通过桌面 Shell 窗口类以及父/拥有者链识别 `Progman`、`WorkerW` 和桌面视图，供窗口控制动作排除桌面目标。
 - `AudioController.cs`：通过 Windows Core Audio API 读取和设置系统主音量、静音状态。
 - `BrightnessController.cs`：通过 DDC/CI、WMI、Gamma 三段回退读取和设置显示亮度。

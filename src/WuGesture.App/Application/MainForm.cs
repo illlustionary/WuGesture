@@ -35,6 +35,7 @@ public sealed partial class MainForm : Form
     private bool isUserPaused;
     private bool isConfigPaused;
     private bool isEditorPaused;
+    private int gestureWindowCloseRequested;
     private int overlayRecoveryScheduled;
 
     private static readonly JsonSerializerOptions WebMessageJsonOptions = new()
@@ -71,6 +72,7 @@ public sealed partial class MainForm : Form
         FormClosing += OnFormClosing;
         FormClosed += (_, _) =>
         {
+            ActionExecutor.WindowCloseRequested -= OnGestureWindowCloseRequested;
             SystemEvents.UserPreferenceChanged -= OnSystemUserPreferenceChanged;
             SystemEvents.DisplaySettingsChanged -= OnDisplaySettingsChanged;
             SystemEvents.PowerModeChanged -= OnPowerModeChanged;
@@ -84,6 +86,7 @@ public sealed partial class MainForm : Form
             gestureFeedbackCoordinator?.Dispose();
             DisposeMouseTrailForm();
         };
+        ActionExecutor.WindowCloseRequested += OnGestureWindowCloseRequested;
         SystemEvents.UserPreferenceChanged += OnSystemUserPreferenceChanged;
         SystemEvents.DisplaySettingsChanged += OnDisplaySettingsChanged;
         SystemEvents.PowerModeChanged += OnPowerModeChanged;
@@ -189,7 +192,10 @@ public sealed partial class MainForm : Form
 
     private void OnFormClosing(object? sender, FormClosingEventArgs e)
     {
-        if (e.CloseReason == CloseReason.UserClosing && HandleConfiguredUserClose())
+        var isGestureWindowClose = e.CloseReason == CloseReason.TaskManagerClosing &&
+            Interlocked.Exchange(ref gestureWindowCloseRequested, 0) == 1;
+        if ((e.CloseReason == CloseReason.UserClosing || e.CloseReason == CloseReason.None || isGestureWindowClose) &&
+            HandleConfiguredUserClose())
         {
             e.Cancel = true;
             return;
@@ -205,6 +211,14 @@ public sealed partial class MainForm : Form
         hotkeyRecorder.Dispose();
         DisposeMouseTrailForm();
         DisposeWebView();
+    }
+
+    private void OnGestureWindowCloseRequested(IntPtr targetWindow)
+    {
+        if (IsHandleCreated && targetWindow == Handle)
+        {
+            Volatile.Write(ref gestureWindowCloseRequested, 1);
+        }
     }
 
     private void OnResize(object? sender, EventArgs e)
