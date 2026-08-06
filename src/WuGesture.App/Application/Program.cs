@@ -188,11 +188,11 @@ static class Program
 
             try
             {
-                form.BeginInvoke(new Action(() =>
+                form.BeginInvoke(new Action(async () =>
                 {
                     try
                     {
-                        form.ShowExistingInstance();
+                        await form.ShowExistingInstanceAsync();
                     }
                     finally
                     {

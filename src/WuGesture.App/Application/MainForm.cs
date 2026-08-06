@@ -166,7 +166,7 @@ public sealed partial class MainForm : Form
 
     private void InitializeTrayIcon()
     {
-        var openItem = new ToolStripMenuItem("打开配置", null, (_, _) => RestoreFromTray());
+        var openItem = new ToolStripMenuItem("打开配置", null, (_, _) => _ = RestoreFromTrayAsync());
         pauseItem = new ToolStripMenuItem($"暂停 {AppIdentity.DisplayName}")
         {
             CheckOnClick = true
@@ -184,7 +184,7 @@ public sealed partial class MainForm : Form
         trayIcon.Icon = normalTrayIcon;
         trayIcon.ContextMenuStrip = trayMenu;
         trayIcon.Visible = true;
-        trayIcon.DoubleClick += (_, _) => RestoreFromTray();
+        trayIcon.DoubleClick += (_, _) => _ = RestoreFromTrayAsync();
     }
 
     private void OnFormClosing(object? sender, FormClosingEventArgs e)
@@ -278,7 +278,7 @@ public sealed partial class MainForm : Form
         MinimizeWindow();
     }
 
-    private async void RestoreFromTray()
+    private async Task RestoreFromTrayAsync()
     {
         if (isClosing || IsDisposed || isRestoringConfiguration)
         {
@@ -307,7 +307,7 @@ public sealed partial class MainForm : Form
             Opacity = 1;
 
             // Run after the tray menu or single-instance callback has returned so it cannot reclaim focus.
-            BeginInvokeSafe(() => BringWindowToFront());
+            await BringWindowToFrontAsync();
         }
         finally
         {
@@ -328,7 +328,7 @@ public sealed partial class MainForm : Form
         Close();
     }
 
-    public void ShowExistingInstance()
+    public async Task ShowExistingInstanceAsync()
     {
         if (Visible && WindowState != FormWindowState.Minimized)
         {
@@ -336,7 +336,40 @@ public sealed partial class MainForm : Form
             return;
         }
 
-        RestoreFromTray();
+        await RestoreFromTrayAsync();
+    }
+
+    private Task BringWindowToFrontAsync()
+    {
+        if (!CanUseUi())
+        {
+            return Task.CompletedTask;
+        }
+
+        var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        try
+        {
+            BeginInvoke(() =>
+            {
+                try
+                {
+                    if (CanUseUi())
+                    {
+                        BringWindowToFront();
+                    }
+                }
+                finally
+                {
+                    completion.TrySetResult();
+                }
+            });
+        }
+        catch (Exception exception)
+        {
+            completion.TrySetException(exception);
+        }
+
+        return completion.Task;
     }
 
     private void SetUserPaused(bool paused)
@@ -429,7 +462,7 @@ public sealed partial class MainForm : Form
 
         try
         {
-            Process.Start(new ProcessStartInfo
+            using var elevatedProcess = Process.Start(new ProcessStartInfo
             {
                 FileName = AppIdentity.GetLaunchExecutablePath(),
                 Arguments = startHiddenToTray
@@ -438,6 +471,12 @@ public sealed partial class MainForm : Form
                 UseShellExecute = true,
                 Verb = "runas"
             });
+            var foregroundPermissionGranted = elevatedProcess is not null &&
+                AllowSetForegroundWindow((uint)elevatedProcess.Id);
+            AppLogger.Information(
+                "MainForm",
+                "elevated-relaunch-started",
+                $"Started elevated process {elevatedProcess?.Id.ToString() ?? "unknown"}; foreground permission granted: {foregroundPermissionGranted}.");
             isExiting = true;
             BeginInvoke(new Action(Close));
             return true;
