@@ -78,8 +78,10 @@ function addApplication() {
               v-for="app in editor.getApplicationsForCategory()"
               :key="app.name"
               :app="app"
+              navigable
               removable
               @open-path="editor.openApplicationFolder"
+              @open-app="navigation.navigateToScope('app', $event.name)"
               @remove="editor.removeAppFromCategory($event.name)"
             />
           </div>

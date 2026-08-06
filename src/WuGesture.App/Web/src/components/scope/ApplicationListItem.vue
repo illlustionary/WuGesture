@@ -5,11 +5,12 @@ import IconActionButton from '@/components/ui/IconActionButton.vue'
 const props = defineProps({
   app: { type: Object, required: true },
   removable: { type: Boolean, default: false },
+  navigable: { type: Boolean, default: false },
   removeLabel: { type: String, default: '移除' },
   missingPathText: { type: String, default: '未设置路径' }
 })
 
-const emit = defineEmits(['remove', 'open-path'])
+const emit = defineEmits(['remove', 'open-path', 'open-app'])
 const slots = useSlots()
 
 const displayName = computed(() => props.app.displayName || props.app.name)
@@ -18,12 +19,26 @@ const fallbackGlyph = computed(() => (displayName.value || '?').slice(0, 1).toUp
 const missingPath = computed(() => !String(props.app.path ?? '').trim())
 const pathMissing = computed(() => Boolean(props.app.pathMissing))
 const hasActions = computed(() => props.removable || Boolean(slots.actions))
+
+function openApp() {
+  if (props.navigable) {
+    emit('open-app', props.app)
+  }
+}
 </script>
 
 <template>
   <div
     class="app-list__item"
-    :class="{ 'app-list__item--with-actions': hasActions }"
+    :class="{
+      'app-list__item--with-actions': hasActions,
+      'app-list__item--navigable': navigable
+    }"
+    :role="navigable ? 'link' : undefined"
+    :tabindex="navigable ? 0 : undefined"
+    @click="openApp"
+    @keydown.enter.self="openApp"
+    @keydown.space.prevent.self="openApp"
   >
     <span
       class="app-list__icon"
@@ -105,6 +120,10 @@ const hasActions = computed(() => props.removable || Boolean(slots.actions))
 
 .app-list__item:hover {
   background: var(--interactive-hover-bg);
+}
+
+.app-list__item--navigable {
+  cursor: pointer;
 }
 
 .app-list__icon {
