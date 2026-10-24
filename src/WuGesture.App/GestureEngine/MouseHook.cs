@@ -17,6 +17,9 @@ public sealed class MouseHook : IDisposable
     private const int WmMButtonDown = 0x0207;
     private const int WmMButtonUp = 0x0208;
     private const int WmMouseWheel = 0x020A;
+    private const int SlowCallbackThresholdMilliseconds = 10;
+    private static readonly TimeSpan SlowCallbackLogInterval = TimeSpan.FromSeconds(1);
+    private static long lastSlowCallbackLogTimestamp;
 
     private readonly object lifecycleLock = new();
     private readonly LowLevelMouseProc proc;
@@ -200,6 +203,7 @@ public sealed class MouseHook : IDisposable
         }
 
         var args = new MouseHookEventArgs(new Point(hookStruct.Point.X, hookStruct.Point.Y));
+        var callbackStartedAt = Stopwatch.GetTimestamp();
 
         try
         {
@@ -234,7 +238,38 @@ public sealed class MouseHook : IDisposable
             args.Handled = false;
         }
 
+        LogSlowCallback(wParam.ToInt32(), callbackStartedAt);
         return args.Handled ? new IntPtr(1) : CallNextHookEx(hookId, nCode, wParam, lParam);
+    }
+
+    /// <summary>
+    /// Every millisecond spent here delays system-wide mouse input, so any callback that
+    /// exceeds the budget is logged (at most once per second) to make regressions visible.
+    /// </summary>
+    private static void LogSlowCallback(int message, long startedAt)
+    {
+        var elapsedMs = Stopwatch.GetElapsedTime(startedAt).TotalMilliseconds;
+        if (elapsedMs < SlowCallbackThresholdMilliseconds)
+        {
+            return;
+        }
+
+        var now = Stopwatch.GetTimestamp();
+        var previous = Volatile.Read(ref lastSlowCallbackLogTimestamp);
+        if (previous != 0 && Stopwatch.GetElapsedTime(previous, now) < SlowCallbackLogInterval)
+        {
+            return;
+        }
+
+        if (Interlocked.CompareExchange(ref lastSlowCallbackLogTimestamp, now, previous) != previous)
+        {
+            return;
+        }
+
+        AppLogger.Warning(
+            "MouseHook",
+            "slow-hook-callback",
+            $"A low-level mouse hook callback for message 0x{message:X4} took {elapsedMs:F1} ms.");
     }
 
     private delegate IntPtr LowLevelMouseProc(int nCode, IntPtr wParam, IntPtr lParam);

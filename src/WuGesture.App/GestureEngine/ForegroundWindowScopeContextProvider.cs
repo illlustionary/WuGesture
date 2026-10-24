@@ -1,5 +1,5 @@
-using System.Diagnostics;
 using System.Runtime.InteropServices;
+
 namespace WuGesture.App.GestureEngine;
 
 public sealed class ForegroundWindowScopeContextProvider : IGestureScopeContextProvider
@@ -16,32 +16,11 @@ public sealed class ForegroundWindowScopeContextProvider : IGestureScopeContextP
             return GestureScopeContext.Empty;
         }
 
-        GetWindowThreadProcessId(window, out var processId);
-
-        return new GestureScopeContext(GetProcessName(processId), []);
-    }
-
-    private static string GetProcessName(int processId)
-    {
-        if (processId <= 0)
-        {
-            return "";
-        }
-
-        try
-        {
-            using var process = Process.GetProcessById(processId);
-            return process.ProcessName;
-        }
-        catch
-        {
-            return "";
-        }
+        return WindowProcessCache.TryGet(window, includeExecutablePath: false, out var process)
+            ? new GestureScopeContext(process.ProcessName, [])
+            : GestureScopeContext.Empty;
     }
 
     [DllImport("user32.dll")]
     private static extern IntPtr GetForegroundWindow();
-
-    [DllImport("user32.dll", SetLastError = true)]
-    private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out int processId);
 }
