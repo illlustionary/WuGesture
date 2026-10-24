@@ -42,11 +42,17 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Any file in the Vite project counts as an input for the incremental frontend build. -->
+    <WebFrontendSource Include="Web\**\*" Exclude="Web\node_modules\**\*;Web\*.md" />
+  </ItemGroup>
+
+  <ItemGroup>
     <EmbeddedResource Include="Resources\sun.png" />
     <EmbeddedResource Include="Resources\volume.png" />
   </ItemGroup>
 
-  <Target Name="BuildWebFrontend" BeforeTargets="PrepareForBuild">
+  <!-- Resolve the Vite output directory first: it differs between a normal build and a publish run. -->
+  <Target Name="ResolveWebFrontendOutput">
     <PropertyGroup>
       <WebFrontendOutputPath Condition="'$(_IsPublishing)' == 'true'">$(PublishDir)\Web</WebFrontendOutputPath>
       <WebFrontendOutputPath Condition="'$(_IsPublishing)' != 'true'">$(OutputPath)\Web</WebFrontendOutputPath>
@@ -55,7 +61,15 @@
     <ConvertToAbsolutePath Paths="$(WebFrontendOutputPath)">
       <Output TaskParameter="AbsolutePaths" PropertyName="WebFrontendOutputPath" />
     </ConvertToAbsolutePath>
+  </Target>
 
+  <!-- MSBuild skips the whole target when every source is older than the emitted index.html. Vite hashes
+       asset names, so index.html is rewritten on every real frontend change. -->
+  <Target Name="BuildWebFrontend"
+          BeforeTargets="PrepareForBuild"
+          DependsOnTargets="ResolveWebFrontendOutput"
+          Inputs="@(WebFrontendSource)"
+          Outputs="$(WebFrontendOutputPath)\index.html">
     <Exec
       WorkingDirectory="$(MSBuildProjectDirectory)\Web"
       Command="pnpm exec vite build --outDir &quot;$(WebFrontendOutputPath)&quot;" />

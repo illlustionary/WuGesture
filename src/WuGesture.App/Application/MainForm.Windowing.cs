@@ -48,7 +48,7 @@ public sealed partial class MainForm
         out bool useDarkPalette)
     {
         useDarkPalette = appearance.Theme == GestureConfigContract.AppearanceThemes.Dark ||
-            (appearance.Theme == GestureConfigContract.AppearanceThemes.System && SystemPrefersDarkTheme());
+            (appearance.Theme == GestureConfigContract.AppearanceThemes.System && SystemTheme.PrefersDarkMode());
         captionColor = GestureColorParser.Parse(
             useDarkPalette ? appearance.DarkTitleBarColor : appearance.LightTitleBarColor,
             Color.Empty);

@@ -1,7 +1,6 @@
 using Microsoft.Win32;
 using WuGesture.App.GestureEngine;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Security.Principal;
 using System.Text.Json;
 
@@ -18,6 +17,7 @@ public sealed partial class MainForm : Form
     private readonly ElevationLauncher elevationLauncher;
     private readonly WebMessageRouter webMessageRouter;
     private readonly ConfigurationCoordinator configurationCoordinator;
+    private readonly ApplicationPickerCoordinator applicationPickerCoordinator;
     private ConfiguredScopeContextProvider? scopeContextProvider;
     private LoadedGestureConfig? loadedConfig;
     private GestureService? gestureService;
@@ -35,11 +35,6 @@ public sealed partial class MainForm : Form
     private bool isEditorPaused;
     private int overlayRecoveryScheduled;
 
-    private static readonly JsonSerializerOptions WebMessageJsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true
-    };
-
     public MainForm(bool startHiddenToTray = false)
     {
         this.startHiddenToTray = startHiddenToTray;
@@ -54,6 +49,11 @@ public sealed partial class MainForm : Form
             PostRules,
             PostConfigResult,
             PostWebDavResult,
+            () => this);
+        applicationPickerCoordinator = new ApplicationPickerCoordinator(
+            () => loadedConfig,
+            TryPostWebMessage,
+            (success, message, operation) => PostConfigResult(success, message, operation),
             () => this);
         webMessageRouter = new WebMessageRouter(
             CreateWebMessageHandlers(),
@@ -513,9 +513,9 @@ public sealed partial class MainForm : Form
     {
         return new Dictionary<string, Action<string>>(StringComparer.Ordinal)
         {
-            [WebViewMessageTypes.SelectApplication] = SelectApplication,
-            [WebViewMessageTypes.PickApplicationWindow] = PickApplicationWindow,
-            [WebViewMessageTypes.OpenApplicationFolder] = OpenApplicationFolder,
+            [WebViewMessageTypes.SelectApplication] = applicationPickerCoordinator.Select,
+            [WebViewMessageTypes.PickApplicationWindow] = applicationPickerCoordinator.PickWindow,
+            [WebViewMessageTypes.OpenApplicationFolder] = applicationPickerCoordinator.OpenFolder,
             [WebViewMessageTypes.StartGestureRecording] = StartGestureRecording,
             [WebViewMessageTypes.StopGestureRecording] = _ => StopGestureRecording(),
             [WebViewMessageTypes.SetGesturePaused] = SetGesturePaused,
@@ -538,7 +538,7 @@ public sealed partial class MainForm : Form
     {
         try
         {
-            var message = JsonSerializer.Deserialize<PreviewLevelOsdWebMessage>(json, WebMessageJsonOptions);
+            var message = JsonSerializer.Deserialize<PreviewLevelOsdWebMessage>(json, WebMessageJson.Options);
             if (string.Equals(message?.Kind, "brightness", StringComparison.OrdinalIgnoreCase))
             {
                 LevelOsdOverlay.ShowBrightnessPreview(62);
@@ -558,7 +558,7 @@ public sealed partial class MainForm : Form
     {
         try
         {
-            var message = JsonSerializer.Deserialize<StartHotkeyRecordingWebMessage>(json, WebMessageJsonOptions);
+            var message = JsonSerializer.Deserialize<StartHotkeyRecordingWebMessage>(json, WebMessageJson.Options);
             hotkeyRecorder.Start(message?.RequestId ?? "");
         }
         catch (Exception exception)
@@ -571,7 +571,7 @@ public sealed partial class MainForm : Form
     {
         try
         {
-            var message = JsonSerializer.Deserialize<SetGesturePausedWebMessage>(json, WebMessageJsonOptions);
+            var message = JsonSerializer.Deserialize<SetGesturePausedWebMessage>(json, WebMessageJson.Options);
             isEditorPaused = message?.Paused ?? false;
             ApplyGesturePauseState();
             if (message?.Paused == true)
@@ -589,7 +589,7 @@ public sealed partial class MainForm : Form
     {
         try
         {
-            var message = JsonSerializer.Deserialize<SetGesturePausedWebMessage>(json, WebMessageJsonOptions);
+            var message = JsonSerializer.Deserialize<SetGesturePausedWebMessage>(json, WebMessageJson.Options);
             SetUserPaused(message?.Paused ?? false);
         }
         catch (Exception exception)
@@ -602,7 +602,7 @@ public sealed partial class MainForm : Form
     {
         try
         {
-            var message = JsonSerializer.Deserialize<StartGestureRecordingWebMessage>(json, WebMessageJsonOptions);
+            var message = JsonSerializer.Deserialize<StartGestureRecordingWebMessage>(json, WebMessageJson.Options);
             gestureService?.StartRecording(message?.RequestId ?? "");
             mouseTrailForm?.HideTrail();
         }
@@ -616,125 +616,6 @@ public sealed partial class MainForm : Form
     {
         gestureService?.StopRecording();
         mouseTrailForm?.HideTrail();
-    }
-
-    private void PickApplicationWindow(string json)
-    {
-        try
-        {
-            var message = JsonSerializer.Deserialize<SelectApplicationWebMessage>(json, WebMessageJsonOptions);
-            using var picker = new ApplicationTargetPickerForm(GetApplicationPickerCursorColor());
-            var result = picker.ShowDialog(this);
-            if (result == DialogResult.Abort)
-            {
-                PostConfigResult(false, picker.ErrorMessage);
-                return;
-            }
-
-            if (result != DialogResult.OK || picker.PickedApplication is null)
-            {
-                return;
-            }
-
-            PostApplicationSelected(
-                message?.RequestId ?? "",
-                picker.PickedApplication.Name,
-                picker.PickedApplication.Name,
-                picker.PickedApplication.Path,
-                message?.Category ?? "");
-        }
-        catch (Exception exception)
-        {
-            PostConfigResult(false, exception.Message);
-        }
-    }
-
-    private Color GetApplicationPickerCursorColor()
-    {
-        var theme = loadedConfig?.Config.UiSettings.Appearance.Theme;
-        var isDarkTheme = theme == GestureConfigContract.AppearanceThemes.Dark ||
-            (theme != GestureConfigContract.AppearanceThemes.Light && SystemPrefersDarkTheme());
-
-        return isDarkTheme
-            ? Color.FromArgb(0xED, 0xF2, 0xF7)
-            : Color.FromArgb(0x16, 0x20, 0x2B);
-    }
-
-    private static bool SystemPrefersDarkTheme()
-    {
-        using var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize");
-        return key?.GetValue("AppsUseLightTheme") is int value && value == 0;
-    }
-
-    private void SelectApplication(string json)
-    {
-        try
-        {
-            var message = JsonSerializer.Deserialize<SelectApplicationWebMessage>(json, WebMessageJsonOptions);
-            using var dialog = new OpenFileDialog
-            {
-                Title = "选择应用程序",
-                Filter = "应用程序 (*.exe)|*.exe|所有文件 (*.*)|*.*",
-                CheckFileExists = true,
-                Multiselect = false
-            };
-
-            if (dialog.ShowDialog(this) != DialogResult.OK)
-            {
-                return;
-            }
-
-            PostApplicationSelected(
-                message?.RequestId ?? "",
-                Path.GetFileNameWithoutExtension(dialog.FileName),
-                Path.GetFileNameWithoutExtension(dialog.FileName),
-                dialog.FileName,
-                message?.Category ?? "");
-        }
-        catch (Exception exception)
-        {
-            PostConfigResult(false, exception.Message);
-        }
-    }
-
-    private void OpenApplicationFolder(string json)
-    {
-        try
-        {
-            var message = JsonSerializer.Deserialize<OpenApplicationFolderWebMessage>(json, WebMessageJsonOptions);
-            var directory = Path.GetDirectoryName(message?.Path ?? "");
-            if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))
-            {
-                return;
-            }
-
-            _ = Process.Start(new ProcessStartInfo
-            {
-                FileName = "explorer.exe",
-                UseShellExecute = true,
-                Arguments = directory
-            });
-        }
-        catch (Exception exception)
-        {
-            AppLogger.Error("MainForm", "open-application-folder-failed", "Failed to open application folder.", exception);
-        }
-    }
-
-    private void PostApplicationSelected(string requestId, string name, string displayName, string path, string category)
-    {
-        var payload = JsonSerializer.Serialize(new
-        {
-            type = WebViewMessageTypes.ApplicationSelected,
-            requestId,
-            name,
-            displayName,
-            path,
-            category,
-            icon = ApplicationIconDataUrl.FromExecutable(path)
-        });
-
-        TryPostWebMessage(payload);
     }
 
     private void ApplyLoadedConfig()

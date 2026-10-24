@@ -1,6 +1,19 @@
+using System.Text.Json;
 using WuGesture.App.GestureEngine;
 
 namespace WuGesture.App;
+
+/// <summary>
+/// Serializer settings shared by every WebView message handler, so the host and the coordinators cannot
+/// drift apart on case sensitivity.
+/// </summary>
+internal static class WebMessageJson
+{
+    public static readonly JsonSerializerOptions Options = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
+}
 
 internal sealed class RulesWebMessage
 {
