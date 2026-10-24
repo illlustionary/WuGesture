@@ -19,6 +19,8 @@ MouseHook
 
 `GestureService` 跟踪右键或中键轨迹，`GestureRecognizer` 将轨迹转换为 8 方向模式，`GestureMatcher` 按当前前台窗口的作用域选择规则，`ActionExecutor` 执行命中的动作。
 
+性能约束：钩子回调、手势解析线程和 16ms 边缘轮询都属于延迟敏感路径，任何对"外部进程"的查询都可能被安全软件的自防卫机制拖慢。窗口所属进程的身份统一由 `WindowProcessCache` 提供（1 秒短期缓存），底层用 `OpenProcess` + `QueryFullProcessImageNameW` 读取，不枚举模块也不访问 `Process.MainModule`。实测在卡巴斯基 UI 进程上，`MainModule` 单次约 700ms，而 `QueryFullProcessImageNameW` 约 0.15ms；钩子回调超过 10ms 或进程查询超过 50ms 都会写入应用日志以便发现回归。
+
 手势跟踪期间，原始中键和右键事件会被吞掉；移动距离不足以构成手势时，会重放对应的普通鼠标单击。动作在按钮抬起时执行，匹配结果可在移动过程中由全虚拟桌面轨迹覆盖层显示。最终提示会无缝接续预览，按 `gestureHint` 独立的显示和淡出时长消失；覆盖层显式鼠标穿透，不阻挡底层应用操作。
 
 该覆盖层由 `MouseTrailForm` 承担分层窗口、原生缓冲区和画面提交，`MouseTrailRenderer` 负责路径与轨迹绘制，`GestureHintRenderer` 负责提示样式、布局和淡出状态，`LevelOsdRenderer` 负责音量/亮度 OSD 的图标、轨道、数值、布局和淡出状态。`LevelOsdOverlay` 会把来自手势、边缘操作和后台亮度队列的 OSD 请求投递回主 UI 线程。各渲染器使用独立 alpha 和生命周期，避免一个提示淡出或隐藏时影响其他内容；它们复用同一覆盖窗口，避免独立提示窗的定位和显示时序问题。

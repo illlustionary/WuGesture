@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace WuGesture.App.GestureEngine;
@@ -84,44 +83,20 @@ public sealed class ApplicationExclusionMatcher
         appName = "";
         appPath = "";
 
-        if (window == IntPtr.Zero)
+        if (!WindowProcessCache.TryGet(window, includePath, out var process))
         {
             return false;
         }
 
-        GetWindowThreadProcessId(window, out var processId);
-        if (processId <= 0)
+        appName = ApplicationIdentityNormalizer.NormalizeProcessName(process.ProcessName);
+        if (includePath)
         {
-            return false;
+            appPath = process.ExecutablePath.Trim();
         }
 
-        try
-        {
-            using var process = Process.GetProcessById(processId);
-            appName = ApplicationIdentityNormalizer.NormalizeProcessName(process.ProcessName);
-            if (includePath)
-            {
-                try
-                {
-                    appPath = process.MainModule?.FileName ?? "";
-                }
-                catch
-                {
-                    appPath = "";
-                }
-            }
-
-            return appName.Length > 0 || appPath.Length > 0;
-        }
-        catch
-        {
-            return false;
-        }
+        return appName.Length > 0 || appPath.Length > 0;
     }
 
     [DllImport("user32.dll")]
     private static extern IntPtr GetForegroundWindow();
-
-    [DllImport("user32.dll", SetLastError = true)]
-    private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out int processId);
 }

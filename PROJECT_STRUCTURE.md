@@ -107,7 +107,7 @@ src\WuGesture.App\GestureEngine
 
 关键文件：
 
-- `MouseHook.cs`：低级全局鼠标钩子；在独立的高优先级后台消息线程中安装和接收回调，服务层再按需要把 UI 工作投递回 WinForms 线程，避免前台窗口/WebView 消息阻塞全局输入 hook 链。
+- `MouseHook.cs`：低级全局鼠标钩子；在独立的高优先级后台消息线程中安装和接收回调，服务层再按需要把 UI 工作投递回 WinForms 线程，避免前台窗口/WebView 消息阻塞全局输入 hook 链；回调耗时超过 10ms 时按每秒最多一条记录 `slow-hook-callback` 警告，用于发现重新引入的阻塞调用。
 - `KeyboardShortcutRecorder.cs`：低级键盘 hook，用于配置界面录制快捷键并吞掉录制期间的原生键盘事件。
 - `GestureService.cs`：接入右键和中键低级 hook，协调会话、识别器、匹配器和执行器，并向 UI 发送事件；跟踪中的轨迹进度只保留尚未处理的最新一帧，避免快速移动堆积 WinForms UI 队列，松键和最终识别事件仍按原顺序投递；命中手势会先完成提示，再将快捷键、窗口控制和运行程序动作顺序投递到后台队列，避免动作执行阻塞桌面反馈；`start-window` 的目标前置和快捷键注入在同一个后台任务中完成，音量/亮度继续在原线程执行；也支持录制会话，把识别结果回传给前端。
 - `GestureStartDiagnostics.cs`：异步记录诊断启动标记、每次手势起始分段耗时、首条有效移动到轨迹首帧提交的分段耗时，以及命中规则后从松键到 UI 反馈和动作完成的分段耗时；日志位于 `%LocalAppData%\WuGesture\diagnostics\gesture-start-latency.log`，单文件达到 1MB 时保留上一份轮转日志，主日志写入失败时会把错误写入 `%TEMP%\WuGesture-gesture-diagnostics-error.log`。
@@ -123,7 +123,10 @@ src\WuGesture.App\GestureEngine
 - `GestureRuntimeDefaults.cs`：手势识别和边缘操作运行时阈值常量，包括最小移动距离、识别步数、边缘厚度、摩擦距离和超时。
 - `GestureMatcher.cs`：将识别出的鼠标键和方向模式与已加载规则进行匹配，并按作用域优先级选择命中项。
 - `GestureScopeContext.cs`：用于规则匹配的窗口 app/有序分类上下文模型。
-- `ForegroundWindowScopeContextProvider.cs`：读取前台窗口或指定窗口句柄的进程名。
+- `ForegroundWindowScopeContextProvider.cs`：读取前台窗口或指定窗口句柄的进程名，进程信息统一通过 `WindowProcessCache` 获取。
+- `WindowProcessCache.cs`：窗口句柄到进程身份的短期缓存（64 项、1 秒过期，命中时校验进程号防止句柄复用），供手势起始、排除项判断和 16ms 边缘轮询共用，避免这些线程反复做跨进程查询。
+- `ProcessImageQuery.cs`：用 `OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION)` + `QueryFullProcessImageNameW` 读取进程名和可执行文件路径，不再枚举模块；安全软件的受保护进程上 `Process.MainModule` 实测可达 700ms，而该方式约 0.15ms。查询本身超过 50ms 时记录 `slow-image-query` 警告，读取失败时才回退到 `Process.GetProcessById`。
+- `ApplicationExclusionMatcher.cs`：按进程名或可执行文件路径匹配排除项；窗口到进程身份的解析与缓存由 `WindowProcessCache` 承担，避免在 hook 线程和 UI 轮询里做重量级跨进程查询。
 - `ConfiguredScopeContextProvider.cs`：用配置里的应用程序列表把窗口进程名映射到有序分类列表，供作用域匹配使用。
 - `ActionExecutor.cs`：按动作类型执行命令；快捷键通过 Win32 `SendInput` 执行，窗口控制通过 `ShowWindow`、`SetWindowPos` 和窗口消息执行。运行程序使用 `ProcessStartInfo.ArgumentList` 启动指定 `.exe`，不使用 Shell、不等待退出且不主动提权。命中桌面或桌面托管窗口的窗口控制动作会直接忽略；音量/亮度会调用对应控制器并显示 OSD。
 - `DesktopWindowClassifier.cs`：通过桌面 Shell 窗口类以及父/拥有者链识别 `Progman`、`WorkerW` 和桌面视图，供窗口控制动作排除桌面目标。
@@ -171,7 +174,7 @@ MouseHook
 - `GestureService` 会读取应用行为里的排除项；`start-window` 在鼠标按下时按起始窗口判断排除项，`current-window` 则按当前前台窗口判断。命中排除项时不启动手势跟踪，也不吞掉原始鼠标输入。
 - 托盘暂停和配置界面左上角状态标识共用同一个临时用户暂停状态，配置界面录制暂停则是独立暂停来源；运行时按用户、配置和录制暂停合并后的状态控制 `GestureService` 和 `EdgeActionService`。
 - 快捷键录制由后端低级键盘 hook 完成；录制期间会阻止 `Win` 等系统级按键继续传递，松开所有按键后回传组合键。
-- 钩子回调必须保持快速：`GestureInputCapture` 只做捕获决定、按键吞入状态和路径事件投递，不会等待手势解析、透明覆盖层或 WebView。`GestureParserWorker` 在独立的最高优先级线程中串行调度 `GestureService` 的路径、规则和会话状态；轨迹、提示、OSD 与 WebView 通知仍通过异步 WinForms 消息投递，不等待返回。动作会切回 WinForms 消息线程或后台动作队列执行。
+- 钩子回调必须保持快速：`GestureInputCapture` 只做捕获决定、按键吞入状态和路径事件投递，不会等待手势解析、透明覆盖层或 WebView。`GestureParserWorker` 在独立的最高优先级线程中串行调度 `GestureService` 的路径、规则和会话状态；轨迹、提示、OSD 与 WebView 通知仍通过异步 WinForms 消息投递，不等待返回。动作会切回 WinForms 消息线程或后台动作队列执行。读取窗口所属进程一律走 `WindowProcessCache` / `ProcessImageQuery`，禁止在钩子回调、解析线程或边缘轮询里使用 `Process.MainModule` 或模块枚举：安全软件的受保护进程会让这类调用阻塞数百毫秒，历史上曾导致卡巴斯基窗口上的手势和鼠标移动严重卡顿。
 - 动作执行失败会被捕获，并通过 `GestureActionFailed` 上报。
 
 ## 配置
