@@ -10,11 +10,6 @@ namespace WuGesture.App;
 /// </summary>
 internal sealed class ConfigurationCoordinator
 {
-    private static readonly JsonSerializerOptions WebMessageJsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true
-    };
-
     private readonly GestureConfigStore configStore = new();
     private readonly WebDavConfigSyncService webDavConfigSyncService = new();
     private readonly Func<LoadedGestureConfig?> getConfig;
@@ -214,7 +209,7 @@ internal sealed class ConfigurationCoordinator
 
     internal static GestureConfig CreateConfig(string json, GestureUiSettings? fallbackUiSettings)
     {
-        var message = JsonSerializer.Deserialize<RulesWebMessage>(json, WebMessageJsonOptions);
+        var message = JsonSerializer.Deserialize<RulesWebMessage>(json, WebMessageJson.Options);
         return new GestureConfig
         {
             SchemaVersion = GestureConfigContract.Schema.CurrentVersion,
@@ -228,7 +223,7 @@ internal sealed class ConfigurationCoordinator
 
     private WebDavUiSettings ReadWebDavSettings(string json)
     {
-        var message = JsonSerializer.Deserialize<RulesWebMessage>(json, WebMessageJsonOptions);
+        var message = JsonSerializer.Deserialize<RulesWebMessage>(json, WebMessageJson.Options);
         return message?.UiSettings?.WebDav ??
             getConfig()?.Config.UiSettings.WebDav ??
             new WebDavUiSettings();

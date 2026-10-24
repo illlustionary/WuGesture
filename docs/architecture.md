@@ -4,7 +4,7 @@ WuGesture 的桌面宿主使用 WinForms 和 WebView2；配置界面是独立的
 
 ## 启动与依赖
 
-发行包直接以 framework-dependent 的 `WuGesture.exe` 作为桌面应用入口，开机自启动和管理员重启也直接调用该文件。普通启动默认显示配置窗口，可在应用行为中关闭并改为后台驻留；开机自启动始终后台运行。开启“以管理员身份打开”后，应用会在启动服务前用 `runas` 重启自身；用户在 UAC 提示中取消或提权失败时不会以普通权限继续运行，而是退出（普通启动先提示原因，后台启动只记录日志），避免出现权限不完整的手势服务。`.NET 10 Desktop Runtime x64` 未安装时，.NET Host 会在应用代码执行前显示系统安装提示。应用启动后会检查 WebView2 Runtime；缺少时显示下载引导并退出，避免在初始化配置界面时出现不明确的异常。
+发行包直接以 framework-dependent 的 `WuGesture.exe` 作为桌面应用入口，开机自启动和管理员重启也直接调用该文件。普通启动默认显示配置窗口，可在应用行为中关闭并改为后台驻留；开机自启动始终后台运行。开启“以管理员身份打开”后，应用会在启动服务前用 `runas` 重启自身；用户在 UAC 提示中取消或提权失败时不会以普通权限继续运行，而是退出（普通启动先提示原因，后台启动只记录日志），避免出现权限不完整的手势服务。`.NET 10 Desktop Runtime x64` 未安装时，.NET Host 会在应用代码执行前显示系统安装提示。应用启动后会检查 WebView2 Runtime；缺少时显示下载引导并退出，避免在初始化配置界面时出现不明确的异常。本地配置保存采用原子替换：先写同目录临时文件并刷盘，再用 `File.Replace` 一步替换，断电或崩溃不会留下被截断的 `gestures.json`。
 
 ## 手势流水线
 
@@ -43,7 +43,7 @@ MouseHook
 
 ## WebView2 集成
 
-前端工程位于 `src/WuGesture.App/Web`。桌面工程会在构建时调用 `pnpm exec vite build --outDir <宿主输出目录>/Web`；Vite 先清空最终输出目录，因此构建结果直接位于宿主的 `Web`，不会覆盖前端源码。普通构建使用 `OutputPath/Web`，`dotnet publish -o` 使用实际 `PublishDir/Web`，再经由 WebView2 虚拟主机 `https://gesture.wu.philosophy/` 加载。
+前端工程位于 `src/WuGesture.App/Web`。桌面工程会在构建时调用 `pnpm exec vite build --outDir <宿主输出目录>/Web`；Vite 先清空最终输出目录，因此构建结果直接位于宿主的 `Web`，不会覆盖前端源码。普通构建使用 `OutputPath/Web`，`dotnet publish -o` 使用实际 `PublishDir/Web`，再经由 WebView2 虚拟主机 `https://gesture.wu.philosophy/` 加载。该步骤是增量的：MSBuild 以 `Web` 源码为 `Inputs`、宿主 `Web\index.html` 为 `Outputs`，源文件都不比输出新时整段 `vite build` 会被跳过；Vite 对资源名做哈希，任何真实前端改动都会重写 `index.html`。
 
 WebView2 的浏览器 profile 固定在 `%LocalAppData%\WuGesture\WebView2`，不放在安装目录旁边，因此安装到只读目录或清空输出目录都不会影响配置界面。宿主使用显式 `CoreWebView2Environment`，配置窗口隐藏到托盘时释放控件，并在浏览器进程没有自行退出时将其回收；`ready` / `disposed` 日志会带上浏览器进程号，便于确认后台是否真的不再持有 Chromium 进程。
 

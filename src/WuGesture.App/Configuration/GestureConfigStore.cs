@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using WuGesture.App;
@@ -123,7 +124,52 @@ public sealed class GestureConfigStore
             Directory.CreateDirectory(directory);
         }
 
-        File.WriteAllText(ConfigPath, JsonSerializer.Serialize(config, JsonOptions));
+        WriteAtomically(ConfigPath, JsonSerializer.Serialize(config, JsonOptions));
+    }
+
+    /// <summary>
+    /// Writes through a temporary file next to the target and replaces it in one step, so an interrupted
+    /// write (crash, power loss) cannot leave a truncated <c>gestures.json</c> behind. The replacement keeps
+    /// the original file's ACLs, and the temporary file is removed on every failure path.
+    /// </summary>
+    private static void WriteAtomically(string path, string contents)
+    {
+        var directory = Path.GetDirectoryName(path) ?? Directory.GetCurrentDirectory();
+        var tempPath = Path.Combine(directory, $"{Path.GetFileName(path)}.tmp");
+
+        try
+        {
+            using (var stream = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None))
+            using (var writer = new StreamWriter(stream, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false)))
+            {
+                writer.Write(contents);
+                writer.Flush();
+                stream.Flush(flushToDisk: true);
+            }
+
+            if (!File.Exists(path))
+            {
+                File.Move(tempPath, path);
+                return;
+            }
+
+            try
+            {
+                File.Replace(tempPath, path, destinationBackupFileName: null, ignoreMetadataErrors: true);
+            }
+            catch (Exception exception) when (exception is IOException or PlatformNotSupportedException)
+            {
+                // Some file systems (FAT/exFAT, network shares) do not support ReplaceFile.
+                File.Move(tempPath, path, overwrite: true);
+            }
+        }
+        finally
+        {
+            if (File.Exists(tempPath))
+            {
+                File.Delete(tempPath);
+            }
+        }
     }
 
     private LoadedGestureConfig BackupAndReset(string reason)

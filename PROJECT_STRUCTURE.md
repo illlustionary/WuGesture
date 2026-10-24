@@ -68,17 +68,19 @@ src\WuGesture.App
 启动流程：
 
 - `Program.cs` 会在 .NET Host 成功启动后检查 WebView2 Runtime，缺少时显示官方下载引导；随后通过命名互斥体保证单实例运行。再次启动时不会创建第二个实例，而是先将前台切换权限授予已运行实例，再通知它在 UI 线程弹出并激活配置窗口，且等待该 UI 操作通过命名自动重置事件确认或超时后才退出。已有且可见的配置窗口收到单实例唤醒时，会临时关联当前前台线程的输入队列后激活，并在完成后立即解除关联；没有配置窗口时则保持普通启动与恢复流程，避免使用短暂置顶造成焦点回退。开机自启动会带 `--startup` 内部参数，始终只启动后台服务并驻留托盘，不打开配置窗口；普通启动是否显示配置窗口由应用行为设置控制，默认显示。
-- `MainForm.cs` 会在首次显示前加载配置并决定是否后台启动，以避免后台启动时短暂绘制主窗口；普通启动会在 WebView2 的首次导航完成后显示配置窗口，托盘恢复和单实例唤醒也会先在不可见的最小化窗体中重建 WebView2，再交由系统原生还原动画前置，避免页面白闪。后台启动则继续隐藏。关闭到托盘会先走系统原生最小化，最小化完成后隐藏窗体、移出 Alt+Tab 并释放 WebView2 以降低后台内存；最小化到任务栏则保留现有配置窗口。主窗口始终采用 Windows 系统标题栏（标题显示 `WuGesture`，左侧使用应用图标）；窗口句柄创建和托盘恢复前都会从 `gestures.json` 的 `uiSettings.appearance` 解析当前应用主题，同时设置窗体底色和 Windows 11 DWM 标题栏/文字颜色，并在 WebView2 导航前设置相同的默认底色与浅深主题标记，Windows 10 保持系统标题栏颜色。该文件负责生命周期、配置/服务装配、应用行为和 WebView 业务消息，托盘图标、提权重启、消息路由以及配置保存/重载/导入导出/WebDAV 同步分别委托给 `TrayMenuController`、`ElevationLauncher`、`WebMessageRouter` 和 `ConfigurationCoordinator`，也会把配置里的 `uiSettings` 应用到轨迹窗、提示窗和应用行为，并在任一覆盖层启用时预热透明轨迹窗；显示设置变化、系统恢复或透明层原生呈现失败时，会在 UI 线程重建覆盖层资源。主窗口和托盘显示名为 `WuGesture`。开启“以管理员身份打开”时，`MainForm` 会在服务启动前用 `runas` 重启自身并以新实例接管；用户在 UAC 提示中取消或提权启动失败时不会降级为普通权限运行，而是提示原因后直接退出，开机自启动的后台实例则只记录日志并退出，不弹出阻塞登录的对话框。
+- `MainForm.cs` 会在首次显示前加载配置并决定是否后台启动，以避免后台启动时短暂绘制主窗口；普通启动会在 WebView2 的首次导航完成后显示配置窗口，托盘恢复和单实例唤醒也会先在不可见的最小化窗体中重建 WebView2，再交由系统原生还原动画前置，避免页面白闪。后台启动则继续隐藏。关闭到托盘会先走系统原生最小化，最小化完成后隐藏窗体、移出 Alt+Tab 并释放 WebView2 以降低后台内存；最小化到任务栏则保留现有配置窗口。主窗口始终采用 Windows 系统标题栏（标题显示 `WuGesture`，左侧使用应用图标）；窗口句柄创建和托盘恢复前都会从 `gestures.json` 的 `uiSettings.appearance` 解析当前应用主题，同时设置窗体底色和 Windows 11 DWM 标题栏/文字颜色，并在 WebView2 导航前设置相同的默认底色与浅深主题标记，Windows 10 保持系统标题栏颜色。该文件负责生命周期、配置/服务装配、应用行为和 WebView 业务消息，托盘图标、提权重启、消息路由、配置保存/重载/导入导出/WebDAV 同步以及应用选择/窗口拾取/打开程序目录分别委托给 `TrayMenuController`、`ElevationLauncher`、`WebMessageRouter`、`ConfigurationCoordinator` 和 `ApplicationPickerCoordinator`，也会把配置里的 `uiSettings` 应用到轨迹窗、提示窗和应用行为，并在任一覆盖层启用时预热透明轨迹窗；显示设置变化、系统恢复或透明层原生呈现失败时，会在 UI 线程重建覆盖层资源。主窗口和托盘显示名为 `WuGesture`。开启“以管理员身份打开”时，`MainForm` 会在服务启动前用 `runas` 重启自身并以新实例接管；用户在 UAC 提示中取消或提权启动失败时不会降级为普通权限运行，而是提示原因后直接退出，开机自启动的后台实例则只记录日志并退出，不弹出阻塞登录的对话框。
 - `MainForm.Windowing.cs`：`MainForm` 的窗口状态持久化、系统原生最小化/还原和单实例唤醒时的前置激活；标题栏、缩放和窗口控制按钮由 Windows 提供。
 - `AppLogger.cs`：应用级结构化 JSONL 日志。`Program.cs` 会在入口初始化它，以记录启动/退出、单实例 IPC（包括第二个实例的转发失败）、WebView2 Runtime 版本和未处理异常；配置操作、WebView 宿主及动作失败也会记录。日志异步批量写入 `%LocalAppData%\WuGesture\logs\application-YYYYMMDD.log`，单文件达到 2MB 时保留一份 `.previous` 轮转日志，保留最近 7 天；队列满时会生成丢弃标记，写入失败时回退到 `%TEMP%\WuGesture-application-log-error.log`。日志不记录配置 JSON、WebDAV 凭据或 WebView 消息正文。
 - `WebViewHost.cs`：负责 WebView2 控件的创建、销毁、虚拟主机映射、导航和消息事件订阅；导航前使用宿主提供的默认底色和浅深主题标记，避免配置窗口重建时客户端区域按白色首帧绘制；入站消息仍同步交由 `MainForm` 的业务处理器执行，宿主不存在时出站消息直接丢弃。WebView2 使用显式创建的 `CoreWebView2Environment`，profile 固定放在 `%LocalAppData%\WuGesture\WebView2`（不再放在 exe 旁边，安装目录可能只读、发布脚本也会清空输出目录）；`ready`/`disposed` 日志会记录浏览器进程号，释放后 3 秒内仍未退出的浏览器进程会被回收，保证关闭到托盘后不残留 Chromium 进程；Release 构建关闭 DevTools、默认右键菜单、浏览器快捷键和缩放，避免配置界面被误刷新或缩放。
-- `WebViewMessageDtos.cs`：集中 WebView 入站消息 DTO。
+- `WebViewMessageDtos.cs`：集中 WebView 入站消息 DTO，并提供所有处理器共用的 `WebMessageJson.Options`（大小写不敏感），避免宿主和协调器各自维护一份序列化设置。
 - `WebViewRulesPayloadFactory.cs`：把已加载的手势配置转换为 WebView `rules` 消息 payload；其中 `appVersion` 提供程序集版本给配置界面，`uiSettings.appearance` 将配置界面主题偏好传给前端，应用程序和排除项的运行态消息项会补充应用图标 PNG data URL。
 - `ApplicationIconDataUrl.cs`：从可执行文件提取图标并转换为 WebView 可用的 PNG data URL；按可执行文件路径 + 文件长度 + 最后写入时间缓存结果（最多 128 项，溢出整体清空），避免每次 `rules` payload 都重新解码所有已配置程序和排除项的图标。
 - `WebMessageRouter.cs`：解析 WebView 入站消息并按 `type` 分发到 `MainForm` 提供的处理器字典；字符串消息交给状态查询回调，未知类型只记一条警告，JSON 解析失败或处理器抛异常时统一记录 `message-failed` 日志并回调失败处理，避免坏消息穿透到 WinForms 消息循环。
 - `TrayMenuController.cs`：持有通知区图标、右键菜单和灰阶暂停图标（用 `DestroyIcon` 释放临时 HICON），对外只暴露“打开配置 / 暂停 / 退出”三个动作和 `SetPaused`，`MainForm` 不再直接操作托盘资源。
 - `ElevationLauncher.cs`：封装 `runas` 提权重启、UAC 取消/失败提示和“提权后本进程必须退出”的判定，`MainForm` 只负责在服务启动前调用它。
 - `ConfigurationCoordinator.cs`：所有“替换本地配置”的入口——保存、重载、恢复默认、本地导入/导出、WebDAV 测试/备份/恢复；由 `MainForm` 提供当前配置、应用回调、WebView 回执和对话框 owner，避免主窗体重复拼装 `GestureConfig` 并各自处理异常。
+- `ApplicationPickerCoordinator.cs`：处理“选择应用程序”“拾取窗口”“打开程序目录”三条 WebView 消息；文件对话框和窗口拾取都使用宿主提供的 owner，窗口拾取的光标颜色按配置主题（未显式指定时读系统偏好）解析，失败统一通过回执回调上报。
+- `SystemTheme.cs`：读取 Windows 的“应用模式”偏好，供系统标题栏配色和窗口拾取光标共用，避免同一判断分散在多处。
 - `WindowStateStore.cs`：负责配置窗口位置、尺寸和最大化状态的读写、校验与屏幕边界规范化。
 - `AppIdentity.cs` 集中应用显示名、AppData 子目录、自启动注册表值、单实例 IPC 请求/确认事件名和内部启动参数；开机自启动和管理员重启会直接调用当前 `WuGesture.exe`。
 - `ConfigStorageContract.cs` 集中本地配置文件名和窗口状态文件名；本地导入/导出只处理主配置文件，不包含窗口状态文件。
@@ -88,7 +90,7 @@ src\WuGesture.App
 
 职责目录：
 
-- `Application`：程序入口、主窗体生命周期、窗口状态、单实例唤醒、配置工作流、WebView2 宿主和宿主消息契约。
+- `Application`：程序入口、主窗体生命周期、窗口状态、单实例唤醒、配置工作流、应用选择、WebView2 宿主、主题偏好和宿主消息契约。
 - `Configuration`：手势配置模型、默认值、归一化、存储、WebDAV 同步和配置契约。
 - `GestureEngine`：全局输入、手势识别、规则匹配、边缘操作和动作执行核心。
 - `Overlay`：透明覆盖层、轨迹/提示/OSD 渲染及其 UI 线程反馈协调。
@@ -200,7 +202,7 @@ src\WuGesture.App\Configuration
 
 - `GestureConfig.cs`：JSON DTO；`categories` 独立保存空分类，避免以空手势规则作为分类占位。
 - `GestureConfigContract.cs`：配置和运行时共享的字符串契约常量，包括 scope、鼠标按键、动作类型、操作名、边缘触发类型/位置、滚轮方向和关闭按钮行为。
-- `GestureConfigStore.cs`：加载、保存、重置默认配置，并处理本地/WebDAV 配置的 JSON 读写与 `LoadedGestureConfig` 组装；缺少或过旧版本的配置会先备份（本地配置）再按当前默认值补全可读取字段并保存为当前版本，损坏配置才重置；未来版本始终拒绝覆盖。
+- `GestureConfigStore.cs`：加载、保存、重置默认配置，并处理本地/WebDAV 配置的 JSON 读写与 `LoadedGestureConfig` 组装；缺少或过旧版本的配置会先备份（本地配置）再按当前默认值补全可读取字段并保存为当前版本，损坏配置才重置；未来版本始终拒绝覆盖。保存采用原子写入：先写同目录的 `gestures.json.tmp` 并刷盘，再用 `File.Replace` 一步替换（不支持替换的文件系统回退到覆盖移动），任何失败路径都会清理临时文件，断电或崩溃不会留下被截断的配置。
 - `GestureConfigNormalizer.cs`：集中当前配置 schema 的空值补全、UI 设置范围校验和排除项规范化；后端仍是配置校验的最终权威。
 - `ApplicationIdentityNormalizer.cs`：集中可执行文件名/进程名的规范化，供配置、排除项和应用分类匹配复用。
 - `ConfigStorageContract.cs`：配置文件名和窗口状态文件名常量。
@@ -271,6 +273,7 @@ src\WuGesture.App\Web\PROJECT_STRUCTURE.md
 - 配置界面使用 Windows 系统标题栏；标题为 `WuGesture`，应用图标由窗体提供，系统负责最小化、最大化、关闭、拖动和缩放。下方为可折叠的左侧导航和独立滚动的右侧页面工作区，不保留外层总边距、页面壳卡片或侧栏圆角：工作区卡片使用直角连续边框而非留白分隔。侧栏顶部为独立的应用状态组件，带悬浮提示并提供暂停/恢复 WuGesture；组件左侧显示应用图标，右侧显示加粗名称与较小的版本号，暂停时整项置灰。侧栏入口保留图标、文字、hover 状态和当前项左侧竖线动画；底部左侧按钮可折叠为仅图标导航，搜索和问号帮助入口保留在底部右侧，问号会通过基础遮罩对话框展示规则生效顺序。
 - 宿主下发的 `rules` WebView 消息包含程序集 `appVersion`、配置、规则、程序、边缘操作和 UI 设置；运行态程序和排除项会附带应用图标。
 - 前端构建由 `WuGesture.App.csproj` 调用 `pnpm exec vite build --outDir`，将输出直接设为当前宿主输出目录的 `Web`；Vite 会清空该最终输出目录，源码 `Web` 目录不会被覆盖。
+- 前端构建是增量的：`WebFrontendSource` 收集 `Web` 目录下除 `node_modules` 和 `*.md` 之外的所有文件，作为 `BuildWebFrontend` 目标的 `Inputs`，输出为宿主 `Web\index.html`；源文件都不比 `index.html` 新时 MSBuild 直接跳过整个 `vite build`（只改 C# 的构建不会再跑前端）。Vite 会对资源名做哈希，任何真实前端改动都会重写 `index.html`，因此这个比较不会漏构建。
 - `Web\src\components\dialog\BaseDialog.vue` 统一前端对话框的遮罩关闭、可选右上关闭按钮、默认操作区和关闭动画；自动保存或即时选择类弹层可复用外壳并关闭默认操作区。
 - `Web\src\components\form\BaseInput.vue` 和 `Web\src\components\form\BaseRange.vue` 统一前端原生输入控件的 `v-model` 事件、宽度约束和滑块进度填充；页面继续保留各自的配置约束与保存时机。
 - Web 共享组件按 `sidebar`、`layout`、`dialog`、`form`、`ui`、`gesture`、`scope` 和 `rules` 分类；`scope\ApplicationListItem.vue` 统一用于分类列表、程序详情页顶部和运行程序动作，只有路径文字可点击以打开其所在文件夹。分类页、边缘页和设置页的私有组件分别保留在对应 `pages\*\components` 目录。
@@ -299,7 +302,8 @@ tests\WuGesture.App.Tests
 - `AppLogWriter`：异步 JSONL 写入、轮转、保留和队列溢出标记。
 - `WebViewRulesPayloadFactory`：`rules` 消息的配置映射、应用图标和应用版本字段。
 - `WebMessageRouter`：按类型分发、状态查询字符串、未知类型忽略、坏 JSON 与处理器异常被兜底且不影响后续消息。
-- `GestureConfigStore`：当前配置保存、旧/损坏配置的备份重置、未来版本保护和旧导入拒绝。
+- `GestureConfigStore`：当前配置保存、旧/损坏配置的备份重置、未来版本保护和旧导入拒绝；保存后不残留临时文件、无效配置不会覆盖原文件。
+- `ConfigurationCoordinator`：编辑器消息到 `GestureConfig` 的全字段映射、缺省分区按空列表处理、`uiSettings` 缺失时保留磁盘上的设置。
 - `ProgramActionTests`：运行程序动作的路径/参数归一化、空路径忽略和非 Shell 启动参数构造。
 
 ## 构建与发布

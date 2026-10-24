@@ -104,6 +104,43 @@ public sealed class GestureConfigStoreTests
     }
 
     [Fact]
+    public void Save_LeavesNoTemporaryFileBehindAndRewritesInPlace()
+    {
+        using var directory = new TemporaryDirectory();
+        var path = Path.Combine(directory.Path, "gestures.json");
+        var store = new GestureConfigStore(path);
+
+        store.Save(DefaultGestureConfig.Create());
+        var firstWrite = File.ReadAllText(path);
+
+        var changed = DefaultGestureConfig.Create();
+        changed.Rules[0].ActionName = "rewritten-rule";
+        store.Save(changed);
+
+        Assert.Empty(Directory.GetFiles(directory.Path, "*.tmp"));
+        Assert.Single(Directory.GetFiles(directory.Path, "gestures.json"));
+        Assert.NotEqual(firstWrite, File.ReadAllText(path));
+        Assert.Contains("rewritten-rule", File.ReadAllText(path));
+    }
+
+    [Fact]
+    public void Save_KeepsThePreviousConfigWhenTheContentIsInvalid()
+    {
+        using var directory = new TemporaryDirectory();
+        var path = Path.Combine(directory.Path, "gestures.json");
+        var store = new GestureConfigStore(path);
+        store.Save(DefaultGestureConfig.Create());
+        var original = File.ReadAllText(path);
+
+        var invalid = DefaultGestureConfig.Create();
+        invalid.SchemaVersion = GestureConfigContract.Schema.CurrentVersion - 1;
+
+        Assert.Throws<InvalidOperationException>(() => store.Save(invalid));
+        Assert.Equal(original, File.ReadAllText(path));
+        Assert.Empty(Directory.GetFiles(directory.Path, "*.tmp"));
+    }
+
+    [Fact]
     public void SaveJsonAndLoad_MigratesLegacyImport()
     {
         using var directory = new TemporaryDirectory();
