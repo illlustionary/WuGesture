@@ -70,16 +70,16 @@ src\WuGesture.App
 - `Program.cs` 会在 .NET Host 成功启动后检查 WebView2 Runtime，缺少时显示官方下载引导；随后通过命名互斥体保证单实例运行。再次启动时不会创建第二个实例，而是先将前台切换权限授予已运行实例，再通知它在 UI 线程弹出并激活配置窗口，且等待该 UI 操作通过命名自动重置事件确认或超时后才退出。已有且可见的配置窗口收到单实例唤醒时，会临时关联当前前台线程的输入队列后激活，并在完成后立即解除关联；没有配置窗口时则保持普通启动与恢复流程，避免使用短暂置顶造成焦点回退。开机自启动会带 `--startup` 内部参数，始终只启动后台服务并驻留托盘，不打开配置窗口；普通启动是否显示配置窗口由应用行为设置控制，默认显示。
 - `MainForm.cs` 会在首次显示前加载配置并决定是否后台启动，以避免后台启动时短暂绘制主窗口；普通启动会在 WebView2 的首次导航完成后显示配置窗口，托盘恢复和单实例唤醒也会先在不可见的最小化窗体中重建 WebView2，再交由系统原生还原动画前置，避免页面白闪。后台启动则继续隐藏。关闭到托盘会先走系统原生最小化，最小化完成后隐藏窗体、移出 Alt+Tab 并释放 WebView2 以降低后台内存；最小化到任务栏则保留现有配置窗口。主窗口始终采用 Windows 系统标题栏（标题显示 `WuGesture`，左侧使用应用图标）；窗口句柄创建和托盘恢复前都会从 `gestures.json` 的 `uiSettings.appearance` 解析当前应用主题，同时设置窗体底色和 Windows 11 DWM 标题栏/文字颜色，并在 WebView2 导航前设置相同的默认底色与浅深主题标记，Windows 10 保持系统标题栏颜色。该文件负责生命周期、配置/服务装配、托盘、应用行为和 WebView 业务消息，也会把配置里的 `uiSettings` 应用到轨迹窗、提示窗和应用行为，并在任一覆盖层启用时预热透明轨迹窗；显示设置变化、系统恢复或透明层原生呈现失败时，会在 UI 线程重建覆盖层资源。主窗口和托盘显示名为 `WuGesture`。开启“以管理员身份打开”时，`MainForm` 会在服务启动前用 `runas` 重启自身并以新实例接管；用户在 UAC 提示中取消或提权启动失败时不会降级为普通权限运行，而是提示原因后直接退出，开机自启动的后台实例则只记录日志并退出，不弹出阻塞登录的对话框。
 - `MainForm.Windowing.cs`：`MainForm` 的窗口状态持久化、系统原生最小化/还原和单实例唤醒时的前置激活；标题栏、缩放和窗口控制按钮由 Windows 提供。
-- `AppLogger.cs`：应用级结构化 JSONL 日志。`Program.cs` 会在入口初始化它，以记录启动/退出、单实例 IPC（包括第二个实例的转发失败）、WebView2 运行环境和未处理异常；配置操作、WebView 宿主及动作失败也会记录。日志异步批量写入 `%LocalAppData%\WuGesture\logs\application-YYYYMMDD.log`，单文件达到 2MB 时保留一份 `.previous` 轮转日志，保留最近 7 天；队列满时会生成丢弃标记，写入失败时回退到 `%TEMP%\WuGesture-application-log-error.log`。日志不记录配置 JSON、WebDAV 凭据或 WebView 消息正文。
-- `WebViewHost.cs`：负责 WebView2 控件的创建、销毁、虚拟主机映射、导航和消息事件订阅；导航前使用宿主提供的默认底色和浅深主题标记，避免配置窗口重建时客户端区域按白色首帧绘制；入站消息仍同步交由 `MainForm` 的业务处理器执行，宿主不存在时出站消息直接丢弃。
+- `AppLogger.cs`：应用级结构化 JSONL 日志。`Program.cs` 会在入口初始化它，以记录启动/退出、单实例 IPC（包括第二个实例的转发失败）、WebView2 Runtime 版本和未处理异常；配置操作、WebView 宿主及动作失败也会记录。日志异步批量写入 `%LocalAppData%\WuGesture\logs\application-YYYYMMDD.log`，单文件达到 2MB 时保留一份 `.previous` 轮转日志，保留最近 7 天；队列满时会生成丢弃标记，写入失败时回退到 `%TEMP%\WuGesture-application-log-error.log`。日志不记录配置 JSON、WebDAV 凭据或 WebView 消息正文。
+- `WebViewHost.cs`：负责 WebView2 控件的创建、销毁、虚拟主机映射、导航和消息事件订阅；导航前使用宿主提供的默认底色和浅深主题标记，避免配置窗口重建时客户端区域按白色首帧绘制；入站消息仍同步交由 `MainForm` 的业务处理器执行，宿主不存在时出站消息直接丢弃。WebView2 使用显式创建的 `CoreWebView2Environment`，profile 固定放在 `%LocalAppData%\WuGesture\WebView2`（不再放在 exe 旁边，安装目录可能只读、发布脚本也会清空输出目录）；`ready`/`disposed` 日志会记录浏览器进程号，释放后 3 秒内仍未退出的浏览器进程会被回收，保证关闭到托盘后不残留 Chromium 进程；Release 构建关闭 DevTools、默认右键菜单、浏览器快捷键和缩放，避免配置界面被误刷新或缩放。
 - `WebViewMessageDtos.cs`：集中 WebView 入站消息 DTO。
 - `WebViewRulesPayloadFactory.cs`：把已加载的手势配置转换为 WebView `rules` 消息 payload；其中 `appVersion` 提供程序集版本给配置界面，`uiSettings.appearance` 将配置界面主题偏好传给前端，应用程序和排除项的运行态消息项会补充应用图标 PNG data URL。
 - `ApplicationIconDataUrl.cs`：从可执行文件提取图标并转换为 WebView 可用的 PNG data URL。
 - `WindowStateStore.cs`：负责配置窗口位置、尺寸和最大化状态的读写、校验与屏幕边界规范化。
 - `AppIdentity.cs` 集中应用显示名、AppData 子目录、自启动注册表值、单实例 IPC 请求/确认事件名和内部启动参数；开机自启动和管理员重启会直接调用当前 `WuGesture.exe`。
 - `ConfigStorageContract.cs` 集中本地配置文件名和窗口状态文件名；本地导入/导出只处理主配置文件，不包含窗口状态文件。
-- `WebViewHostContract.cs` 集中 WebView2 虚拟主机、入口 URL 和宿主输出目录中的 Web 前端路径片段。
-- 配置窗口最小尺寸为 1280x720；首次启动会以至少该尺寸居中显示，关闭窗口时会保存窗口位置、大小和最大化状态，并拒绝恢复小于该尺寸（包括 0x0）的无效状态。窗口按设置选择隐藏到托盘、最小化到任务栏或直接退出。隐藏到托盘会释放 WebView2 配置界面以降低后台内存占用，托盘恢复时重建 WebView2。通过托盘菜单“退出”始终会真正释放后台手势服务并结束进程。
+- `WebViewHostContract.cs` 集中 WebView2 虚拟主机、入口 URL、宿主输出目录中的 Web 前端路径片段和 WebView2 profile 目录名，并负责把 profile 目录解析到 `%LocalAppData%\WuGesture\WebView2`。
+- 配置窗口最小尺寸为 1280x720；首次启动会以至少该尺寸居中显示，关闭窗口时会保存窗口位置、大小和最大化状态，并拒绝恢复小于该尺寸（包括 0x0）的无效状态。窗口按设置选择隐藏到托盘、最小化到任务栏或直接退出。隐藏到托盘会先最小化再释放 WebView2 配置界面并回收浏览器进程，托盘恢复时重建 WebView2；释放与回收结果会写入 `hidden-to-tray`、`disposed` 和 `browser-process-exited` / `browser-process-reclaimed` 日志。通过托盘菜单“退出”始终会真正释放后台手势服务并结束进程。
 - 托盘菜单提供“打开配置”、“暂停 WuGesture”和“退出”；暂停项会暂停手势识别和边缘操作，但保留后台进程和配置界面。暂停时仅系统托盘图标切换为灰阶图标，并在托盘提示文字中标记“已暂停”，任务栏窗口图标不变。
 
 职责目录：

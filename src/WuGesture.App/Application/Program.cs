@@ -98,7 +98,11 @@ static class Program
     {
         try
         {
-            _ = Microsoft.Web.WebView2.Core.CoreWebView2Environment.GetAvailableBrowserVersionString(null);
+            var runtimeVersion = Microsoft.Web.WebView2.Core.CoreWebView2Environment.GetAvailableBrowserVersionString(null);
+            AppLogger.Information(
+                "Program",
+                "webview2-runtime",
+                $"The WebView2 Runtime is available. Version: {runtimeVersion}.");
             return true;
         }
         catch (Microsoft.Web.WebView2.Core.WebView2RuntimeNotFoundException exception)
