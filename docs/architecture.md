@@ -45,4 +45,6 @@ MouseHook
 
 前端工程位于 `src/WuGesture.App/Web`。桌面工程会在构建时调用 `pnpm exec vite build --outDir <宿主输出目录>/Web`；Vite 先清空最终输出目录，因此构建结果直接位于宿主的 `Web`，不会覆盖前端源码。普通构建使用 `OutputPath/Web`，`dotnet publish -o` 使用实际 `PublishDir/Web`，再经由 WebView2 虚拟主机 `https://gesture.wu.philosophy/` 加载。
 
+WebView2 的浏览器 profile 固定在 `%LocalAppData%\WuGesture\WebView2`，不放在安装目录旁边，因此安装到只读目录或清空输出目录都不会影响配置界面。宿主使用显式 `CoreWebView2Environment`，配置窗口隐藏到托盘时释放控件，并在浏览器进程没有自行退出时将其回收；`ready` / `disposed` 日志会带上浏览器进程号，便于确认后台是否真的不再持有 Chromium 进程。
+
 前端页面、组件、路由、状态模块与 WebView 消息细节见 [前端项目地图](../src/WuGesture.App/Web/PROJECT_STRUCTURE.md)。桌面端模块和配置契约见 [项目结构](../PROJECT_STRUCTURE.md)。

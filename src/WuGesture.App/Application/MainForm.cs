@@ -223,6 +223,7 @@ public sealed partial class MainForm : Form
             {
                 ShowInTaskbar = false;
                 Hide();
+                AppLogger.Information("MainForm", "hidden-to-tray", "The configuration window was hidden; releasing the WebView2 host.");
                 DisposeWebView();
             }
         });
