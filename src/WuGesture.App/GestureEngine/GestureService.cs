@@ -23,6 +23,7 @@ public sealed class GestureService : IDisposable
     private readonly GestureSession session = new();
     private readonly GestureParserWorker parserWorker = new();
     private readonly GestureInputCapture inputCapture;
+    private readonly GestureCaptureGate captureGate;
     private readonly ConcurrentQueue<PendingAction> pendingActions = new();
     private GestureProgressEventArgs? pendingTrackingProgress;
     private ApplicationExclusionMatcher captureExclusionMatcher = new();
@@ -80,6 +81,7 @@ public sealed class GestureService : IDisposable
     {
         this.matcher = matcher;
         this.scopeContextProvider = scopeContextProvider ?? new ForegroundWindowScopeContextProvider();
+        captureGate = new GestureCaptureGate(ResolveCaptureWindow, EvaluateCaptureBlocked);
         inputCapture = new GestureInputCapture(CanCaptureNormalGesture);
         inputCapture.GestureStarted += OnGestureStarted;
         inputCapture.GestureMoved += OnGestureMoved;
@@ -221,6 +223,7 @@ public sealed class GestureService : IDisposable
 
         synchronizationContext = SynchronizationContext.Current;
         parserWorker.Start();
+        captureGate.Start();
         mouseHook.RightButtonDown += OnRightButtonDown;
         mouseHook.MiddleButtonDown += OnMiddleButtonDown;
         mouseHook.MouseMove += OnMouseMove;
@@ -237,6 +240,7 @@ public sealed class GestureService : IDisposable
             mouseHook.MouseMove -= OnMouseMove;
             mouseHook.RightButtonUp -= OnRightButtonUp;
             mouseHook.MiddleButtonUp -= OnMiddleButtonUp;
+            captureGate.Stop();
             parserWorker.Dispose();
             throw;
         }
@@ -257,6 +261,7 @@ public sealed class GestureService : IDisposable
         mouseHook.RightButtonUp -= OnRightButtonUp;
         mouseHook.MiddleButtonUp -= OnMiddleButtonUp;
         mouseHook.Dispose();
+        captureGate.Stop();
         parserWorker.Dispose();
         started = false;
     }
@@ -840,20 +845,37 @@ public sealed class GestureService : IDisposable
 
     private bool CanCaptureNormalGesture(Point location)
     {
-        var exclusionMatcher = Volatile.Read(ref captureExclusionMatcher);
-        var targetWindowMode = Volatile.Read(ref captureTargetWindowMode);
-        var targetWindow = targetWindowMode == GestureConfigContract.WindowTargetModes.StartWindow
-            ? ResolveStartTargetWindow(location)
-            : IntPtr.Zero;
-        if (targetWindowMode == GestureConfigContract.WindowTargetModes.StartWindow
-            ? exclusionMatcher.IsGestureExcluded(targetWindow)
-            : exclusionMatcher.IsGestureExcluded())
+        // Runs on the low-level mouse hook thread: never do a window or process query
+        // unless the gate snapshot is missing, stale, or belongs to another window.
+        var targetWindow = ResolveCaptureWindow(location);
+        if (captureGate.TryGetDecision(targetWindow, out var blocked))
         {
-            return false;
+            return !blocked;
         }
 
-        return !Volatile.Read(ref captureDisableGesturesInFullscreen) ||
-               !ForegroundWindowFullscreenDetector.IsFullscreenForegroundWindow();
+        return !EvaluateCaptureBlocked(targetWindow);
+    }
+
+    private IntPtr ResolveCaptureWindow(Point location)
+    {
+        return Volatile.Read(ref captureTargetWindowMode) == GestureConfigContract.WindowTargetModes.StartWindow
+            ? ResolveStartTargetWindow(location)
+            : GetForegroundWindow();
+    }
+
+    private bool EvaluateCaptureBlocked(IntPtr window)
+    {
+        var exclusionMatcher = Volatile.Read(ref captureExclusionMatcher);
+        var isExcluded = Volatile.Read(ref captureTargetWindowMode) == GestureConfigContract.WindowTargetModes.StartWindow
+            ? exclusionMatcher.IsGestureExcluded(window)
+            : exclusionMatcher.IsGestureExcluded();
+        if (isExcluded)
+        {
+            return true;
+        }
+
+        return Volatile.Read(ref captureDisableGesturesInFullscreen) &&
+               ForegroundWindowFullscreenDetector.IsFullscreenForegroundWindow();
     }
 
     private bool IsDisabledInFullscreen()
