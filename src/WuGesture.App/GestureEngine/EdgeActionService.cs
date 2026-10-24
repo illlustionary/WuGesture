@@ -29,6 +29,7 @@ public sealed class EdgeActionService : IDisposable
     private volatile bool wheelActionsBlocked = true;
     private bool wheelWorkerRunning;
     private volatile bool disposed;
+    private long suppressUntilTimestamp;
 
     public EdgeActionService(IEnumerable<EdgeActionConfig> actions)
     {
@@ -198,7 +199,16 @@ public sealed class EdgeActionService : IDisposable
                         return;
                     }
 
-                    HandleMouseLocation(Cursor.Position);
+                    if (!TryGetCursorPosition(out var cursor))
+                    {
+                        // GetCursorPos fails while another desktop is active (lock screen, UAC prompt,
+                        // display wake-up). Cursor.Position would silently fall back to (0, 0), which is
+                        // the top-left corner and would fire that edge action by itself.
+                        ResetActiveState();
+                        continue;
+                    }
+
+                    HandleMouseLocation(cursor);
                 }
             }
             catch (Exception exception)
@@ -231,7 +241,7 @@ public sealed class EdgeActionService : IDisposable
 
     private void HandleMouseLocation(Point location)
     {
-        if (disposed || paused)
+        if (disposed || paused || IsSuppressed())
         {
             wheelActionsBlocked = true;
             ResetActiveState();
@@ -481,6 +491,23 @@ public sealed class EdgeActionService : IDisposable
         frictionTracker.Reset();
     }
 
+    /// <summary>
+    /// Ignores cursor samples for a short while. Right after a power resume or display change the cursor
+    /// position and the input desktop are still settling: the sample can report (0, 0), which is the
+    /// top-left corner, and injected input is rejected while the desktop is still switching.
+    /// </summary>
+    public void SuppressFor(TimeSpan duration)
+    {
+        var until = Stopwatch.GetTimestamp() + (long)(duration.TotalSeconds * Stopwatch.Frequency);
+        Interlocked.Exchange(ref suppressUntilTimestamp, until);
+    }
+
+    private bool IsSuppressed()
+    {
+        var until = Volatile.Read(ref suppressUntilTimestamp);
+        return until != 0 && Stopwatch.GetTimestamp() < until;
+    }
+
     private static bool IsAnyMouseButtonPressed()
     {
         return IsKeyPressed(Keys.LButton) || IsKeyPressed(Keys.RButton) || IsKeyPressed(Keys.MButton);
@@ -491,8 +518,30 @@ public sealed class EdgeActionService : IDisposable
         return (GetAsyncKeyState((int)key) & 0x8000) != 0;
     }
 
+    private static bool TryGetCursorPosition(out Point position)
+    {
+        if (GetCursorPos(out var point))
+        {
+            position = new Point(point.X, point.Y);
+            return true;
+        }
+
+        position = default;
+        return false;
+    }
+
     [DllImport("user32.dll")]
     private static extern short GetAsyncKeyState(int vKey);
+
+    [DllImport("user32.dll")]
+    private static extern bool GetCursorPos(out NativePoint point);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativePoint
+    {
+        public int X;
+        public int Y;
+    }
 
     private sealed class WheelActionWorkItem
     {

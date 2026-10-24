@@ -68,7 +68,7 @@ src\WuGesture.App
 启动流程：
 
 - `Program.cs` 会在 .NET Host 成功启动后检查 WebView2 Runtime，缺少时显示官方下载引导；随后通过命名互斥体保证单实例运行。再次启动时不会创建第二个实例，而是先将前台切换权限授予已运行实例，再通知它在 UI 线程弹出并激活配置窗口，且等待该 UI 操作通过命名自动重置事件确认或超时后才退出。已有且可见的配置窗口收到单实例唤醒时，会临时关联当前前台线程的输入队列后激活，并在完成后立即解除关联；没有配置窗口时则保持普通启动与恢复流程，避免使用短暂置顶造成焦点回退。开机自启动会带 `--startup` 内部参数，始终只启动后台服务并驻留托盘，不打开配置窗口；普通启动是否显示配置窗口由应用行为设置控制，默认显示。
-- `MainForm.cs` 会在首次显示前加载配置并决定是否后台启动，以避免后台启动时短暂绘制主窗口；普通启动会在 WebView2 的首次导航完成后显示配置窗口，托盘恢复和单实例唤醒也会先在不可见的最小化窗体中重建 WebView2，再交由系统原生还原动画前置，避免页面白闪。后台启动则继续隐藏。关闭到托盘会先走系统原生最小化，最小化完成后隐藏窗体、移出 Alt+Tab 并释放 WebView2 以降低后台内存；最小化到任务栏则保留现有配置窗口。主窗口始终采用 Windows 系统标题栏（标题显示 `WuGesture`，左侧使用应用图标）；窗口句柄创建和托盘恢复前都会从 `gestures.json` 的 `uiSettings.appearance` 解析当前应用主题，同时设置窗体底色和 Windows 11 DWM 标题栏/文字颜色，并在 WebView2 导航前设置相同的默认底色与浅深主题标记，Windows 10 保持系统标题栏颜色。该文件负责生命周期、配置/服务装配、应用行为和 WebView 业务消息，托盘图标、提权重启和消息路由分别委托给 `TrayMenuController`、`ElevationLauncher` 和 `WebMessageRouter`，也会把配置里的 `uiSettings` 应用到轨迹窗、提示窗和应用行为，并在任一覆盖层启用时预热透明轨迹窗；显示设置变化、系统恢复或透明层原生呈现失败时，会在 UI 线程重建覆盖层资源。主窗口和托盘显示名为 `WuGesture`。开启“以管理员身份打开”时，`MainForm` 会在服务启动前用 `runas` 重启自身并以新实例接管；用户在 UAC 提示中取消或提权启动失败时不会降级为普通权限运行，而是提示原因后直接退出，开机自启动的后台实例则只记录日志并退出，不弹出阻塞登录的对话框。
+- `MainForm.cs` 会在首次显示前加载配置并决定是否后台启动，以避免后台启动时短暂绘制主窗口；普通启动会在 WebView2 的首次导航完成后显示配置窗口，托盘恢复和单实例唤醒也会先在不可见的最小化窗体中重建 WebView2，再交由系统原生还原动画前置，避免页面白闪。后台启动则继续隐藏。关闭到托盘会先走系统原生最小化，最小化完成后隐藏窗体、移出 Alt+Tab 并释放 WebView2 以降低后台内存；最小化到任务栏则保留现有配置窗口。主窗口始终采用 Windows 系统标题栏（标题显示 `WuGesture`，左侧使用应用图标）；窗口句柄创建和托盘恢复前都会从 `gestures.json` 的 `uiSettings.appearance` 解析当前应用主题，同时设置窗体底色和 Windows 11 DWM 标题栏/文字颜色，并在 WebView2 导航前设置相同的默认底色与浅深主题标记，Windows 10 保持系统标题栏颜色。该文件负责生命周期、配置/服务装配、应用行为和 WebView 业务消息，托盘图标、提权重启、消息路由以及配置保存/重载/导入导出/WebDAV 同步分别委托给 `TrayMenuController`、`ElevationLauncher`、`WebMessageRouter` 和 `ConfigurationCoordinator`，也会把配置里的 `uiSettings` 应用到轨迹窗、提示窗和应用行为，并在任一覆盖层启用时预热透明轨迹窗；显示设置变化、系统恢复或透明层原生呈现失败时，会在 UI 线程重建覆盖层资源。主窗口和托盘显示名为 `WuGesture`。开启“以管理员身份打开”时，`MainForm` 会在服务启动前用 `runas` 重启自身并以新实例接管；用户在 UAC 提示中取消或提权启动失败时不会降级为普通权限运行，而是提示原因后直接退出，开机自启动的后台实例则只记录日志并退出，不弹出阻塞登录的对话框。
 - `MainForm.Windowing.cs`：`MainForm` 的窗口状态持久化、系统原生最小化/还原和单实例唤醒时的前置激活；标题栏、缩放和窗口控制按钮由 Windows 提供。
 - `AppLogger.cs`：应用级结构化 JSONL 日志。`Program.cs` 会在入口初始化它，以记录启动/退出、单实例 IPC（包括第二个实例的转发失败）、WebView2 Runtime 版本和未处理异常；配置操作、WebView 宿主及动作失败也会记录。日志异步批量写入 `%LocalAppData%\WuGesture\logs\application-YYYYMMDD.log`，单文件达到 2MB 时保留一份 `.previous` 轮转日志，保留最近 7 天；队列满时会生成丢弃标记，写入失败时回退到 `%TEMP%\WuGesture-application-log-error.log`。日志不记录配置 JSON、WebDAV 凭据或 WebView 消息正文。
 - `WebViewHost.cs`：负责 WebView2 控件的创建、销毁、虚拟主机映射、导航和消息事件订阅；导航前使用宿主提供的默认底色和浅深主题标记，避免配置窗口重建时客户端区域按白色首帧绘制；入站消息仍同步交由 `MainForm` 的业务处理器执行，宿主不存在时出站消息直接丢弃。WebView2 使用显式创建的 `CoreWebView2Environment`，profile 固定放在 `%LocalAppData%\WuGesture\WebView2`（不再放在 exe 旁边，安装目录可能只读、发布脚本也会清空输出目录）；`ready`/`disposed` 日志会记录浏览器进程号，释放后 3 秒内仍未退出的浏览器进程会被回收，保证关闭到托盘后不残留 Chromium 进程；Release 构建关闭 DevTools、默认右键菜单、浏览器快捷键和缩放，避免配置界面被误刷新或缩放。
@@ -78,6 +78,7 @@ src\WuGesture.App
 - `WebMessageRouter.cs`：解析 WebView 入站消息并按 `type` 分发到 `MainForm` 提供的处理器字典；字符串消息交给状态查询回调，未知类型只记一条警告，JSON 解析失败或处理器抛异常时统一记录 `message-failed` 日志并回调失败处理，避免坏消息穿透到 WinForms 消息循环。
 - `TrayMenuController.cs`：持有通知区图标、右键菜单和灰阶暂停图标（用 `DestroyIcon` 释放临时 HICON），对外只暴露“打开配置 / 暂停 / 退出”三个动作和 `SetPaused`，`MainForm` 不再直接操作托盘资源。
 - `ElevationLauncher.cs`：封装 `runas` 提权重启、UAC 取消/失败提示和“提权后本进程必须退出”的判定，`MainForm` 只负责在服务启动前调用它。
+- `ConfigurationCoordinator.cs`：所有“替换本地配置”的入口——保存、重载、恢复默认、本地导入/导出、WebDAV 测试/备份/恢复；由 `MainForm` 提供当前配置、应用回调、WebView 回执和对话框 owner，避免主窗体重复拼装 `GestureConfig` 并各自处理异常。
 - `WindowStateStore.cs`：负责配置窗口位置、尺寸和最大化状态的读写、校验与屏幕边界规范化。
 - `AppIdentity.cs` 集中应用显示名、AppData 子目录、自启动注册表值、单实例 IPC 请求/确认事件名和内部启动参数；开机自启动和管理员重启会直接调用当前 `WuGesture.exe`。
 - `ConfigStorageContract.cs` 集中本地配置文件名和窗口状态文件名；本地导入/导出只处理主配置文件，不包含窗口状态文件。
@@ -87,7 +88,7 @@ src\WuGesture.App
 
 职责目录：
 
-- `Application`：程序入口、主窗体生命周期、窗口状态、单实例唤醒、WebView2 宿主和宿主消息契约。
+- `Application`：程序入口、主窗体生命周期、窗口状态、单实例唤醒、配置工作流、WebView2 宿主和宿主消息契约。
 - `Configuration`：手势配置模型、默认值、归一化、存储、WebDAV 同步和配置契约。
 - `GestureEngine`：全局输入、手势识别、规则匹配、边缘操作和动作执行核心。
 - `Overlay`：透明覆盖层、轨迹/提示/OSD 渲染及其 UI 线程反馈协调。
@@ -116,7 +117,7 @@ src\WuGesture.App\GestureEngine
 - `GestureStartDiagnostics.cs`：异步记录诊断启动标记、每次手势起始分段耗时、首条有效移动到轨迹首帧提交的分段耗时，以及命中规则后从松键到 UI 反馈和动作完成的分段耗时；日志位于 `%LocalAppData%\WuGesture\diagnostics\gesture-start-latency.log`，单文件达到 1MB 时保留上一份轮转日志，主日志写入失败时会把错误写入 `%TEMP%\WuGesture-gesture-diagnostics-error.log`。
 - `GestureSession.cs`：保存单次手势的 `Tracking -> Completing -> Idle` 生命周期、会话编号、轨迹和预览/进度缓存。松键后会先固化旧会话的 UI/动作快照并立即回到 `Idle`，因此下一笔不等待最终覆盖层收尾；旧会话的视觉回调会在已有更新会话时被丢弃。跟踪中收到任意新的手势按键按下时仍会先取消旧会话，再以新按下开始下一笔，且会吞掉被取消旧按键迟到的抬起事件。
 - `GestureFeedbackCoordinator.cs`：订阅手势 UI 事件，在 UI 线程按会话编号过滤陈旧更新，负责轨迹/提示覆盖层及手势相关 WebView 消息；`MainForm` 仅提供配置和宿主资源回调。
-- `EdgeActionService.cs`：在独立后台线程按约 16ms 轮询真实光标位置，并监听滚轮，负责暂停/排除/全屏门控、触发顺序和动作筛选；轮询线程会刷新滚轮专用的门控状态快照，因此低级滚轮 hook 回调只做快照读取、边缘规则命中和同步吞键，命中的动作由独立串行工作队列执行，避免前台进程/全屏查询、WinForms UI 队列或安全软件介入拖住全局滚轮链。轮询已完全移出 UI 线程，命中的动作仍通过 `Post` 回到 UI 线程执行；任意鼠标键按住时会立即跳过排除和全屏判断，避免与手势起始竞争；摩擦边会排除角落区域，按沿边方向的反向位移计数并在触发后防重复，滚轮边命中时会吞掉原始滚轮事件。
+- `EdgeActionService.cs`：在独立后台线程按约 16ms 轮询真实光标位置，并监听滚轮，负责暂停/排除/全屏门控、触发顺序和动作筛选；轮询线程会刷新滚轮专用的门控状态快照，因此低级滚轮 hook 回调只做快照读取、边缘规则命中和同步吞键，命中的动作由独立串行工作队列执行，避免前台进程/全屏查询、WinForms UI 队列或安全软件介入拖住全局滚轮链。轮询已完全移出 UI 线程，命中的动作仍通过 `Post` 回到 UI 线程执行；任意鼠标键按住时会立即跳过排除和全屏判断，避免与手势起始竞争；摩擦边会排除角落区域，按沿边方向的反向位移计数并在触发后防重复，滚轮边命中时会吞掉原始滚轮事件。光标位置改用带返回值检查的 `GetCursorPos`：锁屏、UAC 或唤醒过渡期间该调用会失败，而 `Cursor.Position` 会静默返回 `(0, 0)`（正好是左上角），曾经因此每次唤醒都误触发左上角动作；休眠恢复后还会额外忽略 2 秒光标采样，等输入桌面稳定。
 - `EdgeHitTester.cs`：集中四角、普通边缘和摩擦边的屏幕几何命中计算，并提供到边距离计算；保留屏幕遍历和边界优先级。
 - `FrictionTracker.cs`：维护单次摩擦边的位移方向、计数、触发后冷却和超时重置状态。
 - `EdgeActionConfigNormalizer.cs`：将当前版本的边缘动作配置规范为运行时所需形态。
@@ -131,7 +132,7 @@ src\WuGesture.App\GestureEngine
 - `ProcessImageQuery.cs`：用 `OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION)` + `QueryFullProcessImageNameW` 读取进程名和可执行文件路径，不再枚举模块；安全软件的受保护进程上 `Process.MainModule` 实测可达 700ms，而该方式约 0.15ms。查询本身超过 50ms 时记录 `slow-image-query` 警告，读取失败时才回退到 `Process.GetProcessById`。
 - `ApplicationExclusionMatcher.cs`：按进程名或可执行文件路径匹配排除项；窗口到进程身份的解析与缓存由 `WindowProcessCache` 承担，避免在 hook 线程和 UI 轮询里做重量级跨进程查询。
 - `ConfiguredScopeContextProvider.cs`：用配置里的应用程序列表把窗口进程名映射到有序分类列表，供作用域匹配使用。
-- `ActionExecutor.cs`：按动作类型执行命令；快捷键通过 Win32 `SendInput` 执行，窗口控制通过 `ShowWindow`、`SetWindowPos` 和窗口消息执行。运行程序使用 `ProcessStartInfo.ArgumentList` 启动指定 `.exe`，不使用 Shell、不等待退出且不主动提权。命中桌面或桌面托管窗口的窗口控制动作会直接忽略；音量/亮度会调用对应控制器并显示 OSD。
+- `ActionExecutor.cs`：按动作类型执行命令；快捷键通过 Win32 `SendInput` 执行，窗口控制通过 `ShowWindow`、`SetWindowPos` 和窗口消息执行。快捷键注入失败（输入桌面切换、目标窗口完整性级别更高）时会先补发一次全量抬键避免 Win/Alt/Ctrl 卡住，再间隔 30ms 重试，最多 3 次；仍失败时抛出的异常带有按键名、成功注入的事件数和 Win32 错误码，便于从日志定位。运行程序使用 `ProcessStartInfo.ArgumentList` 启动指定 `.exe`，不使用 Shell、不等待退出且不主动提权。命中桌面或桌面托管窗口的窗口控制动作会直接忽略；音量/亮度会调用对应控制器并显示 OSD。
 - `DesktopWindowClassifier.cs`：通过桌面 Shell 窗口类以及父/拥有者链识别 `Progman`、`WorkerW` 和桌面视图，供窗口控制动作排除桌面目标。
 - `AudioController.cs`：通过 Windows Core Audio API 读取和设置系统主音量、静音状态。
 - `BrightnessController.cs`：通过 DDC/CI、WMI、Gamma 三段回退读取和设置显示亮度。
@@ -140,7 +141,7 @@ src\WuGesture.App\GestureEngine
 - `ResourceNames.cs`：后端嵌入资源 manifest 名常量。
 - `MouseInput.cs`：当移动距离太小，不足以构成手势时，重放一次普通右键或中键。
 - `GestureInputCapture.cs`：在钩子回调内同步决定捕获/吞键，维护暂停、录制和迟到抬键状态，并把路径事件无等待交给解析器；捕获门控优先读取 `GestureCaptureGate` 快照。
-- `GestureCaptureGate.cs`：在独立后台线程按 32ms 刷新"当前窗口是否禁止手势"的不可变快照（窗口句柄 + 是否拦截 + 时间戳，200ms 过期），内容包含排除项和全屏判定；低级 hook 按下时只比较窗口句柄并读取布尔值，快照缺失、过期或窗口不匹配时才回退到一次同步判定，从而把 hook 线程与窗口/进程查询解耦。刷新异常按每 10 秒最多一条记录 `refresh-failed`。
+- `GestureCaptureGate.cs`：在独立后台线程按 32ms 刷新"当前窗口是否禁止手势"的不可变快照（窗口句柄 + 是否拦截 + 时间戳，200ms 过期），内容包含排除项和全屏判定；低级 hook 按下时只比较窗口句柄并读取布尔值，快照缺失、过期或窗口不匹配时才回退到一次同步判定，从而把 hook 线程与窗口/进程查询解耦。读取光标位置时会检查 `GetCursorPos` 的返回值，失败（锁屏、UAC、唤醒过渡）时保留上一份快照，避免把零坐标当成桌面窗口。刷新异常按每 10 秒最多一条记录 `refresh-failed`。
 - `GestureParserWorker.cs`：独立最高优先级解析线程的 FIFO 工作队列；合并未处理的移动事件，并保证松键事件前先处理最后一个移动点。
 - `GestureDirection.cs`：8 方向枚举。
 - `GestureRule.cs`：运行时规则以及快捷键、窗口、音量、亮度和程序动作模型。

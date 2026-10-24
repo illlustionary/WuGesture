@@ -14,7 +14,11 @@ internal sealed class RulesWebMessage
 
     public List<EdgeActionConfig> EdgeActions { get; set; } = [];
 
-    public GestureUiSettings UiSettings { get; set; } = new();
+    /// <summary>
+    /// Null when the editor did not send the section, so the coordinator can keep the settings that are
+    /// already on disk instead of silently resetting them to defaults.
+    /// </summary>
+    public GestureUiSettings? UiSettings { get; set; }
 }
 
 internal sealed class SelectApplicationWebMessage
