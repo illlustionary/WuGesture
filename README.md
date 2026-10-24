@@ -47,3 +47,9 @@ dotnet run --project src\WuGesture.App\WuGesture.App.csproj
 ```powershell
 dotnet build WuGesture.slnx
 ```
+
+如果机器上只装了 .NET 运行时、SDK 安装在用户目录（例如用 `dotnet-install.ps1` 装到 `%USERPROFILE%\.dotnet`），系统 `dotnet` 命令不会自动发现它，直接指定该 SDK 的可执行文件即可：
+
+```powershell
+%USERPROFILE%\.dotnet\dotnet.exe build WuGesture.slnx
+```
