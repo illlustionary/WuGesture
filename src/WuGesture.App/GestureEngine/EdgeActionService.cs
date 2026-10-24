@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
@@ -6,11 +7,13 @@ namespace WuGesture.App.GestureEngine;
 
 public sealed class EdgeActionService : IDisposable
 {
+    private static readonly TimeSpan PollFailureLogInterval = TimeSpan.FromSeconds(10);
+
     private readonly object stateLock = new();
     private readonly MouseHook mouseHook = new();
     private readonly ActionExecutor actionExecutor = new();
     private readonly ApplicationExclusionMatcher exclusionMatcher = new();
-    private readonly System.Windows.Forms.Timer mousePollTimer = new() { Interval = EdgeActionRuntimeDefaults.MousePollIntervalMs };
+    private readonly ManualResetEventSlim mousePollStop = new(initialState: true);
     private readonly object wheelQueueLock = new();
     private readonly LinkedList<WheelActionWorkItem> wheelActionQueue = new();
     private IReadOnlyList<EdgeActionConfig> actions;
@@ -18,6 +21,8 @@ public sealed class EdgeActionService : IDisposable
     private EdgeLocation activeCorner = EdgeLocation.None;
     private EdgeLocation activeFrictionEdge = EdgeLocation.None;
     private readonly FrictionTracker frictionTracker = new();
+    private Thread? mousePollThread;
+    private long lastPollFailureLogTimestamp;
     private bool started;
     private volatile bool paused;
     private bool disableEdgeActionsInFullscreen;
@@ -91,9 +96,18 @@ public sealed class EdgeActionService : IDisposable
 
         synchronizationContext = SynchronizationContext.Current;
         mouseHook.MouseWheel += OnMouseWheel;
-        mousePollTimer.Tick += OnMousePollTimerTick;
-        mousePollTimer.Start();
-        mouseHook.Start();
+        StartMousePolling();
+        try
+        {
+            mouseHook.Start();
+        }
+        catch
+        {
+            StopMousePolling();
+            mouseHook.MouseWheel -= OnMouseWheel;
+            throw;
+        }
+
         started = true;
     }
 
@@ -104,8 +118,7 @@ public sealed class EdgeActionService : IDisposable
             return;
         }
 
-        mousePollTimer.Stop();
-        mousePollTimer.Tick -= OnMousePollTimerTick;
+        StopMousePolling();
         mouseHook.MouseWheel -= OnMouseWheel;
         mouseHook.Dispose();
         lock (wheelQueueLock)
@@ -124,15 +137,96 @@ public sealed class EdgeActionService : IDisposable
 
         disposed = true;
         Stop();
-        mousePollTimer.Dispose();
+        mousePollStop.Dispose();
     }
 
-    private void OnMousePollTimerTick(object? sender, EventArgs e)
+    private void StartMousePolling()
     {
-        lock (stateLock)
+        mousePollStop.Reset();
+        var thread = new Thread(MousePollLoop)
         {
-            HandleMouseLocation(Cursor.Position);
+            IsBackground = true,
+            Priority = ThreadPriority.AboveNormal,
+            Name = "WuGesture Edge Poll"
+        };
+        mousePollThread = thread;
+        thread.Start();
+    }
+
+    private void StopMousePolling()
+    {
+        mousePollStop.Set();
+        var thread = mousePollThread;
+        mousePollThread = null;
+        if (thread is not null && thread != Thread.CurrentThread)
+        {
+            thread.Join(TimeSpan.FromSeconds(1));
         }
+    }
+
+    /// <summary>
+    /// Edge detection used to run on a WinForms timer on the UI thread, so any slow window
+    /// or process query inside <see cref="HandleMouseLocation"/> froze the whole interface.
+    /// It now runs on its own thread; actions still marshal back to the UI through <see cref="Post"/>.
+    /// </summary>
+    private void MousePollLoop()
+    {
+        while (true)
+        {
+            bool stopRequested;
+            try
+            {
+                stopRequested = mousePollStop.Wait(EdgeActionRuntimeDefaults.MousePollIntervalMs);
+            }
+            catch (ObjectDisposedException)
+            {
+                // Dispose() only reaches this after the stop event was set and the join timed out.
+                return;
+            }
+
+            if (stopRequested)
+            {
+                return;
+            }
+
+            try
+            {
+                lock (stateLock)
+                {
+                    if (disposed)
+                    {
+                        return;
+                    }
+
+                    HandleMouseLocation(Cursor.Position);
+                }
+            }
+            catch (Exception exception)
+            {
+                LogPollFailure(exception);
+            }
+        }
+    }
+
+    private void LogPollFailure(Exception exception)
+    {
+        var now = Stopwatch.GetTimestamp();
+        var previous = Volatile.Read(ref lastPollFailureLogTimestamp);
+        if (previous != 0 && Stopwatch.GetElapsedTime(previous, now) < PollFailureLogInterval)
+        {
+            return;
+        }
+
+        if (Interlocked.CompareExchange(ref lastPollFailureLogTimestamp, now, previous) != previous)
+        {
+            return;
+        }
+
+        AppLogger.Error(
+            "EdgeActionService",
+            "mouse-poll-failed",
+            "Polling the cursor position for edge actions failed.",
+            exception);
     }
 
     private void HandleMouseLocation(Point location)
