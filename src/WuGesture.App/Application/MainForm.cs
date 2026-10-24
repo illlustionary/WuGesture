@@ -10,18 +10,15 @@ namespace WuGesture.App;
 public sealed partial class MainForm : Form
 {
     private const string StartupRegistryPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
-    private const int Win32ErrorCancelled = 1223;
     private readonly GestureConfigStore configStore = new();
     private readonly WebDavConfigSyncService webDavConfigSyncService = new();
     private readonly KeyboardShortcutRecorder hotkeyRecorder = new();
     private readonly WindowStateStore windowStateStore = new();
-    private readonly NotifyIcon trayIcon = new();
-    private readonly ContextMenuStrip trayMenu = new();
     private readonly bool startHiddenToTray;
-    private ToolStripMenuItem? pauseItem;
-    private Icon? normalTrayIcon;
-    private Icon? pausedTrayIcon;
     private readonly WebViewHost webViewHost;
+    private readonly TrayMenuController trayMenuController;
+    private readonly ElevationLauncher elevationLauncher;
+    private readonly WebMessageRouter webMessageRouter;
     private ConfiguredScopeContextProvider? scopeContextProvider;
     private LoadedGestureConfig? loadedConfig;
     private GestureService? gestureService;
@@ -48,10 +45,15 @@ public sealed partial class MainForm : Form
     {
         this.startHiddenToTray = startHiddenToTray;
         webViewHost = new WebViewHost(this, CanUseUi, HandleWebMessage);
+        webMessageRouter = new WebMessageRouter(
+            CreateWebMessageHandlers(),
+            HandleStatusRequest,
+            exception => PostConfigResult(false, $"处理配置请求失败：{exception.Message}"));
         loadedConfig = configStore.LoadOrCreate();
         AppLogger.Information("MainForm", "config-loaded", "Loaded the local gesture configuration.");
         hideConfigWindowOnLaunch = startHiddenToTray ||
             !loadedConfig.Config.UiSettings.AppBehavior.ShowConfigWindowOnLaunch;
+        elevationLauncher = new ElevationLauncher(startHiddenToTray, hideConfigWindowOnLaunch, RequestClose);
         Text = AppIdentity.DisplayName;
         Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? SystemIcons.Application;
         FormBorderStyle = FormBorderStyle.Sizable;
@@ -66,7 +68,7 @@ public sealed partial class MainForm : Form
             WindowState = FormWindowState.Minimized;
         }
 
-        InitializeTrayIcon();
+        trayMenuController = new TrayMenuController(RestoreFromTray, SetUserPaused, ExitFromTray);
 
         Load += OnLoad;
         Resize += OnResize;
@@ -76,11 +78,7 @@ public sealed partial class MainForm : Form
             SystemEvents.UserPreferenceChanged -= OnSystemUserPreferenceChanged;
             SystemEvents.DisplaySettingsChanged -= OnDisplaySettingsChanged;
             SystemEvents.PowerModeChanged -= OnPowerModeChanged;
-            trayIcon.Visible = false;
-            trayIcon.Dispose();
-            trayMenu.Dispose();
-            normalTrayIcon?.Dispose();
-            pausedTrayIcon?.Dispose();
+            trayMenuController.Dispose();
             DisposeWebView();
             LevelOsdOverlay.Reset();
             gestureFeedbackCoordinator?.Dispose();
@@ -110,7 +108,7 @@ public sealed partial class MainForm : Form
             ShowLevelOsd);
         isConfigPaused = config.Config.UiSettings.AppBehavior.GesturePaused;
         ApplyAppBehaviorSettings(config.Config.UiSettings.AppBehavior);
-        if (TryRelaunchAsAdministrator(config.Config.UiSettings.AppBehavior))
+        if (elevationLauncher.TryRelaunch(config.Config.UiSettings.AppBehavior))
         {
             return;
         }
@@ -164,29 +162,6 @@ public sealed partial class MainForm : Form
         ApplyGesturePauseState();
         AppLogger.Information("MainForm", "services-started", "Gesture and edge-action services are running.");
 
-    }
-
-    private void InitializeTrayIcon()
-    {
-        var openItem = new ToolStripMenuItem("打开配置", null, (_, _) => RestoreFromTray());
-        pauseItem = new ToolStripMenuItem($"暂停 {AppIdentity.DisplayName}")
-        {
-            CheckOnClick = true
-        };
-        pauseItem.CheckedChanged += (_, _) => SetUserPaused(pauseItem.Checked);
-        var exitItem = new ToolStripMenuItem("退出", null, (_, _) => ExitFromTray());
-        trayMenu.Items.Add(openItem);
-        trayMenu.Items.Add(pauseItem);
-        trayMenu.Items.Add(new ToolStripSeparator());
-        trayMenu.Items.Add(exitItem);
-
-        normalTrayIcon = Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? (Icon)SystemIcons.Application.Clone();
-        pausedTrayIcon = CreateGrayscaleIcon(normalTrayIcon);
-        trayIcon.Text = AppIdentity.DisplayName;
-        trayIcon.Icon = normalTrayIcon;
-        trayIcon.ContextMenuStrip = trayMenu;
-        trayIcon.Visible = true;
-        trayIcon.DoubleClick += (_, _) => RestoreFromTray();
     }
 
     private void OnFormClosing(object? sender, FormClosingEventArgs e)
@@ -347,29 +322,17 @@ public sealed partial class MainForm : Form
         if (isUserPaused != paused)
         {
             isUserPaused = paused;
-            if (pauseItem is not null && pauseItem.Checked != paused)
-            {
-                pauseItem.Checked = paused;
-            }
-
-            UpdatePauseMenuText();
+            trayMenuController.SetPaused(paused);
             ApplyGesturePauseState();
         }
 
         PostStatus(isUserPaused ? "paused" : "running");
     }
 
-    private void UpdatePauseMenuText()
+    private void RequestClose()
     {
-        if (pauseItem is not null)
-        {
-            pauseItem.Text = isUserPaused ? $"恢复 {AppIdentity.DisplayName}" : $"暂停 {AppIdentity.DisplayName}";
-        }
-
-        trayIcon.Text = isUserPaused ? $"{AppIdentity.DisplayName}（已暂停）" : AppIdentity.DisplayName;
-        trayIcon.Icon = isUserPaused && pausedTrayIcon is not null
-            ? pausedTrayIcon
-            : normalTrayIcon;
+        isExiting = true;
+        BeginInvokeSafe(Close);
     }
 
     private void ApplyGesturePauseState()
@@ -421,67 +384,6 @@ public sealed partial class MainForm : Form
         catch
         {
         }
-    }
-
-    private bool TryRelaunchAsAdministrator(AppBehaviorUiSettings settings)
-    {
-        if (!settings.RunAsAdministrator || IsRunningAsAdministrator())
-        {
-            return false;
-        }
-
-        try
-        {
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = AppIdentity.GetLaunchExecutablePath(),
-                Arguments = startHiddenToTray
-                    ? $"{AppIdentity.ElevatedRelaunchArgument} {AppIdentity.StartupLaunchArgument}"
-                    : AppIdentity.ElevatedRelaunchArgument,
-                UseShellExecute = true,
-                Verb = "runas"
-            });
-            AppLogger.Information("MainForm", "elevation-relaunch", "Restarting the app with administrator rights.");
-            isExiting = true;
-            BeginInvoke(new Action(Close));
-            return true;
-        }
-        catch (Win32Exception exception) when (exception.NativeErrorCode == Win32ErrorCancelled)
-        {
-            AppLogger.Information("MainForm", "elevation-cancelled", "The user cancelled the UAC prompt; the app will not start.");
-            AbortStartupAfterElevationFailure(
-                "你取消了管理员权限请求，WuGesture 不会启动。\n\n如需以普通权限使用，请先在设置中关闭“以管理员身份打开”。");
-            return true;
-        }
-        catch (Exception exception)
-        {
-            AppLogger.Error("MainForm", "elevation-failed", "Unable to relaunch with administrator rights; the app will not start.", exception);
-            AbortStartupAfterElevationFailure(
-                "无法以管理员身份启动 WuGesture，应用不会启动。\n\n请检查系统 UAC 设置后重试，或在设置中关闭“以管理员身份打开”。");
-            return true;
-        }
-    }
-
-    private void AbortStartupAfterElevationFailure(string message)
-    {
-        if (!hideConfigWindowOnLaunch)
-        {
-            MessageBox.Show(
-                message,
-                $"{AppIdentity.DisplayName} - 需要管理员权限",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Warning);
-        }
-
-        isExiting = true;
-        BeginInvokeSafe(() => Close());
-    }
-
-    private static bool IsRunningAsAdministrator()
-    {
-        using var identity = WindowsIdentity.GetCurrent();
-        var principal = new WindowsPrincipal(identity);
-        return principal.IsInRole(WindowsBuiltInRole.Administrator);
     }
 
     private async Task EnsureWebViewAsync()
@@ -579,80 +481,47 @@ public sealed partial class MainForm : Form
             return;
         }
 
-        using var document = JsonDocument.Parse(json);
-        var root = document.RootElement;
+        webMessageRouter.Route(json);
+    }
 
-        if (root.ValueKind == JsonValueKind.String &&
-            root.GetString() == WebViewMessageTypes.GetStatus)
+    private void HandleStatusRequest(string? messageType)
+    {
+        if (!string.Equals(messageType, WebViewMessageTypes.GetStatus, StringComparison.Ordinal))
         {
-            PostStatus(isUserPaused ? "paused" : "running");
-            PostRules();
+            AppLogger.Warning(
+                "MainForm",
+                "unknown-message",
+                $"Ignoring an unknown string WebView message: {messageType ?? "null"}.");
             return;
         }
 
-        if (root.ValueKind != JsonValueKind.Object ||
-            !root.TryGetProperty("type", out var typeElement))
-        {
-            return;
-        }
+        PostStatus(isUserPaused ? "paused" : "running");
+        PostRules();
+    }
 
-        switch (typeElement.GetString())
+    private Dictionary<string, Action<string>> CreateWebMessageHandlers()
+    {
+        return new Dictionary<string, Action<string>>(StringComparer.Ordinal)
         {
-            case WebViewMessageTypes.SelectApplication:
-                SelectApplication(json);
-                break;
-            case WebViewMessageTypes.PickApplicationWindow:
-                PickApplicationWindow(json);
-                break;
-            case WebViewMessageTypes.OpenApplicationFolder:
-                OpenApplicationFolder(json);
-                break;
-            case WebViewMessageTypes.StartGestureRecording:
-                StartGestureRecording(json);
-                break;
-            case WebViewMessageTypes.StopGestureRecording:
-                StopGestureRecording();
-                break;
-            case WebViewMessageTypes.SetGesturePaused:
-                SetGesturePaused(json);
-                break;
-            case WebViewMessageTypes.SetUserPaused:
-                SetUserPaused(json);
-                break;
-            case WebViewMessageTypes.StartHotkeyRecording:
-                StartHotkeyRecording(json);
-                break;
-            case WebViewMessageTypes.StopHotkeyRecording:
-                hotkeyRecorder.Stop();
-                break;
-            case WebViewMessageTypes.SaveRules:
-                SaveRules(json);
-                break;
-            case WebViewMessageTypes.WebDavTest:
-                TestWebDavConnection(json);
-                break;
-            case WebViewMessageTypes.WebDavSave:
-                SaveConfigToWebDav(json);
-                break;
-            case WebViewMessageTypes.WebDavRestore:
-                RestoreConfigFromWebDav(json);
-                break;
-            case WebViewMessageTypes.ExportConfig:
-                ExportConfig(json);
-                break;
-            case WebViewMessageTypes.ImportConfig:
-                ImportConfig();
-                break;
-            case WebViewMessageTypes.ReloadRules:
-                ReloadRules();
-                break;
-            case WebViewMessageTypes.ResetRules:
-                ResetRules();
-                break;
-            case WebViewMessageTypes.PreviewLevelOsd:
-                PreviewLevelOsd(json);
-                break;
-        }
+            [WebViewMessageTypes.SelectApplication] = SelectApplication,
+            [WebViewMessageTypes.PickApplicationWindow] = PickApplicationWindow,
+            [WebViewMessageTypes.OpenApplicationFolder] = OpenApplicationFolder,
+            [WebViewMessageTypes.StartGestureRecording] = StartGestureRecording,
+            [WebViewMessageTypes.StopGestureRecording] = _ => StopGestureRecording(),
+            [WebViewMessageTypes.SetGesturePaused] = SetGesturePaused,
+            [WebViewMessageTypes.SetUserPaused] = SetUserPaused,
+            [WebViewMessageTypes.StartHotkeyRecording] = StartHotkeyRecording,
+            [WebViewMessageTypes.StopHotkeyRecording] = _ => hotkeyRecorder.Stop(),
+            [WebViewMessageTypes.SaveRules] = SaveRules,
+            [WebViewMessageTypes.WebDavTest] = TestWebDavConnection,
+            [WebViewMessageTypes.WebDavSave] = SaveConfigToWebDav,
+            [WebViewMessageTypes.WebDavRestore] = RestoreConfigFromWebDav,
+            [WebViewMessageTypes.ExportConfig] = ExportConfig,
+            [WebViewMessageTypes.ImportConfig] = _ => ImportConfig(),
+            [WebViewMessageTypes.ReloadRules] = _ => ReloadRules(),
+            [WebViewMessageTypes.ResetRules] = _ => ResetRules(),
+            [WebViewMessageTypes.PreviewLevelOsd] = PreviewLevelOsd
+        };
     }
 
     private void PreviewLevelOsd(string json)
@@ -1139,31 +1008,6 @@ public sealed partial class MainForm : Form
     private bool CanUseUi()
     {
         return !isClosing && !IsDisposed && !Disposing && IsHandleCreated;
-    }
-
-    private static Icon CreateGrayscaleIcon(Icon source)
-    {
-        using var bitmap = source.ToBitmap();
-        for (var y = 0; y < bitmap.Height; y++)
-        {
-            for (var x = 0; x < bitmap.Width; x++)
-            {
-                var color = bitmap.GetPixel(x, y);
-                var gray = (int)Math.Round(color.R * 0.299 + color.G * 0.587 + color.B * 0.114);
-                bitmap.SetPixel(x, y, Color.FromArgb(color.A, gray, gray, gray));
-            }
-        }
-
-        var handle = bitmap.GetHicon();
-        try
-        {
-            using var icon = Icon.FromHandle(handle);
-            return (Icon)icon.Clone();
-        }
-        finally
-        {
-            DestroyIcon(handle);
-        }
     }
 
     private MouseTrailForm EnsureMouseTrailForm()
