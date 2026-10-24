@@ -13,6 +13,8 @@ public sealed class ActionExecutor
     private const int SwMinimize = 6;
     private const int SwMaximize = 3;
     private const int SwRestore = 9;
+    private const int MaxHotkeySendAttempts = 3;
+    private static readonly TimeSpan HotkeyRetryDelay = TimeSpan.FromMilliseconds(30);
     private const int GwlExStyle = -20;
     private const int WsExTopMost = 0x00000008;
     private const uint SwpNoSize = 0x0001;
@@ -54,23 +56,63 @@ public sealed class ActionExecutor
             return;
         }
 
-        var inputs = new List<Input>(action.Keys.Count * 2);
-        foreach (var key in action.Keys)
+        var keyDowns = new Input[action.Keys.Count];
+        for (var i = 0; i < action.Keys.Count; i++)
         {
-            inputs.Add(CreateKeyboardInput(key, keyUp: false));
+            keyDowns[i] = CreateKeyboardInput(action.Keys[i], keyUp: false);
         }
 
-        for (var i = action.Keys.Count - 1; i >= 0; i--)
+        var keyUps = new Input[action.Keys.Count];
+        for (var i = 0; i < action.Keys.Count; i++)
         {
-            inputs.Add(CreateKeyboardInput(action.Keys[i], keyUp: true));
+            keyUps[i] = CreateKeyboardInput(action.Keys[action.Keys.Count - 1 - i], keyUp: true);
         }
 
-        var inputArray = inputs.ToArray();
-        var sent = SendInput((uint)inputArray.Length, inputArray, Marshal.SizeOf<Input>());
-        if (sent != inputs.Count)
+        var batch = new Input[keyDowns.Length + keyUps.Length];
+        keyDowns.CopyTo(batch, 0);
+        keyUps.CopyTo(batch, keyDowns.Length);
+
+        var keyNames = string.Join("+", action.Keys);
+        var sent = 0;
+        var lastError = 0;
+
+        // SendInput drops the whole batch or part of it when the input desktop is switching (Task View,
+        // secure desktop, lock screen) or when the target window is at a higher integrity level. A short
+        // retry covers the transient case; the last error is preserved for the persistent one.
+        for (var attempt = 1; attempt <= MaxHotkeySendAttempts; attempt++)
         {
-            throw new Win32Exception(Marshal.GetLastWin32Error(), "Failed to send keyboard input.");
+            sent = (int)SendInput((uint)batch.Length, batch, Marshal.SizeOf<Input>());
+            if (sent == batch.Length)
+            {
+                return;
+            }
+
+            lastError = Marshal.GetLastWin32Error();
+
+            // A partial insert may have left modifiers logically pressed. Releasing every key again is
+            // harmless for keys that never went down and prevents a stuck Win/Alt/Ctrl key.
+            _ = SendInput((uint)keyUps.Length, keyUps, Marshal.SizeOf<Input>());
+
+            if (attempt < MaxHotkeySendAttempts)
+            {
+                AppLogger.Warning(
+                    "ActionExecutor",
+                    "hotkey-retry",
+                    $"SendInput inserted {sent}/{batch.Length} events for {keyNames} (Win32 error {lastError}: {DescribeError(lastError)}); retrying.");
+                Thread.Sleep(HotkeyRetryDelay);
+            }
         }
+
+        throw new Win32Exception(
+            lastError,
+            $"Failed to send keyboard input for {keyNames} ({sent}/{batch.Length} events inserted, Win32 error {lastError}: {DescribeError(lastError)}).");
+    }
+
+    private static string DescribeError(int errorCode)
+    {
+        return errorCode == 0
+            ? "no error reported"
+            : new Win32Exception(errorCode).Message;
     }
 
     private static void ExecuteWindowControl(

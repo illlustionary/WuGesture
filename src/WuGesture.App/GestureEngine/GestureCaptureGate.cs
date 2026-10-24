@@ -125,7 +125,13 @@ internal sealed class GestureCaptureGate
     {
         try
         {
-            GetCursorPos(out var cursor);
+            if (!GetCursorPos(out var cursor))
+            {
+                // A failed call leaves the point zeroed, which would resolve the desktop instead of the
+                // window under the pointer. Keep the previous snapshot until the input desktop is back.
+                return;
+            }
+
             var window = resolveWindow(new Point(cursor.X, cursor.Y));
             if (window == IntPtr.Zero)
             {

@@ -10,8 +10,6 @@ namespace WuGesture.App;
 public sealed partial class MainForm : Form
 {
     private const string StartupRegistryPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
-    private readonly GestureConfigStore configStore = new();
-    private readonly WebDavConfigSyncService webDavConfigSyncService = new();
     private readonly KeyboardShortcutRecorder hotkeyRecorder = new();
     private readonly WindowStateStore windowStateStore = new();
     private readonly bool startHiddenToTray;
@@ -19,6 +17,7 @@ public sealed partial class MainForm : Form
     private readonly TrayMenuController trayMenuController;
     private readonly ElevationLauncher elevationLauncher;
     private readonly WebMessageRouter webMessageRouter;
+    private readonly ConfigurationCoordinator configurationCoordinator;
     private ConfiguredScopeContextProvider? scopeContextProvider;
     private LoadedGestureConfig? loadedConfig;
     private GestureService? gestureService;
@@ -45,11 +44,22 @@ public sealed partial class MainForm : Form
     {
         this.startHiddenToTray = startHiddenToTray;
         webViewHost = new WebViewHost(this, CanUseUi, HandleWebMessage);
+        configurationCoordinator = new ConfigurationCoordinator(
+            () => loadedConfig,
+            config =>
+            {
+                loadedConfig = config;
+                ApplyLoadedConfig();
+            },
+            PostRules,
+            PostConfigResult,
+            PostWebDavResult,
+            () => this);
         webMessageRouter = new WebMessageRouter(
             CreateWebMessageHandlers(),
             HandleStatusRequest,
             exception => PostConfigResult(false, $"处理配置请求失败：{exception.Message}"));
-        loadedConfig = configStore.LoadOrCreate();
+        loadedConfig = configurationCoordinator.Load();
         AppLogger.Information("MainForm", "config-loaded", "Loaded the local gesture configuration.");
         hideConfigWindowOnLaunch = startHiddenToTray ||
             !loadedConfig.Config.UiSettings.AppBehavior.ShowConfigWindowOnLaunch;
@@ -92,7 +102,7 @@ public sealed partial class MainForm : Form
     private async void OnLoad(object? sender, EventArgs e)
     {
         AppLogger.Information("MainForm", "initializing", $"Initializing services. Hidden startup: {hideConfigWindowOnLaunch}.");
-        var config = loadedConfig ??= configStore.LoadOrCreate();
+        var config = loadedConfig ??= configurationCoordinator.Load();
         if (hideConfigWindowOnLaunch)
         {
             HideStartupWindow();
@@ -512,14 +522,14 @@ public sealed partial class MainForm : Form
             [WebViewMessageTypes.SetUserPaused] = SetUserPaused,
             [WebViewMessageTypes.StartHotkeyRecording] = StartHotkeyRecording,
             [WebViewMessageTypes.StopHotkeyRecording] = _ => hotkeyRecorder.Stop(),
-            [WebViewMessageTypes.SaveRules] = SaveRules,
-            [WebViewMessageTypes.WebDavTest] = TestWebDavConnection,
-            [WebViewMessageTypes.WebDavSave] = SaveConfigToWebDav,
-            [WebViewMessageTypes.WebDavRestore] = RestoreConfigFromWebDav,
-            [WebViewMessageTypes.ExportConfig] = ExportConfig,
-            [WebViewMessageTypes.ImportConfig] = _ => ImportConfig(),
-            [WebViewMessageTypes.ReloadRules] = _ => ReloadRules(),
-            [WebViewMessageTypes.ResetRules] = _ => ResetRules(),
+            [WebViewMessageTypes.SaveRules] = configurationCoordinator.Save,
+            [WebViewMessageTypes.WebDavTest] = configurationCoordinator.TestWebDavConnection,
+            [WebViewMessageTypes.WebDavSave] = configurationCoordinator.SaveToWebDav,
+            [WebViewMessageTypes.WebDavRestore] = configurationCoordinator.RestoreFromWebDav,
+            [WebViewMessageTypes.ExportConfig] = configurationCoordinator.Export,
+            [WebViewMessageTypes.ImportConfig] = _ => configurationCoordinator.Import(),
+            [WebViewMessageTypes.ReloadRules] = _ => configurationCoordinator.Reload(),
+            [WebViewMessageTypes.ResetRules] = _ => configurationCoordinator.Reset(),
             [WebViewMessageTypes.PreviewLevelOsd] = PreviewLevelOsd
         };
     }
@@ -727,216 +737,6 @@ public sealed partial class MainForm : Form
         TryPostWebMessage(payload);
     }
 
-    private void SaveRules(string json)
-    {
-        try
-        {
-            var message = JsonSerializer.Deserialize<RulesWebMessage>(json, WebMessageJsonOptions);
-            var uiSettings = message?.UiSettings ?? loadedConfig?.Config.UiSettings ?? new GestureUiSettings();
-            var config = new GestureConfig
-            {
-                SchemaVersion = GestureConfigContract.Schema.CurrentVersion,
-                Rules = message?.Rules ?? [],
-                Applications = message?.Applications ?? [],
-                Categories = message?.Categories ?? [],
-                EdgeActions = message?.EdgeActions ?? [],
-                UiSettings = uiSettings
-            };
-
-            loadedConfig = configStore.SaveAndLoad(config);
-            ApplyLoadedConfig();
-
-            PostRules();
-            PostConfigResult(true, "配置已保存。", "save");
-        }
-        catch (Exception exception)
-        {
-            PostConfigResult(false, $"保存配置失败：{exception.Message}", "save");
-        }
-    }
-
-    private async void TestWebDavConnection(string json)
-    {
-        try
-        {
-            var message = JsonSerializer.Deserialize<RulesWebMessage>(json, WebMessageJsonOptions);
-            var settings = message?.UiSettings?.WebDav ?? loadedConfig?.Config.UiSettings.WebDav ?? new WebDavUiSettings();
-            await webDavConfigSyncService.TestConnectionAsync(settings);
-            PostWebDavResult("test", true, "WebDAV 连接测试成功。可以备份或恢复配置。");
-        }
-        catch (Exception exception)
-        {
-            PostWebDavResult("test", false, $"WebDAV 连接测试失败：{exception.Message}");
-        }
-    }
-
-    private async void SaveConfigToWebDav(string json)
-    {
-        var localConfigSaved = false;
-
-        try
-        {
-            var message = JsonSerializer.Deserialize<RulesWebMessage>(json, WebMessageJsonOptions);
-            var uiSettings = message?.UiSettings ?? loadedConfig?.Config.UiSettings ?? new GestureUiSettings();
-            var config = new GestureConfig
-            {
-                SchemaVersion = GestureConfigContract.Schema.CurrentVersion,
-                Rules = message?.Rules ?? [],
-                Applications = message?.Applications ?? [],
-                Categories = message?.Categories ?? [],
-                EdgeActions = message?.EdgeActions ?? [],
-                UiSettings = uiSettings
-            };
-
-            loadedConfig = configStore.SaveAndLoad(config);
-            localConfigSaved = true;
-            ApplyLoadedConfig();
-            await webDavConfigSyncService.UploadAsync(loadedConfig.FilePath, loadedConfig.Config.UiSettings.WebDav);
-
-            PostRules();
-            PostWebDavResult("save", true, "当前配置已备份到 WebDAV。");
-        }
-        catch (Exception exception)
-        {
-            var message = localConfigSaved
-                ? $"本地配置已保存，但备份到 WebDAV 失败：{exception.Message}"
-                : $"备份到 WebDAV 失败：{exception.Message}";
-            PostWebDavResult("save", false, message);
-        }
-    }
-
-    private async void RestoreConfigFromWebDav(string json)
-    {
-        try
-        {
-            if (loadedConfig is null)
-            {
-                loadedConfig = configStore.LoadOrCreate();
-            }
-
-            var message = JsonSerializer.Deserialize<RulesWebMessage>(json, WebMessageJsonOptions);
-            var currentWebDavSettings = message?.UiSettings?.WebDav ?? loadedConfig.Config.UiSettings.WebDav;
-            var downloadedJson = await webDavConfigSyncService.DownloadAsync(currentWebDavSettings);
-            loadedConfig = configStore.SaveJsonAndLoad(downloadedJson, currentWebDavSettings);
-            ApplyLoadedConfig();
-
-            PostRules();
-            PostWebDavResult("restore", true, "已从 WebDAV 恢复本地配置。");
-        }
-        catch (Exception exception)
-        {
-            PostWebDavResult("restore", false, $"从 WebDAV 恢复配置失败：{exception.Message}");
-        }
-    }
-
-    private void ExportConfig(string json)
-    {
-        try
-        {
-            var message = JsonSerializer.Deserialize<RulesWebMessage>(json, WebMessageJsonOptions);
-            var uiSettings = message?.UiSettings ?? loadedConfig?.Config.UiSettings ?? new GestureUiSettings();
-            var config = new GestureConfig
-            {
-                SchemaVersion = GestureConfigContract.Schema.CurrentVersion,
-                Rules = message?.Rules ?? [],
-                Applications = message?.Applications ?? [],
-                Categories = message?.Categories ?? [],
-                EdgeActions = message?.EdgeActions ?? [],
-                UiSettings = uiSettings
-            };
-
-            loadedConfig = configStore.SaveAndLoad(config);
-            ApplyLoadedConfig();
-
-            using var dialog = new SaveFileDialog
-            {
-                Title = "导出配置",
-                Filter = "JSON 配置 (*.json)|*.json|所有文件 (*.*)|*.*",
-                FileName = ConfigStorageContract.ConfigFileName,
-                DefaultExt = "json",
-                AddExtension = true,
-                OverwritePrompt = true
-            };
-
-            if (dialog.ShowDialog(this) != DialogResult.OK)
-            {
-                return;
-            }
-
-            var configJson = File.ReadAllText(loadedConfig.FilePath);
-            File.WriteAllText(dialog.FileName, configJson);
-
-            PostRules();
-            PostConfigResult(true, "配置已导出。", "export");
-        }
-        catch (Exception exception)
-        {
-            PostConfigResult(false, $"导出配置失败：{exception.Message}", "export");
-        }
-    }
-
-    private void ImportConfig()
-    {
-        try
-        {
-            using var dialog = new OpenFileDialog
-            {
-                Title = "导入配置",
-                Filter = "JSON 配置 (*.json)|*.json|所有文件 (*.*)|*.*",
-                CheckFileExists = true,
-                Multiselect = false
-            };
-
-            if (dialog.ShowDialog(this) != DialogResult.OK)
-            {
-                return;
-            }
-
-            var configJson = File.ReadAllText(dialog.FileName);
-            loadedConfig = configStore.SaveJsonAndLoad(configJson);
-            ApplyLoadedConfig();
-
-            PostRules();
-            PostConfigResult(true, "配置已导入。", "import");
-        }
-        catch (Exception exception)
-        {
-            PostConfigResult(false, $"导入配置失败：{exception.Message}", "import");
-        }
-    }
-
-    private void ReloadRules()
-    {
-        try
-        {
-            loadedConfig = configStore.LoadOrCreate();
-            ApplyLoadedConfig();
-
-            PostRules();
-            PostConfigResult(true, "本地配置已重新加载。", "reload");
-        }
-        catch (Exception exception)
-        {
-            PostConfigResult(false, $"重新加载本地配置失败：{exception.Message}", "reload");
-        }
-    }
-
-    private void ResetRules()
-    {
-        try
-        {
-            loadedConfig = configStore.ResetToDefaults();
-            ApplyLoadedConfig();
-
-            PostRules();
-            PostConfigResult(true, "默认配置已恢复。", "reset");
-        }
-        catch (Exception exception)
-        {
-            PostConfigResult(false, $"恢复默认配置失败：{exception.Message}", "reset");
-        }
-    }
-
     private void ApplyLoadedConfig()
     {
         if (loadedConfig is null)
@@ -1089,6 +889,9 @@ public sealed partial class MainForm : Form
     {
         if (e.Mode == PowerModes.Resume)
         {
+            // Right after a resume the cursor sample can be bogus: GetCursorPos fails and WinForms falls
+            // back to (0, 0), which is the top-left corner, so ignore edge actions while settling.
+            edgeActionService?.SuppressFor(TimeSpan.FromSeconds(2));
             ScheduleOverlayRecovery("power-resume");
         }
     }
