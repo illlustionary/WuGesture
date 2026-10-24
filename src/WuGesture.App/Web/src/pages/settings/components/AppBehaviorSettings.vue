@@ -39,7 +39,7 @@ function commit() {
         <ToggleCheckbox
           v-model="draft.appBehavior.runAsAdministrator"
           label="以管理员身份打开"
-          note="保存后下次启动时生效。"
+          note="保存后下次启动时生效；在 UAC 提示中拒绝将不会启动 WuGesture。"
           @change="commit"
         />
         <ToggleCheckbox

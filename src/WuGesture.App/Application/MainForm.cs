@@ -1,5 +1,6 @@
 using Microsoft.Win32;
 using WuGesture.App.GestureEngine;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Security.Principal;
 using System.Text.Json;
@@ -9,6 +10,7 @@ namespace WuGesture.App;
 public sealed partial class MainForm : Form
 {
     private const string StartupRegistryPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
+    private const int Win32ErrorCancelled = 1223;
     private readonly GestureConfigStore configStore = new();
     private readonly WebDavConfigSyncService webDavConfigSyncService = new();
     private readonly KeyboardShortcutRecorder hotkeyRecorder = new();
@@ -438,14 +440,40 @@ public sealed partial class MainForm : Form
                 UseShellExecute = true,
                 Verb = "runas"
             });
+            AppLogger.Information("MainForm", "elevation-relaunch", "Restarting the app with administrator rights.");
             isExiting = true;
             BeginInvoke(new Action(Close));
             return true;
         }
-        catch
+        catch (Win32Exception exception) when (exception.NativeErrorCode == Win32ErrorCancelled)
         {
-            return false;
+            AppLogger.Information("MainForm", "elevation-cancelled", "The user cancelled the UAC prompt; the app will not start.");
+            AbortStartupAfterElevationFailure(
+                "你取消了管理员权限请求，WuGesture 不会启动。\n\n如需以普通权限使用，请先在设置中关闭“以管理员身份打开”。");
+            return true;
         }
+        catch (Exception exception)
+        {
+            AppLogger.Error("MainForm", "elevation-failed", "Unable to relaunch with administrator rights; the app will not start.", exception);
+            AbortStartupAfterElevationFailure(
+                "无法以管理员身份启动 WuGesture，应用不会启动。\n\n请检查系统 UAC 设置后重试，或在设置中关闭“以管理员身份打开”。");
+            return true;
+        }
+    }
+
+    private void AbortStartupAfterElevationFailure(string message)
+    {
+        if (!hideConfigWindowOnLaunch)
+        {
+            MessageBox.Show(
+                message,
+                $"{AppIdentity.DisplayName} - 需要管理员权限",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
+        }
+
+        isExiting = true;
+        BeginInvokeSafe(() => Close());
     }
 
     private static bool IsRunningAsAdministrator()
