@@ -41,4 +41,5 @@ internal static class WebViewMessageTypes
     public const string UpdateProgress = "update-progress";
     public const string UpdateFailed = "update-failed";
     public const string UpdateRestarting = "update-restarting";
+    public const string UpdateCompleted = "update-completed";
 }

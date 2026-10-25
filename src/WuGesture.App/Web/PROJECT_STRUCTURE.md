@@ -140,7 +140,7 @@ src\gestureEditor
 - `gestureEditor\modules\useGestureEditorNotifications.js`：配置状态消息和通知事件的统一入口；普通自动保存成功只更新内部状态，失败和明确操作结果才发布通知事件。
 - `gestureEditor\modules\useGestureEditorNavigation.js`：路由名称和 scope/exclusion 跳转的统一入口，页面与组合式函数只发布路由意图而不直接执行 router 跳转。
 - `gestureEditor\modules\useGestureEditorWebViewBridge.js`：WebView 消息发送、静默发送、可用性判断和消息监听入口。
-- `gestureEditor\modules\useGestureUpdater.js`：更新检查/下载/取消/重试的前端状态机，处理宿主回传的 `update-*` 消息并驱动全局更新弹窗；浏览器预览中会拒绝检查更新。
+- `gestureEditor\modules\useGestureUpdater.js`：更新检查/下载/取消/重试的前端状态机，处理宿主回传的 `update-*` 消息并驱动全局更新弹窗；收到 `update-completed`（更新后首次启动）时提示更新成功并切换到“关于&更新”页；浏览器预览中会拒绝检查更新。
 
 ## Constants
 
@@ -203,7 +203,7 @@ src\pages
   - `settings\components\GestureHintSettings.vue`：底部提示窗配置，顶部内置提示窗实时预览。
   - `settings\components\GestureSensitivitySettings.vue`：手势灵敏度三档配置。
   - `settings\composables\useUiSettingsDraft.js`：基于 `gestureEditorNormalizers.js` 的共享设置深拷贝创建草稿，负责 debounce 保存、重置和预览样式计算。
-- `about\index.vue`：侧栏最外层的“关于&更新”页，分「关于」和「更新」两个区块；「关于」展示软件简介、当前版本、更新源和自动检查状态（只读），「更新」提供检查更新按钮、状态提示和“查看更新”入口，修改更新设置需要前往“设置 > 更新”。
+- `about\index.vue`：侧栏最外层的“关于&更新”页，分「关于」和「更新」两个区块；「关于」展示软件简介、当前版本、更新源和自动检查状态（只读），「更新」提供检查更新按钮、状态提示和“查看更新”入口，修改更新设置需要前往“设置 > 更新”。更新后首次启动会自动切到本页并提示已完成更新及当前版本。
   - `about\components\AboutUpdatePanel.vue`：两个区块的具体布局、更新状态文案和来源标注。
 
 ## Routing
@@ -290,6 +290,7 @@ src\pages
 - `{ type: "update-progress", phase: "downloading|verifying|extracting|elevating", percent, receivedBytes, totalBytes }`：下载和准备进度。
 - `{ type: "update-failed", message }`：下载、校验或启动更新程序失败。
 - `{ type: "update-restarting", message }`：更新程序已启动，应用即将退出重启。
+- `{ type: "update-completed", version, message }`：更新成功后首次启动、Web 界面完成 `get-status` 后由宿主发送一次；前端提示更新成功、关闭更新弹窗并切换到“关于&更新”页。
 
 `uiSettings.appBehavior` 当前包含：
 

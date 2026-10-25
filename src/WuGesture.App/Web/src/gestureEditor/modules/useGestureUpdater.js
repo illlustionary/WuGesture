@@ -1,4 +1,5 @@
 import { WEBVIEW_MESSAGE_TYPES } from '@/constants/gestureEditorOptions'
+import { GESTURE_EDITOR_EVENTS, emitGestureEditorEvent } from '@/gestureEditor/events/gestureEditorEventBus'
 
 export function useGestureUpdater({ state, setMessage, webView }) {
   let manualCheck = false
@@ -130,6 +131,22 @@ export function useGestureUpdater({ state, setMessage, webView }) {
       state.updateStatus = 'restarting'
       state.updateDialogOpen = true
       setMessage(message.message ?? '更新已准备就绪，WuGesture 正在重启。', 'success')
+      return
+    }
+
+    if (message.type === WEBVIEW_MESSAGE_TYPES.updateCompleted) {
+      // The host restarted into the new version: reset the dialog state and land on the About page so the
+      // user immediately sees the new version number without opening the settings window manually.
+      state.updateChecking = false
+      state.updateStatus = 'updated'
+      state.updateInfo = null
+      state.updateError = ''
+      state.updatePhase = ''
+      state.updateProgress = 0
+      state.updateDialogOpen = false
+      manualCheck = false
+      setMessage(message.message ?? '更新完成。', 'success')
+      emitGestureEditorEvent(GESTURE_EDITOR_EVENTS.navigate, { route: '/about', replace: true })
     }
   }
 

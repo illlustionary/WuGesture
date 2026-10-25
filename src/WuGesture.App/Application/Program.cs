@@ -14,6 +14,8 @@ static class Program
             string.Equals(arg, AppIdentity.ElevatedRelaunchArgument, StringComparison.OrdinalIgnoreCase));
         var isStartupLaunch = args.Any(arg =>
             string.Equals(arg, AppIdentity.StartupLaunchArgument, StringComparison.OrdinalIgnoreCase));
+        var isUpdateRestart = args.Any(arg =>
+            string.Equals(arg, AppIdentity.UpdateRestartArgument, StringComparison.OrdinalIgnoreCase));
         using var mutex = new Mutex(initiallyOwned: false, AppIdentity.SingleInstanceMutexName);
         var ownsMutex = mutex.WaitOne(isElevatedRelaunch ? TimeSpan.FromSeconds(15) : TimeSpan.Zero);
         if (!ownsMutex)
@@ -26,7 +28,7 @@ static class Program
 
         try
         {
-            AppLogger.Information("Program", "started", $"Startup launch: {isStartupLaunch}; elevated relaunch: {isElevatedRelaunch}.");
+            AppLogger.Information("Program", "started", $"Startup launch: {isStartupLaunch}; elevated relaunch: {isElevatedRelaunch}; update restart: {isUpdateRestart}.");
             ApplicationConfiguration.Initialize();
             if (!EnsureWebView2RuntimeAvailable())
             {
@@ -41,7 +43,8 @@ static class Program
                 initialState: false,
                 mode: EventResetMode.AutoReset,
                 name: AppIdentity.ShowExistingInstanceCompletedEventName);
-            using var form = new MainForm(isStartupLaunch);
+            // An update restart must always show the settings window, even for auto-start instances.
+            using var form = new MainForm(isStartupLaunch && !isUpdateRestart, isUpdateRestart);
             using var listenerCancellation = new CancellationTokenSource();
             var listener = Task.Run(() => ListenForExistingInstanceRequests(
                 showExistingInstanceEvent,
