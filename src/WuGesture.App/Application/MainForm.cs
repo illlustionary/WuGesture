@@ -176,7 +176,7 @@ public sealed partial class MainForm : Form
 
     private void OnFormClosing(object? sender, FormClosingEventArgs e)
     {
-        if (e.CloseReason == CloseReason.UserClosing && HandleConfiguredUserClose())
+        if (CloseRequestPolicy.IsCloseRequest(e.CloseReason) && HandleConfiguredUserClose())
         {
             e.Cancel = true;
             return;
