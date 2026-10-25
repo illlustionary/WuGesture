@@ -39,6 +39,10 @@ const statusText = computed(() => {
     return '当前已是最新版本'
   }
 
+  if (props.status === 'updated') {
+    return `已完成更新，当前版本 ${props.appVersion}`
+  }
+
   if (props.status === 'error') {
     return props.error || '检查更新失败'
   }
@@ -59,7 +63,7 @@ const statusTone = computed(() => {
     return 'accent'
   }
 
-  if (props.status === 'none') {
+  if (props.status === 'none' || props.status === 'updated') {
     return 'success'
   }
 

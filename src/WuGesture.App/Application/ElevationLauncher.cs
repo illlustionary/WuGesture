@@ -14,12 +14,14 @@ internal sealed class ElevationLauncher
     private const int Win32ErrorCancelled = 1223;
     private readonly bool startHiddenToTray;
     private readonly bool suppressDialogs;
+    private readonly bool isUpdateRestart;
     private readonly Action requestClose;
 
-    public ElevationLauncher(bool startHiddenToTray, bool suppressDialogs, Action requestClose)
+    public ElevationLauncher(bool startHiddenToTray, bool suppressDialogs, bool isUpdateRestart, Action requestClose)
     {
         this.startHiddenToTray = startHiddenToTray;
         this.suppressDialogs = suppressDialogs;
+        this.isUpdateRestart = isUpdateRestart;
         this.requestClose = requestClose;
     }
 
@@ -36,12 +38,17 @@ internal sealed class ElevationLauncher
 
         try
         {
+            var arguments = new[]
+            {
+                AppIdentity.ElevatedRelaunchArgument,
+                startHiddenToTray ? AppIdentity.StartupLaunchArgument : null,
+                isUpdateRestart ? AppIdentity.UpdateRestartArgument : null
+            };
+
             Process.Start(new ProcessStartInfo
             {
                 FileName = AppIdentity.GetLaunchExecutablePath(),
-                Arguments = startHiddenToTray
-                    ? $"{AppIdentity.ElevatedRelaunchArgument} {AppIdentity.StartupLaunchArgument}"
-                    : AppIdentity.ElevatedRelaunchArgument,
+                Arguments = string.Join(' ', arguments.Where(argument => argument is not null)),
                 UseShellExecute = true,
                 Verb = "runas"
             });

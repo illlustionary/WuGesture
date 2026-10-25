@@ -422,7 +422,8 @@ function handleMessage(message) {
     message.type === WEBVIEW_MESSAGE_TYPES.updateError ||
     message.type === WEBVIEW_MESSAGE_TYPES.updateProgress ||
     message.type === WEBVIEW_MESSAGE_TYPES.updateFailed ||
-    message.type === WEBVIEW_MESSAGE_TYPES.updateRestarting
+    message.type === WEBVIEW_MESSAGE_TYPES.updateRestarting ||
+    message.type === WEBVIEW_MESSAGE_TYPES.updateCompleted
   ) {
     handleUpdateMessage(message)
   }

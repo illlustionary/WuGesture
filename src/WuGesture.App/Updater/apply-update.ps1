@@ -116,8 +116,16 @@ try {
     }
 
     Write-UpdateLog "Starting the updated application."
+    # The restart flag makes the new version open the settings window on the About page so the user can see
+    # that the update finished. It is only appended here, after the files were replaced successfully.
+    $updatedArguments = if ([string]::IsNullOrWhiteSpace($LaunchArguments)) {
+        "--updated"
+    } else {
+        "$LaunchArguments --updated"
+    }
+
     $startedAt = (Get-Date).AddSeconds(-2)
-    $null = Start-WuGesture $exePath $LaunchArguments
+    $null = Start-WuGesture $exePath $updatedArguments
 
     Start-Sleep -Seconds 3
     # The app may exit and relaunch itself through UAC when "run as administrator" is enabled, so look for

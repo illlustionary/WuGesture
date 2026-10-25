@@ -402,13 +402,14 @@ internal sealed class UpdateCoordinator : IDisposable
 
     private static string BuildLaunchArguments()
     {
+        // The updater script appends --updated only when the new version is actually in place, so a rollback
+        // restart keeps the previous behaviour without claiming a successful update.
         var arguments = Environment
             .GetCommandLineArgs()
             .Skip(1)
-            .Where(argument => !string.Equals(
-                argument,
-                AppIdentity.ElevatedRelaunchArgument,
-                StringComparison.OrdinalIgnoreCase))
+            .Where(argument =>
+                !string.Equals(argument, AppIdentity.ElevatedRelaunchArgument, StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(argument, AppIdentity.UpdateRestartArgument, StringComparison.OrdinalIgnoreCase))
             .ToArray();
         return string.Join(' ', arguments);
     }

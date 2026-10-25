@@ -12,6 +12,7 @@ public sealed partial class MainForm : Form
     private readonly KeyboardShortcutRecorder hotkeyRecorder = new();
     private readonly WindowStateStore windowStateStore = new();
     private readonly bool startHiddenToTray;
+    private readonly bool isUpdateRestart;
     private readonly WebViewHost webViewHost;
     private readonly TrayMenuController trayMenuController;
     private readonly ElevationLauncher elevationLauncher;
@@ -35,11 +36,13 @@ public sealed partial class MainForm : Form
     private bool isConfigPaused;
     private bool isEditorPaused;
     private bool hasWebUiLoaded;
+    private bool hasPostedUpdateCompleted;
     private int overlayRecoveryScheduled;
 
-    public MainForm(bool startHiddenToTray = false)
+    public MainForm(bool startHiddenToTray = false, bool isUpdateRestart = false)
     {
         this.startHiddenToTray = startHiddenToTray;
+        this.isUpdateRestart = isUpdateRestart;
         webViewHost = new WebViewHost(this, CanUseUi, HandleWebMessage);
         configurationCoordinator = new ConfigurationCoordinator(
             () => loadedConfig,
@@ -70,9 +73,11 @@ public sealed partial class MainForm : Form
             exception => PostConfigResult(false, $"处理配置请求失败：{exception.Message}"));
         loadedConfig = configurationCoordinator.Load();
         AppLogger.Information("MainForm", "config-loaded", "Loaded the local gesture configuration.");
-        hideConfigWindowOnLaunch = startHiddenToTray ||
-            !loadedConfig.Config.UiSettings.AppBehavior.ShowConfigWindowOnLaunch;
-        elevationLauncher = new ElevationLauncher(startHiddenToTray, hideConfigWindowOnLaunch, RequestClose);
+        // The first launch after an update always opens the settings window on the About page so the user can
+        // see that the new version is installed, regardless of the auto-start and window settings.
+        hideConfigWindowOnLaunch = !isUpdateRestart && (startHiddenToTray ||
+            !loadedConfig.Config.UiSettings.AppBehavior.ShowConfigWindowOnLaunch);
+        elevationLauncher = new ElevationLauncher(startHiddenToTray, hideConfigWindowOnLaunch, isUpdateRestart, RequestClose);
         Text = AppIdentity.DisplayName;
         Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? SystemIcons.Application;
         FormBorderStyle = FormBorderStyle.Sizable;
@@ -520,7 +525,29 @@ public sealed partial class MainForm : Form
         PostStatus(isUserPaused ? "paused" : "running");
         PostRules();
         hasWebUiLoaded = true;
+        PostUpdateCompleted();
         updateCoordinator.PostPendingPrompt();
+    }
+
+    private void PostUpdateCompleted()
+    {
+        if (!isUpdateRestart || hasPostedUpdateCompleted)
+        {
+            return;
+        }
+
+        hasPostedUpdateCompleted = true;
+        var version = AppIdentity.GetDisplayVersion();
+        AppLogger.Information(
+            "MainForm",
+            "update-completed",
+            $"Showing the About page after the update restart (current version: {version}).");
+        TryPostWebMessage(JsonSerializer.Serialize(new
+        {
+            type = WebViewMessageTypes.UpdateCompleted,
+            version,
+            message = $"已更新到 {version}。"
+        }));
     }
 
     private Dictionary<string, Action<string>> CreateWebMessageHandlers()

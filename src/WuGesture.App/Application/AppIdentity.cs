@@ -10,6 +10,8 @@ internal static class AppIdentity
     public const string ShowExistingInstanceCompletedEventName = @"Local\WuGesture.ShowExistingInstanceCompleted";
     public const string ElevatedRelaunchArgument = "--elevated-relaunch";
     public const string StartupLaunchArgument = "--startup";
+    // Added by the updater when it restarts the freshly installed version.
+    public const string UpdateRestartArgument = "--updated";
 
     public static string GetLaunchExecutablePath()
     {

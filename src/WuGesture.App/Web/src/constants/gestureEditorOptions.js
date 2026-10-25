@@ -105,7 +105,8 @@ export const WEBVIEW_MESSAGE_TYPES = {
   updateError: 'update-error',
   updateProgress: 'update-progress',
   updateFailed: 'update-failed',
-  updateRestarting: 'update-restarting'
+  updateRestarting: 'update-restarting',
+  updateCompleted: 'update-completed'
 }
 
 export const DIRECTION_SYMBOLS = {
