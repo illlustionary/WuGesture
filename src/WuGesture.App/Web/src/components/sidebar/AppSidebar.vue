@@ -174,6 +174,12 @@ const {
   overflow-y: auto;
   scrollbar-width: thin;
 
+  /* Only the navigation itself scrolls: every section keeps its natural height instead of being
+     squeezed by the flex container, so an expanded program list never gets its own scrollbar. */
+  > * {
+    flex: 0 0 auto;
+  }
+
   > .hover-bubble-trigger {
     display: flex;
     width: 100%;
@@ -326,9 +332,6 @@ const {
 .sidebar-group__children {
   display: grid;
   gap: 2px;
-  max-height: min(38vh, 360px);
-  overflow-y: auto;
-  scrollbar-width: thin;
 }
 .sidebar-child {
   display: flex;
