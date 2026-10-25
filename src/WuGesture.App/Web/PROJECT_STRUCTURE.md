@@ -92,8 +92,8 @@ src\components
 
 - `sidebar\`：侧栏壳和固定导航、分类、程序、边缘操作、设置及底部区域组件。
 - `layout\`：`AppShell.vue` 页面布局壳和 `NestedRouteView.vue` 嵌套路由承载组件。
-- `dialog\`：`BaseDialog.vue`、`ConfirmDialog.vue` 和 `QuickSearchDialog.vue` 等共享对话框。
-- `form\`：`BaseInput.vue`、`BaseRange.vue`、`CustomSelect.vue` 和 `ToggleCheckbox.vue` 等共享表单控件。
+- `dialog\`：`BaseDialog.vue`、`ConfirmDialog.vue` 和 `QuickSearchDialog.vue` 等共享对话框；`BaseDialog` 统一遮罩关闭、可选右上关闭按钮、默认操作区和关闭动画，自动保存或即时选择类弹层可复用外壳并关闭默认操作区。
+- `form\`：`BaseInput.vue`、`BaseRange.vue`、`CustomSelect.vue` 和 `ToggleCheckbox.vue` 等共享表单控件；`BaseInput` / `BaseRange` 统一原生输入控件的 `v-model` 事件、宽度约束和滑块进度填充，页面只保留各自的配置约束与保存时机。
 - `ui\`：`AppIcon.vue`、`HoverBubble.vue` 和 `IconActionButton.vue` 等基础 UI 控件。
 - `gesture\`：`GestureRuleDialog.vue`、`GestureRuleList.vue` 以及 `gesture\rule-dialog\fields\` 下的规则字段组件。
 - `scope\`：`ScopeCreateDialog.vue`、`ScopePriorityNotice.vue` 和 `ApplicationListItem.vue` 等作用域配置共享组件；程序项仅路径文本可点击以打开所在文件夹，并以可选操作区支持分类页的移除按钮。
@@ -215,11 +215,11 @@ src\pages
 
 页面组件通过动态 `import()` 加载，`router/routes` 下的路由模块只在路由命中时加载对应页面 chunk。
 
-Windows 系统标题栏负责窗口控制；其下方侧栏顶部的 `SidebarAppStatus` 组件可点击，临时暂停或恢复 WuGesture，并在图标右侧显示名称与程序集版本。侧栏的导航、分类、程序、边缘操作和设置各自使用独立区域组件，页脚控制也独立封装；分类/程序子项动态来自当前配置，边缘操作和设置子项对应独立嵌套路由。侧栏收起状态保存在 `uiSettings.sidebar.collapsed`，重建配置页面后保持不变。收起时热区通过 `v-show` 控制，侧栏自身以固定定位、`visibility`、透明度和鼠标事件状态隐藏；导航分组内容继续参与布局，因此不会压缩滚动高度或重置滚动位置。进入热区后淡入，离开侧栏后淡出。侧栏只有一个滚动区域：导航列（`.app-sidebar__nav`）整体滚动，展开后的分类/程序子项按内容自然撑开，分组内部不再单独滚动。
-
 未连接 WebView 宿主时，`gestureEditorContext.js` 会加载 `gestureEditorBrowserPreviewData.js` 的示例数据，便于浏览器中预览分类和程序界面；桌面宿主始终以 `rules` 消息下发的真实配置为准。
 
 ## 当前 UI
+
+界面外壳：Windows 系统标题栏负责窗口控制；其下方侧栏顶部的 `SidebarAppStatus` 组件可点击，临时暂停或恢复 WuGesture，并在图标右侧显示名称与程序集版本。侧栏的导航、分类、程序、边缘操作和设置各自使用独立区域组件，页脚控制也独立封装；分类/程序子项动态来自当前配置，边缘操作和设置子项对应独立嵌套路由。侧栏收起状态保存在 `uiSettings.sidebar.collapsed`，重建配置页面后保持不变。收起时热区通过 `v-show` 控制，侧栏自身以固定定位、`visibility`、透明度和鼠标事件状态隐藏；导航分组内容继续参与布局，因此不会压缩滚动高度或重置滚动位置。进入热区后淡入，离开侧栏后淡出。侧栏只有一个滚动区域：导航列（`.app-sidebar__nav`）整体滚动，展开后的分类/程序子项按内容自然撑开，分组内部不再单独滚动。
 
 - `全局` 采用单列表布局，直接编辑整张全局规则表，不显示左侧作用域区域。
 - 页面切换使用方向感过渡：按顶部标签顺序向右切换时新页面从右侧滑入并渐显，向左切换时从左侧滑入并渐显，旧页面会轻微反向淡出；分类和程序子项切换与边缘操作、设置一样先完成路由切换，再由目标页面同步选中作用域，避免过渡中重复更新内容。
@@ -334,9 +334,10 @@ Windows 系统标题栏负责窗口控制；其下方侧栏顶部的 `SidebarApp
 
 ## 构建
 
-- `WuGesture.App.csproj` 会在 `.NET` 构建前自动执行 `pnpm exec vite build --outDir <宿主输出目录>\Web`；Vite 会清空该最终目录，前端源码目录不会被覆盖。
-- 普通构建输出到 `$(OutputPath)\Web`，`dotnet publish -o` 输出到实际 `$(PublishDir)\Web`，不再使用中间 `dist` 目录或复制步骤。
-- 桌面宿主通过 WebView2 虚拟主机 `https://gesture.wu.philosophy/` 加载宿主输出目录中的 `Web`。
+前端构建由桌面工程驱动，完整命令、输出路径和增量规则见仓库根目录 [项目结构](../../../PROJECT_STRUCTURE.md) 的“WebView 前端”和“构建与发布”两节，这里不重复。前端侧只需注意：
+
+- 正常构建/发布不需要手动执行 `pnpm build`；`WuGesture.App.csproj` 会在 `.NET` 构建前自动调用 `vite build`，源文件未变化时会跳过。
+- 手动 `pnpm build` 只用于单独验证前端，产物落在 `Web\dist`（已被 Git 忽略），不会进入发行包。
 
 ## 何时更新此文件
 
@@ -344,7 +345,7 @@ Windows 系统标题栏负责窗口控制；其下方侧栏顶部的 `SidebarApp
 
 - Web 目录结构
 - 页面、路由、布局或复用组件
-- 前端构建配置和输出路径
-- WebView 消息契约
+- 前端构建配置和输出路径（仅前端侧约定，宿主侧构建见根文档）
+- 前端收发的 WebView 消息（宿主侧处理逻辑见根文档）
 - 规则编辑器、边缘操作或设置页的核心职责
 - 图标资产和共享 UI 组件职责
