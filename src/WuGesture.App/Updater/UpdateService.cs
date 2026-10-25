@@ -17,7 +17,6 @@ namespace WuGesture.App.Updater;
 /// </summary>
 internal sealed class UpdateService
 {
-    private const string ChecksumsAssetName = "SHA256SUMS.txt";
     private const string ExecutableName = "WuGesture.exe";
     private const string UpdaterScriptFileName = "apply-update.ps1";
     private const string UpdaterScriptResourceName = "WuGesture.App.Updater.apply-update.ps1";
@@ -26,6 +25,10 @@ internal sealed class UpdateService
     private static readonly TimeSpan ApiTimeout = TimeSpan.FromSeconds(15);
     private static readonly Regex PackageAssetPattern = new(
         @"^WuGesture-v?\d+(\.\d+){1,3}-windows-x64\.zip$",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+    // Release notes carry the package checksum, so verifying a download never needs another request.
+    private static readonly Regex NotesChecksumPattern = new(
+        @"SHA256\s*(?:[(（](?<name>[^)）\r\n]*)[)）])?\s*[:：]\s*(?<hash>[0-9A-Fa-f]{64})",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
     private static readonly HttpClient Client = CreateHttpClient();
 
@@ -391,14 +394,30 @@ internal sealed class UpdateService
             !normalized.Split('/').Any(segment => segment == "..");
     }
 
-    internal static string? ParseExpectedChecksum(string checksumText, string assetName)
+    internal static string? ParseChecksumFromNotes(string? notes, string assetName)
     {
-        return (checksumText ?? "")
-            .Split('\n', StringSplitOptions.RemoveEmptyEntries)
-            .Select(line => line.Trim())
-            .Where(line => line.EndsWith(assetName, StringComparison.OrdinalIgnoreCase))
-            .Select(line => line.Split(' ', StringSplitOptions.RemoveEmptyEntries)[0])
-            .FirstOrDefault();
+        if (string.IsNullOrWhiteSpace(notes))
+        {
+            return null;
+        }
+
+        string? genericHash = null;
+        foreach (Match match in NotesChecksumPattern.Matches(notes))
+        {
+            var declaredAssetName = match.Groups["name"].Value.Trim();
+            if (declaredAssetName.Length == 0)
+            {
+                genericHash ??= match.Groups["hash"].Value;
+                continue;
+            }
+
+            if (string.Equals(declaredAssetName, assetName, StringComparison.OrdinalIgnoreCase))
+            {
+                return match.Groups["hash"].Value;
+            }
+        }
+
+        return genericHash;
     }
 
     internal static UpdateAssetInfo? SelectPackageAsset(IEnumerable<UpdateAssetInfo> assets)
@@ -523,8 +542,6 @@ internal sealed class UpdateService
             return null;
         }
 
-        var checksums = assetInfos.FirstOrDefault(asset =>
-            string.Equals(asset.Name, ChecksumsAssetName, StringComparison.OrdinalIgnoreCase));
         var notes = GetString(element, "body") ?? "";
         var htmlUrl = GetString(element, "html_url") ?? $"{source.ReleasePageUrl}/tag/{tagName}";
         DateTimeOffset? publishedAt = null;
@@ -545,8 +562,7 @@ internal sealed class UpdateService
             notes,
             htmlUrl,
             publishedAt,
-            package,
-            checksums);
+            package);
     }
 
     private static string Prepare(
@@ -607,23 +623,15 @@ internal sealed class UpdateService
         string packagePath,
         CancellationToken cancellationToken)
     {
-        if (release.Checksums is null)
-        {
-            return;
-        }
-
         try
         {
-            var checksumText = await Client
-                .GetStringAsync(release.Checksums.DownloadUrl, cancellationToken)
-                .ConfigureAwait(false);
-            var expectedHash = ParseExpectedChecksum(checksumText, release.Asset.Name);
+            var expectedHash = ParseChecksumFromNotes(release.Notes, release.Asset.Name);
             if (string.IsNullOrWhiteSpace(expectedHash))
             {
                 AppLogger.Warning(
                     "UpdateService",
                     "checksum-missing",
-                    $"The checksum file does not contain an entry for {release.Asset.Name}.");
+                    $"The release notes do not declare a SHA256 checksum for {release.Asset.Name}.");
                 return;
             }
 

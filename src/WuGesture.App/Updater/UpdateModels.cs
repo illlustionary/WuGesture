@@ -9,8 +9,7 @@ internal sealed record UpdateReleaseInfo(
     string Notes,
     string HtmlUrl,
     DateTimeOffset? PublishedAt,
-    UpdateAssetInfo Asset,
-    UpdateAssetInfo? Checksums);
+    UpdateAssetInfo Asset);
 
 internal sealed record UpdateCheckResult(
     bool Available,

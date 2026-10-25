@@ -303,7 +303,7 @@ tests\WuGesture.App.Tests
 - `GestureConfigStore`：当前配置保存、旧/损坏配置的备份重置、未来版本保护和旧导入拒绝；保存后不残留临时文件、无效配置不会覆盖原文件。
 - `ConfigurationCoordinator`：编辑器消息到 `GestureConfig` 的全字段映射、缺省分区按空列表处理、`uiSettings` 缺失时保留磁盘上的设置。
 - `ProgramActionTests`：运行程序动作的路径/参数归一化、空路径忽略和非 Shell 启动参数构造。
-- `UpdateService`：发行标签解析与版本比较、Windows x64 更新包筛选（排除 debug/预发行包）、ZIP 路径穿越防护和更新源归一化。
+- `UpdateService`：发行标签解析与版本比较、Windows x64 更新包筛选（排除 debug/预发行包）、从发行说明解析 ZIP 的 SHA256、ZIP 路径穿越防护和更新源归一化。
 
 ## 构建与发布
 
@@ -345,9 +345,9 @@ dotnet test WuGesture.slnx
 
 - `scripts\publish-app.ps1`：发布应用目录的通用步骤，负责关闭运行实例、执行 `dotnet publish`、校验直接构建到输出目录的 Web 前端产物，并复制 `WebView2Loader.dll`；它会将同一个应用目录同时传给 `dotnet publish -o` 和 MSBuild `OutputPath`，避免常规编译产物落到其他目录。
 - `scripts\package-debug.ps1`：无需参数，调用 `publish-app.ps1` 生成 Debug `win-x64` 发布目录和 `WuGesture-debug-windows-x64.zip`。
-- `scripts\package-release.ps1`：基于已创建的 `v*` Git 标签生成 framework-dependent `win-x64` 发布目录、版本化 ZIP 包、`SHA256SUMS.txt` 和从相邻标签之间提交整理的 `RELEASE_NOTES.md`；ZIP 内的根目录固定为 `WuGesture`，而 ZIP 文件名保留版本号。发行包不包含 .NET，缺少 .NET 10 Desktop Runtime 时由 .NET Host 显示系统安装提示。应用内更新会校验该 SHA256 文件，因此 GitHub 和 Gitee Release 都必须同时上传 ZIP 与 `SHA256SUMS.txt`。
-- `.github\workflows\release.yml`：GitHub 收到 `v*` 标签后构建发行包、创建 GitHub Release 并上传 ZIP 与 `SHA256SUMS.txt`；配置 `GITEE_REPOSITORY` 和 `GITEE_TOKEN` secrets 后，会镜像 `main` 和标签到 Gitee，并将相同的附件和更新说明发布至 Gitee。
-- `scripts\upload-gitee-release.ps1`：由 GitHub Actions 调用 Gitee API 创建发行版并逐个上传附件（ZIP 和校验文件）；令牌只通过工作流 secret 传入，不存入仓库。
+- `scripts\package-release.ps1`：基于已创建的 `v*` Git 标签生成 framework-dependent `win-x64` 发布目录、版本化 ZIP 包和从相邻标签之间提交整理的 `RELEASE_NOTES.md`；ZIP 内的根目录固定为 `WuGesture`，而 ZIP 文件名保留版本号，ZIP 的 SHA256 以 `SHA256 (<ZIP 文件名>): <哈希>` 一行写入更新说明末尾，应用内更新直接读取发行说明校验，不再下载单独的校验文件。发行包不包含 .NET，缺少 .NET 10 Desktop Runtime 时由 .NET Host 显示系统安装提示。
+- `.github\workflows\release.yml`：GitHub 收到 `v*` 标签后构建发行包、创建 GitHub Release 并只上传 ZIP；已存在发行版时会覆盖附件并同步刷新更新说明，保证说明里的 SHA256 与新 ZIP 一致。配置 `GITEE_REPOSITORY` 和 `GITEE_TOKEN` secrets 后，会镜像 `main` 和标签到 Gitee，并将相同的附件和更新说明发布至 Gitee。
+- `scripts\upload-gitee-release.ps1`：由 GitHub Actions 调用 Gitee API 创建发行版并上传 ZIP 附件；令牌只通过工作流 secret 传入，不存入仓库。
 
 默认发布输出：
 

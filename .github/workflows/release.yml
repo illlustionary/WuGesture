@@ -47,12 +47,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $archive = Get-ChildItem artifacts/release/*.zip | Select-Object -First 1
-          $checksums = Get-Item artifacts/release/SHA256SUMS.txt
+          $notes = Get-Item artifacts/release/RELEASE_NOTES.md
           gh release view $env:GITHUB_REF_NAME 2>$null
           if ($LASTEXITCODE -eq 0) {
-            gh release upload $env:GITHUB_REF_NAME $archive.FullName $checksums.FullName --clobber
+            gh release upload $env:GITHUB_REF_NAME $archive.FullName --clobber
+            gh release edit $env:GITHUB_REF_NAME --notes-file $notes.FullName
           } else {
-            gh release create $env:GITHUB_REF_NAME $archive.FullName $checksums.FullName --title "WuGesture $env:GITHUB_REF_NAME" --notes-file artifacts/release/RELEASE_NOTES.md
+            gh release create $env:GITHUB_REF_NAME $archive.FullName --title "WuGesture $env:GITHUB_REF_NAME" --notes-file $notes.FullName
           }
 
       - name: Mirror code and tag to Gitee
@@ -68,5 +69,4 @@ jobs:
         shell: pwsh
         run: |
           $archive = Get-ChildItem artifacts/release/*.zip | Select-Object -First 1
-          $checksums = Get-Item artifacts/release/SHA256SUMS.txt
-          ./scripts/upload-gitee-release.ps1 -Repository $env:GITEE_REPOSITORY -Token $env:GITEE_TOKEN -Version $env:GITHUB_REF_NAME -NotesPath artifacts/release/RELEASE_NOTES.md -AssetPath @($archive.FullName, $checksums.FullName) -TargetCommitish $env:GITHUB_SHA
+          ./scripts/upload-gitee-release.ps1 -Repository $env:GITEE_REPOSITORY -Token $env:GITEE_TOKEN -Version $env:GITHUB_REF_NAME -NotesPath artifacts/release/RELEASE_NOTES.md -AssetPath @($archive.FullName) -TargetCommitish $env:GITHUB_SHA

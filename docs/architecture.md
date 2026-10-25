@@ -43,7 +43,7 @@ MouseHook
 
 ## 自动更新
 
-`UpdateCoordinator` 在进程启动后延迟检查一次发行版（`uiSettings.update` 可关闭）。检查会查询 Gitee 和 GitHub，按版本号取较高者：首选源已经提供更高版本时不再等待另一个源，首选源没有更高版本时才继续比较另一个源，因此镜像落后或缺少发行版都不会导致回退安装；开始下载前还会再校验一次更新包版本。`UpdateService` 负责解析 Release API、挑选 `WuGesture-v<版本>-windows-x64.zip`、下载到 `%LocalAppData%\WuGesture\updates`，并用发布附件里的 `SHA256SUMS.txt` 校验完整性，然后解压并检查 `WuGesture.exe` 与 `Web\index.html`。真正的替换发生在应用退出之后：宿主把内置的 `apply-update.ps1` 和路径参数交给独立的 PowerShell 进程，由它等待当前进程结束、备份安装目录、移入新版本并重启；安装目录不可写时通过 UAC 启动该脚本。应用内更新只替换完整发行包，不做逐文件差异更新，避免 DLL 与前端资源版本混用。
+`UpdateCoordinator` 在进程启动后延迟检查一次发行版（`uiSettings.update` 可关闭）。检查会查询 Gitee 和 GitHub，按版本号取较高者：首选源已经提供更高版本时不再等待另一个源，首选源没有更高版本时才继续比较另一个源，因此镜像落后或缺少发行版都不会导致回退安装；开始下载前还会再校验一次更新包版本。`UpdateService` 负责解析 Release API、挑选 `WuGesture-v<版本>-windows-x64.zip`、下载到 `%LocalAppData%\WuGesture\updates`，并从发行说明里的 `SHA256 (<ZIP 文件名>): <哈希>` 行读取期望哈希校验完整性（不需要额外下载校验文件），然后解压并检查 `WuGesture.exe` 与 `Web\index.html`。真正的替换发生在应用退出之后：宿主把内置的 `apply-update.ps1` 和路径参数交给独立的 PowerShell 进程，由它等待当前进程结束、备份安装目录、移入新版本并重启；安装目录不可写时通过 UAC 启动该脚本。应用内更新只替换完整发行包，不做逐文件差异更新，避免 DLL 与前端资源版本混用。
 
 ## WebView2 集成
 

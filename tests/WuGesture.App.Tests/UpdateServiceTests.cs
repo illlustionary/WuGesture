@@ -4,6 +4,8 @@ namespace WuGesture.App.Tests;
 
 public sealed class UpdateServiceTests
 {
+    private const string HashA = "3f2a9c1e5b7d4068a1c2e3f4b5d60718293a4b5c6d7e8f9012345678abcdef01";
+
     [Theory]
     [InlineData("v1.3.10", 1, 3, 10)]
     [InlineData(" 1.1.11 ", 1, 1, 11)]
@@ -61,7 +63,7 @@ public sealed class UpdateServiceTests
         var assets = new[]
         {
             new UpdateAssetInfo("WuGesture-1.3.10-source.zip", "https://example.com/source.zip", 10),
-            new UpdateAssetInfo("SHA256SUMS.txt", "https://example.com/SHA256SUMS.txt", 20),
+            new UpdateAssetInfo("WuGesture-v1.3.10-symbols.zip", "https://example.com/symbols.zip", 20),
             new UpdateAssetInfo("WuGesture-v1.3.10-windows-x64.zip", "https://example.com/app.zip", 30)
         };
 
@@ -113,20 +115,35 @@ public sealed class UpdateServiceTests
     }
 
     [Fact]
-    public void ParseExpectedChecksum_MatchesArchiveLine()
+    public void ParseChecksumFromNotes_ReadsArchiveHashFromReleaseNotes()
     {
-        const string checksums = "aaaabbbb  other.zip\r\nddccbbaa  WuGesture-v1.3.10-windows-x64.zip\r\n";
+        const string notes =
+            "## 更新内容\r\n\r\n- fix: something\r\n\r\n## 校验\r\n\r\n" +
+            "SHA256 (WuGesture-v1.4.0-windows-x64.zip): " + HashA + "\r\n";
 
-        Assert.Equal(
-            "ddccbbaa",
-            UpdateService.ParseExpectedChecksum(checksums, "WuGesture-v1.3.10-windows-x64.zip"));
+        Assert.Equal(HashA, UpdateService.ParseChecksumFromNotes(notes, "WuGesture-v1.4.0-windows-x64.zip"));
+        // Release tags and file names are matched without regard to case.
+        Assert.Equal(HashA, UpdateService.ParseChecksumFromNotes(notes, "wugesture-v1.4.0-windows-x64.ZIP"));
     }
 
     [Fact]
-    public void ParseExpectedChecksum_ReturnsNullWhenArchiveIsMissing()
+    public void ParseChecksumFromNotes_AcceptsUnnamedAndFullWidthLine()
     {
-        Assert.Null(UpdateService.ParseExpectedChecksum("aaaabbbb  other.zip\n", "WuGesture-v1.3.10-windows-x64.zip"));
-        Assert.Null(UpdateService.ParseExpectedChecksum("", "WuGesture-v1.3.10-windows-x64.zip"));
+        Assert.Equal(HashA, UpdateService.ParseChecksumFromNotes($"SHA256: {HashA}", "WuGesture-v1.4.0-windows-x64.zip"));
+        Assert.Equal(HashA, UpdateService.ParseChecksumFromNotes($"SHA256（WuGesture-v1.4.0-windows-x64.zip）：{HashA}", "WuGesture-v1.4.0-windows-x64.zip"));
+    }
+
+    [Fact]
+    public void ParseChecksumFromNotes_IgnoresOtherAssetsAndInvalidHashes()
+    {
+        var notes =
+            $"SHA256 (WuGesture-v1.5.0-windows-x64.zip): {HashA}\r\n" +
+            "SHA256 (WuGesture-v1.4.0-windows-x64.zip): abcdef\r\n";
+
+        Assert.Null(UpdateService.ParseChecksumFromNotes(notes, "WuGesture-v1.4.0-windows-x64.zip"));
+        Assert.Null(UpdateService.ParseChecksumFromNotes("## 更新内容\r\n\r\n- fix: something\r\n", "WuGesture-v1.4.0-windows-x64.zip"));
+        Assert.Null(UpdateService.ParseChecksumFromNotes("", "WuGesture-v1.4.0-windows-x64.zip"));
+        Assert.Null(UpdateService.ParseChecksumFromNotes(null, "WuGesture-v1.4.0-windows-x64.zip"));
     }
 
     [Fact]
