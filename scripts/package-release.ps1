@@ -18,6 +18,7 @@ if ([string]::IsNullOrWhiteSpace($OutputPath)) {
 $publishDirectory = Join-Path $OutputPath "WuGesture"
 $archivePath = Join-Path $OutputPath "WuGesture-$Version-windows-x64.zip"
 $notesPath = Join-Path $OutputPath "RELEASE_NOTES.md"
+$checksumsPath = Join-Path $OutputPath "SHA256SUMS.txt"
 
 if (Test-Path $OutputPath) {
     Remove-Item -LiteralPath $OutputPath -Recurse -Force
@@ -48,6 +49,11 @@ if ($changes.Count -eq 0) {
 @($notesHeader, "", $changes) | Set-Content -LiteralPath $notesPath -Encoding utf8
 Compress-Archive -LiteralPath $publishDirectory -DestinationPath $archivePath -CompressionLevel Optimal -Force
 
+# The in-app updater verifies the downloaded package against this file before extracting it.
+$archiveHash = (Get-FileHash -LiteralPath $archivePath -Algorithm SHA256).Hash.ToLowerInvariant()
+"$archiveHash  $(Split-Path -Leaf $archivePath)" | Set-Content -LiteralPath $checksumsPath -Encoding ascii
+
 Write-Host "Release package complete:"
 Write-Host "Archive: $archivePath"
+Write-Host "Checksums: $checksumsPath"
 Write-Host "Notes: $notesPath"

@@ -18,6 +18,7 @@ internal static class GestureConfigNormalizer
         config.UiSettings.GestureSensitivity ??= new GestureSensitivityUiSettings();
         config.UiSettings.AppBehavior ??= new AppBehaviorUiSettings();
         config.UiSettings.WebDav ??= new WebDavUiSettings();
+        config.UiSettings.Update ??= new UpdateUiSettings();
         NormalizeApplications(config.Applications);
         NormalizeRules(config.Rules);
         config.Categories = NormalizeCategories(config.Categories);
@@ -114,6 +115,16 @@ internal static class GestureConfigNormalizer
         webDav.UserName = (webDav.UserName ?? "").Trim();
         webDav.Password ??= "";
         webDav.RemotePath = (webDav.RemotePath ?? "").Trim();
+
+        var update = settings.Update;
+        update.Source = NormalizeUpdateSource(update.Source);
+    }
+
+    private static string NormalizeUpdateSource(string? value)
+    {
+        return string.Equals(value, GestureConfigContract.UpdateSources.GitHub, StringComparison.OrdinalIgnoreCase)
+            ? GestureConfigContract.UpdateSources.GitHub
+            : GestureConfigContract.UpdateSources.Gitee;
     }
 
     private static string NormalizeCloseButtonBehavior(string? value)

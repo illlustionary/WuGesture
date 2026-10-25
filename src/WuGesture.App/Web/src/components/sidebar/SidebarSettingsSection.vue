@@ -20,6 +20,7 @@ const items = [
   { to: '/settings/level-osd', label: '音量/亮度提示', icon: 'setting' },
   { to: '/settings/sensitivity', label: '手势灵敏度', icon: 'setting' },
   { to: '/settings/app-behavior', label: '应用行为', icon: 'briefcase' },
+  { to: '/settings/update', label: '更新', icon: 'download' },
   { to: '/settings/webdav', label: 'WebDAV', icon: 'setting' }
 ]
 

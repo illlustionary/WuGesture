@@ -131,6 +131,8 @@ internal sealed class WebViewHost : IDisposable
         }
     }
 
+    public bool IsReady => webView is { IsDisposed: false, CoreWebView2: not null };
+
     public void TryPostJson(string payload)
     {
         if (webView is not { IsDisposed: false, CoreWebView2: not null })

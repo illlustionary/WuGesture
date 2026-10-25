@@ -41,6 +41,12 @@ export default {
       name: 'settings-webdav',
       component: settingsPage,
       props: { section: 'webdav' }
+    },
+    {
+      path: 'update',
+      name: 'settings-update',
+      component: settingsPage,
+      props: { section: 'update' }
     }
   ]
 }

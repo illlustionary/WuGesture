@@ -36,6 +36,7 @@ import { useGestureEditorNotifications } from '@/gestureEditor/modules/useGestur
 import { useGestureEditorWebViewBridge } from '@/gestureEditor/modules/useGestureEditorWebViewBridge'
 import { useGestureRuleEditor } from '@/gestureEditor/modules/useGestureRuleEditor'
 import { useGestureScopes } from '@/gestureEditor/modules/useGestureScopes'
+import { useGestureUpdater } from '@/gestureEditor/modules/useGestureUpdater'
 
 const state = reactive({
   statusText: '启动中',
@@ -69,7 +70,14 @@ const state = reactive({
   gestureRecordingRequestId: '',
   webDavTesting: false,
   webDavTestState: 'idle',
-  webDavTestedSignature: ''
+  webDavTestedSignature: '',
+  updateChecking: false,
+  updateStatus: 'idle',
+  updateInfo: null,
+  updateProgress: 0,
+  updatePhase: '',
+  updateError: '',
+  updateDialogOpen: false
 })
 
 const activeScope = ref(SCOPE_KINDS.global)
@@ -225,6 +233,21 @@ const applicationPicker = useGestureEditorApplicationPicker({
   webView
 })
 
+const {
+  checkForUpdate,
+  startUpdate,
+  cancelUpdate,
+  dismissUpdate,
+  retryUpdate,
+  openUpdateDialog,
+  openReleasePage,
+  handleUpdateMessage
+} = useGestureUpdater({
+  state,
+  setMessage,
+  webView
+})
+
 export function useGestureEditorContext() {
   const globalRules = computed(() => getRulesForScope(SCOPE_KINDS.global))
   const categoryRules = computed(() => getRulesByKind(SCOPE_KINDS.category))
@@ -304,6 +327,13 @@ export function useGestureEditorContext() {
     importConfigFromLocal,
     getWebDavSignature,
     isWebDavTested,
+    checkForUpdate,
+    startUpdate,
+    cancelUpdate,
+    dismissUpdate,
+    retryUpdate,
+    openUpdateDialog,
+    openReleasePage,
     windowOperations: WINDOW_OPERATIONS,
     volumeOperations: VOLUME_OPERATIONS,
     brightnessOperations: BRIGHTNESS_OPERATIONS,
@@ -383,6 +413,18 @@ function handleMessage(message) {
 
   if (message.type === WEBVIEW_MESSAGE_TYPES.hotkeyRecorded) {
     applyRecordedHotkey(message)
+    return
+  }
+
+  if (
+    message.type === WEBVIEW_MESSAGE_TYPES.updateAvailable ||
+    message.type === WEBVIEW_MESSAGE_TYPES.updateNone ||
+    message.type === WEBVIEW_MESSAGE_TYPES.updateError ||
+    message.type === WEBVIEW_MESSAGE_TYPES.updateProgress ||
+    message.type === WEBVIEW_MESSAGE_TYPES.updateFailed ||
+    message.type === WEBVIEW_MESSAGE_TYPES.updateRestarting
+  ) {
+    handleUpdateMessage(message)
   }
 }
 

@@ -41,6 +41,10 @@ MouseHook
 
 原生侧还提供轨迹线、手势提示、音量/亮度 OSD，以及全屏禁用、应用排除、暂停和托盘驻留。各项显示行为由 `uiSettings` 配置控制。
 
+## 自动更新
+
+`UpdateCoordinator` 在进程启动后延迟检查一次发行版（`uiSettings.update` 可关闭）。检查会查询 Gitee 和 GitHub，按版本号取较高者：首选源已经提供更高版本时不再等待另一个源，首选源没有更高版本时才继续比较另一个源，因此镜像落后或缺少发行版都不会导致回退安装；开始下载前还会再校验一次更新包版本。`UpdateService` 负责解析 Release API、挑选 `WuGesture-v<版本>-windows-x64.zip`、下载到 `%LocalAppData%\WuGesture\updates`，并用发布附件里的 `SHA256SUMS.txt` 校验完整性，然后解压并检查 `WuGesture.exe` 与 `Web\index.html`。真正的替换发生在应用退出之后：宿主把内置的 `apply-update.ps1` 和路径参数交给独立的 PowerShell 进程，由它等待当前进程结束、备份安装目录、移入新版本并重启；安装目录不可写时通过 UAC 启动该脚本。应用内更新只替换完整发行包，不做逐文件差异更新，避免 DLL 与前端资源版本混用。
+
 ## WebView2 集成
 
 前端工程位于 `src/WuGesture.App/Web`。桌面工程会在构建时调用 `pnpm exec vite build --outDir <宿主输出目录>/Web`；Vite 先清空最终输出目录，因此构建结果直接位于宿主的 `Web`，不会覆盖前端源码。普通构建使用 `OutputPath/Web`，`dotnet publish -o` 使用实际 `PublishDir/Web`，再经由 WebView2 虚拟主机 `https://gesture.wu.philosophy/` 加载。该步骤是增量的：MSBuild 以 `Web` 源码为 `Inputs`、宿主 `Web\index.html` 为 `Outputs`，源文件都不比输出新时整段 `vite build` 会被跳过；Vite 对资源名做哈希，任何真实前端改动都会重写 `index.html`。

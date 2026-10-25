@@ -7,6 +7,7 @@ import {
   MOUSE_BUTTONS,
   OPERATIONS,
   SCOPE_KINDS,
+  UPDATE_SOURCES,
   VOLUME_OPERATIONS,
   WINDOW_TARGET_MODES,
   WHEEL_DIRECTIONS,
@@ -29,7 +30,8 @@ export function cloneUiSettings(settings) {
     levelOsd: normalizeLevelOsdSettings(source.levelOsd),
     gestureSensitivity: normalizeGestureSensitivitySettings(source.gestureSensitivity),
     appBehavior: normalizeAppBehaviorSettings(source.appBehavior),
-    webDav: normalizeWebDavSettings(source.webDav)
+    webDav: normalizeWebDavSettings(source.webDav),
+    update: normalizeUpdateSettings(source.update)
   }
 }
 
@@ -336,6 +338,15 @@ export function normalizeWebDavSettings(settings) {
     userName: String(settings?.userName ?? DEFAULT_UI_SETTINGS.webDav.userName).trim(),
     password: String(settings?.password ?? DEFAULT_UI_SETTINGS.webDav.password),
     remotePath: String(settings?.remotePath ?? DEFAULT_UI_SETTINGS.webDav.remotePath).trim()
+  }
+}
+
+export function normalizeUpdateSettings(settings) {
+  settings = normalizeObjectKeys(settings)
+  const source = String(settings?.source ?? '').toLowerCase()
+  return {
+    checkForUpdates: Boolean(settings?.checkForUpdates ?? DEFAULT_UI_SETTINGS.update.checkForUpdates),
+    source: Object.values(UPDATE_SOURCES).includes(source) ? source : DEFAULT_UI_SETTINGS.update.source
   }
 }
 

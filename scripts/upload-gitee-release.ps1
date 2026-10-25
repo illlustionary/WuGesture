@@ -8,7 +8,7 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$NotesPath,
     [Parameter(Mandatory = $true)]
-    [string]$AssetPath,
+    [string[]]$AssetPath,
     [string]$TargetCommitish = "main"
 )
 
@@ -27,6 +27,8 @@ $release = Invoke-RestMethod -Method Post -Uri $releaseEndpoint -ContentType "ap
     } | ConvertTo-Json)
 
 $uploadEndpoint = "https://gitee.com/api/v5/repos/$encodedRepository/releases/$($release.id)/attach_files?access_token=$accessToken"
-Invoke-RestMethod -Method Post -Uri $uploadEndpoint -Form @{ file = Get-Item -LiteralPath $AssetPath } | Out-Null
+foreach ($asset in $AssetPath) {
+    Invoke-RestMethod -Method Post -Uri $uploadEndpoint -Form @{ file = Get-Item -LiteralPath $asset } | Out-Null
+}
 
 Write-Host "Uploaded $Version to Gitee repository $Repository."

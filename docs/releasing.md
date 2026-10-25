@@ -28,13 +28,24 @@
 git push github v0.97
 ```
 
-GitHub Actions 的 `.github/workflows/release.yml` 在收到标签后生成 framework-dependent `win-x64` 发行包、ZIP 文件和基于相邻标签提交整理的更新说明，并创建 GitHub Release。ZIP 内的根目录固定为 `WuGesture`，而 ZIP 文件名保留版本号，例如 `WuGesture-v0.97-windows-x64.zip`。仅需在本地生成待检查发行包时，先创建对应标签，再执行：
+GitHub Actions 的 `.github/workflows/release.yml` 在收到标签后生成 framework-dependent `win-x64` 发行包、ZIP 文件、`SHA256SUMS.txt` 和基于相邻标签提交整理的更新说明，并创建 GitHub Release。ZIP 内的根目录固定为 `WuGesture`，而 ZIP 文件名保留版本号，例如 `WuGesture-v0.97-windows-x64.zip`。`SHA256SUMS.txt` 记录 ZIP 的 SHA256，应用内更新下载完成后会先校验它，因此两个发行渠道都必须同时上传 ZIP 和校验文件。仅需在本地生成待检查发行包时，先创建对应标签，再执行：
 
 ```powershell
 .\scripts\package-release.ps1 -Version v0.97
 ```
 
-该命令使用 `artifacts\release\` 作为唯一输出根目录，其中包含 `WuGesture\`、版本化 ZIP 和 `RELEASE_NOTES.md`。通用发布命令单独使用 `artifacts\publish\WuGesture\`。
+该命令使用 `artifacts\release\` 作为唯一输出根目录，其中包含 `WuGesture\`、版本化 ZIP、`SHA256SUMS.txt` 和 `RELEASE_NOTES.md`。通用发布命令单独使用 `artifacts\publish\WuGesture\`。
+
+## 自动更新
+
+应用启动时默认检查一次最新发行版（开关在“设置 > 更新”，检查入口在侧栏最外层的“关于&更新”页），默认更新源为 Gitee，也可切换为 GitHub。检查会同时考虑两个源并取版本号较高者，任一源落后或暂时没有发行版都不会导致回退安装，只有更新包版本高于当前版本时才会提示。发现新版本后，用户在弹窗中确认才会下载。下载的 ZIP 在 `%LocalAppData%\WuGesture\updates\<版本>` 解压，随后启动独立的 PowerShell 辅助脚本：
+
+1. 等待当前 `WuGesture` 进程退出。
+2. 把现有安装目录移动到同级的 `WuGesture.old-<时间戳>` 备份目录。
+3. 把解压后的新版本移动到原安装目录并重启应用（保留原启动参数）。
+4. 启动成功且旧版本退出后删除备份；任一替换步骤失败会回滚到备份。
+
+安装目录不可写时会先弹出 UAC 请求管理员权限；用户取消则更新中止。替换过程写入 `%LocalAppData%\WuGesture\logs\update-*.log`，应用日志保留 7 天的同类文件可供排查。因为更新是按完整发行包替换，发布 ZIP 必须保持 `WuGesture\` 根目录和完整的 `Web\` 目录。
 
 ## Gitee 同步
 
@@ -43,7 +54,7 @@ GitHub Actions 的 `.github/workflows/release.yml` 在收到标签后生成 fram
 - `GITEE_REPOSITORY`：Gitee 仓库路径，例如 `neko_nya/WuGesture`。
 - `GITEE_TOKEN`：拥有仓库写入权限的 Gitee 私人令牌。
 
-两个 secret 都已配置时，工作流会镜像 `main` 和发行标签到 Gitee，并发布相同的附件和更新说明。未配置时，Gitee 同步会被跳过，GitHub Release 不受影响。
+两个 secret 都已配置时，工作流会镜像 `main` 和发行标签到 Gitee，并发布相同的附件（ZIP 和 `SHA256SUMS.txt`）和更新说明。未配置时，Gitee 同步会被跳过，GitHub Release 不受影响。
 
 首次使用双远程时，可保留 Gitee 为 `origin`，并添加 GitHub 远程：
 

@@ -8,6 +8,7 @@ import GestureHintSettings from '@/pages/settings/components/GestureHintSettings
 import GestureSensitivitySettings from '@/pages/settings/components/GestureSensitivitySettings.vue'
 import LevelOsdSettings from '@/pages/settings/components/LevelOsdSettings.vue'
 import MouseTrailSettings from '@/pages/settings/components/MouseTrailSettings.vue'
+import UpdateSettings from '@/pages/settings/components/UpdateSettings.vue'
 import WebDavSettings from '@/pages/settings/components/WebDavSettings.vue'
 import { useUiSettingsDraft } from '@/pages/settings/composables/useUiSettingsDraft'
 
@@ -101,6 +102,12 @@ function previewLevelOsd(kind) {
           @test="testWebDav"
           @restore="requestRestoreFromWebDav"
           @save="saveToWebDav"
+        />
+        <UpdateSettings
+          v-else-if="props.section === 'update'"
+          :draft="draft"
+          @queue-persist="queuePersistDraft"
+          @flush-persist="flushPersistDraft"
         />
       </section>
     </template>

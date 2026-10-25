@@ -1,5 +1,6 @@
 <script setup>
 import SidebarAppStatus from '@/components/sidebar/SidebarAppStatus.vue'
+import SidebarAboutLink from '@/components/sidebar/SidebarAboutLink.vue'
 import SidebarApplicationSection from '@/components/sidebar/SidebarApplicationSection.vue'
 import SidebarCategorySection from '@/components/sidebar/SidebarCategorySection.vue'
 import SidebarEdgeSection from '@/components/sidebar/SidebarEdgeSection.vue'
@@ -102,6 +103,7 @@ const {
         @import-config="emit('import-config')"
         @reset-settings="emit('reset-settings')"
       />
+      <SidebarAboutLink :is-sidebar-hidden="isSidebarHidden" />
     </nav>
     <SidebarFooter
       :is-collapsed="isCollapsed"

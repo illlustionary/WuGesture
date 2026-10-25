@@ -85,6 +85,12 @@ public static class GestureConfigContract
         public const string Dark = "dark";
     }
 
+    public static class UpdateSources
+    {
+        public const string Gitee = "gitee";
+        public const string GitHub = "github";
+    }
+
     public static class LevelOsdPositions
     {
         public const string Center = "center";

@@ -70,7 +70,12 @@ public static class DefaultGestureConfig
                 DisableEdgeActionsInFullscreen = false,
                 ExcludedApplications = []
             },
-            WebDav = new WebDavUiSettings()
+            WebDav = new WebDavUiSettings(),
+            Update = new UpdateUiSettings
+            {
+                CheckForUpdates = true,
+                Source = GestureConfigContract.UpdateSources.Gitee
+            }
         };
         config.EdgeActions =
         [
