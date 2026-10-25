@@ -213,7 +213,6 @@ src\WuGesture.App\Configuration
 - `WebDavProtocolContract.cs`：WebDAV 协议方法、请求头、认证 scheme、媒体类型和超时常量。
 - `WebViewMessageTypes.cs`：桌面宿主侧 WebView 入站/出站消息类型常量。
 - `rules` 消息和保存请求会携带独立 `categories` 列表，空分类无需依赖手势规则或程序归属即可保留。
-- `config-result` 消息会携带操作来源；前端仅静默 `save` 的成功结果，导入、导出、重载和恢复等明确操作仍显示结果提示，任意失败都会显示错误提示。
 
 当前支持的配置：
 
@@ -270,18 +269,10 @@ src\WuGesture.App\Web\PROJECT_STRUCTURE.md
 
 宿主集成：
 
-- 配置界面使用 Windows 系统标题栏；标题为 `WuGesture`，应用图标由窗体提供，系统负责最小化、最大化、关闭、拖动和缩放。下方为可折叠的左侧导航和独立滚动的右侧页面工作区，不保留外层总边距、页面壳卡片或侧栏圆角：工作区卡片使用直角连续边框而非留白分隔。侧栏顶部为独立的应用状态组件，带悬浮提示并提供暂停/恢复 WuGesture；组件左侧显示应用图标，右侧显示加粗名称与较小的版本号，暂停时整项置灰。侧栏入口保留图标、文字、hover 状态和当前项左侧竖线动画；底部左侧按钮可折叠为仅图标导航，搜索和问号帮助入口保留在底部右侧，问号会通过基础遮罩对话框展示规则生效顺序。侧栏只有一个滚动区域：导航列整体滚动，展开后的分类/程序列表按内容自然撑开，不再出现分组内部滚动条。
+- 配置界面由 WebView2 承载：桌面宿主通过虚拟主机 `https://gesture.wu.philosophy/` 加载宿主输出目录中的 `Web`；窗口使用 Windows 系统标题栏，标题为 `WuGesture`。界面结构、侧栏和页面交互见 Web 子项目文档。
 - 宿主下发的 `rules` WebView 消息包含程序集 `appVersion`、配置、规则、程序、边缘操作和 UI 设置；运行态程序和排除项会附带应用图标。
-- 前端构建由 `WuGesture.App.csproj` 调用 `pnpm exec vite build --outDir`，将输出直接设为当前宿主输出目录的 `Web`；Vite 会清空该最终输出目录，源码 `Web` 目录不会被覆盖。
+- `WuGesture.App.csproj` 在 `.NET` 构建前自动执行 `pnpm exec vite build --outDir <宿主输出目录>\Web`；Vite 会清空该最终输出目录，源码 `Web` 目录不会被覆盖。普通构建输出到 `$(OutputPath)\Web`，`dotnet publish -o` 输出到实际 `$(PublishDir)\Web`，不生成或复制中间 `dist` 目录。
 - 前端构建是增量的：`WebFrontendSource` 收集 `Web` 目录下除 `node_modules` 和 `*.md` 之外的所有文件，作为 `BuildWebFrontend` 目标的 `Inputs`，输出为宿主 `Web\index.html`；源文件都不比 `index.html` 新时 MSBuild 直接跳过整个 `vite build`（只改 C# 的构建不会再跑前端）。Vite 会对资源名做哈希，任何真实前端改动都会重写 `index.html`，因此这个比较不会漏构建。
-- `Web\src\components\dialog\BaseDialog.vue` 统一前端对话框的遮罩关闭、可选右上关闭按钮、默认操作区和关闭动画；自动保存或即时选择类弹层可复用外壳并关闭默认操作区。
-- `Web\src\components\form\BaseInput.vue` 和 `Web\src\components\form\BaseRange.vue` 统一前端原生输入控件的 `v-model` 事件、宽度约束和滑块进度填充；页面继续保留各自的配置约束与保存时机。
-- Web 共享组件按 `sidebar`、`layout`、`dialog`、`form`、`ui`、`gesture`、`scope` 和 `rules` 分类；`scope\ApplicationListItem.vue` 统一用于分类列表、程序详情页顶部和运行程序动作，只有路径文字可点击以打开其所在文件夹。分类页、边缘页和设置页的私有组件分别保留在对应 `pages\*\components` 目录。
-- 前端 `pnpm` 构建脚本通过 `src\WuGesture.App\Web\pnpm-workspace.yaml` 放行 `@parcel/watcher` 的本地构建脚本，避免非交互环境下的依赖安装中断。
-- 前端格式化使用 `pnpm format`，校验使用 `pnpm format:check`；两者均使用仓库根目录的 `.prettierrc.json`。
-- `WuGesture.App.csproj` 会在 `.NET` 构建前自动执行前端构建。
-- 普通构建使用 `$(OutputPath)\Web`，`dotnet publish -o` 使用实际 `$(PublishDir)\Web`，不再生成或复制中间 `dist` 目录。
-- 桌面宿主通过 WebView2 虚拟主机 `https://gesture.wu.philosophy/` 加载宿主输出目录中的 `Web`。
 
 ## 测试
 
@@ -381,9 +372,10 @@ WuGesture.exe
 - 启动流程
 - 手势引擎职责
 - 配置文件路径或 schema
-- WebView 消息契约
+- WebView 消息契约（宿主侧收发；前端侧发送与处理见 Web 子项目文档）
 - 构建/发布/测试命令
 - 动作类型或规则作用域
 - 测试结构
+- Web 前端的页面、组件或交互细节（更新 `src\WuGesture.App\Web\PROJECT_STRUCTURE.md`，本文件只记录宿主集成）
 
 如果只是某个现有文件里的小实现改动，请先检查这里；只有当文档中描述的行为真的变了，才需要更新。
