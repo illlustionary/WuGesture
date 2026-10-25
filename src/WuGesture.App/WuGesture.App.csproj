@@ -49,6 +49,7 @@
   <ItemGroup>
     <EmbeddedResource Include="Resources\sun.png" />
     <EmbeddedResource Include="Resources\volume.png" />
+    <EmbeddedResource Include="Updater\apply-update.ps1" />
   </ItemGroup>
 
   <!-- Resolve the Vite output directory first: it differs between a normal build and a publish run. -->

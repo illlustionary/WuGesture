@@ -90,9 +90,9 @@ SVG 按使用位置分目录：
 src\components
 ```
 
-- `sidebar\`：侧栏壳和固定导航、分类、程序、边缘操作、设置及底部区域组件。
+- `sidebar\`：侧栏壳和固定导航、分类、程序、边缘操作、设置、关于&更新及底部区域组件。
 - `layout\`：`AppShell.vue` 页面布局壳和 `NestedRouteView.vue` 嵌套路由承载组件。
-- `dialog\`：`BaseDialog.vue`、`ConfirmDialog.vue` 和 `QuickSearchDialog.vue` 等共享对话框；`BaseDialog` 统一遮罩关闭、可选右上关闭按钮、默认操作区和关闭动画，自动保存或即时选择类弹层可复用外壳并关闭默认操作区。
+- `dialog\`：`BaseDialog.vue`、`ConfirmDialog.vue`、`QuickSearchDialog.vue` 和 `UpdateDialog.vue` 等共享对话框；`BaseDialog` 统一遮罩关闭、可选右上关闭按钮、默认操作区和关闭动画，自动保存或即时选择类弹层可复用外壳并关闭默认操作区；`UpdateDialog` 展示版本差异、发行说明、下载进度和失败后的重试/发布页入口，下载中禁止遮罩关闭。
 - `form\`：`BaseInput.vue`、`BaseRange.vue`、`CustomSelect.vue` 和 `ToggleCheckbox.vue` 等共享表单控件；`BaseInput` / `BaseRange` 统一原生输入控件的 `v-model` 事件、宽度约束和滑块进度填充，页面只保留各自的配置约束与保存时机。
 - `ui\`：`AppIcon.vue`、`HoverBubble.vue` 和 `IconActionButton.vue` 等基础 UI 控件。
 - `gesture\`：`GestureRuleDialog.vue`、`GestureRuleList.vue` 以及 `gesture\rule-dialog\fields\` 下的规则字段组件。
@@ -140,6 +140,7 @@ src\gestureEditor
 - `gestureEditor\modules\useGestureEditorNotifications.js`：配置状态消息和通知事件的统一入口；普通自动保存成功只更新内部状态，失败和明确操作结果才发布通知事件。
 - `gestureEditor\modules\useGestureEditorNavigation.js`：路由名称和 scope/exclusion 跳转的统一入口，页面与组合式函数只发布路由意图而不直接执行 router 跳转。
 - `gestureEditor\modules\useGestureEditorWebViewBridge.js`：WebView 消息发送、静默发送、可用性判断和消息监听入口。
+- `gestureEditor\modules\useGestureUpdater.js`：更新检查/下载/取消/重试的前端状态机，处理宿主回传的 `update-*` 消息并驱动全局更新弹窗；浏览器预览中会拒绝检查更新。
 
 ## Constants
 
@@ -149,7 +150,7 @@ src\gestureEditor
 src\constants
 ```
 
-- `gestureEditorOptions.js`：手势编辑器使用的契约常量和 UI 选项，包括 scope、鼠标按键、动作类型、操作名、边缘触发、关闭行为、WebView 消息类型、方向符号和选项 label。
+- `gestureEditorOptions.js`：手势编辑器使用的契约常量和 UI 选项，包括 scope、鼠标按键、动作类型、操作名、边缘触发、关闭行为、更新源、WebView 消息类型、方向符号和选项 label。
 - `gestureEditorUiDefaults.js`：UI 设置和边缘操作的前端默认模板；不包含手势、分类或具体程序示例。
 - `gestureEditorBrowserPreviewData.js`：仅供未连接桌面宿主时的浏览器预览使用，提供示例全局/分类规则和程序。
 - `gestureEditorLimits.js`：手势编辑器输入限制常量，供表单控件和归一化逻辑共用。
@@ -190,7 +191,7 @@ src\pages
   - `edge\components\EdgeActionCommandFields.vue`：快捷键、窗口、音量、亮度命令字段。
   - `edge\composables\useEdgeActionDraft.js`：边缘操作编辑草稿、打开、关闭和保存逻辑。
 - `exclusions\index.vue`：排除项页，用于维护不执行鼠标手势的程序列表，并可对单个排除项禁用边缘操作。
-- `settings\index.vue`：设置子页，通过路由参数只展示轨迹线、手势提示、音量/亮度 OSD、灵敏度、应用行为或 WebDAV 中的一项；配置导入、导出和恢复默认入口由全局多级侧栏提供。
+- `settings\index.vue`：设置子页，通过路由参数只展示轨迹线、手势提示、音量/亮度 OSD、灵敏度、应用行为、更新源或 WebDAV 中的一项；配置导入、导出和恢复默认入口由全局多级侧栏提供。
   - `settings\components\SettingsSectionCard.vue`：设置页大项标题、说明、操作区和内容布局。
   - `settings\components\SettingsFormGrid.vue`：设置项双列表单布局。
   - `settings\components\SettingsField.vue`：设置项卡片。
@@ -198,9 +199,12 @@ src\pages
   - `settings\components\LevelOsdSettings.vue`：音量/亮度 OSD 配置，顶部内置位置、尺寸和圆角实时预览。
   - `settings\components\AppBehaviorSettings.vue`：应用行为配置，包括开机启动、管理员启动、目标窗口模式、暂停 WuGesture 和关闭按钮行为。
   - `settings\components\WebDavSettings.vue`：WebDAV 配置、测试、恢复和保存操作。
+  - `settings\components\UpdateSettings.vue`：更新源下拉框和启动时自动检查开关，是更新相关设置的唯一编辑入口。
   - `settings\components\GestureHintSettings.vue`：底部提示窗配置，顶部内置提示窗实时预览。
   - `settings\components\GestureSensitivitySettings.vue`：手势灵敏度三档配置。
   - `settings\composables\useUiSettingsDraft.js`：基于 `gestureEditorNormalizers.js` 的共享设置深拷贝创建草稿，负责 debounce 保存、重置和预览样式计算。
+- `about\index.vue`：侧栏最外层的“关于&更新”页，分「关于」和「更新」两个区块；「关于」展示软件简介、当前版本、更新源和自动检查状态（只读），「更新」提供检查更新按钮、状态提示和“查看更新”入口，修改更新设置需要前往“设置 > 更新”。
+  - `about\components\AboutUpdatePanel.vue`：两个区块的具体布局、更新状态文案和来源标注。
 
 ## Routing
 
@@ -211,7 +215,8 @@ src\pages
 - `app/:name`
 - `edge/corner`、`edge/friction`、`edge/wheel`
 - `exclusions`
-- `settings/mouse-trail`、`settings/gesture-hint`、`settings/level-osd`、`settings/sensitivity`、`settings/app-behavior`、`settings/webdav`
+- `about`（侧栏最外层的“关于&更新”独立页面）
+- `settings/mouse-trail`、`settings/gesture-hint`、`settings/level-osd`、`settings/sensitivity`、`settings/app-behavior`、`settings/update`、`settings/webdav`
 
 页面组件通过动态 `import()` 加载，`router/routes` 下的路由模块只在路由命中时加载对应页面 chunk。
 
@@ -219,7 +224,7 @@ src\pages
 
 ## 当前 UI
 
-界面外壳：Windows 系统标题栏负责窗口控制；其下方侧栏顶部的 `SidebarAppStatus` 组件可点击，临时暂停或恢复 WuGesture，并在图标右侧显示名称与程序集版本。侧栏的导航、分类、程序、边缘操作和设置各自使用独立区域组件，页脚控制也独立封装；分类/程序子项动态来自当前配置，边缘操作和设置子项对应独立嵌套路由。侧栏收起状态保存在 `uiSettings.sidebar.collapsed`，重建配置页面后保持不变。收起时热区通过 `v-show` 控制，侧栏自身以固定定位、`visibility`、透明度和鼠标事件状态隐藏；导航分组内容继续参与布局，因此不会压缩滚动高度或重置滚动位置。进入热区后淡入，离开侧栏后淡出。侧栏只有一个滚动区域：导航列（`.app-sidebar__nav`）整体滚动，展开后的分类/程序子项按内容自然撑开，分组内部不再单独滚动。
+界面外壳：Windows 系统标题栏负责窗口控制；其下方侧栏顶部的 `SidebarAppStatus` 组件可点击，临时暂停或恢复 WuGesture，并在图标右侧显示名称与程序集版本。侧栏的导航、分类、程序、边缘操作、设置和关于&更新各自使用独立区域组件，页脚控制也独立封装；分类/程序子项动态来自当前配置，边缘操作和设置子项对应独立嵌套路由，关于&更新是与导航同级的最外层入口（`/about`）。侧栏收起状态保存在 `uiSettings.sidebar.collapsed`，重建配置页面后保持不变。收起时热区通过 `v-show` 控制，侧栏自身以固定定位、`visibility`、透明度和鼠标事件状态隐藏；导航分组内容继续参与布局，因此不会压缩滚动高度或重置滚动位置。进入热区后淡入，离开侧栏后淡出。侧栏只有一个滚动区域：导航列（`.app-sidebar__nav`）整体滚动，展开后的分类/程序子项按内容自然撑开，分组内部不再单独滚动。
 
 - `全局` 采用单列表布局，直接编辑整张全局规则表，不显示左侧作用域区域。
 - 页面切换使用方向感过渡：按顶部标签顺序向右切换时新页面从右侧滑入并渐显，向左切换时从左侧滑入并渐显，旧页面会轻微反向淡出；分类和程序子项切换与边缘操作、设置一样先完成路由切换，再由目标页面同步选中作用域，避免过渡中重复更新内容。
@@ -230,6 +235,7 @@ src\pages
 - `排除项` 页维护不执行鼠标手势的程序列表；可通过拖动鼠标或浏览 exe 添加程序，也可为单个排除项勾选“同时禁用边缘操作”，列表会展示从 exe 路径动态提取的应用图标。
 - `全局`、`分类` 和 `程序` 规则页会显示共享的作用域优先级提示，明确 `程序 > 分类 > 全局` 以及未命中当前层级时的继承关系。
 - `设置` 的每个配置项通过独立子路由展示；本地导出、本地导入和恢复默认按钮位于侧栏设置分组。恢复默认会通过确认弹窗二次确认。本地导入/导出只处理主配置 JSON，不包含窗口状态。页面中的调整会在输入变化时 debounce 自动保存，并在控件变更结束或离开页面时强制提交最后一次修改；普通自动保存成功不弹出 toast，保存失败仍会提示。本地编辑期间会避免宿主回传覆盖当前滑块值。设置页也包含开机自启动、以管理员身份打开、暂停 WuGesture、关闭按钮行为，以及 WebDAV 地址、账号、密码和远程路径。开机自启动、以管理员身份打开和暂停 WuGesture 等布尔项使用共享自定义复选控件，单选下拉使用共享弹层式 `CustomSelect`。轨迹线、音量/亮度 OSD 和底部提示窗预览分别内置在对应独立设置页顶部，音量/亮度 OSD 区块还提供实际桌面测试按钮；手势灵敏度使用宽松、标准、严格三档。WebDAV 区域提供测试、恢复和保存按钮；当前 WebDAV 参数测试成功后，才允许把当前配置保存到远程或从远程恢复本地配置。
+- `关于&更新` 是侧栏最外层的独立页面，分「关于」和「更新」两个区块：「关于」介绍软件用途，并只读展示当前版本、更新源和是否在启动时自动检查；「更新」提供检查更新按钮、状态提示和“查看更新”入口，确认后才由全局更新弹窗下载、校验并重启安装，弹窗会注明实际使用的更新源以及回退原因。更新源和自动检查开关统一放在“设置 > 更新”中修改。
 - 分类新增通过名称弹窗完成，不再使用左侧内联输入框；分类和程序名称都通过双击列表项后在弹窗里重命名。
 - 分类页、程序页和排除项页添加程序时都会先显示前端弹窗，用户可通过“拖动选择窗口”将鼠标移到目标窗口后松开，或选择“浏览 exe 文件”作为备用方式。
 - 程序列表和详情会展示从 exe 路径动态提取的应用图标；图标通过 WebView 消息传递，不写入配置文件。
@@ -262,11 +268,15 @@ src\pages
 - `{ type: "reload-rules" }`
 - `{ type: "reset-rules" }`
 - `{ type: "preview-level-osd", kind: "volume|brightness" }`
+- `{ type: "check-update" }`：手动检查更新。
+- `{ type: "start-update" }`：下载并安装当前提示的新版本。
+- `{ type: "cancel-update" }`：取消正在进行的下载。
+- `{ type: "open-update-page" }`：在浏览器中打开发布页。
 
 后端发送：
 
 - `{ type: "status", status: "running|paused|..." }`
-- `{ type: "rules", appVersion: "v...", rules: [...], applications: [{ name, displayName, path, categories, icon }, ...], edgeActions: [...], uiSettings: { sidebar: { collapsed }, ... }, ... }`；`appVersion` 来自程序集版本，仅用于配置界面展示，不写入配置文件；`uiSettings.sidebar.collapsed` 保存侧栏收起状态；`categories` 的顺序决定分类规则冲突时的覆盖顺序，越靠前优先级越高，其中 `uiSettings.appBehavior.excludedApplications` 的运行态消息项会额外带 `icon`，不写入配置文件。
+- `{ type: "rules", appVersion: "v...", rules: [...], applications: [{ name, displayName, path, categories, icon }, ...], edgeActions: [...], uiSettings: { sidebar: { collapsed }, update: { checkForUpdates, source }, ... }, ... }`；`appVersion` 来自程序集版本，仅用于配置界面展示，不写入配置文件；`uiSettings.sidebar.collapsed` 保存侧栏收起状态；`categories` 的顺序决定分类规则冲突时的覆盖顺序，越靠前优先级越高，其中 `uiSettings.appBehavior.excludedApplications` 的运行态消息项会额外带 `icon`，不写入配置文件。
 - `{ type: "application-selected", requestId: "...", name: "...", displayName: "...", path: "...", category: "...", icon: "..." }`
 - `{ type: "gesture-recorded", requestId: "...", button: "right|middle", pattern: ["Down", "Right"] }`
 - `{ type: "hotkey-recorded", requestId: "...", keys: ["Control", "W"] }`
@@ -274,6 +284,12 @@ src\pages
 - `{ type: "edge-action-failed", ... }`
 - `{ type: "config-result", operation: "save|export|import|reload|reset|action", success: true|false, message: "..." }`；`save` 成功只更新内部状态，其余明确操作结果显示 toast，任意失败均显示错误 toast。
 - `{ type: "webdav-result", operation: "test|save|restore", success: true/false, message: "..." }`
+- `{ type: "update-available", currentVersion, latestVersion, source, preferredSource, notes, publishedAt, htmlUrl, assetName, assetSize, manual }`：发现新版本；`source` 是实际提供发行版的源，`preferredSource` 是设置里选择的源，两者不同表示已自动回退；`manual` 为 `false` 时表示启动自动检查。
+- `{ type: "update-none", currentVersion }`：手动检查后确认已是最新版本。
+- `{ type: "update-error", message }`：检查更新失败。
+- `{ type: "update-progress", phase: "downloading|verifying|extracting|elevating", percent, receivedBytes, totalBytes }`：下载和准备进度。
+- `{ type: "update-failed", message }`：下载、校验或启动更新程序失败。
+- `{ type: "update-restarting", message }`：更新程序已启动，应用即将退出重启。
 
 `uiSettings.appBehavior` 当前包含：
 
@@ -331,6 +347,11 @@ src\pages
 `uiSettings.gestureSensitivity` 当前包含：
 
 - `percent`：0-200 的连续灵敏度百分比，默认 110
+
+`uiSettings.update` 当前包含：
+
+- `checkForUpdates`：进程启动时是否自动检查一次更新，默认 `true`
+- `source`：`gitee`（默认）或 `github`，作为检查更新时的首选源；另一个源只在首选源没有更高版本时才参与比较，两个源都会按版本号取较高者，且不会安装不高于当前版本的包
 
 ## 构建
 

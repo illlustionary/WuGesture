@@ -5,6 +5,7 @@ import AppSidebar from '@/components/sidebar/AppSidebar.vue'
 import BaseDialog from '@/components/dialog/BaseDialog.vue'
 import ConfirmDialog from '@/components/dialog/ConfirmDialog.vue'
 import QuickSearchDialog from '@/components/dialog/QuickSearchDialog.vue'
+import UpdateDialog from '@/components/dialog/UpdateDialog.vue'
 import GestureRuleDialog from '@/components/gesture/GestureRuleDialog.vue'
 import ScopeCreateDialog from '@/components/scope/ScopeCreateDialog.vue'
 import ScopePriorityNotice from '@/components/scope/ScopePriorityNotice.vue'
@@ -25,7 +26,7 @@ const editor = useGestureEditorContext()
 const navigation = useGestureEditorNavigation()
 const { isDarkTheme, toggleTheme } = useAppearanceTheme(editor)
 const quickSearch = useQuickSearch()
-const routeOrder = ['global', 'category', 'app', 'edge', 'exclusions', 'settings']
+const routeOrder = ['global', 'category', 'app', 'edge', 'exclusions', 'settings', 'about']
 const transitionDirection = ref('right')
 const priorityNoticeOpen = ref(false)
 const resetConfirmOpen = ref(false)
@@ -240,10 +241,24 @@ function confirmResetSettings() {
       @confirm="confirmSidebarAppRename"
     />
 
+    <UpdateDialog
+      :open="editor.state.updateDialogOpen"
+      :status="editor.state.updateStatus"
+      :info="editor.state.updateInfo"
+      :progress="editor.state.updateProgress"
+      :phase="editor.state.updatePhase"
+      :error="editor.state.updateError"
+      @close="editor.dismissUpdate()"
+      @update="editor.startUpdate()"
+      @cancel="editor.cancelUpdate()"
+      @retry="editor.retryUpdate()"
+      @open-release-page="editor.openReleasePage()"
+    />
+
     <ConfirmDialog
       :open="resetConfirmOpen"
       title="恢复默认设置"
-      message="这会恢复轨迹线、底部提示窗、应用行为、排除项和 WebDAV 设置。手势规则、分类、程序和边缘操作不会改变。"
+      message="这会恢复轨迹线、底部提示窗、应用行为、排除项、WebDAV 和更新设置。手势规则、分类、程序和边缘操作不会改变。"
       confirm-text="恢复默认"
       cancel-text="取消"
       tone="danger"

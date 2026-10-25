@@ -18,6 +18,7 @@ public sealed partial class MainForm : Form
     private readonly WebMessageRouter webMessageRouter;
     private readonly ConfigurationCoordinator configurationCoordinator;
     private readonly ApplicationPickerCoordinator applicationPickerCoordinator;
+    private readonly UpdateCoordinator updateCoordinator;
     private ConfiguredScopeContextProvider? scopeContextProvider;
     private LoadedGestureConfig? loadedConfig;
     private GestureService? gestureService;
@@ -33,6 +34,7 @@ public sealed partial class MainForm : Form
     private bool isUserPaused;
     private bool isConfigPaused;
     private bool isEditorPaused;
+    private bool hasWebUiLoaded;
     private int overlayRecoveryScheduled;
 
     public MainForm(bool startHiddenToTray = false)
@@ -55,6 +57,13 @@ public sealed partial class MainForm : Form
             TryPostWebMessage,
             (success, message, operation) => PostConfigResult(success, message, operation),
             () => this);
+        updateCoordinator = new UpdateCoordinator(
+            () => loadedConfig?.Config.UiSettings.Update,
+            TryPostWebMessage,
+            action => BeginInvokeSafe(action),
+            () => webViewHost.IsReady && hasWebUiLoaded,
+            () => Visible && WindowState != FormWindowState.Minimized,
+            RequestClose);
         webMessageRouter = new WebMessageRouter(
             CreateWebMessageHandlers(),
             HandleStatusRequest,
@@ -90,6 +99,7 @@ public sealed partial class MainForm : Form
             SystemEvents.PowerModeChanged -= OnPowerModeChanged;
             trayMenuController.Dispose();
             DisposeWebView();
+            updateCoordinator.Dispose();
             LevelOsdOverlay.Reset();
             gestureFeedbackCoordinator?.Dispose();
             DisposeMouseTrailForm();
@@ -171,7 +181,7 @@ public sealed partial class MainForm : Form
         edgeActionService.Start();
         ApplyGesturePauseState();
         AppLogger.Information("MainForm", "services-started", "Gesture and edge-action services are running.");
-
+        updateCoordinator.StartAutoCheck();
     }
 
     private void OnFormClosing(object? sender, FormClosingEventArgs e)
@@ -296,6 +306,7 @@ public sealed partial class MainForm : Form
 
             // Run after the tray menu or single-instance callback has returned so it cannot reclaim focus.
             BeginInvokeSafe(() => BringWindowToFront());
+            updateCoordinator.PostPendingPrompt();
         }
         finally
         {
@@ -403,6 +414,7 @@ public sealed partial class MainForm : Form
 
     private void DisposeWebView()
     {
+        hasWebUiLoaded = false;
         webViewHost.Dispose();
     }
 
@@ -507,6 +519,8 @@ public sealed partial class MainForm : Form
 
         PostStatus(isUserPaused ? "paused" : "running");
         PostRules();
+        hasWebUiLoaded = true;
+        updateCoordinator.PostPendingPrompt();
     }
 
     private Dictionary<string, Action<string>> CreateWebMessageHandlers()
@@ -530,7 +544,11 @@ public sealed partial class MainForm : Form
             [WebViewMessageTypes.ImportConfig] = _ => configurationCoordinator.Import(),
             [WebViewMessageTypes.ReloadRules] = _ => configurationCoordinator.Reload(),
             [WebViewMessageTypes.ResetRules] = _ => configurationCoordinator.Reset(),
-            [WebViewMessageTypes.PreviewLevelOsd] = PreviewLevelOsd
+            [WebViewMessageTypes.PreviewLevelOsd] = PreviewLevelOsd,
+            [WebViewMessageTypes.CheckUpdate] = _ => updateCoordinator.CheckForUpdate(manual: true),
+            [WebViewMessageTypes.StartUpdate] = _ => updateCoordinator.StartUpdate(),
+            [WebViewMessageTypes.CancelUpdate] = _ => updateCoordinator.Cancel(),
+            [WebViewMessageTypes.OpenUpdatePage] = _ => updateCoordinator.OpenReleasePage()
         };
     }
 

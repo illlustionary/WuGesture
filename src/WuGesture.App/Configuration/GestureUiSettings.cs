@@ -19,6 +19,8 @@ public sealed class GestureUiSettings
     public AppBehaviorUiSettings AppBehavior { get; set; } = new();
 
     public WebDavUiSettings WebDav { get; set; } = new();
+
+    public UpdateUiSettings Update { get; set; } = new();
 }
 
 public sealed class AppearanceUiSettings
@@ -69,6 +71,13 @@ public sealed class ExcludedApplicationConfig
     public string Path { get; set; } = "";
 
     public bool DisableEdgeActions { get; set; }
+}
+
+public sealed class UpdateUiSettings
+{
+    public bool CheckForUpdates { get; set; } = true;
+
+    public string Source { get; set; } = GestureConfigContract.UpdateSources.Gitee;
 }
 
 public sealed class WebDavUiSettings

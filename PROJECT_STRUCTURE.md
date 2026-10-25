@@ -35,6 +35,7 @@ D:\Desktop\WuGesture
 │     ├─ Configuration
 │     ├─ GestureEngine
 │     ├─ Overlay
+│     ├─ Updater
 │     └─ Web
 └─ tests
    └─ WuGesture.App.Tests
@@ -81,6 +82,7 @@ src\WuGesture.App
 - `ElevationLauncher.cs`：封装 `runas` 提权重启、UAC 取消/失败提示和“提权后本进程必须退出”的判定，`MainForm` 只负责在服务启动前调用它。
 - `ConfigurationCoordinator.cs`：所有“替换本地配置”的入口——保存、重载、恢复默认、本地导入/导出、WebDAV 测试/备份/恢复；由 `MainForm` 提供当前配置、应用回调、WebView 回执和对话框 owner，避免主窗体重复拼装 `GestureConfig` 并各自处理异常。
 - `ApplicationPickerCoordinator.cs`：处理“选择应用程序”“拾取窗口”“打开程序目录”三条 WebView 消息；文件对话框和窗口拾取都使用宿主提供的 owner，窗口拾取的光标颜色按配置主题（未显式指定时读系统偏好）解析，失败统一通过回执回调上报。
+- `UpdateCoordinator.cs`：进程启动时（仅一次）按 `uiSettings.update` 的开关和更新源检查最新发行版，并把结果、下载进度和失败原因转发给设置页/更新弹窗；检查按版本号比较两个源的发行版并取较高者，开始下载前再次确认更新包版本高于当前版本，避免回退安装。下载、解压和启动更新脚本都在后台线程完成，只有需要退出换文件时才回到 UI 线程关闭主窗体。配置界面完成首次 `get-status` 前或窗口位于托盘时先缓存提示，等前端监听器就绪或托盘恢复后再显示。
 - `SystemTheme.cs`：读取 Windows 的“应用模式”偏好，供系统标题栏配色和窗口拾取光标共用，避免同一判断分散在多处。
 - `WindowStateStore.cs`：负责配置窗口位置、尺寸和最大化状态的读写、校验与屏幕边界规范化。
 - `AppIdentity.cs` 集中应用显示名、AppData 子目录、自启动注册表值、单实例 IPC 请求/确认事件名和内部启动参数；开机自启动和管理员重启会直接调用当前 `WuGesture.exe`。
@@ -95,6 +97,7 @@ src\WuGesture.App
 - `Configuration`：手势配置模型、默认值、归一化、存储、WebDAV 同步和配置契约。
 - `GestureEngine`：全局输入、手势识别、规则匹配、边缘操作和动作执行核心。
 - `Overlay`：透明覆盖层、轨迹/提示/OSD 渲染及其 UI 线程反馈协调。
+- `Updater`：发行版查询、更新包下载/校验/解压和退出后替换安装目录的 PowerShell 辅助脚本；不直接改动正在运行的安装目录。
 
 资源：
 
@@ -238,6 +241,7 @@ src\WuGesture.App\Configuration
 - `uiSettings.gestureSensitivity`：手势灵敏度配置，包含 `percent`，范围 0-200，默认 110；100 对应标准手感，数值越高越容易识别短距离手势。
 - `uiSettings.appBehavior`：应用行为设置，包含 `launchAtStartup`、`showConfigWindowOnLaunch`、`runAsAdministrator`、`gesturePaused`、`closeButtonBehavior`、`targetWindowMode`、`disableGesturesInFullscreen`、`disableEdgeActionsInFullscreen` 和 `excludedApplications`；`showConfigWindowOnLaunch` 默认开启，控制普通启动时是否显示配置窗口，关闭后仅后台驻留并可从托盘打开，开机自启动始终后台运行。`runAsAdministrator` 开启后会在服务启动前以管理员权限重启，UAC 被拒绝或提权失败时应用不启动并直接退出，普通启动会先提示原因，后台启动只记录日志。关闭按钮行为支持 `minimize-to-tray`、`minimize-to-taskbar`、`exit`。`targetWindowMode` 支持默认的 `start-window` 和 `current-window`。全屏禁用开关默认关闭，分别停止手势识别和边缘操作。排除项包含 `name`、`displayName`、`path` 和 `disableEdgeActions`；命中的程序不执行鼠标手势，勾选 `disableEdgeActions` 时也会禁用边缘操作。
 - `uiSettings.webDav`：WebDAV 备份设置，包含 `address`、`userName`、`password` 和 `remotePath`。设置页可把当前完整配置导出到本地 JSON，或从本地 JSON 导入并覆盖主配置文件；本地导入/导出不包含窗口状态。设置页也可测试 WebDAV 连接；测试当前配置成功后，才允许把当前完整配置保存到 WebDAV，或从 WebDAV 下载配置并覆盖本地配置；恢复后会刷新规则匹配、边缘操作、应用行为和 UI 设置。
+- `uiSettings.update`：更新设置，包含 `checkForUpdates`（默认 `true`）和 `source`（`gitee` 或 `github`，默认 `gitee`），编辑入口在“设置 > 更新”；侧栏最外层的“关于&更新”页只读展示当前取值并提供检查更新按钮。进程启动时只自动检查一次；关闭开关后手动检查仍可用。Gitee 是默认源，国内访问更稳定；检查时会比较两个源的版本号并取较高者，因此任一源落后都不会造成回退安装，两个源都不可用时才报告失败。更新包下载到 `%LocalAppData%\WuGesture\updates\<版本>`，校验通过后由独立的 PowerShell 脚本在当前进程退出后替换安装目录并重启，替换日志写入 `%LocalAppData%\WuGesture\logs\update-*.log`。
 
 默认初始配置不包含 WebDAV 凭据、分类或具体程序归属，仅保留全局规则、界面偏好及已启用的边缘操作；后续新增配置字段仍由默认值和归一化逻辑补齐。
 
@@ -272,6 +276,7 @@ src\WuGesture.App\Web\PROJECT_STRUCTURE.md
 
 - 配置界面由 WebView2 承载：桌面宿主通过虚拟主机 `https://gesture.wu.philosophy/` 加载宿主输出目录中的 `Web`；窗口使用 Windows 系统标题栏，标题为 `WuGesture`。界面结构、侧栏和页面交互见 Web 子项目文档。
 - 宿主下发的 `rules` WebView 消息包含程序集 `appVersion`、配置、规则、程序、边缘操作和 UI 设置；运行态程序和排除项会附带应用图标。
+- 更新流程使用独立消息：前端发送 `check-update`、`start-update`、`cancel-update`、`open-update-page`，宿主回传 `update-available`、`update-none`、`update-error`、`update-progress`、`update-failed`、`update-restarting`；具体字段见 Web 子项目文档。
 - `WuGesture.App.csproj` 在 `.NET` 构建前自动执行 `pnpm exec vite build --outDir <宿主输出目录>\Web`；Vite 会清空该最终输出目录，源码 `Web` 目录不会被覆盖。普通构建输出到 `$(OutputPath)\Web`，`dotnet publish -o` 输出到实际 `$(PublishDir)\Web`，不生成或复制中间 `dist` 目录。
 - 前端构建是增量的：`WebFrontendSource` 收集 `Web` 目录下除 `node_modules` 和 `*.md` 之外的所有文件，作为 `BuildWebFrontend` 目标的 `Inputs`，输出为宿主 `Web\index.html`；源文件都不比 `index.html` 新时 MSBuild 直接跳过整个 `vite build`（只改 C# 的构建不会再跑前端）。Vite 会对资源名做哈希，任何真实前端改动都会重写 `index.html`，因此这个比较不会漏构建。
 
@@ -298,6 +303,7 @@ tests\WuGesture.App.Tests
 - `GestureConfigStore`：当前配置保存、旧/损坏配置的备份重置、未来版本保护和旧导入拒绝；保存后不残留临时文件、无效配置不会覆盖原文件。
 - `ConfigurationCoordinator`：编辑器消息到 `GestureConfig` 的全字段映射、缺省分区按空列表处理、`uiSettings` 缺失时保留磁盘上的设置。
 - `ProgramActionTests`：运行程序动作的路径/参数归一化、空路径忽略和非 Shell 启动参数构造。
+- `UpdateService`：发行标签解析与版本比较、Windows x64 更新包筛选（排除 debug/预发行包）、ZIP 路径穿越防护和更新源归一化。
 
 ## 构建与发布
 
@@ -339,9 +345,9 @@ dotnet test WuGesture.slnx
 
 - `scripts\publish-app.ps1`：发布应用目录的通用步骤，负责关闭运行实例、执行 `dotnet publish`、校验直接构建到输出目录的 Web 前端产物，并复制 `WebView2Loader.dll`；它会将同一个应用目录同时传给 `dotnet publish -o` 和 MSBuild `OutputPath`，避免常规编译产物落到其他目录。
 - `scripts\package-debug.ps1`：无需参数，调用 `publish-app.ps1` 生成 Debug `win-x64` 发布目录和 `WuGesture-debug-windows-x64.zip`。
-- `scripts\package-release.ps1`：基于已创建的 `v*` Git 标签生成 framework-dependent `win-x64` 发布目录、版本化 ZIP 包和从相邻标签之间提交整理的 `RELEASE_NOTES.md`；ZIP 内的根目录固定为 `WuGesture`，而 ZIP 文件名保留版本号。发行包不包含 .NET，缺少 .NET 10 Desktop Runtime 时由 .NET Host 显示系统安装提示。
-- `.github\workflows\release.yml`：GitHub 收到 `v*` 标签后构建发行包、创建 GitHub Release；配置 `GITEE_REPOSITORY` 和 `GITEE_TOKEN` secrets 后，会镜像 `main` 和标签到 Gitee，并将相同的附件和更新说明发布至 Gitee。
-- `scripts\upload-gitee-release.ps1`：由 GitHub Actions 调用 Gitee API 创建发行版和上传附件；令牌只通过工作流 secret 传入，不存入仓库。
+- `scripts\package-release.ps1`：基于已创建的 `v*` Git 标签生成 framework-dependent `win-x64` 发布目录、版本化 ZIP 包、`SHA256SUMS.txt` 和从相邻标签之间提交整理的 `RELEASE_NOTES.md`；ZIP 内的根目录固定为 `WuGesture`，而 ZIP 文件名保留版本号。发行包不包含 .NET，缺少 .NET 10 Desktop Runtime 时由 .NET Host 显示系统安装提示。应用内更新会校验该 SHA256 文件，因此 GitHub 和 Gitee Release 都必须同时上传 ZIP 与 `SHA256SUMS.txt`。
+- `.github\workflows\release.yml`：GitHub 收到 `v*` 标签后构建发行包、创建 GitHub Release 并上传 ZIP 与 `SHA256SUMS.txt`；配置 `GITEE_REPOSITORY` 和 `GITEE_TOKEN` secrets 后，会镜像 `main` 和标签到 Gitee，并将相同的附件和更新说明发布至 Gitee。
+- `scripts\upload-gitee-release.ps1`：由 GitHub Actions 调用 Gitee API 创建发行版并逐个上传附件（ZIP 和校验文件）；令牌只通过工作流 secret 传入，不存入仓库。
 
 默认发布输出：
 

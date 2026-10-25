@@ -54,6 +54,11 @@ export const WINDOW_TARGET_MODES = {
   currentWindow: 'current-window'
 }
 
+export const UPDATE_SOURCES = {
+  gitee: 'gitee',
+  github: 'github'
+}
+
 export const LEVEL_OSD_POSITIONS = [
   { value: 'center', label: '居中' },
   { value: 'top-center', label: '顶部居中' },
@@ -84,13 +89,23 @@ export const WEBVIEW_MESSAGE_TYPES = {
   reloadRules: 'reload-rules',
   resetRules: 'reset-rules',
   previewLevelOsd: 'preview-level-osd',
+  checkUpdate: 'check-update',
+  startUpdate: 'start-update',
+  cancelUpdate: 'cancel-update',
+  openUpdatePage: 'open-update-page',
   status: 'status',
   rules: 'rules',
   configResult: 'config-result',
   webDavResult: 'webdav-result',
   applicationSelected: 'application-selected',
   gestureRecorded: 'gesture-recorded',
-  hotkeyRecorded: 'hotkey-recorded'
+  hotkeyRecorded: 'hotkey-recorded',
+  updateAvailable: 'update-available',
+  updateNone: 'update-none',
+  updateError: 'update-error',
+  updateProgress: 'update-progress',
+  updateFailed: 'update-failed',
+  updateRestarting: 'update-restarting'
 }
 
 export const DIRECTION_SYMBOLS = {
@@ -154,4 +169,9 @@ export const CLOSE_BUTTON_BEHAVIOR_OPTIONS = [
 export const WINDOW_TARGET_MODE_OPTIONS = [
   { value: WINDOW_TARGET_MODES.startWindow, label: '起始窗口' },
   { value: WINDOW_TARGET_MODES.currentWindow, label: '当前窗口' }
+]
+
+export const UPDATE_SOURCE_OPTIONS = [
+  { value: UPDATE_SOURCES.gitee, label: 'Gitee（推荐）' },
+  { value: UPDATE_SOURCES.github, label: 'GitHub' }
 ]

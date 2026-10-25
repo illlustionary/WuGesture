@@ -95,7 +95,12 @@ internal static class WebViewRulesPayloadFactory
                     icon = ApplicationIconDataUrl.FromExecutable(application.Path)
                 }).ToArray()
             },
-            webDav = uiSettings.WebDav
+            webDav = uiSettings.WebDav,
+            update = new
+            {
+                checkForUpdates = uiSettings.Update.CheckForUpdates,
+                source = uiSettings.Update.Source
+            }
         };
     }
 }

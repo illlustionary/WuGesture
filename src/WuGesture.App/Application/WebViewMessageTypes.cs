@@ -21,6 +21,10 @@ internal static class WebViewMessageTypes
     public const string ReloadRules = "reload-rules";
     public const string ResetRules = "reset-rules";
     public const string PreviewLevelOsd = "preview-level-osd";
+    public const string CheckUpdate = "check-update";
+    public const string StartUpdate = "start-update";
+    public const string CancelUpdate = "cancel-update";
+    public const string OpenUpdatePage = "open-update-page";
 
     public const string GestureRecorded = "gesture-recorded";
     public const string GestureActionFailed = "gesture-action-failed";
@@ -31,4 +35,10 @@ internal static class WebViewMessageTypes
     public const string ApplicationSelected = "application-selected";
     public const string ConfigResult = "config-result";
     public const string WebDavResult = "webdav-result";
+    public const string UpdateAvailable = "update-available";
+    public const string UpdateNone = "update-none";
+    public const string UpdateError = "update-error";
+    public const string UpdateProgress = "update-progress";
+    public const string UpdateFailed = "update-failed";
+    public const string UpdateRestarting = "update-restarting";
 }

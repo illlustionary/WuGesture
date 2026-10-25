@@ -4,6 +4,7 @@ import {
   EDGE_LOCATIONS,
   EDGE_TRIGGER_TYPES,
   OPERATIONS,
+  UPDATE_SOURCES,
   WINDOW_TARGET_MODES,
   WHEEL_DIRECTIONS
 } from './gestureEditorOptions'
@@ -78,6 +79,10 @@ export const DEFAULT_UI_SETTINGS = {
     userName: '',
     password: '',
     remotePath: ''
+  },
+  update: {
+    checkForUpdates: true,
+    source: UPDATE_SOURCES.gitee
   }
 }
 
