@@ -28,13 +28,13 @@
 git push github v0.97
 ```
 
-GitHub Actions 的 `.github/workflows/release.yml` 在收到标签后生成 framework-dependent `win-x64` 发行包、ZIP 文件、`SHA256SUMS.txt` 和基于相邻标签提交整理的更新说明，并创建 GitHub Release。ZIP 内的根目录固定为 `WuGesture`，而 ZIP 文件名保留版本号，例如 `WuGesture-v0.97-windows-x64.zip`。`SHA256SUMS.txt` 记录 ZIP 的 SHA256，应用内更新下载完成后会先校验它，因此两个发行渠道都必须同时上传 ZIP 和校验文件。仅需在本地生成待检查发行包时，先创建对应标签，再执行：
+GitHub Actions 的 `.github/workflows/release.yml` 在收到标签后生成 framework-dependent `win-x64` 发行包、ZIP 文件和基于相邻标签提交整理的更新说明，并创建 GitHub Release。ZIP 内的根目录固定为 `WuGesture`，而 ZIP 文件名保留版本号，例如 `WuGesture-v0.97-windows-x64.zip`。更新说明末尾会以 `SHA256 (WuGesture-v0.97-windows-x64.zip): <哈希>` 的格式记录 ZIP 的 SHA256，应用内更新下载完成后直接读取发行说明（Release 描述）里的这行校验，不再附加或下载单独的校验文件；重新运行工作流覆盖 ZIP 时也会同步刷新更新说明。仅需在本地生成待检查发行包时，先创建对应标签，再执行：
 
 ```powershell
 .\scripts\package-release.ps1 -Version v0.97
 ```
 
-该命令使用 `artifacts\release\` 作为唯一输出根目录，其中包含 `WuGesture\`、版本化 ZIP、`SHA256SUMS.txt` 和 `RELEASE_NOTES.md`。通用发布命令单独使用 `artifacts\publish\WuGesture\`。
+该命令使用 `artifacts\release\` 作为唯一输出根目录，其中包含 `WuGesture\`、版本化 ZIP 和 `RELEASE_NOTES.md`；SHA256 也会打印到控制台，方便手工核对。通用发布命令单独使用 `artifacts\publish\WuGesture\`。
 
 ## 自动更新
 
@@ -54,7 +54,7 @@ GitHub Actions 的 `.github/workflows/release.yml` 在收到标签后生成 fram
 - `GITEE_REPOSITORY`：Gitee 仓库路径，例如 `neko_nya/WuGesture`。
 - `GITEE_TOKEN`：拥有仓库写入权限的 Gitee 私人令牌。
 
-两个 secret 都已配置时，工作流会镜像 `main` 和发行标签到 Gitee，并发布相同的附件（ZIP 和 `SHA256SUMS.txt`）和更新说明。未配置时，Gitee 同步会被跳过，GitHub Release 不受影响。
+两个 secret 都已配置时，工作流会镜像 `main` 和发行标签到 Gitee，并发布相同的 ZIP 附件和更新说明（含 SHA256 校验行）。未配置时，Gitee 同步会被跳过，GitHub Release 不受影响。
 
 首次使用双远程时，可保留 Gitee 为 `origin`，并添加 GitHub 远程：
 

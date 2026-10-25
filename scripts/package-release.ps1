@@ -18,7 +18,6 @@ if ([string]::IsNullOrWhiteSpace($OutputPath)) {
 $publishDirectory = Join-Path $OutputPath "WuGesture"
 $archivePath = Join-Path $OutputPath "WuGesture-$Version-windows-x64.zip"
 $notesPath = Join-Path $OutputPath "RELEASE_NOTES.md"
-$checksumsPath = Join-Path $OutputPath "SHA256SUMS.txt"
 
 if (Test-Path $OutputPath) {
     Remove-Item -LiteralPath $OutputPath -Recurse -Force
@@ -46,14 +45,22 @@ if ($changes.Count -eq 0) {
     $changes = @("- 首个自动发布版本。")
 }
 
-@($notesHeader, "", $changes) | Set-Content -LiteralPath $notesPath -Encoding utf8
 Compress-Archive -LiteralPath $publishDirectory -DestinationPath $archivePath -CompressionLevel Optimal -Force
 
-# The in-app updater verifies the downloaded package against this file before extracting it.
+# The in-app updater reads the package hash from the release notes, so the checksum ships with the
+# release description instead of forcing users to download a separate file.
+$archiveName = Split-Path -Leaf $archivePath
 $archiveHash = (Get-FileHash -LiteralPath $archivePath -Algorithm SHA256).Hash.ToLowerInvariant()
-"$archiveHash  $(Split-Path -Leaf $archivePath)" | Set-Content -LiteralPath $checksumsPath -Encoding ascii
+
+@(
+    $notesHeader,
+    "",
+    $changes,
+    "",
+    "SHA256 (${archiveName}): $archiveHash"
+) | Set-Content -LiteralPath $notesPath -Encoding utf8
 
 Write-Host "Release package complete:"
 Write-Host "Archive: $archivePath"
-Write-Host "Checksums: $checksumsPath"
 Write-Host "Notes: $notesPath"
+Write-Host "SHA256 ($archiveName): $archiveHash"
