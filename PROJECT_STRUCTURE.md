@@ -78,18 +78,19 @@ src\WuGesture.App
 - `WebViewRulesPayloadFactory.cs`：把已加载的手势配置转换为 WebView `rules` 消息 payload；其中 `appVersion` 提供程序集版本给配置界面，`uiSettings.appearance` 将配置界面主题偏好传给前端，应用程序和排除项的运行态消息项会补充应用图标 PNG data URL。
 - `ApplicationIconDataUrl.cs`：从可执行文件提取图标并转换为 WebView 可用的 PNG data URL；按可执行文件路径 + 文件长度 + 最后写入时间缓存结果（最多 128 项，溢出整体清空），避免每次 `rules` payload 都重新解码所有已配置程序和排除项的图标。
 - `WebMessageRouter.cs`：解析 WebView 入站消息并按 `type` 分发到 `MainForm` 提供的处理器字典；字符串消息交给状态查询回调，未知类型只记一条警告，JSON 解析失败或处理器抛异常时统一记录 `message-failed` 日志并回调失败处理，避免坏消息穿透到 WinForms 消息循环。
-- `TrayMenuController.cs`：持有通知区图标、右键菜单和灰阶暂停图标（用 `DestroyIcon` 释放临时 HICON），对外只暴露“打开配置 / 暂停 / 退出”三个动作和 `SetPaused`，`MainForm` 不再直接操作托盘资源。
+- `TrayMenuController.cs`：持有通知区图标、右键菜单和灰阶暂停图标（用 `DestroyIcon` 释放临时 HICON），对外只暴露“打开配置 / 暂停 / 退出”三个动作、`SetPaused` 和 `ApplyAppearance`，`MainForm` 不再直接操作托盘资源。右键菜单使用 `TrayMenuRenderer` 自绘、按主配置 `uiSettings.appearance`（含 `system` 解析）切换浅/深配色，并在 `Opened`/`SizeChanged` 时用圆角 `Region` 裁剪窗外形；菜单字号、内边距和分隔线高度都按主屏 DPI 缩放，暂停项用强调色圆点代替默认勾选框。
+- `TrayMenuRenderer.cs`：托盘右键菜单的 `ToolStripRenderer` 实现，集中维护与 Web 配置界面一致的浅色/深色 `TrayMenuPalette`；绘制圆角边框、悬停/按下圆角行、扁平分隔线和暂停项的强调色圆点，并隐藏默认勾选框。菜单文字不依赖 ToolStrip 的默认文本矩形（它会忽略项内边距），而是按行高垂直居中、按左侧内边距重新绘制；分隔线使用项内局部坐标绘制，圆角路径同时供 `TrayMenuController` 裁剪菜单区域。
 - `ElevationLauncher.cs`：封装 `runas` 提权重启、UAC 取消/失败提示和“提权后本进程必须退出”的判定，`MainForm` 只负责在服务启动前调用它。
 - `ConfigurationCoordinator.cs`：所有“替换本地配置”的入口——保存、重载、恢复默认、本地导入/导出、WebDAV 测试/备份/恢复；由 `MainForm` 提供当前配置、应用回调、WebView 回执和对话框 owner，避免主窗体重复拼装 `GestureConfig` 并各自处理异常。
 - `ApplicationPickerCoordinator.cs`：处理“选择应用程序”“拾取窗口”“打开程序目录”三条 WebView 消息；文件对话框和窗口拾取都使用宿主提供的 owner，窗口拾取的光标颜色按配置主题（未显式指定时读系统偏好）解析，失败统一通过回执回调上报。
 - `UpdateCoordinator.cs`：进程启动时（仅一次）按 `uiSettings.update` 的开关和更新源检查最新发行版，并把结果、下载进度和失败原因转发给设置页/更新弹窗；检查按版本号比较两个源的发行版并取较高者，开始下载前再次确认更新包版本高于当前版本，避免回退安装。下载、解压和启动更新脚本都在后台线程完成，只有需要退出换文件时才回到 UI 线程关闭主窗体。重启时沿用原启动参数并去掉 `--elevated-relaunch` 和上一次的 `--updated`；真正替换成功后由更新脚本追加 `--updated`，回滚重启则不带该参数。配置界面完成首次 `get-status` 前或窗口位于托盘时先缓存提示，等前端监听器就绪或托盘恢复后再显示。
-- `SystemTheme.cs`：读取 Windows 的“应用模式”偏好，供系统标题栏配色和窗口拾取光标共用，避免同一判断分散在多处。
+- `SystemTheme.cs`：读取 Windows 的“应用模式”偏好，供系统标题栏配色、窗口拾取光标和托盘菜单主题共用，避免同一判断分散在多处。
 - `WindowStateStore.cs`：负责配置窗口位置、尺寸和最大化状态的读写、校验与屏幕边界规范化。
 - `AppIdentity.cs` 集中应用显示名、AppData 子目录、自启动注册表值、单实例 IPC 请求/确认事件名和内部启动参数（`--startup`、`--elevated-relaunch`、`--updated`）；开机自启动和管理员重启会直接调用当前 `WuGesture.exe`。
 - `ConfigStorageContract.cs` 集中本地配置文件名和窗口状态文件名；本地导入/导出只处理主配置文件，不包含窗口状态文件。
 - `WebViewHostContract.cs` 集中 WebView2 虚拟主机、入口 URL、宿主输出目录中的 Web 前端路径片段和 WebView2 profile 目录名，并负责把 profile 目录解析到 `%LocalAppData%\WuGesture\WebView2`。
 - 配置窗口最小尺寸为 1280x720；首次启动会以至少该尺寸居中显示，关闭窗口时会保存窗口位置、大小和最大化状态，并拒绝恢复小于该尺寸（包括 0x0）的无效状态。窗口按设置选择隐藏到托盘、最小化到任务栏或直接退出；标题栏关闭按钮、Alt+F4 和外部 `WM_CLOSE`（鼠标手势“关闭窗口”、自动化工具、任务管理器）走同一套判定，只有设置为“退出应用”或系统关机/`Application.Exit` 才结束进程。隐藏到托盘会先最小化再释放 WebView2 配置界面并回收浏览器进程，托盘恢复时重建 WebView2；释放与回收结果会写入 `hidden-to-tray`、`disposed` 和 `browser-process-exited` / `browser-process-reclaimed` 日志。通过托盘菜单“退出”始终会真正释放后台手势服务并结束进程。
-- 托盘菜单提供“打开配置”、“暂停 WuGesture”和“退出”；暂停项会暂停手势识别和边缘操作，但保留后台进程和配置界面。暂停时仅系统托盘图标切换为灰阶图标，并在托盘提示文字中标记“已暂停”，任务栏窗口图标不变。
+- 托盘菜单提供“打开配置”、“暂停 WuGesture”和“退出”；菜单为自绘圆角样式并跟随配置界面主题（浅色/深色/跟随系统），不再使用系统默认灰色下拉框。暂停项会暂停手势识别和边缘操作，但保留后台进程和配置界面。暂停时仅系统托盘图标切换为灰阶图标，并在托盘提示文字中标记“已暂停”，任务栏窗口图标不变。
 
 职责目录：
 

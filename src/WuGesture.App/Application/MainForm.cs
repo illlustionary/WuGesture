@@ -92,7 +92,11 @@ public sealed partial class MainForm : Form
             WindowState = FormWindowState.Minimized;
         }
 
-        trayMenuController = new TrayMenuController(RestoreFromTray, SetUserPaused, ExitFromTray);
+        trayMenuController = new TrayMenuController(
+            RestoreFromTray,
+            SetUserPaused,
+            ExitFromTray,
+            loadedConfig.Config.UiSettings.Appearance);
 
         Load += OnLoad;
         Resize += OnResize;
