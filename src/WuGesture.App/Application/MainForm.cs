@@ -215,7 +215,16 @@ public sealed partial class MainForm : Form
 
     private void OnResize(object? sender, EventArgs e)
     {
-        if (!removeTaskbarButtonAfterMinimize || WindowState != FormWindowState.Minimized)
+        if (WindowState != FormWindowState.Minimized)
+        {
+            // An update check that finished while the window was hidden or minimized is cached until the UI is
+            // promptable. Flush it as soon as the window is back on screen, otherwise it stays stuck until the
+            // next check or WebView reload.
+            updateCoordinator.PostPendingPrompt();
+            return;
+        }
+
+        if (!removeTaskbarButtonAfterMinimize)
         {
             return;
         }
@@ -313,9 +322,14 @@ public sealed partial class MainForm : Form
             ShowInTaskbar = true;
             Opacity = 1;
 
-            // Run after the tray menu or single-instance callback has returned so it cannot reclaim focus.
-            BeginInvokeSafe(() => BringWindowToFront());
-            updateCoordinator.PostPendingPrompt();
+            // Run after the tray menu or single-instance callback has returned so it cannot reclaim focus, and
+            // flush the cached update prompt only once the window is actually restored: while it is still
+            // minimized the coordinator defers the prompt, so flushing before this would drop it.
+            BeginInvokeSafe(() =>
+            {
+                BringWindowToFront();
+                updateCoordinator.PostPendingPrompt();
+            });
         }
         finally
         {
