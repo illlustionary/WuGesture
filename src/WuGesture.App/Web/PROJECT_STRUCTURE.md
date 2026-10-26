@@ -60,7 +60,7 @@ src
 - `src\router\routes\scopeRoutes.js`：分类和程序动态子路由。
 - `src\router\routes\edgeRoutes.js`：触发角、摩擦边和边缘滚动子路由。
 - `src\router\routes\settingsRoutes.js`：各设置项子路由。
-- `src\App.vue`：侧栏/页面工作区、路由切换过渡和全局弹窗挂载；Windows 标题栏由桌面宿主提供，分类/程序侧栏操作和主题状态由组合式函数协调。
+- `src\App.vue`：侧栏/页面工作区、路由切换过渡和全局弹窗挂载；Windows 标题栏由桌面宿主提供，分类/程序侧栏操作和主题状态由组合式函数协调。全局弹窗不会随页面卸载，因此 `App.vue` 在路由路径变化时统一关闭应用选择器、手势规则编辑器、快速搜索、规则生效顺序、恢复默认设置和分类/程序新增重命名弹窗，避免切换页面后残留；更新弹窗属于全局更新流程，不受路由切换影响。
 - `src\icons\appIcons.js`：本地 SVG 图标的唯一显式注册表；使用文件名作为图标名称，供 `AppIcon` 和业务组件按名称查找。
 - `src\styles.scss`：编辑器全局设计 token、reset、通用按钮、输入框、弹窗和图标样式；常用布局/区块/表单/列表样式优先用 UnoCSS shortcuts，复杂动态样式和组件专属样式放在对应 `.vue` 文件的 scoped SCSS 中。
 
