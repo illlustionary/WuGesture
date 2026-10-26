@@ -1,3 +1,4 @@
+using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 using WuGesture.App.GestureEngine;
 
@@ -15,6 +16,12 @@ internal sealed class TrayMenuController : IDisposable
     private const int ItemLeftPadding = 24;
     private const int ItemRightPadding = 18;
     private const int ItemVerticalPadding = 7;
+
+    /// <summary>
+    /// Multiplies the grayscale luminance of the paused icon. Converting to gray alone barely changes the
+    /// white ring of the app icon, so the whole icon is darkened as well and reads as disabled at 16 px.
+    /// </summary>
+    private const float PausedIconBrightness = 0.75f;
 
     private readonly NotifyIcon trayIcon = new();
     private readonly ContextMenuStrip trayMenu = new();
@@ -53,7 +60,7 @@ internal sealed class TrayMenuController : IDisposable
         ApplyAppearance(appearance);
 
         normalTrayIcon = Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? (Icon)SystemIcons.Application.Clone();
-        pausedTrayIcon = CreateGrayscaleIcon(normalTrayIcon);
+        pausedTrayIcon = CreatePausedIcon(normalTrayIcon);
         trayIcon.Text = AppIdentity.DisplayName;
         trayIcon.Icon = normalTrayIcon;
         trayIcon.ContextMenuStrip = trayMenu;
@@ -152,19 +159,43 @@ internal sealed class TrayMenuController : IDisposable
         return Math.Max(1f, graphics.DpiX / 96f);
     }
 
-    private static Icon CreateGrayscaleIcon(Icon source)
+    private static Icon CreatePausedIcon(Icon source)
     {
         using var bitmap = source.ToBitmap();
-        for (var y = 0; y < bitmap.Height; y++)
+        using var gray = new Bitmap(bitmap.Width, bitmap.Height, PixelFormat.Format32bppArgb);
+        using (var graphics = Graphics.FromImage(gray))
+        using (var attributes = new ImageAttributes())
         {
-            for (var x = 0; x < bitmap.Width; x++)
+            // Desaturate and darken every pixel (including the white ring) so the paused icon is obvious at
+            // 16 px instead of only recolouring the logo while keeping the bright white circle. Each row is
+            // one output channel, so the luminance weights sit in the column of the source channel.
+            var red = 0.299f * PausedIconBrightness;
+            var green = 0.587f * PausedIconBrightness;
+            var blue = 0.114f * PausedIconBrightness;
+            attributes.SetColorMatrix(new ColorMatrix(new[]
             {
-                var color = bitmap.GetPixel(x, y);
-                var gray = (int)Math.Round(color.R * 0.299 + color.G * 0.587 + color.B * 0.114);
-                bitmap.SetPixel(x, y, Color.FromArgb(color.A, gray, gray, gray));
-            }
+                new[] { red, red, red, 0f, 0f },
+                new[] { green, green, green, 0f, 0f },
+                new[] { blue, blue, blue, 0f, 0f },
+                new[] { 0f, 0f, 0f, 1f, 0f },
+                new[] { 0f, 0f, 0f, 0f, 1f }
+            }));
+            graphics.DrawImage(
+                bitmap,
+                new Rectangle(0, 0, bitmap.Width, bitmap.Height),
+                0,
+                0,
+                bitmap.Width,
+                bitmap.Height,
+                GraphicsUnit.Pixel,
+                attributes);
         }
 
+        return ToIcon(gray);
+    }
+
+    private static Icon ToIcon(Bitmap bitmap)
+    {
         var handle = bitmap.GetHicon();
         try
         {
