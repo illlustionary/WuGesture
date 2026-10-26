@@ -23,6 +23,7 @@ public sealed partial class MainForm
 
     private void ApplyWindowTheme(AppearanceUiSettings appearance)
     {
+        trayMenuController?.ApplyAppearance(appearance);
         if (!TryResolveWindowThemeColors(appearance, out var captionColor, out var textColor, out var useDarkPalette))
         {
             return;
