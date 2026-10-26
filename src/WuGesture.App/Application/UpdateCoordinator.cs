@@ -298,7 +298,11 @@ internal sealed class UpdateCoordinator : IDisposable
         var version = availableRelease.Version;
         if (!isWebViewReady())
         {
-            pendingPrompt = !manual;
+            if (!manual)
+            {
+                DeferPrompt("the configuration UI is not ready yet");
+            }
+
             return;
         }
 
@@ -311,7 +315,7 @@ internal sealed class UpdateCoordinator : IDisposable
 
             if (!canPrompt())
             {
-                pendingPrompt = true;
+                DeferPrompt("the configuration window is hidden or minimized");
                 return;
             }
         }
@@ -319,6 +323,23 @@ internal sealed class UpdateCoordinator : IDisposable
         PostAvailable(availableRelease, manual);
         promptedVersion = version;
         pendingPrompt = false;
+        AppLogger.Information(
+            "UpdateCoordinator",
+            "update-prompt-posted",
+            $"Showing update {version} in the configuration UI.");
+    }
+
+    private void DeferPrompt(string reason)
+    {
+        if (!pendingPrompt)
+        {
+            AppLogger.Information(
+                "UpdateCoordinator",
+                "update-prompt-deferred",
+                $"Keeping update {availableRelease?.Version} for later because {reason}.");
+        }
+
+        pendingPrompt = true;
     }
 
     private void PostAvailable(UpdateReleaseInfo release, bool manual)
