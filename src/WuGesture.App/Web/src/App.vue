@@ -57,9 +57,42 @@ const {
 
 editor.initialize()
 
+// 全局弹窗挂在 App 上，路由切换时不会随页面卸载；侧栏层级高于弹窗遮罩，用户可以在弹窗打开时
+// 切换页面，因此这里在路径变化时统一关闭这些弹窗。更新弹窗属于全局更新流程，不在此处关闭。
+function closeRouteDialogs() {
+  if (overlay.applicationPickerOpen) {
+    overlay.closeApplicationPicker()
+  }
+
+  if (overlay.gestureEditorOpen) {
+    overlay.closeGestureEditor()
+  }
+
+  if (quickSearch.isOpen) {
+    quickSearch.close()
+  }
+
+  priorityNoticeOpen.value = false
+  resetConfirmOpen.value = false
+
+  if (categoryDialogOpen.value) {
+    closeCategoryDialog()
+  }
+
+  if (categoryRenameDialogOpen.value) {
+    closeCategoryRenameDialog()
+  }
+
+  if (appRenameDialogOpen.value) {
+    closeAppRenameDialog()
+  }
+}
+
 watch(
   () => route.path,
   (nextPath, previousPath) => {
+    closeRouteDialogs()
+
     const nextIndex = routeOrder.indexOf(navigation.getRouteGroup(nextPath))
     const previousIndex = routeOrder.indexOf(navigation.getRouteGroup(previousPath))
 
