@@ -23,7 +23,7 @@ function commit() {
 <template>
   <SettingsSectionCard
     title="更新"
-    note="Gitee 位于国内，通常访问更稳定；Gitee 暂时没有可用的发行版本时会自动比较 GitHub。只有发行版本号高于当前版本时才会提示更新。"
+    note="Gitee 国内访问更稳定；Gitee 查询失败时会自动从 GitHub 降级检查更新。"
   >
     <SettingsFormGrid>
       <SettingsField label="更新源">
