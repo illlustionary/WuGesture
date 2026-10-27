@@ -6,8 +6,6 @@ namespace WuGesture.App;
 
 public sealed partial class MainForm
 {
-    private const int DwmwaCaptionColor = 35;
-    private const int DwmwaTextColor = 36;
     private const int SwShow = 5;
     private const int SwMinimize = 6;
     private const int SwRestore = 9;
@@ -15,10 +13,17 @@ public sealed partial class MainForm
     protected override void OnHandleCreated(EventArgs e)
     {
         base.OnHandleCreated(e);
+        ApplyTitleBarMetrics();
         if (loadedConfig is not null)
         {
             ApplyWindowTheme(loadedConfig.Config.UiSettings.Appearance);
         }
+    }
+
+    protected override void OnDpiChanged(DpiChangedEventArgs e)
+    {
+        base.OnDpiChanged(e);
+        ApplyTitleBarMetrics();
     }
 
     private void ApplyWindowTheme(AppearanceUiSettings appearance)
@@ -31,15 +36,7 @@ public sealed partial class MainForm
 
         BackColor = captionColor;
         webViewHost.SetInitialAppearance(captionColor, useDarkPalette);
-        if (!IsHandleCreated || !OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000))
-        {
-            return;
-        }
-
-        var nativeCaptionColor = ColorTranslator.ToWin32(captionColor);
-        var nativeTextColor = ColorTranslator.ToWin32(textColor);
-        _ = DwmSetWindowAttribute(Handle, DwmwaCaptionColor, ref nativeCaptionColor, sizeof(int));
-        _ = DwmSetWindowAttribute(Handle, DwmwaTextColor, ref nativeTextColor, sizeof(int));
+        ApplyTitleBarTheme(captionColor, textColor, useDarkPalette);
     }
 
     private static bool TryResolveWindowThemeColors(
@@ -187,7 +184,4 @@ public sealed partial class MainForm
 
     [DllImport("user32.dll")]
     private static extern bool BringWindowToTop(IntPtr hWnd);
-
-    [DllImport("dwmapi.dll")]
-    private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int valueSize);
 }
