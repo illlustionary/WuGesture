@@ -69,8 +69,10 @@ src\WuGesture.App
 启动流程：
 
 - `Program.cs` 会在 .NET Host 成功启动后检查 WebView2 Runtime，缺少时显示官方下载引导；随后通过命名互斥体保证单实例运行。再次启动时不会创建第二个实例，而是先将前台切换权限授予已运行实例，再通知它在 UI 线程弹出并激活配置窗口，且等待该 UI 操作通过命名自动重置事件确认或超时后才退出。已有且可见的配置窗口收到单实例唤醒时，会临时关联当前前台线程的输入队列后激活，并在完成后立即解除关联；没有配置窗口时则保持普通启动与恢复流程，避免使用短暂置顶造成焦点回退。开机自启动会带 `--startup` 内部参数，始终只启动后台服务并驻留托盘，不打开配置窗口；普通启动是否显示配置窗口由应用行为设置控制，默认显示。更新替换成功后的重启会带 `--updated` 内部参数，此时无论开机自启动还是“启动时显示配置窗口”如何设置，都会显示配置窗口，并在 Web 界面就绪后通知前端切到“关于&更新”页，让用户确认新版本已经装好。
-- `MainForm.cs` 会在首次显示前加载配置并决定是否后台启动，以避免后台启动时短暂绘制主窗口；普通启动会在 WebView2 的首次导航完成后显示配置窗口，托盘恢复和单实例唤醒也会先在不可见的最小化窗体中重建 WebView2，再交由系统原生还原动画前置，避免页面白闪；窗口真正还原（托盘恢复回调或 `Resize` 退出最小化）时会补发启动期间缓存的更新提示，因此后台启动、排期检查先于打开配置窗口的更新弹窗不会丢失。后台启动则继续隐藏。更新重启（`--updated`）会忽略隐藏启动和“启动时显示配置窗口”设置，先显示配置窗口，并在首次 `get-status` 之后发送一次 `update-completed` 消息，前端据此打开“关于&更新”页并提示已更新到的版本。关闭到托盘会先走系统原生最小化，最小化完成后隐藏窗体、移出 Alt+Tab 并释放 WebView2 以降低后台内存；最小化到任务栏则保留现有配置窗口。主窗口始终采用 Windows 系统标题栏（标题显示 `WuGesture`，左侧使用应用图标）；窗口句柄创建和托盘恢复前都会从 `gestures.json` 的 `uiSettings.appearance` 解析当前应用主题，同时设置窗体底色和 Windows 11 DWM 标题栏/文字颜色，并在 WebView2 导航前设置相同的默认底色与浅深主题标记，Windows 10 保持系统标题栏颜色。该文件负责生命周期、配置/服务装配、应用行为和 WebView 业务消息，托盘图标、提权重启、消息路由、配置保存/重载/导入导出/WebDAV 同步以及应用选择/窗口拾取/打开程序目录分别委托给 `TrayMenuController`、`ElevationLauncher`、`WebMessageRouter`、`ConfigurationCoordinator` 和 `ApplicationPickerCoordinator`，也会把配置里的 `uiSettings` 应用到轨迹窗、提示窗和应用行为，并在任一覆盖层启用时预热透明轨迹窗；显示设置变化、系统恢复或透明层原生呈现失败时，会在 UI 线程重建覆盖层资源。主窗口和托盘显示名为 `WuGesture`。开启“以管理员身份打开”时，`MainForm` 会在服务启动前用 `runas` 重启自身并以新实例接管；用户在 UAC 提示中取消或提权启动失败时不会降级为普通权限运行，而是提示原因后直接退出，开机自启动的后台实例则只记录日志并退出，不弹出阻塞登录的对话框。
-- `MainForm.Windowing.cs`：`MainForm` 的窗口状态持久化、系统原生最小化/还原和单实例唤醒时的前置激活；标题栏、缩放和窗口控制按钮由 Windows 提供。
+- `MainForm.cs` 会在首次显示前加载配置并决定是否后台启动，以避免后台启动时短暂绘制主窗口；普通启动会在 WebView2 的首次导航完成后显示配置窗口，托盘恢复和单实例唤醒也会先在不可见的最小化窗体中重建 WebView2，再交由系统原生还原动画前置，避免页面白闪；窗口真正还原（托盘恢复回调或 `Resize` 退出最小化）时会补发启动期间缓存的更新提示，因此后台启动、排期检查先于打开配置窗口的更新弹窗不会丢失。后台启动则继续隐藏。更新重启（`--updated`）会忽略隐藏启动和“启动时显示配置窗口”设置，先显示配置窗口，并在首次 `get-status` 之后发送一次 `update-completed` 消息，前端据此打开“关于&更新”页并提示已更新到的版本。关闭到托盘会先走系统原生最小化，最小化完成后隐藏窗体、移出 Alt+Tab 并释放 WebView2 以降低后台内存；最小化到任务栏则保留现有配置窗口。主窗口使用宿主自绘的标题栏（`MainForm.Chrome.cs`）：`WM_NCCALCSIZE` 只把客户区向上扩展到盖住系统标题栏，保留原生左右/下缩放边框和窗口阴影，标题条直接绘制在窗体客户区而不是子控件里，因此拖动、双击最大化、Aero Snap、系统菜单和 Windows 11 最大化按钮的贴靠布局仍由系统处理。标题条显示应用图标和 `WuGesture`，右侧自绘最小化/最大化/关闭按钮，活动/非活动状态和悬停都有对应配色；颜色与文字色取自 `uiSettings.appearance` 的 `lightTitleBarColor`/`darkTitleBarColor` 等字段，所以 Windows 10 与 Windows 11 表现一致（旧的 `DWMWA_CAPTION_COLOR` 方案只在 Windows 11 生效，Windows 10 会退回系统白条）。窗口句柄创建和托盘恢复前都会从 `gestures.json` 的 `uiSettings.appearance` 解析当前应用主题，同时设置窗体底色、标题条配色，并在 WebView2 导航前设置相同的默认底色与浅深主题标记。该文件负责生命周期、配置/服务装配、应用行为和 WebView 业务消息，托盘图标、提权重启、消息路由、配置保存/重载/导入导出/WebDAV 同步以及应用选择/窗口拾取/打开程序目录分别委托给 `TrayMenuController`、`ElevationLauncher`、`WebMessageRouter`、`ConfigurationCoordinator` 和 `ApplicationPickerCoordinator`，也会把配置里的 `uiSettings` 应用到轨迹窗、提示窗和应用行为，并在任一覆盖层启用时预热透明轨迹窗；显示设置变化、系统恢复或透明层原生呈现失败时，会在 UI 线程重建覆盖层资源。主窗口和托盘显示名为 `WuGesture`。开启“以管理员身份打开”时，`MainForm` 会在服务启动前用 `runas` 重启自身并以新实例接管；用户在 UAC 提示中取消或提权启动失败时不会降级为普通权限运行，而是提示原因后直接退出，开机自启动的后台实例则只记录日志并退出，不弹出阻塞登录的对话框。
+- `MainForm.Windowing.cs`：`MainForm` 的窗口状态持久化、系统原生最小化/还原、主题色解析和单实例唤醒时的前置激活；缩放边框、贴靠和窗口阴影仍由 Windows 提供。
+- `MainForm.Chrome.cs`：自绘标题栏的窗口消息处理和绘制（`WM_NCCALCSIZE`、`WM_NCHITTEST`、`WM_NCMOUSEMOVE`、`WM_NCLBUTTONDOWN`、`WM_NCACTIVATE`），负责图标/标题/最小化/最大化/关闭按钮、悬停与活动状态配色、顶部缩放热区和 Windows 11 窗口边框配色。标题条画在窗体客户区内，不使用子控件，以便系统继续处理拖动、贴靠和双击最大化。
+- `TitleBarLayout.cs`：标题栏的纯几何计算（按钮从右到左排列、点击命中、图标与标题可用区域、按 DPI 缩放），不依赖窗口句柄，便于单元测试。
 - `CloseRequestPolicy.cs`：判断 `FormClosing` 的原因是否属于外部关闭请求。WinForms 只把标题栏按钮和 Alt+F4 报为 `UserClosing`，其他 `WM_CLOSE`（鼠标手势“关闭窗口”、自动化工具、任务管理器）都报为 `TaskManagerClosing`；两者都按关闭按钮行为处理，系统关机和 `Application.Exit` 仍然真正退出。
 - `AppLogger.cs`：应用级结构化 JSONL 日志。`Program.cs` 会在入口初始化它，以记录启动/退出、单实例 IPC（包括第二个实例的转发失败）、WebView2 Runtime 版本和未处理异常；配置操作、WebView 宿主及动作失败也会记录。日志异步批量写入 `%LocalAppData%\WuGesture\logs\application-YYYYMMDD.log`，单文件达到 2MB 时保留一份 `.previous` 轮转日志，保留最近 7 天；队列满时会生成丢弃标记，写入失败时回退到 `%TEMP%\WuGesture-application-log-error.log`。日志不记录配置 JSON、WebDAV 凭据或 WebView 消息正文。
 - `WebViewHost.cs`：负责 WebView2 控件的创建、销毁、虚拟主机映射、导航和消息事件订阅；导航前使用宿主提供的默认底色和浅深主题标记，避免配置窗口重建时客户端区域按白色首帧绘制；入站消息仍同步交由 `MainForm` 的业务处理器执行，宿主不存在时出站消息直接丢弃。WebView2 使用显式创建的 `CoreWebView2Environment`，profile 固定放在 `%LocalAppData%\WuGesture\WebView2`（不再放在 exe 旁边，安装目录可能只读、发布脚本也会清空输出目录）；`ready`/`disposed` 日志会记录浏览器进程号，释放后 3 秒内仍未退出的浏览器进程会被回收，保证关闭到托盘后不残留 Chromium 进程；Release 构建关闭 DevTools、默认右键菜单、浏览器快捷键和缩放，避免配置界面被误刷新或缩放。
@@ -94,7 +96,7 @@ src\WuGesture.App
 
 职责目录：
 
-- `Application`：程序入口、主窗体生命周期、窗口状态、单实例唤醒、配置工作流、应用选择、WebView2 宿主、主题偏好和宿主消息契约。
+- `Application`：程序入口、主窗体生命周期、自绘标题栏、窗口状态、单实例唤醒、配置工作流、应用选择、WebView2 宿主、主题偏好和宿主消息契约。
 - `Configuration`：手势配置模型、默认值、归一化、存储、WebDAV 同步和配置契约。
 - `GestureEngine`：全局输入、手势识别、规则匹配、边缘操作和动作执行核心。
 - `Overlay`：透明覆盖层、轨迹/提示/OSD 渲染及其 UI 线程反馈协调。
@@ -275,7 +277,7 @@ src\WuGesture.App\Web\PROJECT_STRUCTURE.md
 
 宿主集成：
 
-- 配置界面由 WebView2 承载：桌面宿主通过虚拟主机 `https://gesture.wu.philosophy/` 加载宿主输出目录中的 `Web`；窗口使用 Windows 系统标题栏，标题为 `WuGesture`。界面结构、侧栏和页面交互见 Web 子项目文档。
+- 配置界面由 WebView2 承载：桌面宿主通过虚拟主机 `https://gesture.wu.philosophy/` 加载宿主输出目录中的 `Web`；窗口使用宿主自绘标题栏（`MainForm.Chrome.cs`），标题为 `WuGesture`。界面结构、侧栏和页面交互见 Web 子项目文档。
 - 宿主下发的 `rules` WebView 消息包含程序集 `appVersion`、配置、规则、程序、边缘操作和 UI 设置；运行态程序和排除项会附带应用图标。
 - 更新流程使用独立消息：前端发送 `check-update`、`start-update`、`cancel-update`、`open-update-page`，宿主回传 `update-available`、`update-none`、`update-error`、`update-progress`、`update-failed`、`update-restarting`、`update-completed`；具体字段见 Web 子项目文档。
 - `WuGesture.App.csproj` 在 `.NET` 构建前自动执行 `pnpm exec vite build --outDir <宿主输出目录>\Web`；Vite 会清空该最终输出目录，源码 `Web` 目录不会被覆盖。普通构建输出到 `$(OutputPath)\Web`，`dotnet publish -o` 输出到实际 `$(PublishDir)\Web`，不生成或复制中间 `dist` 目录。
@@ -301,6 +303,7 @@ tests\WuGesture.App.Tests
 - `WebViewRulesPayloadFactory`：`rules` 消息的配置映射、应用图标和应用版本字段。
 - `WebMessageRouter`：按类型分发、状态查询字符串、未知类型忽略、坏 JSON 与处理器异常被兜底且不影响后续消息。
 - `CloseRequestPolicy`：标题栏/Alt+F4 与外部 `WM_CLOSE`（手势“关闭窗口”、任务管理器）都视为外部关闭请求，系统关机、`Application.Exit` 和其他系统原因不拦截。
+- `TitleBarLayout`：自绘标题栏的按钮排列（关闭/最大化/最小化从右到左）、点击命中、标题可用区域和 DPI 缩放。
 - `GestureConfigStore`：当前配置保存、旧/损坏配置的备份重置、未来版本保护和旧导入拒绝；保存后不残留临时文件、无效配置不会覆盖原文件。
 - `ConfigurationCoordinator`：编辑器消息到 `GestureConfig` 的全字段映射、缺省分区按空列表处理、`uiSettings` 缺失时保留磁盘上的设置。
 - `ProgramActionTests`：运行程序动作的路径/参数归一化、空路径忽略和非 Shell 启动参数构造。

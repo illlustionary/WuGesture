@@ -12,6 +12,7 @@ internal sealed class WebViewHost : IDisposable
     private static readonly TimeSpan BrowserShutdownPollInterval = TimeSpan.FromMilliseconds(250);
 
     private readonly Control owner;
+    private readonly Control contentHost;
     private readonly Func<bool> canUseUi;
     private readonly Action<string> onMessageReceived;
     private readonly string userDataFolder;
@@ -22,9 +23,10 @@ internal sealed class WebViewHost : IDisposable
     private bool isInitializing;
     private TaskCompletionSource? navigationCompletion;
 
-    public WebViewHost(Control owner, Func<bool> canUseUi, Action<string> onMessageReceived)
+    public WebViewHost(Control owner, Control contentHost, Func<bool> canUseUi, Action<string> onMessageReceived)
     {
         this.owner = owner;
+        this.contentHost = contentHost;
         this.canUseUi = canUseUi;
         this.onMessageReceived = onMessageReceived;
         userDataFolder = WebViewHostContract.ResolveUserDataFolder();
@@ -56,7 +58,7 @@ internal sealed class WebViewHost : IDisposable
                 DefaultBackgroundColor = defaultBackgroundColor
             };
             webView = createdWebView;
-            owner.Controls.Add(createdWebView);
+            contentHost.Controls.Add(createdWebView);
             createdWebView.BringToFront();
 
             await createdWebView.EnsureCoreWebView2Async(environment);
@@ -178,7 +180,7 @@ internal sealed class WebViewHost : IDisposable
                 coreWebView.ProcessFailed -= OnProcessFailed;
             }
 
-            owner.Controls.Remove(webView);
+            contentHost.Controls.Remove(webView);
             webView.Dispose();
         }
 

@@ -43,7 +43,9 @@ public sealed partial class MainForm : Form
     {
         this.startHiddenToTray = startHiddenToTray;
         this.isUpdateRestart = isUpdateRestart;
-        webViewHost = new WebViewHost(this, CanUseUi, HandleWebMessage);
+        var contentHost = CreateContentHost();
+        ApplyTitleBarMetrics();
+        webViewHost = new WebViewHost(this, contentHost, CanUseUi, HandleWebMessage);
         configurationCoordinator = new ConfigurationCoordinator(
             () => loadedConfig,
             config =>
@@ -107,6 +109,7 @@ public sealed partial class MainForm : Form
             SystemEvents.DisplaySettingsChanged -= OnDisplaySettingsChanged;
             SystemEvents.PowerModeChanged -= OnPowerModeChanged;
             trayMenuController.Dispose();
+            DisposeTitleBarFonts();
             DisposeWebView();
             updateCoordinator.Dispose();
             LevelOsdOverlay.Reset();
@@ -215,6 +218,7 @@ public sealed partial class MainForm : Form
 
     private void OnResize(object? sender, EventArgs e)
     {
+        InvalidateTitleBar();
         if (WindowState != FormWindowState.Minimized)
         {
             // An update check that finished while the window was hidden or minimized is cached until the UI is
