@@ -1,0 +1,51 @@
+name: Test
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v5
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Enable pnpm
+        run: corepack enable
+
+      - name: Install frontend dependencies
+        working-directory: src/WuGesture.App/Web
+        run: pnpm install --frozen-lockfile
+
+      - name: Check frontend formatting
+        working-directory: src/WuGesture.App/Web
+        run: pnpm format:check
+
+      # 构建会同时执行 Vite 前端构建，并把分析器警告视为错误。
+      - name: Build
+        run: dotnet build WuGesture.slnx --nologo -warnaserror
+
+      - name: Run tests with coverage
+        run: dotnet test WuGesture.slnx --nologo --no-build --collect:"XPlat Code Coverage" --results-directory artifacts/test-results
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: artifacts/test-results
+          retention-days: 7

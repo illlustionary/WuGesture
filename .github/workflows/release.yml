@@ -9,7 +9,12 @@ permissions:
   contents: write
 
 jobs:
+  # 标签不会触发 ci.yml，所以发行流水线必须自己验证一次；测试失败时不会打包或发布。
+  test:
+    uses: ./.github/workflows/test.yml
+
   release:
+    needs: test
     runs-on: windows-latest
     env:
       GITEE_REPOSITORY: ${{ secrets.GITEE_REPOSITORY }}

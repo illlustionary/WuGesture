@@ -2,6 +2,7 @@ using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.WinForms;
 using System.Diagnostics;
 using System.Drawing;
+using System.Globalization;
 
 namespace WuGesture.App;
 
@@ -189,7 +190,7 @@ internal sealed class WebViewHost : IDisposable
         AppLogger.Information(
             "WebViewHost",
             "disposed",
-            $"Released the WebView2 configuration host. Browser process: {browserProcessId?.ToString() ?? "unknown"}.");
+            $"Released the WebView2 configuration host. Browser process: {browserProcessId?.ToString(CultureInfo.InvariantCulture) ?? "unknown"}.");
         if (browserProcessId is int processId)
         {
             _ = ReapBrowserProcessAsync(processId);

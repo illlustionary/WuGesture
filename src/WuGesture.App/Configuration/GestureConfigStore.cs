@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -300,7 +301,7 @@ public sealed class GestureConfigStore
         var directory = Path.GetDirectoryName(ConfigPath) ?? Directory.GetCurrentDirectory();
         var fileName = Path.GetFileNameWithoutExtension(ConfigPath);
         var extension = Path.GetExtension(ConfigPath);
-        var timestamp = DateTime.Now.ToString("yyyyMMdd-HHmmssfff");
+        var timestamp = DateTime.Now.ToString("yyyyMMdd-HHmmssfff", CultureInfo.InvariantCulture);
 
         for (var suffix = 0; suffix < 100; suffix++)
         {

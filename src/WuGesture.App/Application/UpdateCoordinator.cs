@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.Text.Json;
 using WuGesture.App.GestureEngine;
 using WuGesture.App.Updater;
@@ -352,7 +353,7 @@ internal sealed class UpdateCoordinator : IDisposable
             source = release.Source,
             preferredSource = getSettings()?.Source ?? UpdateSources.Gitee,
             notes = TruncateNotes(release.Notes),
-            publishedAt = release.PublishedAt?.ToString("yyyy-MM-dd"),
+            publishedAt = release.PublishedAt?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
             htmlUrl = release.HtmlUrl,
             assetName = release.Asset.Name,
             assetSize = release.Asset.Size,

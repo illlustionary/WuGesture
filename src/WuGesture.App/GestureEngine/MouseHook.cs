@@ -342,6 +342,6 @@ public sealed class MouseHook : IDisposable
     [DllImport("kernel32.dll")]
     private static extern uint GetCurrentThreadId();
 
-    [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern IntPtr GetModuleHandle(string? lpModuleName);
 }

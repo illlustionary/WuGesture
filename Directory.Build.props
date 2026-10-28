@@ -1,0 +1,12 @@
+<Project>
+
+  <PropertyGroup>
+    <!-- 打开 .NET 推荐分析器规则，让潜在缺陷在构建阶段暴露。 -->
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <Deterministic>true</Deterministic>
+    <!-- 只在 CI 中生成可复现的路径与时间戳，本地构建保持快速。 -->
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+</Project>
