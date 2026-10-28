@@ -299,7 +299,7 @@ export function normalizeExcludedApplications(applications) {
 
 export function normalizeExcludedApplication(application) {
   application = normalizeObjectKeys(application)
-  const name = String(application?.name ?? '').trim()
+  const name = toProcessName(application?.name)
   const path = String(application?.path ?? '').trim()
   return {
     name,
@@ -321,14 +321,20 @@ export function isSameApplicationIdentity(left, right) {
     return leftPath === rightPath
   }
 
-  return (
-    String(left?.name ?? '')
-      .trim()
-      .toLowerCase() ===
-    String(right?.name ?? '')
-      .trim()
-      .toLowerCase()
-  )
+  return toProcessName(left?.name).toLowerCase() === toProcessName(right?.name).toLowerCase()
+}
+
+// 与宿主 Path.GetFileNameWithoutExtension 对齐：排除项只保存进程名，路径和扩展名不作为身份的一部分。
+function toProcessName(value) {
+  const trimmed = String(value ?? '').trim()
+  if (!trimmed) {
+    return ''
+  }
+
+  const fileName = trimmed.split(/[\\/]/).pop() ?? ''
+  const extensionIndex = fileName.lastIndexOf('.')
+  const name = extensionIndex > 0 ? fileName.slice(0, extensionIndex) : fileName
+  return name || trimmed
 }
 
 export function normalizeWebDavSettings(settings) {
@@ -387,6 +393,18 @@ export function clampInteger(value, min, max, fallback) {
   return Math.min(max, Math.max(min, parsed))
 }
 
+// 步进值 0 或负数等同于“未设置”，与宿主 GestureConfigMapper.NormalizeAmount 保持一致。
+export function normalizeAmount(value) {
+  const parsed = Number.parseInt(value, 10)
+  const candidate = Number.isFinite(parsed) && parsed <= 0 ? GESTURE_EDITOR_LIMITS.amount.fallback : value
+  return clampInteger(
+    candidate,
+    GESTURE_EDITOR_LIMITS.amount.min,
+    GESTURE_EDITOR_LIMITS.amount.max,
+    GESTURE_EDITOR_LIMITS.amount.fallback
+  )
+}
+
 export function clampFloat(value, min, max, fallback) {
   const parsed = Number.parseFloat(value)
   if (!Number.isFinite(parsed)) {
@@ -418,15 +436,6 @@ export function normalizeVolumeOperation(operation) {
 export function normalizeBrightnessOperation(operation) {
   const normalized = String(operation ?? '').trim()
   return BRIGHTNESS_OPERATIONS.some(item => item.value === normalized) ? normalized : OPERATIONS.increase
-}
-
-export function normalizeAmount(value) {
-  return clampInteger(
-    value,
-    GESTURE_EDITOR_LIMITS.amount.min,
-    GESTURE_EDITOR_LIMITS.amount.max,
-    GESTURE_EDITOR_LIMITS.amount.fallback
-  )
 }
 
 export function normalizeFrictionCount(value) {

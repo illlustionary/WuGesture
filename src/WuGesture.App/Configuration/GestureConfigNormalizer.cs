@@ -80,30 +80,30 @@ internal static class GestureConfigNormalizer
 
         var gestureHint = settings.GestureHint;
         gestureHint.Enabled ??= true;
-        gestureHint.DisplayDurationMs = ClampInteger(gestureHint.DisplayDurationMs, 0, 10000, 300);
-        gestureHint.FadeDurationMs = ClampInteger(gestureHint.FadeDurationMs, 0, 1000, 240);
-        gestureHint.WidthPercent = ClampInteger(gestureHint.WidthPercent, 10, 90, 10);
-        gestureHint.HeightPercent = ClampInteger(gestureHint.HeightPercent, 5, 40, 5);
-        gestureHint.BottomOffsetPercent = ClampInteger(gestureHint.BottomOffsetPercent, 0, 100, 6);
+        gestureHint.DisplayDurationMs = ClampInteger(gestureHint.DisplayDurationMs, 0, 10000);
+        gestureHint.FadeDurationMs = ClampInteger(gestureHint.FadeDurationMs, 0, 1000);
+        gestureHint.WidthPercent = ClampInteger(gestureHint.WidthPercent, 10, 90);
+        gestureHint.HeightPercent = ClampInteger(gestureHint.HeightPercent, 5, 40);
+        gestureHint.BottomOffsetPercent = ClampInteger(gestureHint.BottomOffsetPercent, 0, 100);
         var levelOsd = settings.LevelOsd;
         levelOsd.Enabled ??= true;
-        levelOsd.DisplayDurationMs = ClampInteger(levelOsd.DisplayDurationMs, 0, 10000, 1800);
-        levelOsd.FadeDurationMs = ClampInteger(levelOsd.FadeDurationMs, 0, 1000, 240);
+        levelOsd.DisplayDurationMs = ClampInteger(levelOsd.DisplayDurationMs, 0, 10000);
+        levelOsd.FadeDurationMs = ClampInteger(levelOsd.FadeDurationMs, 0, 1000);
         levelOsd.BackgroundColor = NormalizeColor(levelOsd.BackgroundColor, "#28282C");
-        levelOsd.BackgroundOpacity = ClampInteger(levelOsd.BackgroundOpacity, 0, 100, 88);
+        levelOsd.BackgroundOpacity = ClampInteger(levelOsd.BackgroundOpacity, 0, 100);
         levelOsd.TextColor = NormalizeColor(levelOsd.TextColor, "#DCDCDC");
         levelOsd.TrackColor = NormalizeColor(levelOsd.TrackColor, "#464646");
         levelOsd.VolumeColor = NormalizeColor(levelOsd.VolumeColor, "#64C8FF");
         levelOsd.BrightnessColor = NormalizeColor(levelOsd.BrightnessColor, "#FFC828");
-        levelOsd.Width = ClampInteger(levelOsd.Width, 120, 480, 210);
-        levelOsd.Height = ClampInteger(levelOsd.Height, 100, 420, 190);
-        levelOsd.CornerRadius = ClampInteger(levelOsd.CornerRadius, 0, Math.Min(levelOsd.Width, levelOsd.Height) / 2, 22);
+        levelOsd.Width = ClampInteger(levelOsd.Width, 120, 480);
+        levelOsd.Height = ClampInteger(levelOsd.Height, 100, 420);
+        levelOsd.CornerRadius = ClampInteger(levelOsd.CornerRadius, 0, Math.Min(levelOsd.Width, levelOsd.Height) / 2);
         levelOsd.Position = NormalizeLevelOsdPosition(levelOsd.Position);
-        levelOsd.OffsetX = ClampInteger(levelOsd.OffsetX, -2000, 2000, 0);
-        levelOsd.OffsetY = ClampInteger(levelOsd.OffsetY, -2000, 2000, 0);
+        levelOsd.OffsetX = ClampInteger(levelOsd.OffsetX, -2000, 2000);
+        levelOsd.OffsetY = ClampInteger(levelOsd.OffsetY, -2000, 2000);
 
         var gestureSensitivity = settings.GestureSensitivity;
-        gestureSensitivity.Percent = ClampInteger(gestureSensitivity.Percent, 0, 200, 110);
+        gestureSensitivity.Percent = ClampInteger(gestureSensitivity.Percent, 0, 200);
 
         var appBehavior = settings.AppBehavior;
         appBehavior.CloseButtonBehavior = NormalizeCloseButtonBehavior(appBehavior.CloseButtonBehavior);
@@ -231,8 +231,10 @@ internal static class GestureConfigNormalizer
             StringComparison.OrdinalIgnoreCase);
     }
 
-    private static int ClampInteger(int value, int min, int max, int fallback)
+    // 数值型界面设置统一“收敛到边界”：配置能读出数值时保留用户意图，只在越界时贴近最近的合法值。
+    // 默认值由各设置类的属性初始化器提供，这里不再重复维护一份回退值。
+    private static int ClampInteger(int value, int min, int max)
     {
-        return value < min || value > max ? fallback : value;
+        return Math.Min(max, Math.Max(min, value));
     }
 }

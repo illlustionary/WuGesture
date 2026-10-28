@@ -27,7 +27,7 @@ src\WuGesture.App\Web
 
 - `agents.md`：Web 子项目的代理指令。
 - `index.html`：Vite 入口 HTML，页面标题为 `WuGesture`。
-- `package.json`：前端工程依赖与脚本；`format` 和 `format:check` 使用本地 Prettier 按仓库根目录的 `.prettierrc.json` 格式化或校验前端源码。
+- `package.json`：前端工程依赖与脚本；`format` 和 `format:check` 使用本地 Prettier 按仓库根目录的 `.prettierrc.json` 格式化或校验前端源码，`test` 使用 Vitest 运行前端单元测试。
 - `pnpm-lock.yaml`：锁定依赖树。
 - `pnpm-workspace.yaml`：工作区配置，并放行 `@parcel/watcher` 的本地构建脚本，避免非交互环境下依赖安装中断。
 - `jsconfig.json`：配置编辑器路径提示，`@/*` 指向 `src/*`，`@resources/*` 指向桌面宿主的 `Resources/*`。
@@ -163,7 +163,7 @@ src\constants
 src\utils
 ```
 
-- `gestureEditorNormalizers.js`：规则 scope、手势文本、快捷键、动作类型、边缘操作和 UI 设置的解析与归一化工具。
+- `gestureEditorNormalizers.js`：规则 scope、手势文本、快捷键、动作类型、边缘操作和 UI 设置的解析与归一化工具；同目录的 `gestureEditorNormalizers.test.js` 用 Vitest 覆盖这些纯函数。
 - `gestureEditorFormatters.js`：手势助记符、动作展示文案和边缘操作展示文案。
 - `gestureEditorPayloads.js`：把编辑器内存模型转换成 WebView 保存、WebDAV 测试/备份使用的配置 payload。
 - `gestureEditorViewModels.js`：把宿主配置消息转换成编辑器视图模型，并提供规则和手势草稿模板。
@@ -354,6 +354,16 @@ src\pages
 - `checkForUpdates`：进程启动时是否自动检查一次更新，默认 `true`
 - `source`：`gitee`（默认）或 `github`，作为检查更新时的首选源；另一个源只在首选源没有更高版本时才参与比较，两个源都会按版本号取较高者，且不会安装不高于当前版本的包
 
+## 测试
+
+前端单元测试使用 Vitest，测试文件与被测模块同目录，命名为 `*.test.js`：
+
+```powershell
+pnpm test
+```
+
+Vitest 直接复用 `vite.config.js` 的路径别名，不需要额外的测试配置。当前覆盖 `gestureEditorNormalizers.js` 的纯函数（枚举回退、数值收敛、作用域解析、排除项进程名归一化和去重、边缘操作合并）。`*.test.js` 不参与 `vite build`，也被桌面工程的增量前端构建排除。
+
 ## 构建
 
 前端构建由桌面工程驱动，完整命令、输出路径和增量规则见仓库根目录 [项目结构](../../../PROJECT_STRUCTURE.md) 的“WebView 前端”和“构建与发布”两节，这里不重复。前端侧只需注意：
@@ -369,5 +379,6 @@ src\pages
 - 页面、路由、布局或复用组件
 - 前端构建配置和输出路径（仅前端侧约定，宿主侧构建见根文档）
 - 前端收发的 WebView 消息（宿主侧处理逻辑见根文档）
+- 前端测试结构、测试命令或测试框架
 - 规则编辑器、边缘操作或设置页的核心职责
 - 图标资产和共享 UI 组件职责

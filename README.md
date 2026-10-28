@@ -60,4 +60,11 @@ dotnet build WuGesture.slnx
 dotnet test WuGesture.slnx
 ```
 
-提交 PR 会触发 CI（`.github\workflows\ci.yml`）：检查前端 Prettier 格式、以 `-warnaserror` 构建，并运行带覆盖率的单元测试。推送 `v*` 标签时会先运行同一套测试（`.github\workflows\test.yml`），通过后才打包发布。
+前端单元测试：
+
+```powershell
+cd src\WuGesture.App\Web
+pnpm test
+```
+
+提交 PR 会触发 CI（`.github\workflows\ci.yml`）：检查前端 Prettier 格式、运行前端和 .NET 单元测试、以 `-warnaserror` 构建。推送 `v*` 标签时会先运行同一套测试（`.github\workflows\test.yml`），通过后才打包发布。
