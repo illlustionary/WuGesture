@@ -260,6 +260,8 @@ src\WuGesture.App\Configuration
 
 默认初始配置不包含 WebDAV 凭据、分类或具体程序归属，仅保留全局规则、界面偏好及已启用的边缘操作；后续新增配置字段仍由默认值和归一化逻辑补齐。
 
+数值归一化规则在宿主和前端保持一致：能读出数值的字段只做区间收敛（越界时贴到最近的边界，不丢弃用户设置），缺失、类型错误或无法解析时使用该字段自己的默认值；只有音量/亮度步进把 0 和负数视作“未设置”，统一回退到默认步进 5。排除项按进程名识别：保存前去掉目录和扩展名（`notepad.exe` 存为 `notepad`），比较时忽略大小写；只有两侧都带路径时才改用路径比较。
+
 默认全局规则：
 
 ```text
@@ -293,7 +295,7 @@ src\WuGesture.App\Web\PROJECT_STRUCTURE.md
 - 宿主下发的 `rules` WebView 消息包含程序集 `appVersion`、配置、规则、程序、边缘操作和 UI 设置；运行态程序和排除项会附带应用图标。
 - 更新流程使用独立消息：前端发送 `check-update`、`start-update`、`cancel-update`、`open-update-page`，宿主回传 `update-available`、`update-none`、`update-error`、`update-progress`、`update-failed`、`update-restarting`、`update-completed`；具体字段见 Web 子项目文档。
 - `WuGesture.App.csproj` 在 `.NET` 构建前自动执行 `pnpm exec vite build --outDir <宿主输出目录>\Web`；Vite 会清空该最终输出目录，源码 `Web` 目录不会被覆盖。普通构建输出到 `$(OutputPath)\Web`，`dotnet publish -o` 输出到实际 `$(PublishDir)\Web`，不生成或复制中间 `dist` 目录。
-- 前端构建是增量的：`WebFrontendSource` 收集 `Web` 目录下除 `node_modules` 和 `*.md` 之外的所有文件，作为 `BuildWebFrontend` 目标的 `Inputs`，输出为宿主 `Web\index.html`；源文件都不比 `index.html` 新时 MSBuild 直接跳过整个 `vite build`（只改 C# 的构建不会再跑前端）。Vite 会对资源名做哈希，任何真实前端改动都会重写 `index.html`，因此这个比较不会漏构建。
+- 前端构建是增量的：`WebFrontendSource` 收集 `Web` 目录下除 `node_modules`、`*.md` 和 `*.test.js` 之外的所有文件，作为 `BuildWebFrontend` 目标的 `Inputs`，输出为宿主 `Web\index.html`；源文件都不比 `index.html` 新时 MSBuild 直接跳过整个 `vite build`（只改 C# 的构建不会再跑前端）。测试文件不进入前端产物，也不会触发前端重建。Vite 会对资源名做哈希，任何真实前端改动都会重写 `index.html`，因此这个比较不会漏构建。
 
 ## 测试
 
@@ -308,6 +310,10 @@ tests\WuGesture.App.Tests
 当前单元测试覆盖：
 
 - `GestureRecognizer`：有效移动距离、单笔 8 方向、多笔首段归一化和灵敏度。
+- `GestureSession` / `GestureInputCapture`：会话生命周期、进度去重、捕获与吞键状态、暂停中断和迟到抬键。
+- `FrictionTracker`：摩擦边方向反转计数、步进阈值、移动超时和触发重置条件。
+- `GestureConfigNormalizer`：缺失分区补全、参数裁剪、分类去重、UI 数值收敛、颜色规范化和排除项清理。
+- `GestureConfigMapper`：规则/动作映射、无效动作丢弃、程序参数裁剪、音量步进收敛和往返转换。
 - `GestureParserWorker`：预启动投递与最新移动点合并，松键前先处理最后一个移动点。
 - `GestureMatcher`：`app > category > global` 作用域优先级、分类关联顺序、鼠标按键和完整方向模式匹配。
 - `EdgeHitTester`：多屏坐标、边缘优先级、摩擦边角落排除和到边距离计算。
@@ -321,7 +327,9 @@ tests\WuGesture.App.Tests
 - `ProgramActionTests`：运行程序动作的路径/参数归一化、空路径忽略和非 Shell 启动参数构造。
 - `UpdateService`：发行标签解析与版本比较、Windows x64 更新包筛选（排除 debug/预发行包）、从发行说明解析 ZIP 的 SHA256、ZIP 路径穿越防护和更新源归一化。
 
-测试工程引用 `coverlet.collector`，可以用 `dotnet test --collect:"XPlat Code Coverage"` 生成 cobertura 覆盖率报告；CI 会把报告作为构建产物上传，便于观察新增测试的效果。当前覆盖率集中在纯逻辑模块，钩子、动作执行和前端界面暂时没有自动化覆盖。
+- 前端 `gestureEditorNormalizers`（Vitest）：枚举回退、数值收敛、作用域解析、排除项进程名归一化和去重、边缘操作合并。
+
+测试工程引用 `coverlet.collector`，可以用 `dotnet test --collect:"XPlat Code Coverage"` 生成 cobertura 覆盖率报告；CI 会把报告作为构建产物上传，便于观察新增测试的效果。当前覆盖率集中在纯逻辑模块，钩子和动作执行仍然没有自动化覆盖；前端纯逻辑由 Web 子项目的 Vitest 测试覆盖，详见 `src\WuGesture.App\Web\PROJECT_STRUCTURE.md`。
 
 ## 构建与发布
 
@@ -359,7 +367,7 @@ dotnet test WuGesture.slnx --collect:"XPlat Code Coverage" --results-directory a
 
 持续集成：
 
-- `.github\workflows\test.yml` 是共享的测试流程：安装前端依赖、检查 Prettier 格式、用 `dotnet build -warnaserror` 构建（分析器警告即失败），再运行带覆盖率的测试并上传结果。
+- `.github\workflows\test.yml` 是共享的测试流程：安装前端依赖、检查 Prettier 格式、运行前端 Vitest 测试、用 `dotnet build -warnaserror` 构建（分析器警告即失败），再运行带覆盖率的测试并上传结果。
 - `.github\workflows\ci.yml` 在推送到 `main`、提交 PR 或手动触发时调用 `test.yml`，用于日常反馈。
 - `.github\workflows\release.yml` 在 `v*` 标签上先调用 `test.yml`，测试失败时不会打包、不会创建 Release；失败后需要修复代码、删除标签并重新打标签。
 - CI 与发布流程共用 `Directory.Build.props` 中的分析器配置；该文件只在 CI 中开启 `ContinuousIntegrationBuild`，本地构建保持原有速度。

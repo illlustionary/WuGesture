@@ -35,6 +35,10 @@ jobs:
         working-directory: src/WuGesture.App/Web
         run: pnpm format:check
 
+      - name: Run frontend tests
+        working-directory: src/WuGesture.App/Web
+        run: pnpm test
+
       # 构建会同时执行 Vite 前端构建，并把分析器警告视为错误。
       - name: Build
         run: dotnet build WuGesture.slnx --nologo -warnaserror

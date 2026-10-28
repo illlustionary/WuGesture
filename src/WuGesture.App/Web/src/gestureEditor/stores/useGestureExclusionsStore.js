@@ -1,5 +1,6 @@
 import { computed, proxyRefs } from 'vue'
 import { useGestureEditorContext } from '@/gestureEditor/context/gestureEditorContext'
+import { isSameApplicationIdentity } from '@/utils/gestureEditorNormalizers'
 
 export function useGestureExclusionsStore() {
   const editor = useGestureEditorContext()
@@ -7,26 +8,7 @@ export function useGestureExclusionsStore() {
   const excludedApplications = computed(() => editor.state.uiSettings.appBehavior.excludedApplications)
   const exclusionsWithIcons = computed(() =>
     excludedApplications.value.map(application => {
-      const matchedApplication = applications.value.find(item => {
-        const applicationPath = String(application.path ?? '')
-          .trim()
-          .toLowerCase()
-        const itemPath = String(item.path ?? '')
-          .trim()
-          .toLowerCase()
-        if (applicationPath && itemPath) {
-          return applicationPath === itemPath
-        }
-
-        return (
-          String(item.name ?? '')
-            .trim()
-            .toLowerCase() ===
-          String(application.name ?? '')
-            .trim()
-            .toLowerCase()
-        )
-      })
+      const matchedApplication = applications.value.find(item => isSameApplicationIdentity(application, item))
 
       return {
         application,
