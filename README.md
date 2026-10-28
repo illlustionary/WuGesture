@@ -53,3 +53,11 @@ dotnet build WuGesture.slnx
 ```powershell
 %USERPROFILE%\.dotnet\dotnet.exe build WuGesture.slnx
 ```
+
+### 测试
+
+```powershell
+dotnet test WuGesture.slnx
+```
+
+提交 PR 会触发 CI（`.github\workflows\ci.yml`）：检查前端 Prettier 格式、以 `-warnaserror` 构建，并运行带覆盖率的单元测试。推送 `v*` 标签时会先运行同一套测试（`.github\workflows\test.yml`），通过后才打包发布。

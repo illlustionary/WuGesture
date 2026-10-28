@@ -21,7 +21,14 @@
 ```text
 D:\Desktop\WuGesture
 ├─ AGENTS.md
+├─ .editorconfig
 ├─ .prettierrc.json
+├─ Directory.Build.props
+├─ .github
+│  └─ workflows
+│     ├─ ci.yml
+│     ├─ release.yml
+│     └─ test.yml
 ├─ docs
 │  ├─ architecture.md
 │  └─ releasing.md
@@ -50,7 +57,12 @@ D:\Desktop\WuGesture
 - `PROJECT_STRUCTURE.md`：本项目地图。
 - `AGENTS.md`：后续会话的代理指令。
 - `.gitignore`：忽略构建输出、WebView2 运行时缓存、IDE 状态和发布产物。
+- `.editorconfig`：C# / Web / 脚本的仓库级缩进与代码风格约定，并把暂不强制的一批分析器规则降级为建议。
+- `Directory.Build.props`：所有 .NET 工程共用的构建属性，启用 .NET 推荐分析器规则、确定性输出，并在 CI 中开启 `ContinuousIntegrationBuild`。
 - `.prettierrc.json`：Web 前端的仓库级 Prettier 格式规则；VS Code 与命令行格式化共用此文件。
+- `.github\workflows\ci.yml`：每次推送到 `main`、提交 PR 或手动触发时调用 `test.yml`。
+- `.github\workflows\test.yml`：`workflow_call` 测试流程，是构建、格式检查和单元测试的唯一实现；日常 CI 与发行门禁都调用它。
+- `.github\workflows\release.yml`：`v*` 标签触发的打包与发行流程；先跑 `test.yml`，通过后才打包并发布。
 
 ## 桌面应用
 
@@ -309,6 +321,8 @@ tests\WuGesture.App.Tests
 - `ProgramActionTests`：运行程序动作的路径/参数归一化、空路径忽略和非 Shell 启动参数构造。
 - `UpdateService`：发行标签解析与版本比较、Windows x64 更新包筛选（排除 debug/预发行包）、从发行说明解析 ZIP 的 SHA256、ZIP 路径穿越防护和更新源归一化。
 
+测试工程引用 `coverlet.collector`，可以用 `dotnet test --collect:"XPlat Code Coverage"` 生成 cobertura 覆盖率报告；CI 会把报告作为构建产物上传，便于观察新增测试的效果。当前覆盖率集中在纯逻辑模块，钩子、动作执行和前端界面暂时没有自动化覆盖。
+
 ## 构建与发布
 
 构建：
@@ -337,6 +351,19 @@ dotnet test WuGesture.slnx
 
 `dotnet test WuGesture.slnx` 会构建桌面应用和测试工程，并执行上述单元测试。
 
+带覆盖率报告：
+
+```powershell
+dotnet test WuGesture.slnx --collect:"XPlat Code Coverage" --results-directory artifacts\test-results
+```
+
+持续集成：
+
+- `.github\workflows\test.yml` 是共享的测试流程：安装前端依赖、检查 Prettier 格式、用 `dotnet build -warnaserror` 构建（分析器警告即失败），再运行带覆盖率的测试并上传结果。
+- `.github\workflows\ci.yml` 在推送到 `main`、提交 PR 或手动触发时调用 `test.yml`，用于日常反馈。
+- `.github\workflows\release.yml` 在 `v*` 标签上先调用 `test.yml`，测试失败时不会打包、不会创建 Release；失败后需要修复代码、删除标签并重新打标签。
+- CI 与发布流程共用 `Directory.Build.props` 中的分析器配置；该文件只在 CI 中开启 `ContinuousIntegrationBuild`，本地构建保持原有速度。
+
 发布：
 
 ```powershell
@@ -350,7 +377,7 @@ dotnet test WuGesture.slnx
 - `scripts\publish-app.ps1`：发布应用目录的通用步骤，负责关闭运行实例、执行 `dotnet publish`、校验直接构建到输出目录的 Web 前端产物，并复制 `WebView2Loader.dll`；它会将同一个应用目录同时传给 `dotnet publish -o` 和 MSBuild `OutputPath`，避免常规编译产物落到其他目录。
 - `scripts\package-debug.ps1`：无需参数，调用 `publish-app.ps1` 生成 Debug `win-x64` 发布目录和 `WuGesture-debug-windows-x64.zip`。
 - `scripts\package-release.ps1`：基于已创建的 `v*` Git 标签生成 framework-dependent `win-x64` 发布目录、版本化 ZIP 包和从相邻标签之间提交整理的 `RELEASE_NOTES.md`；ZIP 内的根目录固定为 `WuGesture`，而 ZIP 文件名保留版本号，ZIP 的 SHA256 以 `SHA256 (<ZIP 文件名>): <哈希>` 一行写入更新说明末尾，应用内更新直接读取发行说明校验，不再下载单独的校验文件。发行包不包含 .NET，缺少 .NET 10 Desktop Runtime 时由 .NET Host 显示系统安装提示。
-- `.github\workflows\release.yml`：GitHub 收到 `v*` 标签后构建发行包、创建 GitHub Release 并只上传 ZIP；已存在发行版时会覆盖附件并同步刷新更新说明，保证说明里的 SHA256 与新 ZIP 一致。配置 `GITEE_REPOSITORY` 和 `GITEE_TOKEN` secrets 后，会镜像 `main` 和标签到 Gitee，并将相同的附件和更新说明发布至 Gitee。
+- `.github\workflows\release.yml`：GitHub 收到 `v*` 标签后先运行共享测试流程 `test.yml`，通过后才构建发行包、创建 GitHub Release 并只上传 ZIP；已存在发行版时会覆盖附件并同步刷新更新说明，保证说明里的 SHA256 与新 ZIP 一致。配置 `GITEE_REPOSITORY` 和 `GITEE_TOKEN` secrets 后，会镜像 `main` 和标签到 Gitee，并将相同的附件和更新说明发布至 Gitee。
 - `scripts\upload-gitee-release.ps1`：由 GitHub Actions 调用 Gitee API 创建发行版并上传 ZIP 附件；令牌只通过工作流 secret 传入，不存入仓库。
 
 默认发布输出：

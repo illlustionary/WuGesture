@@ -1,0 +1,20 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # 测试步骤统一定义在 test.yml，日常 CI 和发行门禁共用同一份实现。
+  test:
+    uses: ./.github/workflows/test.yml

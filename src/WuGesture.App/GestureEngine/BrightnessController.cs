@@ -1,4 +1,5 @@
 using System.Drawing;
+using System.Globalization;
 using System.Management;
 using System.Runtime.InteropServices;
 
@@ -203,7 +204,7 @@ internal static class BrightnessController
             using var searcher = new ManagementObjectSearcher("root\\WMI", "SELECT * FROM WmiMonitorBrightness");
             foreach (ManagementObject item in searcher.Get())
             {
-                return Convert.ToInt32(item["CurrentBrightness"]);
+                return Convert.ToInt32(item["CurrentBrightness"], CultureInfo.InvariantCulture);
             }
         }
         catch

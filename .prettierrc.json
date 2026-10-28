@@ -6,5 +6,6 @@
   "printWidth": 120,
   "tabWidth": 2,
   "trailingComma": "none",
-  "singleAttributePerLine": true
+  "singleAttributePerLine": true,
+  "endOfLine": "auto"
 }

@@ -36,6 +36,17 @@ GitHub Actions 的 `.github/workflows/release.yml` 在收到标签后生成 fram
 
 该命令使用 `artifacts\release\` 作为唯一输出根目录，其中包含 `WuGesture\`、版本化 ZIP 和 `RELEASE_NOTES.md`；SHA256 也会打印到控制台，方便手工核对。通用发布命令单独使用 `artifacts\publish\WuGesture\`。
 
+### 发行门禁
+
+`release.yml` 会先运行共享测试流程 `test.yml`（前端格式检查、`dotnet build -warnaserror`、单元测试），只有全部通过才会打包和发布。标签指向的提交如果编译失败或测试不通过，GitHub 和 Gitee 都不会产生新的发行版；此时需要修复代码后删除并重建标签（远程名按你的配置替换，本仓库的 GitHub 远程是 `origin`）：
+
+```powershell
+git tag -d v0.97
+git push origin :refs/tags/v0.97
+```
+
+日常提交由 `ci.yml` 在推送 `main` 和提交 PR 时运行同一套流程，因此正常情况下标签流水线的测试不会失败；它主要用于拦住“给历史提交打标签”这类操作。
+
 ## 自动更新
 
 应用启动时默认检查一次最新发行版（开关在“设置 > 更新”，检查入口在侧栏最外层的“关于&更新”页），默认更新源为 Gitee，也可切换为 GitHub。检查会同时考虑两个源并取版本号较高者，任一源落后或暂时没有发行版都不会导致回退安装，只有更新包版本高于当前版本时才会提示。发现新版本后，用户在弹窗中确认才会下载。下载的 ZIP 在 `%LocalAppData%\WuGesture\updates\<版本>` 解压，随后启动独立的 PowerShell 辅助脚本：
