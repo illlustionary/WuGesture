@@ -545,13 +545,17 @@ public sealed class GestureService : IDisposable
                 var targetWindow = gestureContext.UsesStartWindow
                     ? gestureContext.StartWindow
                     : GetForegroundWindow();
-                var isDesktopWindowControlTarget = rule.Action is WindowControlAction &&
-                                                   targetWindow != IntPtr.Zero &&
-                                                   DesktopWindowClassifier.IsDesktopSurface(targetWindow);
+                // Only real application windows may receive window control. Desktop, taskbar,
+                // task view, Alt+Tab switcher, start menu, search, shell flyouts and hidden or
+                // cloaked windows are rejected: sending them ShowWindow/WM_CLOSE can hang or
+                // crash explorer.exe.
+                var isRejectedWindowControlTarget = rule.Action is WindowControlAction &&
+                                                    targetWindow != IntPtr.Zero &&
+                                                    !WindowControlTargetPolicy.IsWindowControlTarget(targetWindow);
                 targetCheckedAt = Stopwatch.GetTimestamp();
-                if (isDesktopWindowControlTarget)
+                if (isRejectedWindowControlTarget)
                 {
-                    outcome = "desktop-window-control-ignored";
+                    outcome = "non-application-window-control-ignored";
                     return;
                 }
 
@@ -583,7 +587,7 @@ public sealed class GestureService : IDisposable
                             return;
                         }
 
-                        SetForegroundWindow(gestureContext.StartWindow);
+                        SetForegroundWindowForAction(gestureContext.StartWindow);
                     }
 
                     foregroundActivatedAt = Stopwatch.GetTimestamp();
@@ -647,7 +651,7 @@ public sealed class GestureService : IDisposable
                 {
                     if (pendingAction.ActivateTargetWindow)
                     {
-                        SetForegroundWindow(pendingAction.TargetWindow);
+                        SetForegroundWindowForAction(pendingAction.TargetWindow);
                     }
 
                     actionExecutor.Execute(pendingAction.Rule, pendingAction.TargetWindow);
@@ -695,6 +699,22 @@ public sealed class GestureService : IDisposable
     private static bool RunsInBackground(GestureRule rule)
     {
         return rule.Action is HotkeyAction or WindowControlAction or ProgramAction;
+    }
+
+    /// <summary>
+    /// Activates the gesture start window before running the matched action. Shell surfaces (task
+    /// view, Alt+Tab switcher, taskbar, start menu, desktop) and non-interactive windows are skipped:
+    /// activating them is meaningless and can make the shell dismiss or redraw the surface the user
+    /// is currently interacting with.
+    /// </summary>
+    private static void SetForegroundWindowForAction(IntPtr window)
+    {
+        if (!WindowControlTargetPolicy.IsWindowControlTarget(window))
+        {
+            return;
+        }
+
+        SetForegroundWindow(window);
     }
 
     internal bool HasNewerSession(long sessionId)

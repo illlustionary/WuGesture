@@ -130,7 +130,7 @@ public sealed class ActionExecutor
             return;
         }
 
-        if (DesktopWindowClassifier.IsDesktopSurface(targetWindow))
+        if (!WindowControlTargetPolicy.IsWindowControlTarget(targetWindow))
         {
             return;
         }
