@@ -155,8 +155,10 @@ src\WuGesture.App\GestureEngine
 - `ProcessImageQuery.cs`：用 `OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION)` + `QueryFullProcessImageNameW` 读取进程名和可执行文件路径，不再枚举模块；安全软件的受保护进程上 `Process.MainModule` 实测可达 700ms，而该方式约 0.15ms。查询本身超过 50ms 时记录 `slow-image-query` 警告，读取失败时才回退到 `Process.GetProcessById`。
 - `ApplicationExclusionMatcher.cs`：按进程名或可执行文件路径匹配排除项；窗口到进程身份的解析与缓存由 `WindowProcessCache` 承担，避免在 hook 线程和 UI 轮询里做重量级跨进程查询。
 - `ConfiguredScopeContextProvider.cs`：用配置里的应用程序列表把窗口进程名映射到有序分类列表，供作用域匹配使用。
-- `ActionExecutor.cs`：按动作类型执行命令；快捷键通过 Win32 `SendInput` 执行，窗口控制通过 `ShowWindow`、`SetWindowPos` 和窗口消息执行。快捷键注入失败（输入桌面切换、目标窗口完整性级别更高）时会先补发一次全量抬键避免 Win/Alt/Ctrl 卡住，再间隔 30ms 重试，最多 3 次；仍失败时抛出的异常带有按键名、成功注入的事件数和 Win32 错误码，便于从日志定位。运行程序使用 `ProcessStartInfo.ArgumentList` 启动指定 `.exe`，不使用 Shell、不等待退出且不主动提权。命中桌面或桌面托管窗口的窗口控制动作会直接忽略；音量/亮度会调用对应控制器并显示 OSD。
+- `ActionExecutor.cs`：按动作类型执行命令；快捷键通过 Win32 `SendInput` 执行，窗口控制通过 `ShowWindow`、`SetWindowPos` 和窗口消息执行。快捷键注入失败（输入桌面切换、目标窗口完整性级别更高）时会先补发一次全量抬键避免 Win/Alt/Ctrl 卡住，再间隔 30ms 重试，最多 3 次；仍失败时抛出的异常带有按键名、成功注入的事件数和 Win32 错误码，便于从日志定位。运行程序使用 `ProcessStartInfo.ArgumentList` 启动指定 `.exe`，不使用 Shell、不等待退出且不主动提权。命中桌面、桌面托管窗口或其他 Shell UI 窗口（任务栏、任务视图、开始菜单、搜索）的窗口控制动作会直接忽略；音量/亮度会调用对应控制器并显示 OSD。
 - `DesktopWindowClassifier.cs`：通过桌面 Shell 窗口类以及父/拥有者链识别 `Progman`、`WorkerW` 和桌面视图，供窗口控制动作排除桌面目标；遍历逻辑在 `DesktopSurfaceWalker.cs` 中，Win32 句柄查询通过委托注入。
+- `WindowControlTargetPolicy.cs`：判断窗口能否接收窗口控制和手势前置激活。只放行真正的应用窗口：先取顶层窗口，拒绝隐藏或已被 DWM 遮蔽（其他虚拟桌面、挂起 UWP）的窗口，再沿属主链用桌面分类器和 Shell UI 规则排除任务栏、任务视图、Alt+Tab 切换器、开始菜单、搜索、Shell 弹层以及 Shell 宿主进程的窗口。
+- `ShellUiWindowHeuristics.cs`：Shell UI 窗口判定的纯函数部分——维护 Shell 窗口类清单（任务栏、任务视图、Alt+Tab 切换器、开始菜单、搜索、桌面外壳等）、Shell 宿主进程清单（explorer、ShellExperienceHost、StartMenuExperienceHost、SearchUI、TextInputHost、SiHost 等）、允许接收窗口控制的 explorer 文件夹窗口类清单，以及可见/未遮蔽窗口判定，便于单元测试。
 - `DesktopSurfaceWalker.cs`：桌面外壳判定的纯函数部分——沿父窗口/属主窗口向上查找并去重，限制最多遍历 32 个关联窗口，各 Win32 查询由调用方传入。
 - `AudioController.cs`：通过 Windows Core Audio API 读取和设置系统主音量、静音状态。
 - `BrightnessController.cs`：通过 DDC/CI、WMI、Gamma 三段回退读取和设置显示亮度。
@@ -198,7 +200,7 @@ MouseHook
 - 移动过程中会增量识别当前轨迹；一旦按当前鼠标键和方向匹配到规则，透明轨迹覆盖层会立即在当前鼠标屏幕底部居中显示规则名。
 - 动作仍在右键抬起后发起；提示完成后，快捷键和窗口控制动作按手势顺序在后台队列执行；音量和亮度仍在 UI 线程执行。`start-window` 的目标前置紧贴后台快捷键/窗口控制执行，避免快捷键注入到用户随后切换的窗口；失败会异步上报。窗口控制动作的目标窗口由应用行为设置决定。
 - 窗口控制动作的目标窗口由 `uiSettings.appBehavior.targetWindowMode` 决定：默认 `start-window` 会在鼠标按下时按起点坐标解析顶层窗口，并使用该窗口的进程和分类上下文匹配 `app > category > global` 规则；松开后会直接将该起始窗口设为当前激活窗口，再执行动作。`current-window` 会保留当前活动窗口的规则上下文，并直接对动作执行时的当前窗口执行。两种模式都不依赖鼠标结束位置，起始窗口无法解析时不会执行动作。
-- 鼠标手势或边缘操作命中桌面 Shell 或其托管窗口（包括 Wallpaper Engine 的桌面宿主）时，所有窗口控制动作都会直接忽略，不会激活桌面目标或触发系统对话框。快捷键、音量和亮度仍按原流程执行。
+- 鼠标手势或边缘操作只会对真正的应用窗口执行窗口控制。桌面 Shell 及其托管窗口（包括 Wallpaper Engine 的桌面宿主）、任务栏、任务视图（Win+Tab）、Alt+Tab 切换器、开始菜单、搜索、Shell 弹层、隐藏窗口和被 DWM 遮蔽的窗口全部跳过，也不会把这些目标设为前台。向任务视图/Alt+Tab 这类 Shell UI 窗口发送“最小化”或“关闭窗口”会让 explorer.exe 在 `Windows.UI.Xaml.dll` 中崩溃（`0xc000027b`）并重启整个 Shell，表现为系统卡死；`explorer.exe` 除文件夹窗口和对话框外、以及其他 Shell 宿主进程的所有窗口都按 Shell UI 处理。快捷键、音量和亮度仍按原流程执行。
 - `GestureService` 支持暂停；暂停时保留全局 hook，但不识别、不吞掉中/右键输入，并清理当前轨迹与预览提示，供配置界面录制手势使用。
 - `GestureService` 会读取应用行为里的排除项；`start-window` 在鼠标按下时按起始窗口判断排除项，`current-window` 则按当前前台窗口判断。命中排除项时不启动手势跟踪，也不吞掉原始鼠标输入。
 - 托盘暂停和配置界面左上角状态标识共用同一个临时用户暂停状态，配置界面录制暂停则是独立暂停来源；运行时按用户、配置和录制暂停合并后的状态控制 `GestureService` 和 `EdgeActionService`。
@@ -334,6 +336,7 @@ tests\WuGesture.App.Tests
 - `ConfiguredScopeContextProvider`：应用名到分类的映射、忽略大小写、分类裁剪去重、未知应用保持原上下文、重复配置后写覆盖前写。
 - `FullscreenWindowHeuristics`：窗口覆盖显示器的边界容差、负坐标副屏、标题栏样式和带边框最大化窗口判定。
 - `DesktopSurfaceWalker`：桌面外壳类识别、父窗口/属主窗口遍历、`root`/`rootOwner` 入口、循环链终止和 32 个关联窗口上限。
+- `ShellUiWindowHeuristics`：Shell 窗口类识别（任务视图、Alt+Tab 切换器、任务栏、开始菜单、搜索等）、Shell 宿主进程识别、explorer 文件夹窗口与对话框放行、未知 explorer 窗口按 Shell UI 拦截、可见/未遮蔽判定以及大小写不敏感匹配。
 
 - 前端 `gestureEditorNormalizers`（Vitest）：枚举回退、数值收敛、作用域解析、排除项进程名归一化和去重、边缘操作合并。
 - 前端 `gestureEditorPayloads`：规则/动作/程序/边缘操作/UI 设置到配置 payload 的映射、分类去重和 WebDAV 签名。
