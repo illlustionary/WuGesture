@@ -1,3 +1,4 @@
+using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -5,10 +6,7 @@ namespace WuGesture.App.GestureEngine;
 
 public static class ForegroundWindowFullscreenDetector
 {
-    private const int FullscreenEdgeTolerance = 2;
     private const uint MonitorDefaultToNearest = 0x00000002;
-    private const uint WsCaption = 0x00C00000;
-    private const uint WsThickFrame = 0x00040000;
 
     public static bool IsFullscreenForegroundWindow()
     {
@@ -45,25 +43,24 @@ public static class ForegroundWindowFullscreenDetector
         };
 
         if (!GetMonitorInfo(monitor, ref monitorInfo) ||
-            !CoversMonitor(windowInfo.WindowRect, monitorInfo.MonitorArea))
+            !FullscreenWindowHeuristics.CoversMonitor(
+                ToRectangle(windowInfo.WindowRect),
+                ToRectangle(monitorInfo.MonitorArea)))
         {
             return false;
         }
 
-        if ((windowInfo.Style & WsCaption) != 0)
+        if (FullscreenWindowHeuristics.HasCaption(windowInfo.Style))
         {
             return false;
         }
 
-        return !IsZoomed(foregroundWindow) || (windowInfo.Style & WsThickFrame) == 0;
+        return FullscreenWindowHeuristics.IsFullscreenWithoutMaximizeChrome(windowInfo.Style, IsZoomed(foregroundWindow));
     }
 
-    private static bool CoversMonitor(Rect windowBounds, Rect monitorBounds)
+    private static Rectangle ToRectangle(Rect rect)
     {
-        return windowBounds.Left <= monitorBounds.Left + FullscreenEdgeTolerance &&
-               windowBounds.Top <= monitorBounds.Top + FullscreenEdgeTolerance &&
-               windowBounds.Right >= monitorBounds.Right - FullscreenEdgeTolerance &&
-               windowBounds.Bottom >= monitorBounds.Bottom - FullscreenEdgeTolerance;
+        return Rectangle.FromLTRB(rect.Left, rect.Top, rect.Right, rect.Bottom);
     }
 
     private static bool IsCurrentProcessWindow(IntPtr window)

@@ -165,9 +165,9 @@ src\utils
 
 - `gestureEditorNormalizers.js`：规则 scope、手势文本、快捷键、动作类型、边缘操作和 UI 设置的解析与归一化工具；同目录的 `gestureEditorNormalizers.test.js` 用 Vitest 覆盖这些纯函数。
 - `gestureEditorFormatters.js`：手势助记符、动作展示文案和边缘操作展示文案。
-- `gestureEditorPayloads.js`：把编辑器内存模型转换成 WebView 保存、WebDAV 测试/备份使用的配置 payload。
-- `gestureEditorViewModels.js`：把宿主配置消息转换成编辑器视图模型，并提供规则和手势草稿模板。
-- `gestureEditorCollections.js`：按规则和应用程序列表聚合分类/程序侧栏条目。
+- `gestureEditorPayloads.js`：把编辑器内存模型转换成 WebView 保存、WebDAV 测试/备份使用的配置 payload；`gestureEditorPayloads.test.js` 覆盖各段映射和配置组装。
+- `gestureEditorViewModels.js`：把宿主配置消息转换成编辑器视图模型，并提供规则和手势草稿模板；`gestureEditorViewModels.test.js` 覆盖字段映射和默认值。
+- `gestureEditorCollections.js`：按规则和应用程序列表聚合分类/程序侧栏条目；`gestureEditorCollections.test.js` 覆盖计数合并、空名称过滤和排序。
 
 ## Pages
 
@@ -362,7 +362,7 @@ src\pages
 pnpm test
 ```
 
-Vitest 直接复用 `vite.config.js` 的路径别名，不需要额外的测试配置。当前覆盖 `gestureEditorNormalizers.js` 的纯函数（枚举回退、数值收敛、作用域解析、排除项进程名归一化和去重、边缘操作合并）。`*.test.js` 不参与 `vite build`，也被桌面工程的增量前端构建排除。
+Vitest 直接复用 `vite.config.js` 的路径别名，不需要额外的测试配置。测试文件与被测模块同目录，当前覆盖 `utils` 下的纯函数：`gestureEditorNormalizers`（枚举回退、数值收敛、作用域解析、排除项进程名归一化和去重、边缘操作合并）、`gestureEditorPayloads`（配置 payload 映射）、`gestureEditorViewModels`（宿主消息到编辑器模型）和 `gestureEditorCollections`（侧栏条目聚合）。`*.test.js` 不参与 `vite build`，也被桌面工程的增量前端构建排除。
 
 ## 构建
 

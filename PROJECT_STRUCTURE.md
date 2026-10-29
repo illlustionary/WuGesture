@@ -25,6 +25,7 @@ D:\Desktop\WuGesture
 ├─ .prettierrc.json
 ├─ Directory.Build.props
 ├─ .github
+│  ├─ dependabot.yml
 │  └─ workflows
 │     ├─ ci.yml
 │     ├─ release.yml
@@ -143,7 +144,8 @@ src\WuGesture.App\GestureEngine
 - `FrictionTracker.cs`：维护单次摩擦边的位移方向、计数、触发后冷却和超时重置状态。
 - `EdgeActionConfigNormalizer.cs`：将当前版本的边缘动作配置规范为运行时所需形态。
 - `EdgeActionFormatting.cs` 和 `EdgeLocation.cs`：分别提供边缘动作失败名称格式化及运行时边缘位置模型/配置位置映射。
-- `ForegroundWindowFullscreenDetector.cs`：判断当前前台窗口是否处于无边框全屏，供手势和边缘操作的全屏禁用设置共用。
+- `ForegroundWindowFullscreenDetector.cs`：判断当前前台窗口是否处于无边框全屏，供手势和边缘操作的全屏禁用设置共用；Win32 查询部分只做窗口句柄取数和委托，几何/样式判断在 `FullscreenWindowHeuristics.cs` 中。
+- `FullscreenWindowHeuristics.cs`：全屏判定的纯函数部分——窗口是否覆盖显示器（含 2px 容差、负坐标副屏）、标题栏样式位和带边框最大化窗口识别，便于单元测试。
 - `GestureRecognizer.cs`：把鼠标轨迹转换为稳定的方向模式；识别前按有效移动距离抽样，单笔手势保留 8 方向，多笔手势默认回退到更宽容的横/竖方向以贴近 WGestures 手感。
 - `GestureRuntimeDefaults.cs`：手势识别和边缘操作运行时阈值常量，包括最小移动距离、识别步数、边缘厚度、摩擦距离和超时。
 - `GestureMatcher.cs`：将识别出的鼠标键和方向模式与已加载规则进行匹配，并按作用域优先级选择命中项。
@@ -154,7 +156,8 @@ src\WuGesture.App\GestureEngine
 - `ApplicationExclusionMatcher.cs`：按进程名或可执行文件路径匹配排除项；窗口到进程身份的解析与缓存由 `WindowProcessCache` 承担，避免在 hook 线程和 UI 轮询里做重量级跨进程查询。
 - `ConfiguredScopeContextProvider.cs`：用配置里的应用程序列表把窗口进程名映射到有序分类列表，供作用域匹配使用。
 - `ActionExecutor.cs`：按动作类型执行命令；快捷键通过 Win32 `SendInput` 执行，窗口控制通过 `ShowWindow`、`SetWindowPos` 和窗口消息执行。快捷键注入失败（输入桌面切换、目标窗口完整性级别更高）时会先补发一次全量抬键避免 Win/Alt/Ctrl 卡住，再间隔 30ms 重试，最多 3 次；仍失败时抛出的异常带有按键名、成功注入的事件数和 Win32 错误码，便于从日志定位。运行程序使用 `ProcessStartInfo.ArgumentList` 启动指定 `.exe`，不使用 Shell、不等待退出且不主动提权。命中桌面或桌面托管窗口的窗口控制动作会直接忽略；音量/亮度会调用对应控制器并显示 OSD。
-- `DesktopWindowClassifier.cs`：通过桌面 Shell 窗口类以及父/拥有者链识别 `Progman`、`WorkerW` 和桌面视图，供窗口控制动作排除桌面目标。
+- `DesktopWindowClassifier.cs`：通过桌面 Shell 窗口类以及父/拥有者链识别 `Progman`、`WorkerW` 和桌面视图，供窗口控制动作排除桌面目标；遍历逻辑在 `DesktopSurfaceWalker.cs` 中，Win32 句柄查询通过委托注入。
+- `DesktopSurfaceWalker.cs`：桌面外壳判定的纯函数部分——沿父窗口/属主窗口向上查找并去重，限制最多遍历 32 个关联窗口，各 Win32 查询由调用方传入。
 - `AudioController.cs`：通过 Windows Core Audio API 读取和设置系统主音量、静音状态。
 - `BrightnessController.cs`：通过 DDC/CI、WMI、Gamma 三段回退读取和设置显示亮度。
 - `BrightnessAdjustmentQueue.cs`：把亮度调节放到后台串行队列执行，并合并连续滚轮输入，避免 DDC/CI 等慢调用阻塞鼠标钩子或主 UI。
@@ -326,10 +329,18 @@ tests\WuGesture.App.Tests
 - `ConfigurationCoordinator`：编辑器消息到 `GestureConfig` 的全字段映射、缺省分区按空列表处理、`uiSettings` 缺失时保留磁盘上的设置。
 - `ProgramActionTests`：运行程序动作的路径/参数归一化、空路径忽略和非 Shell 启动参数构造。
 - `UpdateService`：发行标签解析与版本比较、Windows x64 更新包筛选（排除 debug/预发行包）、从发行说明解析 ZIP 的 SHA256、ZIP 路径穿越防护和更新源归一化。
+- `ApplicationExclusionMatcher`：排除项路径优先/进程名回退匹配、忽略大小写、空规则、去目录去扩展名的身份归一化。
+- `EdgeActionConfigNormalizer`：缺 trigger/location 的项丢弃、`program` 降级为空快捷键、摩擦边/滚轮非法位置回退、四角操作保持原样。
+- `ConfiguredScopeContextProvider`：应用名到分类的映射、忽略大小写、分类裁剪去重、未知应用保持原上下文、重复配置后写覆盖前写。
+- `FullscreenWindowHeuristics`：窗口覆盖显示器的边界容差、负坐标副屏、标题栏样式和带边框最大化窗口判定。
+- `DesktopSurfaceWalker`：桌面外壳类识别、父窗口/属主窗口遍历、`root`/`rootOwner` 入口、循环链终止和 32 个关联窗口上限。
 
 - 前端 `gestureEditorNormalizers`（Vitest）：枚举回退、数值收敛、作用域解析、排除项进程名归一化和去重、边缘操作合并。
+- 前端 `gestureEditorPayloads`：规则/动作/程序/边缘操作/UI 设置到配置 payload 的映射、分类去重和 WebDAV 签名。
+- 前端 `gestureEditorViewModels`：宿主规则与程序到编辑器模型的字段映射、默认值与分类去重。
+- 前端 `gestureEditorCollections`：分类/程序侧栏条目的计数合并、空名称过滤和名称排序。
 
-测试工程引用 `coverlet.collector`，可以用 `dotnet test --collect:"XPlat Code Coverage"` 生成 cobertura 覆盖率报告；CI 会把报告作为构建产物上传，便于观察新增测试的效果。当前覆盖率集中在纯逻辑模块，钩子和动作执行仍然没有自动化覆盖；前端纯逻辑由 Web 子项目的 Vitest 测试覆盖，详见 `src\WuGesture.App\Web\PROJECT_STRUCTURE.md`。
+测试工程引用 `coverlet.collector`，可以用 `dotnet test --collect:"XPlat Code Coverage"` 生成 cobertura 覆盖率报告；CI 会把报告作为构建产物上传，并用 `scripts\check-coverage.ps1` 校验行/分支覆盖率不低于当前下限（行 21%、分支 19%），防止覆盖率悄悄回退。补测试后应同步上调该脚本里的下限。当前覆盖率集中在纯逻辑模块，钩子和动作执行仍然没有自动化覆盖；前端纯逻辑由 Web 子项目的 Vitest 测试覆盖，详见 `src\WuGesture.App\Web\PROJECT_STRUCTURE.md`。
 
 ## 构建与发布
 
@@ -367,10 +378,12 @@ dotnet test WuGesture.slnx --collect:"XPlat Code Coverage" --results-directory a
 
 持续集成：
 
-- `.github\workflows\test.yml` 是共享的测试流程：安装前端依赖、检查 Prettier 格式、运行前端 Vitest 测试、用 `dotnet build -warnaserror` 构建（分析器警告即失败），再运行带覆盖率的测试并上传结果。
+- `.github\workflows\test.yml` 是共享的测试流程：安装前端依赖、检查 Prettier 格式、运行前端 Vitest 测试、用 `dotnet build -warnaserror` 构建（分析器警告即失败）、用 `dotnet format --verify-no-changes` 检查 C# 格式、运行带覆盖率的测试，再用 `scripts\check-coverage.ps1` 校验覆盖率下限并上传报告。
 - `.github\workflows\ci.yml` 在推送到 `main`、提交 PR 或手动触发时调用 `test.yml`，用于日常反馈。
 - `.github\workflows\release.yml` 在 `v*` 标签上先调用 `test.yml`，测试失败时不会打包、不会创建 Release；失败后需要修复代码、删除标签并重新打标签。
+- `.github\dependabot.yml` 每周分组检查 NuGet、前端 npm 和 GitHub Actions 的依赖更新；依赖 PR 会走同一套测试流程。
 - CI 与发布流程共用 `Directory.Build.props` 中的分析器配置；该文件只在 CI 中开启 `ContinuousIntegrationBuild`，本地构建保持原有速度。
+- C# 格式统一由 `dotnet format` 维护；提交前可运行 `dotnet format WuGesture.slnx` 自动修复，`--verify-no-changes` 用于只检查不修改。
 
 发布：
 
@@ -383,6 +396,8 @@ dotnet test WuGesture.slnx --collect:"XPlat Code Coverage" --results-directory a
 自动发行：
 
 - `scripts\publish-app.ps1`：发布应用目录的通用步骤，负责关闭运行实例、执行 `dotnet publish`、校验直接构建到输出目录的 Web 前端产物，并复制 `WebView2Loader.dll`；它会将同一个应用目录同时传给 `dotnet publish -o` 和 MSBuild `OutputPath`，避免常规编译产物落到其他目录。
+- `scripts\verify-package.ps1`：校验发行 ZIP 的完整性——必需文件（`WuGesture.exe`、`Web\index.html`、`WebView2Loader.dll`、WebView2 程序集等）齐全、`Web\index.html` 引用的哈希资源都存在、没有混入 `node_modules` 或 `*.test.js`，并核对 `WuGesture.exe` 文件版本与标签版本一致。`package-release.ps1` 打包后会自动调用它，校验失败时不会继续发布。
+- `scripts\check-coverage.ps1`：读取最新一份 `coverage.cobertura.xml`，校验行/分支覆盖率不低于脚本内的下限（行 21%、分支 19%），供 CI 阻止覆盖率回退；可用 `-MinimumLineRate` / `-MinimumBranchRate` 临时覆盖。
 - `scripts\package-debug.ps1`：无需参数，调用 `publish-app.ps1` 生成 Debug `win-x64` 发布目录和 `WuGesture-debug-windows-x64.zip`。
 - `scripts\package-release.ps1`：基于已创建的 `v*` Git 标签生成 framework-dependent `win-x64` 发布目录、版本化 ZIP 包和从相邻标签之间提交整理的 `RELEASE_NOTES.md`；ZIP 内的根目录固定为 `WuGesture`，而 ZIP 文件名保留版本号，ZIP 的 SHA256 以 `SHA256 (<ZIP 文件名>): <哈希>` 一行写入更新说明末尾，应用内更新直接读取发行说明校验，不再下载单独的校验文件。发行包不包含 .NET，缺少 .NET 10 Desktop Runtime 时由 .NET Host 显示系统安装提示。
 - `.github\workflows\release.yml`：GitHub 收到 `v*` 标签后先运行共享测试流程 `test.yml`，通过后才构建发行包、创建 GitHub Release 并只上传 ZIP；已存在发行版时会覆盖附件并同步刷新更新说明，保证说明里的 SHA256 与新 ZIP 一致。配置 `GITEE_REPOSITORY` 和 `GITEE_TOKEN` secrets 后，会镜像 `main` 和标签到 Gitee，并将相同的附件和更新说明发布至 Gitee。

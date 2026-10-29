@@ -36,9 +36,24 @@ GitHub Actions 的 `.github/workflows/release.yml` 在收到标签后生成 fram
 
 该命令使用 `artifacts\release\` 作为唯一输出根目录，其中包含 `WuGesture\`、版本化 ZIP 和 `RELEASE_NOTES.md`；SHA256 也会打印到控制台，方便手工核对。通用发布命令单独使用 `artifacts\publish\WuGesture\`。
 
+打包完成后，`package-release.ps1` 会自动调用 `scripts\verify-package.ps1` 校验发行包：必需文件（`WuGesture.exe`、`WuGesture.dll`、`Web\index.html`、`WebView2Loader.dll`、WebView2 程序集等）齐全，`Web\index.html` 引用的哈希资源都存在，没有混入 `node_modules` 或 `*.test.js`，并且 `WuGesture.exe` 的文件版本与标签版本一致。任一检查失败都不会继续生成更新说明或发布；需要单独复查已有 ZIP 时，可手动执行：
+
+```powershell
+.\scripts\verify-package.ps1 -ArchivePath artifacts\release\WuGesture-v0.97-windows-x64.zip -Version v0.97
+```
+
 ### 发行门禁
 
-`release.yml` 会先运行共享测试流程 `test.yml`（前端格式检查、`dotnet build -warnaserror`、单元测试），只有全部通过才会打包和发布。标签指向的提交如果编译失败或测试不通过，GitHub 和 Gitee 都不会产生新的发行版；此时需要修复代码后删除并重建标签（远程名按你的配置替换，本仓库的 GitHub 远程是 `origin`）：
+`release.yml` 会先运行共享测试流程 `test.yml`（前端 Prettier 格式检查、前端 Vitest 测试、`dotnet build -warnaserror`、`dotnet format --verify-no-changes`、带覆盖率的单元测试，以及 `scripts\check-coverage.ps1` 的覆盖率下限校验），只有全部通过才会打包和发布。本地提交前可用同样的命令自查：
+
+```powershell
+dotnet format WuGesture.slnx                 # 自动修复 C# 格式
+dotnet format WuGesture.slnx --verify-no-changes
+dotnet test WuGesture.slnx --collect:"XPlat Code Coverage" --results-directory artifacts\test-results
+.\scripts\check-coverage.ps1
+```
+
+覆盖率下限写在 `scripts\check-coverage.ps1` 里（行 21%、分支 19%），补测试后应同步上调，避免门禁随代码增长而失效。标签指向的提交如果编译失败或测试不通过，GitHub 和 Gitee 都不会产生新的发行版；此时需要修复代码后删除并重建标签（远程名按你的配置替换，本仓库的 GitHub 远程是 `origin`）：
 
 ```powershell
 git tag -d v0.97
