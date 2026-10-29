@@ -1,8 +1,8 @@
-using Microsoft.Win32;
-using WuGesture.App.GestureEngine;
 using System.ComponentModel;
 using System.Security.Principal;
 using System.Text.Json;
+using Microsoft.Win32;
+using WuGesture.App.GestureEngine;
 
 namespace WuGesture.App;
 
