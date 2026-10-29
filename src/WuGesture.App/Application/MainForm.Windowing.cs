@@ -1,5 +1,5 @@
-using Microsoft.Win32;
 using System.Runtime.InteropServices;
+using Microsoft.Win32;
 using WuGesture.App.GestureEngine;
 
 namespace WuGesture.App;

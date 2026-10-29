@@ -1,8 +1,8 @@
-using Microsoft.Web.WebView2.Core;
-using Microsoft.Web.WebView2.WinForms;
 using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
+using Microsoft.Web.WebView2.Core;
+using Microsoft.Web.WebView2.WinForms;
 
 namespace WuGesture.App;
 

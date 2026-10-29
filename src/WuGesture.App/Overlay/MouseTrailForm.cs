@@ -1,5 +1,5 @@
-using System.Drawing.Drawing2D;
 using System.Diagnostics;
+using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
 using WuGesture.App.GestureEngine;
 
