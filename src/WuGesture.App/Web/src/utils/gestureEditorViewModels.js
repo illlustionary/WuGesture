@@ -36,9 +36,11 @@ export function toViewRule(rule, id) {
 
 export function toViewApplication(application) {
   const categories = normalizeCategories(application.categories)
+  const name = String(application.name ?? '').trim()
+  const displayName = String(application.displayName ?? '').trim()
   return {
-    name: String(application.name ?? '').trim(),
-    displayName: String(application.displayName ?? application.name ?? '').trim(),
+    name,
+    displayName: displayName || name,
     path: String(application.path ?? '').trim(),
     categories,
     icon: String(application.icon ?? '').trim()

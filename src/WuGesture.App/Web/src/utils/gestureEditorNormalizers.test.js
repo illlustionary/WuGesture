@@ -7,6 +7,7 @@ import {
   normalizeActionType,
   normalizeAmount,
   normalizeAppearanceSettings,
+  normalizeBrightnessOperation,
   normalizeEdgeAction,
   normalizeEdgeActions,
   normalizeExcludedApplications,
@@ -16,7 +17,9 @@ import {
   normalizeMouseTrailSettings,
   normalizeObjectKeys,
   normalizeUpdateSettings,
+  normalizeVolumeOperation,
   normalizeWheelDirection,
+  normalizeWindowOperation,
   parseKeys,
   parsePattern,
   parseScope
@@ -75,6 +78,13 @@ describe('枚举与数值规范化', () => {
     expect(normalizeFrictionCount(0)).toBe(1)
     expect(normalizeFrictionCount(100)).toBe(20)
     expect(normalizeFrictionCount(null)).toBe(4)
+  })
+
+  it('动作操作大小写不敏感，未知值回退到默认操作', () => {
+    expect(normalizeVolumeOperation(' DECREASE ')).toBe('decrease')
+    expect(normalizeBrightnessOperation('Decrease')).toBe('decrease')
+    expect(normalizeWindowOperation('CLOSE')).toBe('close')
+    expect(normalizeWindowOperation('explode')).toBe('toggle-maximize')
   })
 })
 

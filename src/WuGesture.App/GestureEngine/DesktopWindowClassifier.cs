@@ -7,48 +7,16 @@ internal static class DesktopWindowClassifier
     private const uint GetAncestorRoot = 2;
     private const uint GetAncestorRootOwner = 3;
     private const uint GetWindowOwner = 4;
-    private const int MaxRelatedWindows = 32;
 
     public static bool IsDesktopSurface(IntPtr window)
     {
-        if (window == IntPtr.Zero)
-        {
-            return false;
-        }
-
-        var visited = new HashSet<IntPtr>();
-        return IsDesktopSurfaceOrRelated(window, visited) ||
-               IsDesktopSurfaceOrRelated(GetAncestor(window, GetAncestorRoot), visited) ||
-               IsDesktopSurfaceOrRelated(GetAncestor(window, GetAncestorRootOwner), visited);
-    }
-
-    private static bool IsDesktopSurfaceOrRelated(IntPtr window, ISet<IntPtr> visited)
-    {
-        for (var current = window; current != IntPtr.Zero && visited.Add(current); current = GetParent(current))
-        {
-            if (IsDesktopShellClass(GetWindowClassName(current)))
-            {
-                return true;
-            }
-
-            var owner = GetWindow(current, GetWindowOwner);
-            if (owner != IntPtr.Zero && IsDesktopSurfaceOrRelated(owner, visited))
-            {
-                return true;
-            }
-
-            if (visited.Count >= MaxRelatedWindows)
-            {
-                break;
-            }
-        }
-
-        return false;
-    }
-
-    private static bool IsDesktopShellClass(string className)
-    {
-        return className is "Progman" or "WorkerW" or "SHELLDLL_DefView";
+        return DesktopSurfaceWalker.IsDesktopSurface(
+            window,
+            GetWindowClassName,
+            GetParent,
+            hwnd => GetWindow(hwnd, GetWindowOwner),
+            hwnd => GetAncestor(hwnd, GetAncestorRoot),
+            hwnd => GetAncestor(hwnd, GetAncestorRootOwner));
     }
 
     private static string GetWindowClassName(IntPtr window)

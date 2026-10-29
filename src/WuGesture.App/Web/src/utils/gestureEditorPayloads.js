@@ -67,11 +67,13 @@ export function toPayloadAction(rule) {
 }
 
 export function toPayloadApplication(application) {
+  const name = String(application?.name ?? '').trim()
+  const displayName = String(application?.displayName ?? '').trim()
   return {
-    name: application.name.trim(),
-    displayName: String(application.displayName || application.name || '').trim(),
-    path: application.path.trim(),
-    categories: Array.isArray(application.categories)
+    name,
+    displayName: displayName || name,
+    path: String(application?.path ?? '').trim(),
+    categories: Array.isArray(application?.categories)
       ? application.categories.map(category => String(category ?? '').trim()).filter(Boolean)
       : []
   }

@@ -424,17 +424,23 @@ export function normalizeActionType(actionType) {
 }
 
 export function normalizeWindowOperation(operation) {
-  const normalized = String(operation ?? '').trim()
+  const normalized = String(operation ?? '')
+    .trim()
+    .toLowerCase()
   return WINDOW_OPERATIONS.some(item => item.value === normalized) ? normalized : OPERATIONS.toggleMaximize
 }
 
 export function normalizeVolumeOperation(operation) {
-  const normalized = String(operation ?? '').trim()
+  const normalized = String(operation ?? '')
+    .trim()
+    .toLowerCase()
   return VOLUME_OPERATIONS.some(item => item.value === normalized) ? normalized : OPERATIONS.increase
 }
 
 export function normalizeBrightnessOperation(operation) {
-  const normalized = String(operation ?? '').trim()
+  const normalized = String(operation ?? '')
+    .trim()
+    .toLowerCase()
   return BRIGHTNESS_OPERATIONS.some(item => item.value === normalized) ? normalized : OPERATIONS.increase
 }
 

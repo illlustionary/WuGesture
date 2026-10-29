@@ -46,6 +46,7 @@ if ($changes.Count -eq 0) {
 }
 
 Compress-Archive -LiteralPath $publishDirectory -DestinationPath $archivePath -CompressionLevel Optimal -Force
+& (Join-Path $scriptDir "verify-package.ps1") -ArchivePath $archivePath -Version $Version
 
 # The in-app updater reads the package hash from the release notes, so the checksum ships with the
 # release description instead of forcing users to download a separate file.

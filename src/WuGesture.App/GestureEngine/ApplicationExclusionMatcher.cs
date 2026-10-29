@@ -51,7 +51,7 @@ public sealed class ApplicationExclusionMatcher
             applications.Any(application => application.DisableEdgeActions && IsMatch(application, appName, appPath));
     }
 
-    private static IReadOnlyList<ExcludedApplicationConfig> NormalizeApplications(IEnumerable<ExcludedApplicationConfig>? source)
+    internal static IReadOnlyList<ExcludedApplicationConfig> NormalizeApplications(IEnumerable<ExcludedApplicationConfig>? source)
     {
         return (source ?? [])
             .Select(application => new ExcludedApplicationConfig
@@ -65,7 +65,7 @@ public sealed class ApplicationExclusionMatcher
             .ToArray();
     }
 
-    private static bool IsMatch(ExcludedApplicationConfig application, string appName, string appPath)
+    internal static bool IsMatch(ExcludedApplicationConfig application, string appName, string appPath)
     {
         if (!string.IsNullOrWhiteSpace(application.Path) &&
             !string.IsNullOrWhiteSpace(appPath) &&

@@ -43,8 +43,15 @@ jobs:
       - name: Build
         run: dotnet build WuGesture.slnx --nologo -warnaserror
 
+      - name: Check .NET formatting
+        run: dotnet format WuGesture.slnx --verify-no-changes --verbosity minimal
+
       - name: Run tests with coverage
         run: dotnet test WuGesture.slnx --nologo --no-build --collect:"XPlat Code Coverage" --results-directory artifacts/test-results
+
+      - name: Check coverage floor
+        shell: pwsh
+        run: ./scripts/check-coverage.ps1
 
       - name: Upload test results
         if: always()
