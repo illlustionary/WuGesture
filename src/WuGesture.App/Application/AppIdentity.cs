@@ -8,10 +8,14 @@ internal static class AppIdentity
     public const string SingleInstanceMutexName = @"Local\WuGesture.SingleInstance";
     public const string ShowExistingInstanceEventName = @"Local\WuGesture.ShowExistingInstance";
     public const string ShowExistingInstanceCompletedEventName = @"Local\WuGesture.ShowExistingInstanceCompleted";
+    public const string ExitRequestedEventName = @"Local\WuGesture.ExitRequested";
+    public const string ExitRequestedCompletedEventName = @"Local\WuGesture.ExitRequestedCompleted";
     public const string ElevatedRelaunchArgument = "--elevated-relaunch";
     public const string StartupLaunchArgument = "--startup";
     // Added by the updater when it restarts the freshly installed version.
     public const string UpdateRestartArgument = "--updated";
+    // Closes the running instance without a UI or elevation prompt.
+    public const string ExitArgument = "--exit";
 
     public static string GetLaunchExecutablePath()
     {

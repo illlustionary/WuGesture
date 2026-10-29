@@ -16,12 +16,31 @@ static class Program
             string.Equals(arg, AppIdentity.StartupLaunchArgument, StringComparison.OrdinalIgnoreCase));
         var isUpdateRestart = args.Any(arg =>
             string.Equals(arg, AppIdentity.UpdateRestartArgument, StringComparison.OrdinalIgnoreCase));
+        var isExitRequest = args.Any(arg =>
+            string.Equals(arg, AppIdentity.ExitArgument, StringComparison.OrdinalIgnoreCase));
         using var mutex = new Mutex(initiallyOwned: false, AppIdentity.SingleInstanceMutexName);
         var ownsMutex = mutex.WaitOne(isElevatedRelaunch ? TimeSpan.FromSeconds(15) : TimeSpan.Zero);
         if (!ownsMutex)
         {
+            if (isExitRequest)
+            {
+                AppLogger.Information("Program", "exit-requested", "Forwarding the exit request to the existing instance.");
+                RequestExistingInstanceExit();
+                AppLogger.Shutdown(TimeSpan.FromSeconds(1));
+                return;
+            }
+
             AppLogger.Information("Program", "existing-instance-detected", "Forwarding the launch request to the existing instance.");
             SignalExistingInstance();
+            AppLogger.Shutdown(TimeSpan.FromSeconds(1));
+            return;
+        }
+
+        if (isExitRequest)
+        {
+            // The exit request owns the single-instance mutex, so nothing is running to close.
+            AppLogger.Information("Program", "exit-request-without-instance", "No running instance was found for the exit request.");
+            mutex.ReleaseMutex();
             AppLogger.Shutdown(TimeSpan.FromSeconds(1));
             return;
         }
@@ -43,12 +62,22 @@ static class Program
                 initialState: false,
                 mode: EventResetMode.AutoReset,
                 name: AppIdentity.ShowExistingInstanceCompletedEventName);
+            using var exitRequestedEvent = new EventWaitHandle(
+                initialState: false,
+                mode: EventResetMode.AutoReset,
+                name: AppIdentity.ExitRequestedEventName);
+            using var exitRequestedCompletedEvent = new EventWaitHandle(
+                initialState: false,
+                mode: EventResetMode.AutoReset,
+                name: AppIdentity.ExitRequestedCompletedEventName);
             // An update restart must always show the settings window, even for auto-start instances.
             using var form = new MainForm(isStartupLaunch && !isUpdateRestart, isUpdateRestart);
             using var listenerCancellation = new CancellationTokenSource();
             var listener = Task.Run(() => ListenForExistingInstanceRequests(
                 showExistingInstanceEvent,
                 showExistingInstanceCompletedEvent,
+                exitRequestedEvent,
+                exitRequestedCompletedEvent,
                 form,
                 listenerCancellation.Token));
 
@@ -56,6 +85,7 @@ static class Program
 
             listenerCancellation.Cancel();
             showExistingInstanceEvent.Set();
+            exitRequestedEvent.Set();
             try
             {
                 listener.Wait(TimeSpan.FromSeconds(1));
@@ -163,54 +193,125 @@ static class Program
         AppLogger.Warning("Program", "existing-instance-signal-failed", "Unable to signal an existing instance after all retries.");
     }
 
+    private static void RequestExistingInstanceExit()
+    {
+        EventWaitHandle? exitRequestedEvent = null;
+        EventWaitHandle? exitRequestedCompletedEvent = null;
+        try
+        {
+            for (var attempt = 0; attempt < 10 && exitRequestedEvent is null; attempt++)
+            {
+                try
+                {
+                    exitRequestedEvent = EventWaitHandle.OpenExisting(AppIdentity.ExitRequestedEventName);
+                    exitRequestedCompletedEvent = EventWaitHandle.OpenExisting(
+                        AppIdentity.ExitRequestedCompletedEventName);
+                }
+                catch (Exception exception)
+                {
+                    exitRequestedEvent?.Dispose();
+                    exitRequestedEvent = null;
+                    exitRequestedCompletedEvent?.Dispose();
+                    exitRequestedCompletedEvent = null;
+                    AppLogger.Warning("Program", "exit-request-retry", $"Unable to open the exit request events on attempt {attempt + 1}.", exception);
+                    Thread.Sleep(100);
+                }
+            }
+
+            if (exitRequestedEvent is null || exitRequestedCompletedEvent is null)
+            {
+                AppLogger.Warning("Program", "exit-request-failed", "Unable to reach the existing instance after all retries.");
+                return;
+            }
+
+            exitRequestedCompletedEvent.Reset();
+            exitRequestedEvent.Set();
+            if (exitRequestedCompletedEvent.WaitOne(TimeSpan.FromSeconds(8)))
+            {
+                AppLogger.Information("Program", "exit-request-accepted", "The existing instance accepted the exit request.");
+            }
+            else
+            {
+                AppLogger.Warning("Program", "exit-request-timeout", "The existing instance did not confirm the exit request in time.");
+            }
+        }
+        finally
+        {
+            exitRequestedEvent?.Dispose();
+            exitRequestedCompletedEvent?.Dispose();
+        }
+    }
+
     [System.Runtime.InteropServices.DllImport("user32.dll")]
     private static extern bool AllowSetForegroundWindow(uint dwProcessId);
 
     private static void ListenForExistingInstanceRequests(
         EventWaitHandle showExistingInstanceEvent,
         EventWaitHandle showExistingInstanceCompletedEvent,
+        EventWaitHandle exitRequestedEvent,
+        EventWaitHandle exitRequestedCompletedEvent,
         MainForm form,
         CancellationToken cancellationToken)
     {
+        var requestEvents = new WaitHandle[] { showExistingInstanceEvent, exitRequestedEvent };
         while (!cancellationToken.IsCancellationRequested)
         {
-            if (!showExistingInstanceEvent.WaitOne(TimeSpan.FromMilliseconds(250)))
-            {
-                continue;
-            }
-
-            var waitUntil = DateTime.UtcNow.AddSeconds(3);
-            while (!cancellationToken.IsCancellationRequested &&
-                !form.IsDisposed &&
-                !form.IsHandleCreated &&
-                DateTime.UtcNow < waitUntil)
-            {
-                Thread.Sleep(50);
-            }
-
-            if (cancellationToken.IsCancellationRequested || form.IsDisposed || !form.IsHandleCreated)
+            var signaled = WaitHandle.WaitAny(requestEvents, TimeSpan.FromMilliseconds(250));
+            if (signaled == WaitHandle.WaitTimeout || !TryWaitForFormHandle(form, cancellationToken))
             {
                 continue;
             }
 
             try
             {
-                form.BeginInvoke(new Action(() =>
+                if (signaled == 0)
                 {
-                    try
+                    form.BeginInvoke(new Action(() =>
                     {
-                        form.ShowExistingInstance();
-                    }
-                    finally
+                        try
+                        {
+                            form.ShowExistingInstance();
+                        }
+                        finally
+                        {
+                            showExistingInstanceCompletedEvent.Set();
+                        }
+                    }));
+                }
+                else
+                {
+                    AppLogger.Information("Program", "exit-request-received", "Closing the app because another instance requested an exit.");
+                    form.BeginInvoke(new Action(() =>
                     {
-                        showExistingInstanceCompletedEvent.Set();
-                    }
-                }));
+                        try
+                        {
+                            form.RequestClose();
+                        }
+                        finally
+                        {
+                            exitRequestedCompletedEvent.Set();
+                        }
+                    }));
+                }
             }
             catch (Exception exception)
             {
                 AppLogger.Warning("Program", "existing-instance-ui-dispatch-failed", "Unable to dispatch the existing-instance request to the UI thread.", exception);
             }
         }
+    }
+
+    private static bool TryWaitForFormHandle(MainForm form, CancellationToken cancellationToken)
+    {
+        var waitUntil = DateTime.UtcNow.AddSeconds(3);
+        while (!cancellationToken.IsCancellationRequested &&
+            !form.IsDisposed &&
+            !form.IsHandleCreated &&
+            DateTime.UtcNow < waitUntil)
+        {
+            Thread.Sleep(50);
+        }
+
+        return !cancellationToken.IsCancellationRequested && !form.IsDisposed && form.IsHandleCreated;
     }
 }

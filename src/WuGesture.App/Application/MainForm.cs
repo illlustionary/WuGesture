@@ -377,7 +377,11 @@ public sealed partial class MainForm : Form
         PostStatus(isUserPaused ? "paused" : "running");
     }
 
-    private void RequestClose()
+    /// <summary>
+    /// Closes the app from the UI thread: tray exit, elevation hand-off, update restart and the
+    /// external <c>--exit</c> request all end up here.
+    /// </summary>
+    public void RequestClose()
     {
         isExiting = true;
         BeginInvokeSafe(Close);
