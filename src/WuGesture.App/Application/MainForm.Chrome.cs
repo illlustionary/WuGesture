@@ -31,6 +31,8 @@ public sealed partial class MainForm
     private const int SystemMetricCyCaption = 4;
     private const int SystemMetricCySizeFrame = 33;
     private const int SystemMetricCxPaddedBorder = 92;
+    private const uint TrackMouseEventLeaf = 0x00000002;
+    private const uint TrackMouseEventNonClient = 0x00000010;
     private const int DwmwaBorderColor = 34;
     private const int DwmwaCaptionColor = 35;
     private const int DwmwaTextColor = 36;
@@ -54,6 +56,17 @@ public sealed partial class MainForm
     private Font? titleBarGlyphFont;
 
     private int TitleBarHeight => TitleBarLayout.Scale(TitleBarLayout.LogicalHeight, DeviceDpi);
+
+    /// <summary>
+    /// Paints the whole title bar into an offscreen buffer and skips the separate background erase.
+    /// Without it, every hover change repaints the strip in place and Windows can compose the frame between
+    /// the background fill and the icon/text/button drawing, which makes the whole caption blink.
+    /// </summary>
+    private void ConfigureTitleBarPainting()
+    {
+        SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint, true);
+        UpdateStyles();
+    }
 
     /// <summary>
     /// Hosts the WebView so the painted title bar keeps its own strip above the web content.
@@ -263,8 +276,60 @@ public sealed partial class MainForm
             return;
         }
 
+        var previous = hoveredTitleBarButton;
         hoveredTitleBarButton = button;
-        InvalidateTitleBar();
+
+        // Only the two buttons whose highlight changed need a repaint. Invalidating the whole strip on every
+        // crossing made the caption redraw while the pointer moved across the window buttons.
+        InvalidateTitleBarButtons(previous, button);
+    }
+
+    private void InvalidateTitleBarButtons(TitleBarButton first, TitleBarButton second)
+    {
+        if (IsDisposed || Disposing || !IsHandleCreated)
+        {
+            return;
+        }
+
+        var region = GetTitleBarButtonBounds(first);
+        var secondBounds = GetTitleBarButtonBounds(second);
+        if (!secondBounds.IsEmpty)
+        {
+            region = region.IsEmpty ? secondBounds : Rectangle.Union(region, secondBounds);
+        }
+
+        if (region.IsEmpty)
+        {
+            return;
+        }
+
+        Invalidate(Rectangle.Inflate(region, 1, 1));
+    }
+
+    private Rectangle GetTitleBarButtonBounds(TitleBarButton button)
+    {
+        if (button == TitleBarButton.None)
+        {
+            return Rectangle.Empty;
+        }
+
+        var bounds = TitleBarLayout.GetButtonBounds(ClientSize.Width, TitleBarHeight, DeviceDpi, button);
+        return bounds.Width <= 0 || bounds.Height <= 0 ? Rectangle.Empty : bounds;
+    }
+
+    /// <summary>
+    /// <c>WM_NCMOUSELEAVE</c> is only posted after an explicit <c>TrackMouseEvent</c> request, so ask for it on
+    /// every non-client move; otherwise a hovered button stays highlighted after the pointer leaves the window.
+    /// </summary>
+    private void TrackNonClientMouseLeave()
+    {
+        var track = new TrackMouseEventData
+        {
+            Size = Marshal.SizeOf<TrackMouseEventData>(),
+            Flags = TrackMouseEventLeaf | TrackMouseEventNonClient,
+            Window = Handle
+        };
+        _ = TrackMouseEvent(ref track);
     }
 
     /// <summary>
@@ -367,6 +432,7 @@ public sealed partial class MainForm
 
                 break;
             case WmNcMouseMove:
+                TrackNonClientMouseLeave();
                 UpdateTitleBarHover(PointToClient(GetScreenPoint(message.LParam)));
                 break;
             case WmNcMouseLeave:
@@ -411,6 +477,15 @@ public sealed partial class MainForm
         public IntPtr lppos;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    private struct TrackMouseEventData
+    {
+        public int Size;
+        public uint Flags;
+        public IntPtr Window;
+        public uint HoverTime;
+    }
+
     [DllImport("user32.dll")]
     private static extern int GetSystemMetricsForDpi(int index, uint dpi);
 
@@ -419,6 +494,9 @@ public sealed partial class MainForm
 
     [DllImport("user32.dll")]
     private static extern bool IsZoomed(IntPtr hwnd);
+
+    [DllImport("user32.dll")]
+    private static extern bool TrackMouseEvent(ref TrackMouseEventData track);
 
     [DllImport("dwmapi.dll")]
     private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int valueSize);
