@@ -43,6 +43,7 @@ public sealed partial class MainForm : Form
     {
         this.startHiddenToTray = startHiddenToTray;
         this.isUpdateRestart = isUpdateRestart;
+        ConfigureTitleBarPainting();
         var contentHost = CreateContentHost();
         ApplyTitleBarMetrics();
         webViewHost = new WebViewHost(this, contentHost, CanUseUi, HandleWebMessage);
