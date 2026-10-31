@@ -33,7 +33,6 @@ public sealed partial class MainForm : Form
     private bool removeTaskbarButtonAfterMinimize;
     private bool hideConfigWindowOnLaunch;
     private bool isUserPaused;
-    private bool isConfigPaused;
     private bool isEditorPaused;
     private bool hasWebUiLoaded;
     private bool hasPostedUpdateCompleted;
@@ -139,7 +138,6 @@ public sealed partial class MainForm : Form
         LevelOsdOverlay.Configure(
             SynchronizationContext.Current ?? new WindowsFormsSynchronizationContext(),
             ShowLevelOsd);
-        isConfigPaused = config.Config.UiSettings.AppBehavior.GesturePaused;
         ApplyAppBehaviorSettings(config.Config.UiSettings.AppBehavior);
         if (elevationLauncher.TryRelaunch(config.Config.UiSettings.AppBehavior))
         {
@@ -390,7 +388,7 @@ public sealed partial class MainForm : Form
 
     private void ApplyGesturePauseState()
     {
-        var paused = isUserPaused || isConfigPaused || isEditorPaused;
+        var paused = isUserPaused || isEditorPaused;
         gestureService?.SetPaused(paused);
         edgeActionService?.SetPaused(paused);
         if (paused)
@@ -705,7 +703,6 @@ public sealed partial class MainForm : Form
         edgeActionService?.UpdateActions(loadedConfig.Config.EdgeActions);
         edgeActionService?.UpdateExcludedApplications(loadedConfig.Config.UiSettings.AppBehavior.ExcludedApplications);
         edgeActionService?.UpdateFullscreenBehavior(loadedConfig.Config.UiSettings.AppBehavior.DisableEdgeActionsInFullscreen);
-        isConfigPaused = loadedConfig.Config.UiSettings.AppBehavior.GesturePaused;
         ApplyAppBehaviorSettings(loadedConfig.Config.UiSettings.AppBehavior);
         ApplyUiSettings(loadedConfig.Config.UiSettings);
         ApplyGesturePauseState();

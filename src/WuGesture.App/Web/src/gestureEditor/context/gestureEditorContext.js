@@ -97,7 +97,6 @@ const persistenceActions = useGestureConfigPersistence({
     autoSaveTimer = timer
   },
   setConfigResultMessage,
-  setGesturePaused,
   setMessage,
   state,
   webView
@@ -452,7 +451,6 @@ function replaceConfig(
     state.edgeActions = normalizeEdgeActions(edgeActions)
   }
   state.uiSettings = normalizeUiSettings(uiSettings)
-  setGesturePaused(state.uiSettings.appBehavior.gesturePaused)
   ensureSelection(SCOPE_KINDS.category)
   ensureSelection(SCOPE_KINDS.app)
 }

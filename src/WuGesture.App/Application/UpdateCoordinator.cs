@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Globalization;
+using System.Text;
 using System.Text.Json;
 using WuGesture.App.GestureEngine;
 using WuGesture.App.Updater;
@@ -433,6 +434,52 @@ internal sealed class UpdateCoordinator : IDisposable
                 !string.Equals(argument, AppIdentity.ElevatedRelaunchArgument, StringComparison.OrdinalIgnoreCase) &&
                 !string.Equals(argument, AppIdentity.UpdateRestartArgument, StringComparison.OrdinalIgnoreCase))
             .ToArray();
-        return string.Join(' ', arguments);
+        return string.Join(' ', arguments.Select(QuoteArgument));
+    }
+
+    /// <summary>
+    /// Quotes one argument with the Windows command-line rules so a path containing spaces or quotes survives
+    /// the restart hand-off: backslashes are doubled before a quote and at the end of the argument.
+    /// </summary>
+    internal static string QuoteArgument(string argument)
+    {
+        if (argument.Length == 0)
+        {
+            return "\"\"";
+        }
+
+        if (argument.IndexOfAny([' ', '\t', '"']) < 0)
+        {
+            return argument;
+        }
+
+        var builder = new StringBuilder(argument.Length + 2);
+        builder.Append('"');
+        var backslashes = 0;
+        foreach (var character in argument)
+        {
+            if (character == '\\')
+            {
+                backslashes++;
+                continue;
+            }
+
+            if (character == '"')
+            {
+                builder.Append('\\', (backslashes * 2) + 1);
+                builder.Append('"');
+            }
+            else
+            {
+                builder.Append('\\', backslashes);
+                builder.Append(character);
+            }
+
+            backslashes = 0;
+        }
+
+        builder.Append('\\', backslashes * 2);
+        builder.Append('"');
+        return builder.ToString();
     }
 }

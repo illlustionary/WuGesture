@@ -13,7 +13,6 @@ export function useGestureConfigPersistence({
   state,
   initialized,
   setConfigResultMessage,
-  setGesturePaused,
   setMessage,
   webView
 }) {
@@ -115,18 +114,12 @@ export function useGestureConfigPersistence({
   }
 
   function saveUiSettings(nextSettings) {
-    const previousPaused = Boolean(state.uiSettings.appBehavior.gesturePaused)
     state.uiSettings = normalizeUiSettings(nextSettings)
-    const nextPaused = Boolean(state.uiSettings.appBehavior.gesturePaused)
-    if (previousPaused !== nextPaused) {
-      setGesturePaused(nextPaused)
-    }
     saveRules({ notifyPreview: false })
   }
 
   function resetUiSettings() {
     state.uiSettings = createDefaultUiSettings()
-    setGesturePaused(false)
     state.webDavTestState = 'idle'
     state.webDavTestedSignature = ''
     pendingWebDavTestSignature = ''

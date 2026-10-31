@@ -88,7 +88,7 @@ src\WuGesture.App
 - `TitleBarLayout.cs`：标题栏的纯几何计算（按钮从右到左排列、点击命中、图标与标题可用区域、按 DPI 缩放），不依赖窗口句柄，便于单元测试。
 - `CloseRequestPolicy.cs`：判断 `FormClosing` 的原因是否属于外部关闭请求。WinForms 只把标题栏按钮和 Alt+F4 报为 `UserClosing`，其他 `WM_CLOSE`（鼠标手势“关闭窗口”、自动化工具、任务管理器）都报为 `TaskManagerClosing`；两者都按关闭按钮行为处理，系统关机和 `Application.Exit` 仍然真正退出。
 - `AppLogger.cs`：应用级结构化 JSONL 日志。`Program.cs` 会在入口初始化它，以记录启动/退出、单实例 IPC（包括第二个实例的转发失败）、WebView2 Runtime 版本和未处理异常；配置操作、WebView 宿主及动作失败也会记录。日志异步批量写入 `%LocalAppData%\WuGesture\logs\application-YYYYMMDD.log`，单文件达到 2MB 时保留一份 `.previous` 轮转日志，保留最近 7 天；队列满时会生成丢弃标记，写入失败时回退到 `%TEMP%\WuGesture-application-log-error.log`。日志不记录配置 JSON、WebDAV 凭据或 WebView 消息正文。
-- `WebViewHost.cs`：负责 WebView2 控件的创建、销毁、虚拟主机映射、导航和消息事件订阅；导航前使用宿主提供的默认底色和浅深主题标记，避免配置窗口重建时客户端区域按白色首帧绘制；入站消息仍同步交由 `MainForm` 的业务处理器执行，宿主不存在时出站消息直接丢弃。WebView2 使用显式创建的 `CoreWebView2Environment`，profile 固定放在 `%LocalAppData%\WuGesture\WebView2`（不再放在 exe 旁边，安装目录可能只读、发布脚本也会清空输出目录）；`ready`/`disposed` 日志会记录浏览器进程号，释放后 3 秒内仍未退出的浏览器进程会被回收，保证关闭到托盘后不残留 Chromium 进程；Release 构建关闭 DevTools、默认右键菜单、浏览器快捷键和缩放，避免配置界面被误刷新或缩放。
+- `WebViewHost.cs`：负责 WebView2 控件的创建、销毁、虚拟主机映射、导航和消息事件订阅；导航前使用宿主提供的默认底色和浅深主题标记，避免配置窗口重建时客户端区域按白色首帧绘制；入站消息仍同步交由 `MainForm` 的业务处理器执行，宿主不存在时出站消息直接丢弃。只有 `https://gesture.wu.philosophy` 下的页面可以投递消息：入站消息会校验 `Source`，离开该主机的导航一律取消并交给默认浏览器，新窗口请求也只做外部打开；控件同时关闭外部拖放，避免把文件或链接拖进窗口后导航到其他来源。WebView2 使用显式创建的 `CoreWebView2Environment`，profile 固定放在 `%LocalAppData%\WuGesture\WebView2`（不再放在 exe 旁边，安装目录可能只读、发布脚本也会清空输出目录）；`ready`/`disposed` 日志会记录浏览器进程号，释放后 3 秒内仍未退出的浏览器进程会被回收，保证关闭到托盘后不残留 Chromium 进程；Release 构建关闭 DevTools、默认右键菜单、浏览器快捷键和缩放，避免配置界面被误刷新或缩放。
 - `WebViewMessageDtos.cs`：集中 WebView 入站消息 DTO，并提供所有处理器共用的 `WebMessageJson.Options`（大小写不敏感），避免宿主和协调器各自维护一份序列化设置。
 - `WebViewRulesPayloadFactory.cs`：把已加载的手势配置转换为 WebView `rules` 消息 payload；其中 `appVersion` 提供程序集版本给配置界面，`uiSettings.appearance` 将配置界面主题偏好传给前端，应用程序和排除项的运行态消息项会补充应用图标 PNG data URL。
 - `ApplicationIconDataUrl.cs`：从可执行文件提取图标并转换为 WebView 可用的 PNG data URL；按可执行文件路径 + 文件长度 + 最后写入时间缓存结果（最多 128 项，溢出整体清空），避免每次 `rules` payload 都重新解码所有已配置程序和排除项的图标。
@@ -203,7 +203,7 @@ MouseHook
 - 鼠标手势或边缘操作只会对真正的应用窗口执行窗口控制。桌面 Shell 及其托管窗口（包括 Wallpaper Engine 的桌面宿主）、任务栏、任务视图（Win+Tab）、Alt+Tab 切换器、开始菜单、搜索、Shell 弹层、隐藏窗口和被 DWM 遮蔽的窗口全部跳过，也不会把这些目标设为前台。向任务视图/Alt+Tab 这类 Shell UI 窗口发送“最小化”或“关闭窗口”会让 explorer.exe 在 `Windows.UI.Xaml.dll` 中崩溃（`0xc000027b`）并重启整个 Shell，表现为系统卡死；`explorer.exe` 除文件夹窗口和对话框外、以及其他 Shell 宿主进程的所有窗口都按 Shell UI 处理。快捷键、音量和亮度仍按原流程执行。
 - `GestureService` 支持暂停；暂停时保留全局 hook，但不识别、不吞掉中/右键输入，并清理当前轨迹与预览提示，供配置界面录制手势使用。
 - `GestureService` 会读取应用行为里的排除项；`start-window` 在鼠标按下时按起始窗口判断排除项，`current-window` 则按当前前台窗口判断。命中排除项时不启动手势跟踪，也不吞掉原始鼠标输入。
-- 托盘暂停和配置界面左上角状态标识共用同一个临时用户暂停状态，配置界面录制暂停则是独立暂停来源；运行时按用户、配置和录制暂停合并后的状态控制 `GestureService` 和 `EdgeActionService`。
+- 托盘暂停和配置界面左上角状态标识共用同一个临时用户暂停状态，配置界面录制暂停则是独立暂停来源；运行时按用户暂停和录制暂停合并后的状态控制 `GestureService` 和 `EdgeActionService`。
 - 快捷键录制由后端低级键盘 hook 完成；录制期间会阻止 `Win` 等系统级按键继续传递，松开所有按键后回传组合键。
 - 钩子回调必须保持快速：`GestureInputCapture` 只做捕获决定、按键吞入状态和路径事件投递，不会等待手势解析、透明覆盖层或 WebView。`GestureParserWorker` 在独立的最高优先级线程中串行调度 `GestureService` 的路径、规则和会话状态；轨迹、提示、OSD 与 WebView 通知仍通过异步 WinForms 消息投递，不等待返回。动作会切回 WinForms 消息线程或后台动作队列执行。读取窗口所属进程一律走 `WindowProcessCache` / `ProcessImageQuery`，禁止在钩子回调、解析线程或边缘轮询里使用 `Process.MainModule` 或模块枚举：安全软件的受保护进程会让这类调用阻塞数百毫秒，历史上曾导致卡巴斯基窗口上的手势和鼠标移动严重卡顿。
 - 动作执行失败会被捕获，并通过 `GestureActionFailed` 上报。
@@ -259,7 +259,7 @@ src\WuGesture.App\Configuration
 - `uiSettings.gestureHint`：提示泡泡设置，包含 `enabled`、`displayDurationMs`、`fadeDurationMs`、`fontFamily`、`fontSize`、`textColor`、`backgroundColor`、`backgroundOpacity`、`widthPercent`、`autoWidth`、`heightPercent`、`cornerRadius`、`bottomOffsetPercent`；默认自适应宽度（保存的宽度值为 10%）、停留 300ms。提示绘制在全虚拟桌面轨迹覆盖层而非独立窗体，`enabled` 关闭时不再显示手势命中文本，`displayDurationMs` 为停留时长、`fadeDurationMs` 为 0 时立即消失，百分比字段按当前鼠标屏幕工作区宽高换算。
 - `uiSettings.levelOsd`：音量/亮度 OSD 设置，包含 `enabled`、`displayDurationMs`、`fadeDurationMs`、`backgroundColor`、`backgroundOpacity`、`textColor`、`trackColor`、`volumeColor`、`brightnessColor`、`width`、`height`、`cornerRadius`、`position`、`offsetX` 和 `offsetY`；OSD 由全虚拟桌面透明覆盖层绘制，不再创建独立窗体；当前支持相对于鼠标所在屏幕工作区的居中、上/下居中和四角位置预设，`fadeDurationMs` 为 0 时立即消失。
 - `uiSettings.gestureSensitivity`：手势灵敏度配置，包含 `percent`，范围 0-200，默认 110；100 对应标准手感，数值越高越容易识别短距离手势。
-- `uiSettings.appBehavior`：应用行为设置，包含 `launchAtStartup`、`showConfigWindowOnLaunch`、`runAsAdministrator`、`gesturePaused`、`closeButtonBehavior`、`targetWindowMode`、`disableGesturesInFullscreen`、`disableEdgeActionsInFullscreen` 和 `excludedApplications`；`showConfigWindowOnLaunch` 默认开启，控制普通启动时是否显示配置窗口，关闭后仅后台驻留并可从托盘打开，开机自启动始终后台运行。`runAsAdministrator` 开启后会在服务启动前以管理员权限重启，UAC 被拒绝或提权失败时应用不启动并直接退出，普通启动会先提示原因，后台启动只记录日志。关闭按钮行为支持 `minimize-to-tray`、`minimize-to-taskbar`、`exit`。`targetWindowMode` 支持默认的 `start-window` 和 `current-window`。全屏禁用开关默认关闭，分别停止手势识别和边缘操作。排除项包含 `name`、`displayName`、`path` 和 `disableEdgeActions`；命中的程序不执行鼠标手势，勾选 `disableEdgeActions` 时也会禁用边缘操作。
+- `uiSettings.appBehavior`：应用行为设置，包含 `launchAtStartup`、`showConfigWindowOnLaunch`、`runAsAdministrator`、`closeButtonBehavior`、`targetWindowMode`、`disableGesturesInFullscreen`、`disableEdgeActionsInFullscreen` 和 `excludedApplications`；`launchAtStartup` 默认关闭，用户主动开启后才写入自启动项。`showConfigWindowOnLaunch` 默认开启，控制普通启动时是否显示配置窗口，关闭后仅后台驻留并可从托盘打开，开机自启动始终后台运行。`runAsAdministrator` 开启后会在服务启动前以管理员权限重启，UAC 被拒绝或提权失败时应用不启动并直接退出，普通启动会先提示原因，后台启动只记录日志。关闭按钮行为支持 `minimize-to-tray`、`minimize-to-taskbar`、`exit`。`targetWindowMode` 支持默认的 `start-window` 和 `current-window`。全屏禁用开关默认关闭，分别停止手势识别和边缘操作。排除项包含 `name`、`displayName`、`path` 和 `disableEdgeActions`；命中的程序不执行鼠标手势，勾选 `disableEdgeActions` 时也会禁用边缘操作。临时暂停只由托盘菜单和配置界面侧栏状态标识控制，不写入配置。
 - `uiSettings.webDav`：WebDAV 备份设置，包含 `address`、`userName`、`password` 和 `remotePath`。设置页可把当前完整配置导出到本地 JSON，或从本地 JSON 导入并覆盖主配置文件；本地导入/导出不包含窗口状态。设置页也可测试 WebDAV 连接；测试当前配置成功后，才允许把当前完整配置保存到 WebDAV，或从 WebDAV 下载配置并覆盖本地配置；恢复后会刷新规则匹配、边缘操作、应用行为和 UI 设置。
 - `uiSettings.update`：更新设置，包含 `checkForUpdates`（默认 `true`）和 `source`（`gitee` 或 `github`，默认 `gitee`），编辑入口在“设置 > 更新”；侧栏最外层的“关于&更新”页只读展示当前取值并提供检查更新按钮。进程启动时只自动检查一次；关闭开关后手动检查仍可用。Gitee 是默认源，国内访问更稳定；检查时会比较两个源的版本号并取较高者，因此任一源落后都不会造成回退安装，两个源都不可用时才报告失败。更新包下载到 `%LocalAppData%\WuGesture\updates\<版本>`，校验通过后由独立的 PowerShell 脚本在当前进程退出后替换安装目录并重启，替换日志写入 `%LocalAppData%\WuGesture\logs\update-*.log`。
 
@@ -324,6 +324,8 @@ tests\WuGesture.App.Tests
 - `EdgeHitTester`：多屏坐标、边缘优先级、摩擦边角落排除和到边距离计算。
 - `AppLogWriter`：异步 JSONL 写入、轮转、保留和队列溢出标记。
 - `WebViewRulesPayloadFactory`：`rules` 消息的配置映射、应用图标和应用版本字段。
+- `WebViewHost`：入站消息来源只接受映射的配置主机（`https://gesture.wu.philosophy`），拒绝其他主机、http、file/about 和空来源。
+- `UpdateCoordinator`：更新提示在窗口最小化或 WebView 未就绪时延迟并在恢复后只提示一次；重启命令行参数按 Windows 规则加引号，保留含空格和引号的参数。
 - `WebMessageRouter`：按类型分发、状态查询字符串、未知类型忽略、坏 JSON 与处理器异常被兜底且不影响后续消息。
 - `CloseRequestPolicy`：标题栏/Alt+F4 与外部 `WM_CLOSE`（手势“关闭窗口”、任务管理器）都视为外部关闭请求，系统关机、`Application.Exit` 和其他系统原因不拦截。
 - `TitleBarLayout`：自绘标题栏的按钮排列（关闭/最大化/最小化从右到左）、点击命中、标题可用区域和 DPI 缩放。

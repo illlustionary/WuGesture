@@ -60,12 +60,11 @@ public static class DefaultGestureConfig
             },
             AppBehavior = new AppBehaviorUiSettings
             {
-                LaunchAtStartup = true,
+                LaunchAtStartup = false,
                 ShowConfigWindowOnLaunch = true,
                 RunAsAdministrator = false,
                 CloseButtonBehavior = GestureConfigContract.CloseButtonBehaviors.MinimizeToTray,
                 TargetWindowMode = GestureConfigContract.WindowTargetModes.StartWindow,
-                GesturePaused = false,
                 DisableGesturesInFullscreen = false,
                 DisableEdgeActionsInFullscreen = false,
                 ExcludedApplications = []
