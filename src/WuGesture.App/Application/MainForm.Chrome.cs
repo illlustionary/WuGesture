@@ -21,8 +21,12 @@ public sealed partial class MainForm
     private const int WmNcHitTest = 0x0084;
     private const int WmNcActivate = 0x0086;
     private const int WmNcMouseMove = 0x00A0;
-    private const int WmNcMouseLeave = 0x02A2;
     private const int WmNcLButtonDown = 0x00A1;
+    private const int WmNcLButtonUp = 0x00A2;
+    private const int WmNcLButtonDblClk = 0x00A3;
+    private const int WmNcMouseLeave = 0x02A2;
+    private const int WmLButtonUp = 0x0202;
+    private const int WmCaptureChanged = 0x0215;
     private const int HtCaption = 2;
     private const int HtMinButton = 8;
     private const int HtMaxButton = 9;
@@ -52,6 +56,7 @@ public sealed partial class MainForm
     private bool useDarkTitleBar = true;
     private bool isTitleBarActive = true;
     private TitleBarButton hoveredTitleBarButton = TitleBarButton.None;
+    private TitleBarButton pressedTitleBarButton = TitleBarButton.None;
     private Font? titleBarFont;
     private Font? titleBarGlyphFont;
 
@@ -384,27 +389,60 @@ public sealed partial class MainForm
         return HtCaption;
     }
 
-    private bool HandleTitleBarButtonClick(int hitCode)
+    /// <summary>
+    /// Remembers which title-bar button the pointer went down on. Nothing happens on press: the caption
+    /// buttons only fire when the pointer is released while still over the same button, like native ones.
+    /// </summary>
+    private bool BeginTitleBarButtonPress(Point clientPoint)
     {
-        switch (hitCode)
+        var button = HitTestTitleBarButton(clientPoint);
+        if (button == TitleBarButton.None)
         {
-            case HtMinButton:
-                SetTitleBarHover(TitleBarButton.None);
+            return false;
+        }
+
+        pressedTitleBarButton = button;
+        _ = SetCapture(Handle);
+        return true;
+    }
+
+    private bool CompleteTitleBarButtonPress(Point clientPoint)
+    {
+        var pressed = pressedTitleBarButton;
+        if (pressed == TitleBarButton.None)
+        {
+            return false;
+        }
+
+        pressedTitleBarButton = TitleBarButton.None;
+        _ = ReleaseCapture();
+        if (HitTestTitleBarButton(clientPoint) != pressed)
+        {
+            return true;
+        }
+
+        SetTitleBarHover(TitleBarButton.None);
+        switch (pressed)
+        {
+            case TitleBarButton.Minimize:
                 MinimizeWindow();
-                return true;
-            case HtMaxButton:
-                SetTitleBarHover(TitleBarButton.None);
+                break;
+            case TitleBarButton.Maximize:
                 WindowState = WindowState == FormWindowState.Maximized
                     ? FormWindowState.Normal
                     : FormWindowState.Maximized;
-                return true;
-            case HtClose:
-                SetTitleBarHover(TitleBarButton.None);
+                break;
+            case TitleBarButton.Close:
                 Close();
-                return true;
-            default:
-                return false;
+                break;
         }
+
+        return true;
+    }
+
+    private TitleBarButton HitTestTitleBarButton(Point clientPoint)
+    {
+        return TitleBarLayout.HitTestButton(ClientSize.Width, TitleBarHeight, DeviceDpi, clientPoint);
     }
 
     private static Point GetScreenPoint(IntPtr lParam)
@@ -439,11 +477,32 @@ public sealed partial class MainForm
                 SetTitleBarHover(TitleBarButton.None);
                 break;
             case WmNcLButtonDown:
-                if (HandleTitleBarButtonClick((int)message.WParam.ToInt64()))
+            case WmNcLButtonDblClk:
+                // Pressing a caption button only arms it; the action runs on the matching button release.
+                if (BeginTitleBarButtonPress(PointToClient(GetScreenPoint(message.LParam))))
                 {
                     return;
                 }
 
+                break;
+            case WmNcLButtonUp:
+                if (CompleteTitleBarButtonPress(PointToClient(GetScreenPoint(message.LParam))))
+                {
+                    return;
+                }
+
+                break;
+            case WmLButtonUp:
+                // With the mouse captured, a release that drifted off the title bar arrives as a client message.
+                // Its coordinates are client based, so they need no conversion.
+                if (CompleteTitleBarButtonPress(GetScreenPoint(message.LParam)))
+                {
+                    return;
+                }
+
+                break;
+            case WmCaptureChanged:
+                pressedTitleBarButton = TitleBarButton.None;
                 break;
             case WmNcActivate:
                 var isActive = message.WParam != IntPtr.Zero;
@@ -497,6 +556,12 @@ public sealed partial class MainForm
 
     [DllImport("user32.dll")]
     private static extern bool TrackMouseEvent(ref TrackMouseEventData track);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr SetCapture(IntPtr hwnd);
+
+    [DllImport("user32.dll")]
+    private static extern bool ReleaseCapture();
 
     [DllImport("dwmapi.dll")]
     private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int valueSize);
