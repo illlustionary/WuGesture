@@ -56,7 +56,10 @@ internal sealed class WebViewHost : IDisposable
             var createdWebView = new WebView2
             {
                 Dock = DockStyle.Fill,
-                DefaultBackgroundColor = defaultBackgroundColor
+                DefaultBackgroundColor = defaultBackgroundColor,
+                // Dragging a file or link onto the window would otherwise navigate the configuration UI to an
+                // arbitrary origin whose scripts can still post WebView messages to the host.
+                AllowExternalDrop = false
             };
             webView = createdWebView;
             contentHost.Controls.Add(createdWebView);
@@ -71,6 +74,8 @@ internal sealed class WebViewHost : IDisposable
             var coreWebView = createdWebView.CoreWebView2;
             coreWebView.WebMessageReceived += OnWebMessageReceived;
             coreWebView.ProcessFailed += OnProcessFailed;
+            coreWebView.NavigationStarting += OnNavigationStarting;
+            coreWebView.NewWindowRequested += OnNewWindowRequested;
             ApplyHostSettings(coreWebView.Settings);
             ConfigureHostMapping(coreWebView);
             AppLogger.Information(
@@ -179,6 +184,8 @@ internal sealed class WebViewHost : IDisposable
             {
                 coreWebView.WebMessageReceived -= OnWebMessageReceived;
                 coreWebView.ProcessFailed -= OnProcessFailed;
+                coreWebView.NavigationStarting -= OnNavigationStarting;
+                coreWebView.NewWindowRequested -= OnNewWindowRequested;
             }
 
             contentHost.Controls.Remove(webView);
@@ -199,7 +206,72 @@ internal sealed class WebViewHost : IDisposable
 
     private void OnWebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs args)
     {
+        // Only the mapped configuration UI may drive the host: a page that navigated elsewhere could otherwise
+        // post save-rules (arbitrary program paths) or read the configuration posted back to the page.
+        if (!IsTrustedSource(args.Source))
+        {
+            AppLogger.Warning(
+                "WebViewHost",
+                "web-message-rejected",
+                $"Rejected a WebView message from an untrusted source: '{args.Source}'.");
+            return;
+        }
+
         onMessageReceived(args.WebMessageAsJson);
+    }
+
+    private void OnNavigationStarting(object? sender, CoreWebView2NavigationStartingEventArgs args)
+    {
+        if (IsTrustedSource(args.Uri))
+        {
+            return;
+        }
+
+        args.Cancel = true;
+        AppLogger.Warning(
+            "WebViewHost",
+            "navigation-blocked",
+            $"Blocked navigation away from the configuration UI: '{args.Uri}'.");
+        TryOpenExternal(args.Uri);
+    }
+
+    private static void OnNewWindowRequested(object? sender, CoreWebView2NewWindowRequestedEventArgs args)
+    {
+        args.Handled = true;
+        TryOpenExternal(args.Uri);
+    }
+
+    internal static bool IsTrustedSource(string? source)
+    {
+        return Uri.TryCreate(source, UriKind.Absolute, out var uri) &&
+            uri.Scheme == Uri.UriSchemeHttps &&
+            string.Equals(uri.Host, WebViewHostContract.HostName, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static void TryOpenExternal(string? url)
+    {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) ||
+            (uri.Scheme != Uri.UriSchemeHttps && uri.Scheme != Uri.UriSchemeHttp))
+        {
+            return;
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = uri.AbsoluteUri,
+                UseShellExecute = true
+            });
+        }
+        catch (Exception exception)
+        {
+            AppLogger.Warning(
+                "WebViewHost",
+                "external-navigation-failed",
+                $"Unable to open '{uri.AbsoluteUri}' in the default browser.",
+                exception);
+        }
     }
 
     private void OnProcessFailed(object? sender, CoreWebView2ProcessFailedEventArgs args)

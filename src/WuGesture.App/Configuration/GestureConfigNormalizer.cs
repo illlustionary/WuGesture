@@ -77,13 +77,26 @@ internal static class GestureConfigNormalizer
         var defaultMouseTrail = new MouseTrailUiSettings();
         mouseTrail.InactiveColor = NormalizeMouseTrailColor(mouseTrail.InactiveColor, defaultMouseTrail.InactiveColor);
         mouseTrail.ActiveColor = NormalizeMouseTrailColor(mouseTrail.ActiveColor, defaultMouseTrail.ActiveColor);
+        mouseTrail.InactiveThickness = ClampFloat(mouseTrail.InactiveThickness, 1f, 20f);
+        mouseTrail.ActiveThickness = ClampFloat(mouseTrail.ActiveThickness, 1f, 20f);
+        mouseTrail.InactiveOpacity = ClampInteger(mouseTrail.InactiveOpacity, 0, 100);
+        mouseTrail.ActiveOpacity = ClampInteger(mouseTrail.ActiveOpacity, 0, 100);
 
         var gestureHint = settings.GestureHint;
+        var defaultGestureHint = new GestureHintUiSettings();
         gestureHint.Enabled ??= true;
         gestureHint.DisplayDurationMs = ClampInteger(gestureHint.DisplayDurationMs, 0, 10000);
         gestureHint.FadeDurationMs = ClampInteger(gestureHint.FadeDurationMs, 0, 1000);
+        gestureHint.FontFamily = string.IsNullOrWhiteSpace(gestureHint.FontFamily)
+            ? defaultGestureHint.FontFamily
+            : gestureHint.FontFamily.Trim();
+        gestureHint.FontSize = ClampFloat(gestureHint.FontSize, 10f, 48f);
+        gestureHint.TextColor = NormalizeColor(gestureHint.TextColor, defaultGestureHint.TextColor);
+        gestureHint.BackgroundColor = NormalizeColor(gestureHint.BackgroundColor, defaultGestureHint.BackgroundColor);
+        gestureHint.BackgroundOpacity = ClampInteger(gestureHint.BackgroundOpacity, 0, 100);
         gestureHint.WidthPercent = ClampInteger(gestureHint.WidthPercent, 10, 90);
         gestureHint.HeightPercent = ClampInteger(gestureHint.HeightPercent, 5, 40);
+        gestureHint.CornerRadius = ClampFloat(gestureHint.CornerRadius, 0f, 80f);
         gestureHint.BottomOffsetPercent = ClampInteger(gestureHint.BottomOffsetPercent, 0, 100);
         var levelOsd = settings.LevelOsd;
         levelOsd.Enabled ??= true;
@@ -234,6 +247,11 @@ internal static class GestureConfigNormalizer
     // 数值型界面设置统一“收敛到边界”：配置能读出数值时保留用户意图，只在越界时贴近最近的合法值。
     // 默认值由各设置类的属性初始化器提供，这里不再重复维护一份回退值。
     private static int ClampInteger(int value, int min, int max)
+    {
+        return Math.Min(max, Math.Max(min, value));
+    }
+
+    private static float ClampFloat(float value, float min, float max)
     {
         return Math.Min(max, Math.Max(min, value));
     }

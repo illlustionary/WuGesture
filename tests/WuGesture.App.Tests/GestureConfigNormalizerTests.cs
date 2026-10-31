@@ -177,4 +177,32 @@ public sealed class GestureConfigNormalizerTests
         Assert.Equal(" secret ", config.UiSettings.WebDav.Password);
         Assert.Equal("/backup", config.UiSettings.WebDav.RemotePath);
     }
+
+    [Fact]
+    public void Normalize_ClampsMouseTrailAndGestureHintNumbersToEditorLimits()
+    {
+        var config = new GestureConfig();
+        config.UiSettings.MouseTrail.InactiveThickness = 120f;
+        config.UiSettings.MouseTrail.ActiveThickness = -4f;
+        config.UiSettings.MouseTrail.InactiveOpacity = 220;
+        config.UiSettings.MouseTrail.ActiveOpacity = -10;
+        config.UiSettings.GestureHint.FontFamily = "  ";
+        config.UiSettings.GestureHint.FontSize = 400f;
+        config.UiSettings.GestureHint.CornerRadius = -30f;
+        config.UiSettings.GestureHint.BackgroundOpacity = 400;
+
+        GestureConfigNormalizer.Normalize(config);
+
+        var mouseTrail = config.UiSettings.MouseTrail;
+        Assert.Equal(20f, mouseTrail.InactiveThickness);
+        Assert.Equal(1f, mouseTrail.ActiveThickness);
+        Assert.Equal(100, mouseTrail.InactiveOpacity);
+        Assert.Equal(0, mouseTrail.ActiveOpacity);
+
+        var gestureHint = config.UiSettings.GestureHint;
+        Assert.Equal(new GestureHintUiSettings().FontFamily, gestureHint.FontFamily);
+        Assert.Equal(48f, gestureHint.FontSize);
+        Assert.Equal(0f, gestureHint.CornerRadius);
+        Assert.Equal(100, gestureHint.BackgroundOpacity);
+    }
 }

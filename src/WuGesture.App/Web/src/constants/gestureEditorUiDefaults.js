@@ -65,7 +65,7 @@ export const DEFAULT_UI_SETTINGS = {
     percent: 110
   },
   appBehavior: {
-    launchAtStartup: true,
+    launchAtStartup: false,
     showConfigWindowOnLaunch: true,
     runAsAdministrator: false,
     disableGesturesInFullscreen: false,

@@ -96,17 +96,22 @@ internal sealed class ApplicationPickerCoordinator
         try
         {
             var message = JsonSerializer.Deserialize<OpenApplicationFolderWebMessage>(json, WebMessageJson.Options);
-            var directory = Path.GetDirectoryName(message?.Path ?? "");
+            var path = (message?.Path ?? "").Trim();
+            var directory = Path.GetDirectoryName(path);
             if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))
             {
                 return;
             }
 
+            // explorer.exe parses the command line itself, so an unquoted directory such as
+            // "C:\Program Files\App" is split into two arguments and the wrong location opens.
+            // When the executable is still there, /select opens the folder with the file selected.
+            var hasFile = File.Exists(path);
             _ = Process.Start(new ProcessStartInfo
             {
                 FileName = "explorer.exe",
                 UseShellExecute = true,
-                Arguments = directory
+                Arguments = hasFile ? $"/select,\"{path}\"" : $"\"{directory}\""
             });
         }
         catch (Exception exception)

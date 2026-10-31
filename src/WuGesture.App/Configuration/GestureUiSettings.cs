@@ -53,8 +53,6 @@ public sealed class AppBehaviorUiSettings
 
     public string TargetWindowMode { get; set; } = GestureConfigContract.WindowTargetModes.StartWindow;
 
-    public bool GesturePaused { get; set; }
-
     public bool DisableGesturesInFullscreen { get; set; }
 
     public bool DisableEdgeActionsInFullscreen { get; set; }

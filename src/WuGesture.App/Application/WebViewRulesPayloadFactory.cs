@@ -83,7 +83,6 @@ internal static class WebViewRulesPayloadFactory
                 runAsAdministrator = uiSettings.AppBehavior.RunAsAdministrator,
                 closeButtonBehavior = uiSettings.AppBehavior.CloseButtonBehavior,
                 targetWindowMode = uiSettings.AppBehavior.TargetWindowMode,
-                gesturePaused = uiSettings.AppBehavior.GesturePaused,
                 disableGesturesInFullscreen = uiSettings.AppBehavior.DisableGesturesInFullscreen,
                 disableEdgeActionsInFullscreen = uiSettings.AppBehavior.DisableEdgeActionsInFullscreen,
                 excludedApplications = uiSettings.AppBehavior.ExcludedApplications.Select(application => new

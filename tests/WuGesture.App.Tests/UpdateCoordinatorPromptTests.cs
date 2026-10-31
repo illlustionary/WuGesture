@@ -84,4 +84,21 @@ public sealed class UpdateCoordinatorPromptTests
             ?? throw new InvalidOperationException($"Missing field: {name}");
         field.SetValue(target, value);
     }
+
+    [Fact]
+    public void QuoteArgument_KeepsArgumentsThatOnlyNeedQuotingWhenTheyContainSpacesOrQuotes()
+    {
+        Assert.Equal("--updated", UpdateCoordinator.QuoteArgument("--updated"));
+        Assert.Equal(
+            "\"C:\\Program Files\\WuGesture\\WuGesture.exe\"",
+            UpdateCoordinator.QuoteArgument(@"C:\Program Files\WuGesture\WuGesture.exe"));
+        // A trailing backslash must be doubled, otherwise it would escape the closing quote.
+        Assert.Equal(
+            "\"C:\\My Folder\\\\\"",
+            UpdateCoordinator.QuoteArgument(@"C:\My Folder\"));
+        Assert.Equal(
+            "\"say \\\"hi\\\"\"",
+            UpdateCoordinator.QuoteArgument("say \"hi\""));
+        Assert.Equal("\"\"", UpdateCoordinator.QuoteArgument(""));
+    }
 }
