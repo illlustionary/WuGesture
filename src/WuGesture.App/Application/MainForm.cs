@@ -304,6 +304,21 @@ public sealed partial class MainForm : Form
             return;
         }
 
+        // The window is already on screen (possibly minimized to the taskbar or restored from it) and still
+        // owns a live WebView: activate it in place. Running the fade-in and WebView rebuild here made a tray
+        // double-click look like the application was closed and reopened, including a title-bar flash.
+        if (Visible && webViewHost.IsReady)
+        {
+            removeTaskbarButtonAfterMinimize = false;
+            ShowInTaskbar = true;
+            BeginInvokeSafe(() =>
+            {
+                BringWindowToFront();
+                updateCoordinator.PostPendingPrompt();
+            });
+            return;
+        }
+
         isRestoringConfiguration = true;
         try
         {
