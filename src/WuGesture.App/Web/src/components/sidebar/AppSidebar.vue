@@ -247,13 +247,7 @@ const {
   width: 18px;
   height: 18px;
   flex: 0 0 auto;
-  fill: currentColor;
-
-  svg {
-    width: 100%;
-    height: 100%;
-    fill: currentColor;
-  }
+  fill: none;
 }
 
 .sidebar-group {
@@ -381,7 +375,7 @@ const {
 }
 .sidebar-child__svg-icon {
   padding: 4px;
-  fill: currentColor;
+  fill: none;
 }
 .sidebar-child__copy {
   display: grid;

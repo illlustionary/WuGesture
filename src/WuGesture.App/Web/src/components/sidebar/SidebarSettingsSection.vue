@@ -15,13 +15,13 @@ const route = useRoute()
 const expanded = ref(false)
 const isActive = computed(() => route.path.startsWith('/settings'))
 const items = [
-  { to: '/settings/mouse-trail', label: '轨迹线', icon: 'circle-dashed' },
-  { to: '/settings/gesture-hint', label: '手势提示', icon: 'mouse' },
-  { to: '/settings/level-osd', label: '音量/亮度提示', icon: 'setting' },
-  { to: '/settings/sensitivity', label: '手势灵敏度', icon: 'setting' },
-  { to: '/settings/app-behavior', label: '应用行为', icon: 'briefcase' },
-  { to: '/settings/update', label: '更新', icon: 'download' },
-  { to: '/settings/webdav', label: 'WebDAV', icon: 'setting' }
+  { to: '/settings/mouse-trail', label: '轨迹线', icon: 'spline' },
+  { to: '/settings/gesture-hint', label: '手势提示', icon: 'message-square' },
+  { to: '/settings/level-osd', label: '音量/亮度提示', icon: 'monitor' },
+  { to: '/settings/sensitivity', label: '手势灵敏度', icon: 'gauge' },
+  { to: '/settings/app-behavior', label: '应用行为', icon: 'toggle-left' },
+  { to: '/settings/update', label: '更新', icon: 'refresh-cw' },
+  { to: '/settings/webdav', label: 'WebDAV', icon: 'cloud' }
 ]
 
 function toggle() {

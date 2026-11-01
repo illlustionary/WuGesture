@@ -69,7 +69,7 @@ const themeLabel = computed(() => (props.isDarkTheme ? '切换到浅色模式' :
           @click="emit('toggle-sidebar')"
         >
           <AppIcon
-            name="sidebar"
+            name="panel-left"
             aria-hidden="true"
           /></button
       ></HoverBubble>

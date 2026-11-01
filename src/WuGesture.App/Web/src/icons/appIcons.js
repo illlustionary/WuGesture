@@ -17,16 +17,29 @@ import ArrowIcon from '@/assets/gesture/arrow.svg'
 import KeyboardIcon from '@/assets/gesture/keyboard.svg'
 import RecordIcon from '@/assets/gesture/record.svg'
 import BriefcaseIcon from '@/assets/navigation/briefcase.svg'
+import AppWindowIcon from '@/assets/navigation/app-window.svg'
+import BanIcon from '@/assets/navigation/ban.svg'
 import CircleDashedIcon from '@/assets/navigation/circle-dashed.svg'
 import CloseAltIcon from '@/assets/navigation/close-alt.svg'
+import CloudIcon from '@/assets/navigation/cloud.svg'
+import CornerDownRightIcon from '@/assets/navigation/corner-down-right.svg'
 import FolderIcon from '@/assets/navigation/folder.svg'
+import FrameIcon from '@/assets/navigation/frame.svg'
+import GaugeIcon from '@/assets/navigation/gauge.svg'
+import GlobeIcon from '@/assets/navigation/globe.svg'
+import InfoIcon from '@/assets/navigation/info.svg'
+import MessageSquareIcon from '@/assets/navigation/message-square.svg'
+import MonitorIcon from '@/assets/navigation/monitor.svg'
 import MoonIcon from '@/assets/navigation/moon.svg'
 import MouseIcon from '@/assets/navigation/mouse.svg'
+import MoveHorizontalIcon from '@/assets/navigation/move-horizontal.svg'
 import PanelLeftIcon from '@/assets/navigation/panel-left.svg'
+import RefreshCwIcon from '@/assets/navigation/refresh-cw.svg'
 import SearchIcon from '@/assets/navigation/search.svg'
-import SidebarIcon from '@/assets/navigation/sidebar.svg'
 import SettingIcon from '@/assets/navigation/setting.svg'
+import SplineIcon from '@/assets/navigation/spline.svg'
 import SunIcon from '@/assets/navigation/sun.svg'
+import ToggleLeftIcon from '@/assets/navigation/toggle-left.svg'
 import CloseIcon from '@/assets/window/close.svg'
 
 export const appIcons = Object.freeze({
@@ -49,15 +62,28 @@ export const appIcons = Object.freeze({
   keyboard: KeyboardIcon,
   record: RecordIcon,
   briefcase: BriefcaseIcon,
+  'app-window': AppWindowIcon,
+  ban: BanIcon,
   'circle-dashed': CircleDashedIcon,
   'close-alt': CloseAltIcon,
+  cloud: CloudIcon,
+  'corner-down-right': CornerDownRightIcon,
   folder: FolderIcon,
+  frame: FrameIcon,
+  gauge: GaugeIcon,
+  globe: GlobeIcon,
+  info: InfoIcon,
+  'message-square': MessageSquareIcon,
+  monitor: MonitorIcon,
   moon: MoonIcon,
   mouse: MouseIcon,
+  'move-horizontal': MoveHorizontalIcon,
   'panel-left': PanelLeftIcon,
+  'refresh-cw': RefreshCwIcon,
   search: SearchIcon,
-  sidebar: SidebarIcon,
   setting: SettingIcon,
+  spline: SplineIcon,
   sun: SunIcon,
+  'toggle-left': ToggleLeftIcon,
   close: CloseIcon
 })
