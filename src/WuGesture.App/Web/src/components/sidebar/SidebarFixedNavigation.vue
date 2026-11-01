@@ -9,8 +9,8 @@ defineProps({
 })
 
 const items = [
-  { to: '/global', label: '全局', icon: 'mouse' },
-  { to: '/exclusions', label: '排除项', icon: 'close-alt' }
+  { to: '/global', label: '全局', icon: 'globe' },
+  { to: '/exclusions', label: '排除项', icon: 'ban' }
 ]
 </script>
 

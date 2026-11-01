@@ -57,7 +57,7 @@ watch(
       @click="toggle"
     >
       <AppIcon
-        name="briefcase"
+        name="app-window"
         class="app-sidebar__item-icon"
         aria-hidden="true"
       />

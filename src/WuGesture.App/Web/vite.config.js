@@ -5,7 +5,15 @@ import svgLoader from 'vite-svg-loader'
 import { fileURLToPath, URL } from 'node:url'
 
 export default defineConfig({
-  plugins: [vue(), UnoCSS(), svgLoader()],
+  plugins: [
+    vue(),
+    UnoCSS(),
+    svgLoader({
+      svgoConfig: {
+        plugins: [{ name: 'preset-default', params: { overrides: { removeViewBox: false } } }]
+      }
+    })
+  ],
   base: './',
   build: {
     emptyOutDir: true

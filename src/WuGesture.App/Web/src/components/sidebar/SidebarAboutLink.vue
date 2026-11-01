@@ -17,7 +17,7 @@ defineProps({
       :aria-label="isSidebarHidden ? '关于&更新' : undefined"
     >
       <AppIcon
-        name="sparkle"
+        name="info"
         class="app-sidebar__item-icon"
         aria-hidden="true"
       />

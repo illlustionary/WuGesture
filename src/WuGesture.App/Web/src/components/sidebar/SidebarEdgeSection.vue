@@ -12,8 +12,8 @@ const route = useRoute()
 const expanded = ref(false)
 const isActive = computed(() => route.path.startsWith('/edge'))
 const items = [
-  { to: '/edge/corner', label: '触发角', icon: 'circle-dashed' },
-  { to: '/edge/friction', label: '摩擦边', icon: 'circle-dashed' },
+  { to: '/edge/corner', label: '触发角', icon: 'corner-down-right' },
+  { to: '/edge/friction', label: '摩擦边', icon: 'move-horizontal' },
   { to: '/edge/wheel', label: '边缘滚动', icon: 'mouse' }
 ]
 
@@ -43,7 +43,7 @@ watch(
       @click="toggle"
     >
       <AppIcon
-        name="circle-dashed"
+        name="frame"
         class="app-sidebar__item-icon"
         aria-hidden="true"
       />

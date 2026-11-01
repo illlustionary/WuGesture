@@ -32,7 +32,7 @@ src\WuGesture.App\Web
 - `pnpm-workspace.yaml`：工作区配置，并放行 `@parcel/watcher` 的本地构建脚本，避免非交互环境下依赖安装中断。
 - `jsconfig.json`：配置编辑器路径提示，`@/*` 指向 `src/*`，`@resources/*` 指向桌面宿主的 `Resources/*`。
 - `uno.config.js`：UnoCSS 配置，集中定义页面区块、表单、列表等常用 shortcuts。
-- `vite.config.js`：Vite 构建配置，包含 `vite-svg-loader`、UnoCSS Vite 插件，以及 `@` 到 `src`、`@resources` 到桌面宿主 `Resources` 目录的路径别名。
+- `vite.config.js`：Vite 构建配置，包含 `vite-svg-loader`、UnoCSS Vite 插件，以及 `@` 到 `src`、`@resources` 到桌面宿主 `Resources` 目录的路径别名。`vite-svg-loader` 的 SVGO 配置覆盖了 `removeViewBox`，保证 24×24 描边图标在按 CSS 缩放到 18px 等尺寸时仍能等比缩放。
 - `PROJECT_STRUCTURE.md`：当前 Web 子项目地图。
 - `node_modules`：本地依赖目录，不纳入源码维护。
 
@@ -77,10 +77,10 @@ SVG 按使用位置分目录：
 - `actions\`：通用操作，包括新增、删除、导入导出、重置、测试、WebDAV 上传下载，以及密码显示/隐藏用的 `eye`、`eye-off`。
 - `category\`：分类显示图标，包括浏览器、代码、媒体和星光。
 - `gesture\`：手势录制与选择图标，包括准星、键盘和录制。
-- `navigation\`：侧栏、搜索和应用状态图标。
+- `navigation\`：侧栏、搜索和应用状态图标。侧栏导航图标统一为 Lucide 风格（ISC 许可，24×24、`stroke-width` 1.8、路径 `currentColor`），包括 `globe`、`ban`、`folder`、`app-window`、`frame`、`corner-down-right`、`move-horizontal`、`mouse`、`setting`、`spline`、`message-square`、`monitor`、`gauge`、`toggle-left`、`refresh-cw`、`cloud`、`info`、`sun`、`moon`、`panel-left` 和 `search`；旧版实心图标仅 `briefcase`、`circle-dashed`、`close-alt` 保留给分类默认图标或无图标兜底。
 - `window\`：对话框关闭图标。
 
-这些 SVG 只由 `icons\appIcons.js` 通过 `vite-svg-loader` 作为 Vue 组件导入。图标文件名就是对外的图标名称，统一使用小写 kebab-case；路径颜色应使用 `currentColor`，便于按钮和状态样式控制。
+这些 SVG 只由 `icons\appIcons.js` 通过 `vite-svg-loader` 作为 Vue 组件导入。图标文件名就是对外的图标名称，统一使用小写 kebab-case；路径颜色应使用 `currentColor`，便于按钮和状态样式控制。描边图标依赖根节点 `fill="none"` + `stroke="currentColor"`，侧栏对应容器不能再强制 `fill: currentColor`；分类/程序子项仍在用的实心图标靠路径自身的 `fill="currentColor"` 生效。侧栏每个入口使用语义独立的图标：全局 `globe`、排除项 `ban`、分类 `folder`、程序 `app-window`、边缘操作 `frame`（触发角 `corner-down-right`、摩擦边 `move-horizontal`、边缘滚动 `mouse`）、设置 `setting`（轨迹线 `spline`、手势提示 `message-square`、音量/亮度提示 `monitor`、手势灵敏度 `gauge`、应用行为 `toggle-left`、更新 `refresh-cw`、WebDAV `cloud`）、关于&更新 `info`，页脚使用 `sun`/`moon`、`search` 和 `panel-left`。
 
 ## Components
 
