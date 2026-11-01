@@ -50,5 +50,13 @@ function commit() {
 .update-settings__checks {
   display: grid;
   grid-column: 1 / -1;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 720px) {
+  .update-settings__checks {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
