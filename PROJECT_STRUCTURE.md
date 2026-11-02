@@ -52,9 +52,10 @@ D:\Desktop\WuGesture
 根目录重要文件：
 
 - `WuGesture.slnx`：.NET 解决方案。
-- `README.md`：面向用户的运行、构建和发布说明。
+- `README.md`：面向用户的功能介绍、安装与快速上手、配置路径、常见问题，以及从源码构建、项目结构和发行流程概览。
 - `docs\architecture.md`：面向开发者的架构说明和 WebView2 集成概览。
 - `docs\releasing.md`：面向维护者的本地发布和自动发行流程。
+- `docs\images\`：README 使用的演示 GIF 与界面截图（统一浅色主题、含标题栏的整窗截图）。
 - `PROJECT_STRUCTURE.md`：本项目地图。
 - `AGENTS.md`：后续会话的代理指令。
 - `.gitignore`：忽略构建输出、WebView2 运行时缓存、IDE 状态和发布产物。
