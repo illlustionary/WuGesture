@@ -7,6 +7,12 @@ export default {
   children: [
     { path: '', redirect: 'mouse-trail' },
     {
+      path: 'config',
+      name: 'settings-config',
+      component: settingsPage,
+      props: { section: 'config' }
+    },
+    {
       path: 'mouse-trail',
       name: 'settings-mouse-trail',
       component: settingsPage,

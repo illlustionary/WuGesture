@@ -23,6 +23,7 @@ import CircleDashedIcon from '@/assets/navigation/circle-dashed.svg'
 import CloseAltIcon from '@/assets/navigation/close-alt.svg'
 import CloudIcon from '@/assets/navigation/cloud.svg'
 import CornerDownRightIcon from '@/assets/navigation/corner-down-right.svg'
+import DatabaseIcon from '@/assets/navigation/database.svg'
 import FolderIcon from '@/assets/navigation/folder.svg'
 import FrameIcon from '@/assets/navigation/frame.svg'
 import GaugeIcon from '@/assets/navigation/gauge.svg'
@@ -68,6 +69,7 @@ export const appIcons = Object.freeze({
   'close-alt': CloseAltIcon,
   cloud: CloudIcon,
   'corner-down-right': CornerDownRightIcon,
+  database: DatabaseIcon,
   folder: FolderIcon,
   frame: FrameIcon,
   gauge: GaugeIcon,

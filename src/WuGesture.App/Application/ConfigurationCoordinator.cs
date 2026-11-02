@@ -132,6 +132,18 @@ internal sealed class ConfigurationCoordinator
                 return;
             }
 
+            var confirm = MessageBox.Show(
+                getDialogOwner(),
+                $"将使用“{Path.GetFileName(dialog.FileName)}”覆盖当前配置，导入后无法撤销。是否继续？",
+                "导入配置",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning,
+                MessageBoxDefaultButton.Button2);
+            if (confirm != DialogResult.Yes)
+            {
+                return;
+            }
+
             applyConfig(configStore.SaveJsonAndLoad(File.ReadAllText(dialog.FileName)));
             postRules();
             postConfigResult(true, "配置已导入。", "import");

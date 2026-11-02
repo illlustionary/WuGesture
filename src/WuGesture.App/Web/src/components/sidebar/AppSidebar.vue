@@ -23,9 +23,6 @@ const emit = defineEmits([
   'open-app-picker',
   'open-app-rename',
   'delete-app',
-  'export-config',
-  'import-config',
-  'reset-settings',
   'toggle-theme'
 ])
 
@@ -99,9 +96,6 @@ const {
       <SidebarSettingsSection
         :is-sidebar-hidden="isSidebarHidden"
         :is-sidebar-visible="isSidebarVisible"
-        @export-config="emit('export-config')"
-        @import-config="emit('import-config')"
-        @reset-settings="emit('reset-settings')"
       />
       <SidebarAboutLink :is-sidebar-hidden="isSidebarHidden" />
     </nav>

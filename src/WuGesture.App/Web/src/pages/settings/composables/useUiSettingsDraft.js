@@ -101,6 +101,16 @@ export function useUiSettingsDraft(editor) {
     persistDraft()
   }
 
+  function discardPendingPersist() {
+    if (persistTimer) {
+      clearTimeout(persistTimer)
+      persistTimer = 0
+    }
+
+    hasPendingPersist = false
+    lastLocalPersistAt = 0
+  }
+
   function resetSettings() {
     if (persistTimer) {
       clearTimeout(persistTimer)
@@ -125,6 +135,7 @@ export function useUiSettingsDraft(editor) {
     levelOsdPreviewStyle,
     queuePersistDraft,
     flushPersistDraft,
+    discardPendingPersist,
     resetSettings
   }
 }

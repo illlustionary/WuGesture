@@ -4,6 +4,7 @@ import ConfirmDialog from '@/components/dialog/ConfirmDialog.vue'
 import AppShell from '@/components/layout/AppShell.vue'
 import { useGestureEditorContext } from '@/gestureEditor/context/gestureEditorContext'
 import AppBehaviorSettings from '@/pages/settings/components/AppBehaviorSettings.vue'
+import ConfigManagement from '@/pages/settings/components/ConfigManagement.vue'
 import GestureHintSettings from '@/pages/settings/components/GestureHintSettings.vue'
 import GestureSensitivitySettings from '@/pages/settings/components/GestureSensitivitySettings.vue'
 import LevelOsdSettings from '@/pages/settings/components/LevelOsdSettings.vue'
@@ -17,14 +18,37 @@ const props = defineProps({
 })
 
 const settingsStore = useGestureEditorContext()
-const { draft, trailPreviewStyle, hintPreviewStyle, levelOsdPreviewStyle, queuePersistDraft, flushPersistDraft } =
-  useUiSettingsDraft(settingsStore)
-
+const {
+  draft,
+  trailPreviewStyle,
+  hintPreviewStyle,
+  levelOsdPreviewStyle,
+  queuePersistDraft,
+  flushPersistDraft,
+  discardPendingPersist,
+  resetSettings: resetDraftSettings
+} = useUiSettingsDraft(settingsStore)
 const webDavDraftSignature = computed(() => settingsStore.getWebDavSignature(draft.webDav))
 const webDavReady = computed(
   () => Boolean(draft.webDav.address) && settingsStore.state.webDavTestedSignature === webDavDraftSignature.value
 )
 const restoreConfirmOpen = ref(false)
+const resetConfirmOpen = ref(false)
+
+function exportConfig() {
+  flushPersistDraft()
+  settingsStore.exportConfigToLocal()
+}
+
+function importConfig() {
+  discardPendingPersist()
+  settingsStore.importConfigFromLocal()
+}
+
+function resetSettings() {
+  resetDraftSettings()
+  resetConfirmOpen.value = false
+}
 
 function saveToWebDav() {
   flushPersistDraft()
@@ -56,8 +80,14 @@ function previewLevelOsd(kind) {
   <AppShell layout-class="page-shell__grid--single page-shell__grid--settings">
     <template #right>
       <section class="page-stack">
+        <ConfigManagement
+          v-if="props.section === 'config'"
+          @export="exportConfig"
+          @import="importConfig"
+          @reset="resetConfirmOpen = true"
+        />
         <MouseTrailSettings
-          v-if="props.section === 'mouse-trail'"
+          v-else-if="props.section === 'mouse-trail'"
           :draft="draft"
           :preview-style="trailPreviewStyle"
           @queue-persist="queuePersistDraft"
@@ -121,6 +151,16 @@ function previewLevelOsd(kind) {
     tone="danger"
     @close="restoreConfirmOpen = false"
     @confirm="restoreFromWebDav"
+  />
+  <ConfirmDialog
+    :open="resetConfirmOpen"
+    title="恢复默认设置"
+    message="这会恢复轨迹线、底部提示窗、应用行为、排除项、WebDAV 和更新设置。手势规则、分类、程序和边缘操作不会改变。"
+    confirm-text="恢复默认"
+    cancel-text="取消"
+    tone="danger"
+    @close="resetConfirmOpen = false"
+    @confirm="resetSettings"
   />
 </template>
 
