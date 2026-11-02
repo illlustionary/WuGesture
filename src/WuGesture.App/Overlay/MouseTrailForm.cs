@@ -14,6 +14,11 @@ public sealed class MouseTrailForm : Form
     private const int UlwAlpha = 0x00000002;
     private const int WmNcHitTest = 0x0084;
     private const int HtTransparent = -1;
+    private const int SwpNoSize = 0x0001;
+    private const int SwpNoMove = 0x0002;
+    private const int SwpNoActivate = 0x0010;
+    private const int SwpNoOwnerZOrder = 0x0200;
+    private static readonly IntPtr HwndTopMost = new(-1);
 
     private readonly Size bufferSize;
     private readonly IntPtr screenDc;
@@ -26,6 +31,7 @@ public sealed class MouseTrailForm : Form
     private readonly LevelOsdRenderer levelOsdRenderer;
     private Rectangle screenBounds;
     private bool presentationFailureReported;
+    private bool topMostFailureReported;
 
     public event EventHandler? PresentationFailed;
 
@@ -140,7 +146,7 @@ public sealed class MouseTrailForm : Form
         dirtyRect = Union(dirtyRect, hintRenderer.GetBounds(graphics, screenBounds));
         if (!Visible)
         {
-            Show();
+            ShowOverlay();
         }
 
         RedrawOverlay(dirtyRect);
@@ -160,7 +166,7 @@ public sealed class MouseTrailForm : Form
         dirtyRect = Union(dirtyRect, hintRenderer.GetBounds(graphics, screenBounds));
         if (!Visible)
         {
-            Show();
+            ShowOverlay();
         }
 
         return RedrawOverlay(dirtyRect);
@@ -218,14 +224,14 @@ public sealed class MouseTrailForm : Form
             hintRenderer.Clear();
         }
 
-        if (!Visible)
+        var isNewPath = !trailRenderer.IsTracking;
+        if (isNewPath || !Visible)
         {
-            Show();
+            ShowOverlay();
         }
         var preparedAt = Stopwatch.GetTimestamp();
 
-        var isNewPath = !trailRenderer.IsTracking;
-        if (!trailRenderer.IsTracking)
+        if (isNewPath)
         {
             trailRenderer.StartPath();
         }
@@ -288,7 +294,7 @@ public sealed class MouseTrailForm : Form
 
         if (!Visible)
         {
-            Show();
+            ShowOverlay();
         }
 
         RedrawOverlay(dirtyRect);
@@ -523,6 +529,58 @@ public sealed class MouseTrailForm : Form
         return RedrawOverlay(levelOsdRenderer.GetBounds(screenBounds));
     }
 
+    /// <summary>
+    /// Shows the overlay for new content and re-inserts it at the top of the topmost band.
+    /// A window that becomes topmost after ours was created (for example an app launched right
+    /// after an update) would otherwise cover the overlay until the window is recreated: the
+    /// overlay is never activated, so it cannot float back up on its own.
+    /// </summary>
+    private void ShowOverlay()
+    {
+        if (IsDisposed)
+        {
+            return;
+        }
+
+        if (!Visible)
+        {
+            Show();
+        }
+
+        EnsureTopMost();
+    }
+
+    private void EnsureTopMost()
+    {
+        if (IsDisposed || !IsHandleCreated)
+        {
+            return;
+        }
+
+        // One cheap z-order change per gesture start; no move, resize, activation or repaint.
+        if (SetWindowPos(
+                Handle,
+                HwndTopMost,
+                0,
+                0,
+                0,
+                0,
+                SwpNoSize | SwpNoMove | SwpNoActivate | SwpNoOwnerZOrder))
+        {
+            topMostFailureReported = false;
+            return;
+        }
+
+        if (!topMostFailureReported)
+        {
+            topMostFailureReported = true;
+            AppLogger.Warning(
+                "MouseTrailForm",
+                "overlay-topmost-failed",
+                $"SetWindowPos(HWND_TOPMOST) failed. Error: {Marshal.GetLastWin32Error()}; handle: 0x{Handle.ToInt64():X}; visible: {Visible}.");
+        }
+    }
+
     private void HideOverlayIfEmpty()
     {
         if (IsDisposed || trailRenderer.HasPath || hintRenderer.HasHint || levelOsdRenderer.HasOsd)
@@ -638,6 +696,16 @@ public sealed class MouseTrailForm : Form
         out IntPtr ppvBits,
         IntPtr hSection,
         uint offset);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool SetWindowPos(
+        IntPtr hWnd,
+        IntPtr hWndInsertAfter,
+        int x,
+        int y,
+        int cx,
+        int cy,
+        int uFlags);
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern bool UpdateLayeredWindow(
