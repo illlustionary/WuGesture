@@ -3,7 +3,6 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter, RouterView } from 'vue-router'
 import AppSidebar from '@/components/sidebar/AppSidebar.vue'
 import BaseDialog from '@/components/dialog/BaseDialog.vue'
-import ConfirmDialog from '@/components/dialog/ConfirmDialog.vue'
 import QuickSearchDialog from '@/components/dialog/QuickSearchDialog.vue'
 import UpdateDialog from '@/components/dialog/UpdateDialog.vue'
 import GestureRuleDialog from '@/components/gesture/GestureRuleDialog.vue'
@@ -29,7 +28,6 @@ const quickSearch = useQuickSearch()
 const routeOrder = ['global', 'category', 'app', 'edge', 'exclusions', 'settings', 'about']
 const transitionDirection = ref('right')
 const priorityNoticeOpen = ref(false)
-const resetConfirmOpen = ref(false)
 const routeTransitionName = computed(() =>
   transitionDirection.value === 'right' ? 'route-slide-right' : 'route-slide-left'
 )
@@ -73,7 +71,6 @@ function closeRouteDialogs() {
   }
 
   priorityNoticeOpen.value = false
-  resetConfirmOpen.value = false
 
   if (categoryDialogOpen.value) {
     closeCategoryDialog()
@@ -104,19 +101,6 @@ watch(
     transitionDirection.value = nextIndex > previousIndex ? 'right' : 'left'
   }
 )
-
-function openResetConfirm() {
-  resetConfirmOpen.value = true
-}
-
-function closeResetConfirm() {
-  resetConfirmOpen.value = false
-}
-
-function confirmResetSettings() {
-  editor.resetUiSettings()
-  closeResetConfirm()
-}
 </script>
 
 <template>
@@ -132,9 +116,6 @@ function confirmResetSettings() {
         @open-app-picker="openSidebarAppPicker"
         @open-app-rename="openAppRenameDialog"
         @delete-app="removeSidebarApp"
-        @export-config="editor.exportConfigToLocal"
-        @import-config="editor.importConfigFromLocal"
-        @reset-settings="openResetConfirm"
         @toggle-theme="toggleTheme"
       />
 
@@ -286,17 +267,6 @@ function confirmResetSettings() {
       @cancel="editor.cancelUpdate()"
       @retry="editor.retryUpdate()"
       @open-release-page="editor.openReleasePage()"
-    />
-
-    <ConfirmDialog
-      :open="resetConfirmOpen"
-      title="恢复默认设置"
-      message="这会恢复轨迹线、底部提示窗、应用行为、排除项、WebDAV 和更新设置。手势规则、分类、程序和边缘操作不会改变。"
-      confirm-text="恢复默认"
-      cancel-text="取消"
-      tone="danger"
-      @close="closeResetConfirm"
-      @confirm="confirmResetSettings"
     />
   </div>
 </template>

@@ -60,7 +60,7 @@ src
 - `src\router\routes\scopeRoutes.js`：分类和程序动态子路由。
 - `src\router\routes\edgeRoutes.js`：触发角、摩擦边和边缘滚动子路由。
 - `src\router\routes\settingsRoutes.js`：各设置项子路由。
-- `src\App.vue`：侧栏/页面工作区、路由切换过渡和全局弹窗挂载；窗口标题栏由桌面宿主在 WebView 上方自绘（不进入前端页面），分类/程序侧栏操作和主题状态由组合式函数协调。全局弹窗不会随页面卸载，因此 `App.vue` 在路由路径变化时统一关闭应用选择器、手势规则编辑器、快速搜索、规则生效顺序、恢复默认设置和分类/程序新增重命名弹窗，避免切换页面后残留；更新弹窗属于全局更新流程，不受路由切换影响。
+- `src\App.vue`：侧栏/页面工作区、路由切换过渡和全局弹窗挂载；窗口标题栏由桌面宿主在 WebView 上方自绘（不进入前端页面），分类/程序侧栏操作和主题状态由组合式函数协调。全局弹窗不会随页面卸载，因此 `App.vue` 在路由路径变化时统一关闭应用选择器、手势规则编辑器、快速搜索、规则生效顺序和分类/程序新增重命名弹窗，避免切换页面后残留；更新弹窗属于全局更新流程，不受路由切换影响；恢复默认设置的确认弹窗属于设置页，随页面卸载自动关闭。
 - `src\icons\appIcons.js`：本地 SVG 图标的唯一显式注册表；使用文件名作为图标名称，供 `AppIcon` 和业务组件按名称查找。
 - `src\styles.scss`：编辑器全局设计 token、reset、通用按钮、输入框、弹窗和图标样式；常用布局/区块/表单/列表样式优先用 UnoCSS shortcuts，复杂动态样式和组件专属样式放在对应 `.vue` 文件的 scoped SCSS 中。
 
@@ -77,10 +77,10 @@ SVG 按使用位置分目录：
 - `actions\`：通用操作，包括新增、删除、导入导出、重置、测试、WebDAV 上传下载，以及密码显示/隐藏用的 `eye`、`eye-off`。
 - `category\`：分类显示图标，包括浏览器、代码、媒体和星光。
 - `gesture\`：手势录制与选择图标，包括准星、键盘和录制。
-- `navigation\`：侧栏、搜索和应用状态图标。侧栏导航图标统一为 Lucide 风格（ISC 许可，24×24、`stroke-width` 1.8、路径 `currentColor`），包括 `globe`、`ban`、`folder`、`app-window`、`frame`、`corner-down-right`、`move-horizontal`、`mouse`、`setting`、`spline`、`message-square`、`monitor`、`gauge`、`toggle-left`、`refresh-cw`、`cloud`、`info`、`sun`、`moon`、`panel-left` 和 `search`；旧版实心图标仅 `briefcase`、`circle-dashed`、`close-alt` 保留给分类默认图标或无图标兜底。
+- `navigation\`：侧栏、搜索和应用状态图标。侧栏导航图标统一为 Lucide 风格（ISC 许可，24×24、`stroke-width` 1.8、路径 `currentColor`），包括 `globe`、`ban`、`folder`、`app-window`、`frame`、`corner-down-right`、`move-horizontal`、`mouse`、`setting`、`database`、`spline`、`message-square`、`monitor`、`gauge`、`toggle-left`、`refresh-cw`、`cloud`、`info`、`sun`、`moon`、`panel-left` 和 `search`；旧版实心图标仅 `briefcase`、`circle-dashed`、`close-alt` 保留给分类默认图标或无图标兜底。
 - `window\`：对话框关闭图标。
 
-这些 SVG 只由 `icons\appIcons.js` 通过 `vite-svg-loader` 作为 Vue 组件导入。图标文件名就是对外的图标名称，统一使用小写 kebab-case；路径颜色应使用 `currentColor`，便于按钮和状态样式控制。描边图标依赖根节点 `fill="none"` + `stroke="currentColor"`，侧栏对应容器不能再强制 `fill: currentColor`；分类/程序子项仍在用的实心图标靠路径自身的 `fill="currentColor"` 生效。侧栏每个入口使用语义独立的图标：全局 `globe`、排除项 `ban`、分类 `folder`、程序 `app-window`、边缘操作 `frame`（触发角 `corner-down-right`、摩擦边 `move-horizontal`、边缘滚动 `mouse`）、设置 `setting`（轨迹线 `spline`、手势提示 `message-square`、音量/亮度提示 `monitor`、手势灵敏度 `gauge`、应用行为 `toggle-left`、更新 `refresh-cw`、WebDAV `cloud`）、关于&更新 `info`，页脚使用 `sun`/`moon`、`search` 和 `panel-left`。
+这些 SVG 只由 `icons\appIcons.js` 通过 `vite-svg-loader` 作为 Vue 组件导入。图标文件名就是对外的图标名称，统一使用小写 kebab-case；路径颜色应使用 `currentColor`，便于按钮和状态样式控制。描边图标依赖根节点 `fill="none"` + `stroke="currentColor"`，侧栏对应容器不能再强制 `fill: currentColor`；分类/程序子项仍在用的实心图标靠路径自身的 `fill="currentColor"` 生效。侧栏每个入口使用语义独立的图标：全局 `globe`、排除项 `ban`、分类 `folder`、程序 `app-window`、边缘操作 `frame`（触发角 `corner-down-right`、摩擦边 `move-horizontal`、边缘滚动 `mouse`）、设置 `setting`（配置 `database`、轨迹线 `spline`、手势提示 `message-square`、音量/亮度提示 `monitor`、手势灵敏度 `gauge`、应用行为 `toggle-left`、更新 `refresh-cw`、WebDAV `cloud`）、关于&更新 `info`，页脚使用 `sun`/`moon`、`search` 和 `panel-left`。
 
 ## Components
 
@@ -191,8 +191,9 @@ src\pages
   - `edge\components\EdgeActionCommandFields.vue`：快捷键、窗口、音量、亮度命令字段。
   - `edge\composables\useEdgeActionDraft.js`：边缘操作编辑草稿、打开、关闭和保存逻辑。
 - `exclusions\index.vue`：排除项页，用于维护不执行鼠标手势的程序列表，并可对单个排除项禁用边缘操作。
-- `settings\index.vue`：设置子页，通过路由参数只展示轨迹线、手势提示、音量/亮度 OSD、灵敏度、应用行为、更新源或 WebDAV 中的一项；配置导入、导出和恢复默认入口由全局多级侧栏提供。
+- `settings\index.vue`：设置子页，通过路由参数只展示配置管理、轨迹线、手势提示、音量/亮度 OSD、灵敏度、应用行为、更新源或 WebDAV 中的一项；本地配置导入、导出和恢复默认统一放在「设置 > 配置」页。
   - `settings\components\SettingsSectionCard.vue`：设置页大项标题、说明、操作区和内容布局。
+  - `settings\components\ConfigManagement.vue`：配置管理页，分「备份与迁移」（导出、导入）和「恢复默认」两组，说明导入导出的范围并强调不可撤销。
   - `settings\components\SettingsFormGrid.vue`：设置项双列表单布局。
   - `settings\components\SettingsField.vue`：设置项卡片。
   - `settings\components\MouseTrailSettings.vue`：轨迹线配置，顶部内置轨迹线实时预览。
@@ -202,7 +203,7 @@ src\pages
   - `settings\components\UpdateSettings.vue`：更新源下拉框和启动时自动检查开关，是更新相关设置的唯一编辑入口。
   - `settings\components\GestureHintSettings.vue`：底部提示窗配置，顶部内置提示窗实时预览。
   - `settings\components\GestureSensitivitySettings.vue`：手势灵敏度三档配置。
-  - `settings\composables\useUiSettingsDraft.js`：基于 `gestureEditorNormalizers.js` 的共享设置深拷贝创建草稿，负责 debounce 保存、重置和预览样式计算。
+  - `settings\composables\useUiSettingsDraft.js`：基于 `gestureEditorNormalizers.js` 的共享设置深拷贝创建草稿，负责 debounce 保存、重置和预览样式计算；导入配置前会丢弃未提交的草稿，避免旧值在导入完成后覆盖新配置。
 - `about\index.vue`：侧栏最外层的“关于&更新”页，分「关于」和「更新」两个区块；「关于」展示软件简介、当前版本、更新源和自动检查状态（只读），「更新」提供检查更新按钮、状态提示和“查看更新”入口，修改更新设置需要前往“设置 > 更新”。更新后首次启动会自动切到本页并提示已完成更新及当前版本。
   - `about\components\AboutUpdatePanel.vue`：两个区块的具体布局、更新状态文案和来源标注。
 
@@ -216,7 +217,7 @@ src\pages
 - `edge/corner`、`edge/friction`、`edge/wheel`
 - `exclusions`
 - `about`（侧栏最外层的“关于&更新”独立页面）
-- `settings/mouse-trail`、`settings/gesture-hint`、`settings/level-osd`、`settings/sensitivity`、`settings/app-behavior`、`settings/update`、`settings/webdav`
+- `settings/config`、`settings/mouse-trail`、`settings/gesture-hint`、`settings/level-osd`、`settings/sensitivity`、`settings/app-behavior`、`settings/update`、`settings/webdav`
 
 页面组件通过动态 `import()` 加载，`router/routes` 下的路由模块只在路由命中时加载对应页面 chunk。
 
@@ -234,7 +235,7 @@ src\pages
 - `边缘操作` 的触发角、摩擦边、边缘滚动分别通过独立子路由展示配置；点击卡片打开独立弹窗编辑启用状态、命令和参数，名称由触发类型、位置与滚轮方向自动生成，关闭弹窗后自动保存。
 - `排除项` 页维护不执行鼠标手势的程序列表；可通过拖动鼠标或浏览 exe 添加程序，也可为单个排除项勾选“同时禁用边缘操作”，列表会展示从 exe 路径动态提取的应用图标。
 - `全局`、`分类` 和 `程序` 规则页会显示共享的作用域优先级提示，明确 `程序 > 分类 > 全局` 以及未命中当前层级时的继承关系。
-- `设置` 的每个配置项通过独立子路由展示；本地导出、本地导入和恢复默认按钮位于侧栏设置分组。恢复默认会通过确认弹窗二次确认。本地导入/导出只处理主配置 JSON，不包含窗口状态。页面中的调整会在输入变化时 debounce 自动保存，并在控件变更结束或离开页面时强制提交最后一次修改；普通自动保存成功不弹出 toast，保存失败仍会提示。本地编辑期间会避免宿主回传覆盖当前滑块值。设置页也包含开机自启动（默认关闭）、以管理员身份打开、关闭按钮行为，以及 WebDAV 地址、账号、密码和远程路径。开机自启动、以管理员身份打开和全屏禁用等布尔项使用共享自定义复选控件，单选下拉使用共享弹层式 `CustomSelect`。临时暂停只由侧栏状态标识和托盘菜单提供，不写入配置文件。轨迹线、音量/亮度 OSD 和底部提示窗预览分别内置在对应独立设置页顶部，音量/亮度 OSD 区块还提供实际桌面测试按钮；手势灵敏度使用宽松、标准、严格三档。WebDAV 区域提供测试、恢复和保存按钮；当前 WebDAV 参数测试成功后，才允许把当前配置保存到远程或从远程恢复本地配置。密码输入框右侧有显示/隐藏按钮，切换时在 `password` 与 `text` 之间切换输入类型，并用 `eye`/`eye-off` 图标和 `aria-label` 同步状态；“更新”页的“启动时自动检查更新”复选卡片与“应用行为”页一致，最多占一行的一半宽度，窄屏下改为整行。
+- `设置` 的每个配置项通过独立子路由展示；本地导出、本地导入和恢复默认集中到「设置 > 配置」页，侧栏设置分组只保留导航入口。恢复默认会通过确认弹窗二次确认；本地导入在用户选好 JSON 文件后由桌面宿主再次确认覆盖，避免误选文件直接丢失配置。本地导入/导出只处理主配置 JSON，不包含窗口状态。页面中的调整会在输入变化时 debounce 自动保存，并在控件变更结束或离开页面时强制提交最后一次修改；普通自动保存成功不弹出 toast，保存失败仍会提示。本地编辑期间会避免宿主回传覆盖当前滑块值。设置页也包含开机自启动（默认关闭）、以管理员身份打开、关闭按钮行为，以及 WebDAV 地址、账号、密码和远程路径。开机自启动、以管理员身份打开和全屏禁用等布尔项使用共享自定义复选控件，单选下拉使用共享弹层式 `CustomSelect`。临时暂停只由侧栏状态标识和托盘菜单提供，不写入配置文件。轨迹线、音量/亮度 OSD 和底部提示窗预览分别内置在对应独立设置页顶部，音量/亮度 OSD 区块还提供实际桌面测试按钮；手势灵敏度使用宽松、标准、严格三档。WebDAV 区域提供测试、恢复和保存按钮；当前 WebDAV 参数测试成功后，才允许把当前配置保存到远程或从远程恢复本地配置。密码输入框右侧有显示/隐藏按钮，切换时在 `password` 与 `text` 之间切换输入类型，并用 `eye`/`eye-off` 图标和 `aria-label` 同步状态；“更新”页的“启动时自动检查更新”复选卡片与“应用行为”页一致，最多占一行的一半宽度，窄屏下改为整行。
 - `关于&更新` 是侧栏最外层的独立页面，分「关于」和「更新」两个区块：「关于」介绍软件用途，并只读展示当前版本、更新源和是否在启动时自动检查；「更新」提供检查更新按钮、状态提示和“查看更新”入口，确认后才由全局更新弹窗下载、校验并重启安装，弹窗会注明实际使用的更新源以及回退原因。更新源和自动检查开关统一放在“设置 > 更新”中修改。
 - 分类新增通过名称弹窗完成，不再使用左侧内联输入框；分类和程序名称都通过双击列表项后在弹窗里重命名。
 - 分类页、程序页和排除项页添加程序时都会先显示前端弹窗，用户可通过“拖动选择窗口”将鼠标移到目标窗口后松开，或选择“浏览 exe 文件”作为备用方式。
@@ -264,7 +265,7 @@ src\pages
 - `{ type: "webdav-save", rules: [...], applications: [...], edgeActions: [...], uiSettings: {...} }`
 - `{ type: "webdav-restore", rules: [...], applications: [...], edgeActions: [...], uiSettings: {...} }`
 - `{ type: "export-config", rules: [...], applications: [...], edgeActions: [...], uiSettings: {...} }`
-- `{ type: "import-config" }`
+- `{ type: "import-config" }`：宿主打开文件选择框，用户选好文件后弹出覆盖确认；取消选择或选择“否”都不会改动配置。
 - `{ type: "reload-rules" }`
 - `{ type: "reset-rules" }`
 - `{ type: "preview-level-osd", kind: "volume|brightness" }`

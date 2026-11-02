@@ -2,19 +2,17 @@
 import { computed, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import AppIcon from '@/components/ui/AppIcon.vue'
-import HoverBubble from '@/components/ui/HoverBubble.vue'
-import IconActionButton from '@/components/ui/IconActionButton.vue'
 
 defineProps({
   isSidebarHidden: { type: Boolean, default: false },
   isSidebarVisible: { type: Boolean, default: true }
 })
 
-const emit = defineEmits(['export-config', 'import-config', 'reset-settings'])
 const route = useRoute()
 const expanded = ref(false)
 const isActive = computed(() => route.path.startsWith('/settings'))
 const items = [
+  { to: '/settings/config', label: '配置', icon: 'database' },
   { to: '/settings/mouse-trail', label: '轨迹线', icon: 'spline' },
   { to: '/settings/gesture-hint', label: '手势提示', icon: 'message-square' },
   { to: '/settings/level-osd', label: '音量/亮度提示', icon: 'monitor' },
@@ -64,33 +62,6 @@ watch(
       v-show="expanded"
       class="sidebar-group__body"
     >
-      <div class="sidebar-group__toolbar">
-        <HoverBubble text="导出配置"
-          ><IconActionButton
-            icon="download"
-            label="导出配置"
-            :show-tooltip="false"
-            class="sidebar-group__action"
-            @click="emit('export-config')"
-        /></HoverBubble>
-        <HoverBubble text="导入配置"
-          ><IconActionButton
-            icon="upload"
-            label="导入配置"
-            :show-tooltip="false"
-            class="sidebar-group__action"
-            @click="emit('import-config')"
-        /></HoverBubble>
-        <HoverBubble text="恢复默认设置"
-          ><IconActionButton
-            icon="reset"
-            label="恢复默认设置"
-            :show-tooltip="false"
-            color="var(--danger)"
-            class="sidebar-group__action"
-            @click="emit('reset-settings')"
-        /></HoverBubble>
-      </div>
       <div class="sidebar-group__children">
         <div
           v-for="item in items"
