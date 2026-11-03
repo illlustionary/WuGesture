@@ -31,12 +31,20 @@ export function cloneUiSettings(settings) {
     gestureSensitivity: normalizeGestureSensitivitySettings(source.gestureSensitivity),
     appBehavior: normalizeAppBehaviorSettings(source.appBehavior),
     webDav: normalizeWebDavSettings(source.webDav),
-    update: normalizeUpdateSettings(source.update)
+    update: normalizeUpdateSettings(source.update),
+    onboarding: normalizeOnboardingSettings(source.onboarding)
   }
 }
 
 export function normalizeUiSettings(settings) {
   return cloneUiSettings(settings)
+}
+
+export function normalizeOnboardingSettings(settings) {
+  settings = normalizeObjectKeys(settings)
+  return {
+    welcomeCompleted: Boolean(settings?.welcomeCompleted ?? DEFAULT_UI_SETTINGS.onboarding.welcomeCompleted)
+  }
 }
 
 export function normalizeSidebarSettings(settings) {

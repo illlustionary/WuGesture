@@ -99,6 +99,10 @@ internal static class WebViewRulesPayloadFactory
             {
                 checkForUpdates = uiSettings.Update.CheckForUpdates,
                 source = uiSettings.Update.Source
+            },
+            onboarding = new
+            {
+                welcomeCompleted = uiSettings.Onboarding.WelcomeCompleted
             }
         };
     }

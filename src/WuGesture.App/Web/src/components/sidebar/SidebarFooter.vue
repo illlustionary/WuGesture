@@ -16,11 +16,11 @@ const themeLabel = computed(() => (props.isDarkTheme ? '切换到浅色模式' :
 <template>
   <div class="app-sidebar__footer">
     <div class="app-sidebar__footer-controls">
-      <HoverBubble text="规则生效顺序"
+      <HoverBubble text="帮助"
         ><button
           type="button"
           class="app-sidebar__help"
-          aria-label="规则生效顺序"
+          aria-label="帮助"
           @click="emit('open-help')"
         >
           ?

@@ -83,6 +83,9 @@ export const DEFAULT_UI_SETTINGS = {
   update: {
     checkForUpdates: true,
     source: UPDATE_SOURCES.gitee
+  },
+  onboarding: {
+    welcomeCompleted: false
   }
 }
 

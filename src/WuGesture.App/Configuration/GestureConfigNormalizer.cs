@@ -19,6 +19,7 @@ internal static class GestureConfigNormalizer
         config.UiSettings.AppBehavior ??= new AppBehaviorUiSettings();
         config.UiSettings.WebDav ??= new WebDavUiSettings();
         config.UiSettings.Update ??= new UpdateUiSettings();
+        config.UiSettings.Onboarding ??= new OnboardingUiSettings();
         NormalizeApplications(config.Applications);
         NormalizeRules(config.Rules);
         config.Categories = NormalizeCategories(config.Categories);

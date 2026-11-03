@@ -104,6 +104,33 @@ public sealed class GestureConfigStoreTests
     }
 
     [Fact]
+    public void SaveAndLoad_RoundTripsOnboardingCompletion()
+    {
+        using var directory = new TemporaryDirectory();
+        var path = Path.Combine(directory.Path, "gestures.json");
+        var store = new GestureConfigStore(path);
+        var config = DefaultGestureConfig.Create();
+        config.UiSettings.Onboarding.WelcomeCompleted = true;
+
+        store.SaveAndLoad(config);
+        var loaded = store.LoadOrCreate();
+
+        Assert.True(loaded.Config.UiSettings.Onboarding.WelcomeCompleted);
+    }
+
+    [Fact]
+    public void LoadOrCreate_DefaultsOnboardingToIncompleteWhenFieldIsMissing()
+    {
+        using var directory = new TemporaryDirectory();
+        var path = Path.Combine(directory.Path, "gestures.json");
+        File.WriteAllText(path, "{\"schemaVersion\":1,\"rules\":[{\"actionName\":\"保留的手势\"}]}");
+
+        var loaded = new GestureConfigStore(path).LoadOrCreate();
+
+        Assert.False(loaded.Config.UiSettings.Onboarding.WelcomeCompleted);
+    }
+
+    [Fact]
     public void Save_LeavesNoTemporaryFileBehindAndRewritesInPlace()
     {
         using var directory = new TemporaryDirectory();

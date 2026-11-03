@@ -145,6 +145,13 @@ describe('toPayloadUiSettings', () => {
     ])
     expect(payload.appBehavior.excludedApplications[0]).not.toHaveProperty('icon')
   })
+
+  it('保留引导完成标记，缺失时回退为 false', () => {
+    expect(toPayloadUiSettings({}).onboarding).toEqual({ welcomeCompleted: false })
+    expect(toPayloadUiSettings({ onboarding: { welcomeCompleted: true } }).onboarding).toEqual({
+      welcomeCompleted: true
+    })
+  })
 })
 
 describe('buildConfigPayload', () => {

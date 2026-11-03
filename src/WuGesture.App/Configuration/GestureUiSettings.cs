@@ -21,6 +21,8 @@ public sealed class GestureUiSettings
     public WebDavUiSettings WebDav { get; set; } = new();
 
     public UpdateUiSettings Update { get; set; } = new();
+
+    public OnboardingUiSettings Onboarding { get; set; } = new();
 }
 
 public sealed class AppearanceUiSettings
@@ -76,6 +78,14 @@ public sealed class UpdateUiSettings
     public bool CheckForUpdates { get; set; } = true;
 
     public string Source { get; set; } = GestureConfigContract.UpdateSources.Gitee;
+}
+
+/// <summary>
+/// 首次启动引导的完成状态。随配置一起导入/导出，因此换机恢复配置后不会重复弹出。
+/// </summary>
+public sealed class OnboardingUiSettings
+{
+    public bool WelcomeCompleted { get; set; }
 }
 
 public sealed class WebDavUiSettings

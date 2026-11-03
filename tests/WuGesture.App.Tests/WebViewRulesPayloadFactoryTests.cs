@@ -183,4 +183,29 @@ public sealed class WebViewRulesPayloadFactoryTests
                 .GetProperty("collapsed")
                 .GetBoolean());
     }
+
+    [Fact]
+    public void Create_IncludesOnboardingState()
+    {
+        var config = GestureConfigNormalizer.Normalize(new GestureConfig
+        {
+            UiSettings = new GestureUiSettings
+            {
+                Onboarding = new OnboardingUiSettings { WelcomeCompleted = true }
+            }
+        });
+        var loadedConfig = new LoadedGestureConfig(
+            "test.json",
+            config,
+            GestureConfigMapper.ToRules(config));
+
+        using var document = JsonDocument.Parse(WebViewRulesPayloadFactory.Create(loadedConfig));
+
+        Assert.True(
+            document.RootElement
+                .GetProperty("uiSettings")
+                .GetProperty("onboarding")
+                .GetProperty("welcomeCompleted")
+                .GetBoolean());
+    }
 }

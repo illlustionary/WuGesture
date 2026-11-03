@@ -91,7 +91,7 @@ src\WuGesture.App
 - `AppLogger.cs`：应用级结构化 JSONL 日志。`Program.cs` 会在入口初始化它，以记录启动/退出、单实例 IPC（包括第二个实例的转发失败）、WebView2 Runtime 版本和未处理异常；配置操作、WebView 宿主及动作失败也会记录。日志异步批量写入 `%LocalAppData%\WuGesture\logs\application-YYYYMMDD.log`，单文件达到 2MB 时保留一份 `.previous` 轮转日志，保留最近 7 天；队列满时会生成丢弃标记，写入失败时回退到 `%TEMP%\WuGesture-application-log-error.log`。日志不记录配置 JSON、WebDAV 凭据或 WebView 消息正文。
 - `WebViewHost.cs`：负责 WebView2 控件的创建、销毁、虚拟主机映射、导航和消息事件订阅；导航前使用宿主提供的默认底色和浅深主题标记，避免配置窗口重建时客户端区域按白色首帧绘制；入站消息仍同步交由 `MainForm` 的业务处理器执行，宿主不存在时出站消息直接丢弃。只有 `https://gesture.wu.philosophy` 下的页面可以投递消息：入站消息会校验 `Source`，离开该主机的导航一律取消并交给默认浏览器，新窗口请求也只做外部打开；控件同时关闭外部拖放，避免把文件或链接拖进窗口后导航到其他来源。WebView2 使用显式创建的 `CoreWebView2Environment`，profile 固定放在 `%LocalAppData%\WuGesture\WebView2`（不再放在 exe 旁边，安装目录可能只读、发布脚本也会清空输出目录）；`ready`/`disposed` 日志会记录浏览器进程号，释放后 3 秒内仍未退出的浏览器进程会被回收，保证关闭到托盘后不残留 Chromium 进程；Release 构建关闭 DevTools、默认右键菜单、浏览器快捷键和缩放，避免配置界面被误刷新或缩放。
 - `WebViewMessageDtos.cs`：集中 WebView 入站消息 DTO，并提供所有处理器共用的 `WebMessageJson.Options`（大小写不敏感），避免宿主和协调器各自维护一份序列化设置。
-- `WebViewRulesPayloadFactory.cs`：把已加载的手势配置转换为 WebView `rules` 消息 payload；其中 `appVersion` 提供程序集版本给配置界面，`uiSettings.appearance` 将配置界面主题偏好传给前端，应用程序和排除项的运行态消息项会补充应用图标 PNG data URL。
+- `WebViewRulesPayloadFactory.cs`：把已加载的手势配置转换为 WebView `rules` 消息 payload；其中 `appVersion` 提供程序集版本给配置界面，`uiSettings.appearance` 将配置界面主题偏好传给前端，`uiSettings.onboarding` 下发首次引导完成标记，应用程序和排除项的运行态消息项会补充应用图标 PNG data URL。
 - `ApplicationIconDataUrl.cs`：从可执行文件提取图标并转换为 WebView 可用的 PNG data URL；按可执行文件路径 + 文件长度 + 最后写入时间缓存结果（最多 128 项，溢出整体清空），避免每次 `rules` payload 都重新解码所有已配置程序和排除项的图标。
 - `WebMessageRouter.cs`：解析 WebView 入站消息并按 `type` 分发到 `MainForm` 提供的处理器字典；字符串消息交给状态查询回调，未知类型只记一条警告，JSON 解析失败或处理器抛异常时统一记录 `message-failed` 日志并回调失败处理，避免坏消息穿透到 WinForms 消息循环。
 - `TrayMenuController.cs`：持有通知区图标、右键菜单和暂停图标（用 `DestroyIcon` 释放临时 HICON），对外只暴露“打开配置 / 暂停 / 退出”三个动作、`SetPaused` 和 `ApplyAppearance`，`MainForm` 不再直接操作托盘资源。暂停图标由 `CreatePausedIcon` 在内存中生成：用 `ColorMatrix` 按亮度权重灰度化后整体压暗到 `PausedIconBrightness`（0.75），连白色圆环一起变灰，保证 16 px 托盘尺寸下也能明显看出已暂停；正常帧仍取 `Icon.ExtractAssociatedIcon` 的应用图标。右键菜单使用 `TrayMenuRenderer` 自绘、按主配置 `uiSettings.appearance`（含 `system` 解析）切换浅/深配色，并在 `Opened`/`SizeChanged` 时用圆角 `Region` 裁剪窗外形；菜单字号、内边距和分隔线高度都按主屏 DPI 缩放，暂停项用强调色圆点代替默认勾选框。
@@ -172,7 +172,7 @@ src\WuGesture.App\GestureEngine
 - `GestureParserWorker.cs`：独立最高优先级解析线程的 FIFO 工作队列；合并未处理的移动事件，并保证松键事件前先处理最后一个移动点。
 - `GestureDirection.cs`：8 方向枚举。
 - `GestureRule.cs`：运行时规则以及快捷键、窗口、音量、亮度和程序动作模型。
-- `GestureUiSettings.cs`：持久化的 UI 设置模型，包括配置界面外观、轨迹窗、提示泡泡、音量/亮度 OSD 和手势灵敏度配置。
+- `GestureUiSettings.cs`：持久化的 UI 设置模型，包括配置界面外观、轨迹窗、提示泡泡、音量/亮度 OSD、手势灵敏度和首次启动引导的完成状态。
 - `MouseTrailForm.cs`：全虚拟桌面的透明分层覆盖窗，负责窗口生命周期、鼠标穿透、DIB/HDC 缓冲和画面提交；启动后预热窗口句柄、DIB/HDC 缓冲和全透明分层位图，但空闲时保持隐藏，避免覆盖自动隐藏任务栏；重新显示时直接提交实际脏区域，不重新创建图形资源或清空整个虚拟桌面。新轨迹接管旧提示时会合并两者脏矩形后一次清除、重绘和提交，提示和 OSD 淡出帧也只重绘自身区域；命中手势结束时同样按旧轨迹与提示范围处理，避免重复更新整个虚拟桌面。首次 `UpdateLayeredWindow` 提交失败会记录 Win32 错误、窗口状态和缓存/当前虚拟屏幕信息，并通知主窗体异步重建整套覆盖层资源。即使轨迹线关闭，提示仍可单独使用此覆盖层显示。覆盖层只在创建时是 `TopMost`，又因为 `WS_EX_NOACTIVATE` 永不激活，所以在 topmost 层内不会自行上浮；因此每笔新手势开始绘制、提示或 OSD 首次显示时会用 `SetWindowPos(HWND_TOPMOST, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE)` 把它重新插到 topmost 层顶部，避免晚于覆盖层创建、随后变成 topmost 的窗口（例如更新完立刻启动的程序）长期压在覆盖层之上；每次手势最多调用一次，不移动、不缩放、不激活、不触发重绘。
 - `MouseTrailRenderer.cs`：管理手势路径、轨迹画笔和增量轨迹绘制。
 - `GestureHintRenderer.cs`：管理规则命中提示的样式、尺寸定位、显示/淡出计时和同层绘制；手势松键时预览提示立即按配置开始自动关闭，最终提示无缝接续预览并按同一配置重新计时，避免最终识别回调延后时提示停留。
@@ -263,6 +263,7 @@ src\WuGesture.App\Configuration
 - `uiSettings.appBehavior`：应用行为设置，包含 `launchAtStartup`、`showConfigWindowOnLaunch`、`runAsAdministrator`、`closeButtonBehavior`、`targetWindowMode`、`disableGesturesInFullscreen`、`disableEdgeActionsInFullscreen` 和 `excludedApplications`；`launchAtStartup` 默认关闭，用户主动开启后才写入自启动项。`showConfigWindowOnLaunch` 默认开启，控制普通启动时是否显示配置窗口，关闭后仅后台驻留并可从托盘打开，开机自启动始终后台运行。`runAsAdministrator` 开启后会在服务启动前以管理员权限重启，UAC 被拒绝或提权失败时应用不启动并直接退出，普通启动会先提示原因，后台启动只记录日志。关闭按钮行为支持 `minimize-to-tray`、`minimize-to-taskbar`、`exit`。`targetWindowMode` 支持默认的 `start-window` 和 `current-window`。全屏禁用开关默认关闭，分别停止手势识别和边缘操作。排除项包含 `name`、`displayName`、`path` 和 `disableEdgeActions`；命中的程序不执行鼠标手势，勾选 `disableEdgeActions` 时也会禁用边缘操作。临时暂停只由托盘菜单和配置界面侧栏状态标识控制，不写入配置。
 - `uiSettings.webDav`：WebDAV 备份设置，包含 `address`、`userName`、`password` 和 `remotePath`。设置页可把当前完整配置导出到本地 JSON，或从本地 JSON 导入并覆盖主配置文件；本地导入/导出不包含窗口状态。设置页也可测试 WebDAV 连接；测试当前配置成功后，才允许把当前完整配置保存到 WebDAV，或从 WebDAV 下载配置并覆盖本地配置；恢复后会刷新规则匹配、边缘操作、应用行为和 UI 设置。
 - `uiSettings.update`：更新设置，包含 `checkForUpdates`（默认 `true`）和 `source`（`gitee` 或 `github`，默认 `gitee`），编辑入口在“设置 > 更新”；侧栏最外层的“关于&更新”页只读展示当前取值并提供检查更新按钮。进程启动时只自动检查一次；关闭开关后手动检查仍可用。Gitee 是默认源，国内访问更稳定；检查时会比较两个源的版本号并取较高者，因此任一源落后都不会造成回退安装，两个源都不可用时才报告失败。更新包下载到 `%LocalAppData%\WuGesture\updates\<版本>`，校验通过后由独立的 PowerShell 脚本在当前进程退出后替换安装目录并重启，替换日志写入 `%LocalAppData%\WuGesture\logs\update-*.log`。
+- `uiSettings.onboarding`：首次启动引导设置，当前包含 `welcomeCompleted`（默认 `false`）。前端在收到宿主 `rules` 消息后才判断，避免默认值先触发弹窗；完成或跳过后写回 `true` 并随主配置保存，因此导入/导出和 WebDAV 恢复会一并带上该状态，恢复默认设置后会重新弹出。侧栏底部「?」打开的帮助弹窗提供「重新观看引导」，只重开弹窗、不清除标记。
 
 默认初始配置不包含 WebDAV 凭据、分类或具体程序归属，仅保留全局规则、界面偏好及已启用的边缘操作；后续新增配置字段仍由默认值和归一化逻辑补齐。
 
