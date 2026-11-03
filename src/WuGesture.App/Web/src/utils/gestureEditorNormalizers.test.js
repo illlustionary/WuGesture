@@ -16,6 +16,7 @@ import {
   normalizeMouseButton,
   normalizeMouseTrailSettings,
   normalizeObjectKeys,
+  normalizeOnboardingSettings,
   normalizeUpdateSettings,
   normalizeVolumeOperation,
   normalizeWheelDirection,
@@ -163,6 +164,13 @@ describe('界面设置规范化', () => {
 
   it('排除项缺少显示名时回退到名称', () => {
     expect(normalizeExcludedApplications([{ name: 'notepad' }])[0].displayName).toBe('notepad')
+  })
+
+  it('引导完成标记缺省为 false，并按布尔值归一化', () => {
+    expect(normalizeOnboardingSettings(undefined)).toEqual({ welcomeCompleted: false })
+    expect(normalizeOnboardingSettings({})).toEqual({ welcomeCompleted: false })
+    expect(normalizeOnboardingSettings({ welcomeCompleted: true })).toEqual({ welcomeCompleted: true })
+    expect(normalizeOnboardingSettings({ WelcomeCompleted: 1 })).toEqual({ welcomeCompleted: true })
   })
 })
 

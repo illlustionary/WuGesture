@@ -3,11 +3,12 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter, RouterView } from 'vue-router'
 import AppSidebar from '@/components/sidebar/AppSidebar.vue'
 import BaseDialog from '@/components/dialog/BaseDialog.vue'
+import HelpDialog from '@/components/dialog/HelpDialog.vue'
 import QuickSearchDialog from '@/components/dialog/QuickSearchDialog.vue'
 import UpdateDialog from '@/components/dialog/UpdateDialog.vue'
+import WelcomeDialog from '@/components/dialog/WelcomeDialog.vue'
 import GestureRuleDialog from '@/components/gesture/GestureRuleDialog.vue'
 import ScopeCreateDialog from '@/components/scope/ScopeCreateDialog.vue'
-import ScopePriorityNotice from '@/components/scope/ScopePriorityNotice.vue'
 import AppIcon from '@/components/ui/AppIcon.vue'
 import { useAppearanceTheme } from '@/composables/useAppearanceTheme'
 import { useGestureEditorEventListeners } from '@/composables/useGestureEditorEventListeners'
@@ -27,7 +28,9 @@ const { isDarkTheme, toggleTheme } = useAppearanceTheme(editor)
 const quickSearch = useQuickSearch()
 const routeOrder = ['global', 'category', 'app', 'edge', 'exclusions', 'settings', 'about']
 const transitionDirection = ref('right')
-const priorityNoticeOpen = ref(false)
+const helpOpen = ref(false)
+const welcomeOpen = ref(false)
+const welcomePrompted = ref(false)
 const routeTransitionName = computed(() =>
   transitionDirection.value === 'right' ? 'route-slide-right' : 'route-slide-left'
 )
@@ -55,6 +58,38 @@ const {
 
 editor.initialize()
 
+// 首次引导要等主机配置真正到达后再判断：state 里先是默认值，提前判断会先闪一个弹窗。
+// 每个会话最多自动弹一次，重新观看由帮助弹窗触发。
+watch(
+  () => [editor.state.hostConfigLoaded, editor.state.uiSettings?.onboarding?.welcomeCompleted],
+  ([configLoaded, welcomeCompleted]) => {
+    if (!configLoaded || welcomeCompleted || welcomePrompted.value) {
+      return
+    }
+
+    welcomePrompted.value = true
+    welcomeOpen.value = true
+  },
+  { immediate: true }
+)
+
+function completeWelcome() {
+  welcomeOpen.value = false
+
+  const settings = editor.getUiSettingsSnapshot()
+  if (settings.onboarding.welcomeCompleted) {
+    return
+  }
+
+  settings.onboarding.welcomeCompleted = true
+  editor.saveUiSettings(settings)
+}
+
+function replayWelcome() {
+  helpOpen.value = false
+  welcomeOpen.value = true
+}
+
 // 全局弹窗挂在 App 上，路由切换时不会随页面卸载；侧栏层级高于弹窗遮罩，用户可以在弹窗打开时
 // 切换页面，因此这里在路径变化时统一关闭这些弹窗。更新弹窗属于全局更新流程，不在此处关闭。
 function closeRouteDialogs() {
@@ -70,7 +105,7 @@ function closeRouteDialogs() {
     quickSearch.close()
   }
 
-  priorityNoticeOpen.value = false
+  helpOpen.value = false
 
   if (categoryDialogOpen.value) {
     closeCategoryDialog()
@@ -109,7 +144,7 @@ watch(
       <AppSidebar
         :is-dark-theme="isDarkTheme"
         @open-search="quickSearch.open"
-        @open-help="priorityNoticeOpen = true"
+        @open-help="helpOpen = true"
         @open-category-dialog="openCategoryDialog"
         @open-category-rename="openCategoryRenameDialog"
         @delete-category="removeSidebarCategory"
@@ -186,16 +221,16 @@ watch(
       </div>
     </BaseDialog>
 
-    <BaseDialog
-      :open="priorityNoticeOpen"
-      title="规则生效顺序"
-      title-id="scope-priority-title"
-      :show-close="true"
-      :show-actions="false"
-      @close="priorityNoticeOpen = false"
-    >
-      <ScopePriorityNotice />
-    </BaseDialog>
+    <WelcomeDialog
+      :open="welcomeOpen"
+      @complete="completeWelcome"
+    />
+
+    <HelpDialog
+      :open="helpOpen"
+      @close="helpOpen = false"
+      @replay="replayWelcome"
+    />
 
     <GestureRuleDialog
       :open="overlay.gestureEditorOpen"

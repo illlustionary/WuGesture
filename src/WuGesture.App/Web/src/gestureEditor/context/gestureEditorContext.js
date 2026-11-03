@@ -45,6 +45,8 @@ const state = reactive({
   configPath: '读取中',
   configMessage: '',
   configMessageState: 'idle',
+  // 主机配置到达前 state 里只是默认值，首次引导必须等这个标记为 true 再判断，否则会先弹一次。
+  hostConfigLoaded: false,
   rules: [],
   applications: [],
   categories: [],
@@ -387,6 +389,7 @@ function handleMessage(message) {
       message.edgeActions ?? [],
       { preserveEdgeActions: shouldPreserveLocalEdgeActions() }
     )
+    state.hostConfigLoaded = true
     return
   }
 

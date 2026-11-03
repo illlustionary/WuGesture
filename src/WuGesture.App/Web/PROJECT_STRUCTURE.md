@@ -60,7 +60,7 @@ src
 - `src\router\routes\scopeRoutes.js`：分类和程序动态子路由。
 - `src\router\routes\edgeRoutes.js`：触发角、摩擦边和边缘滚动子路由。
 - `src\router\routes\settingsRoutes.js`：各设置项子路由。
-- `src\App.vue`：侧栏/页面工作区、路由切换过渡和全局弹窗挂载；窗口标题栏由桌面宿主在 WebView 上方自绘（不进入前端页面），分类/程序侧栏操作和主题状态由组合式函数协调。全局弹窗不会随页面卸载，因此 `App.vue` 在路由路径变化时统一关闭应用选择器、手势规则编辑器、快速搜索、规则生效顺序和分类/程序新增重命名弹窗，避免切换页面后残留；更新弹窗属于全局更新流程，不受路由切换影响；恢复默认设置的确认弹窗属于设置页，随页面卸载自动关闭。
+- `src\App.vue`：侧栏/页面工作区、路由切换过渡和全局弹窗挂载；窗口标题栏由桌面宿主在 WebView 上方自绘（不进入前端页面），分类/程序侧栏操作和主题状态由组合式函数协调。首次启动引导只在 `state.hostConfigLoaded` 为 true 且 `uiSettings.onboarding.welcomeCompleted` 为 false 时自动弹出，每个会话最多一次，浏览器预览不触发；帮助弹窗由侧栏底部「?」打开。全局弹窗不会随页面卸载，因此 `App.vue` 在路由路径变化时统一关闭应用选择器、手势规则编辑器、快速搜索、帮助弹窗和分类/程序新增重命名弹窗，避免切换页面后残留；欢迎引导和更新弹窗属于全局流程，不受路由切换影响；恢复默认设置的确认弹窗属于设置页，随页面卸载自动关闭。
 - `src\icons\appIcons.js`：本地 SVG 图标的唯一显式注册表；使用文件名作为图标名称，供 `AppIcon` 和业务组件按名称查找。
 - `src\styles.scss`：编辑器全局设计 token、reset、通用按钮、输入框、弹窗和图标样式；常用布局/区块/表单/列表样式优先用 UnoCSS shortcuts，复杂动态样式和组件专属样式放在对应 `.vue` 文件的 scoped SCSS 中。
 
@@ -92,7 +92,7 @@ src\components
 
 - `sidebar\`：侧栏壳和固定导航、分类、程序、边缘操作、设置、关于&更新及底部区域组件。
 - `layout\`：`AppShell.vue` 页面布局壳和 `NestedRouteView.vue` 嵌套路由承载组件。
-- `dialog\`：`BaseDialog.vue`、`ConfirmDialog.vue`、`QuickSearchDialog.vue` 和 `UpdateDialog.vue` 等共享对话框；`BaseDialog` 统一遮罩关闭、可选右上关闭按钮、默认操作区和关闭动画，自动保存或即时选择类弹层可复用外壳并关闭默认操作区；`UpdateDialog` 展示版本差异、发行说明、下载进度和失败后的重试/发布页入口，下载中禁止遮罩关闭。
+- `dialog\`：`BaseDialog.vue`、`ConfirmDialog.vue`、`QuickSearchDialog.vue`、`UpdateDialog.vue`、`WelcomeDialog.vue` 和 `HelpDialog.vue` 等共享对话框；`BaseDialog` 统一遮罩关闭、可选右上关闭按钮、默认操作区和关闭动画，自动保存或即时选择类弹层可复用外壳并关闭默认操作区；`UpdateDialog` 展示版本差异、发行说明、下载进度和失败后的重试/发布页入口，下载中禁止遮罩关闭；`WelcomeDialog` 是首次启动的三屏欢迎引导，`HelpDialog` 收拢快速上手、规则生效顺序、边缘操作和常见问题，并提供「重新观看引导」和文档外链。
 - `form\`：`BaseInput.vue`、`BaseRange.vue`、`CustomSelect.vue` 和 `ToggleCheckbox.vue` 等共享表单控件；`BaseInput` / `BaseRange` 统一原生输入控件的 `v-model` 事件、宽度约束和滑块进度填充，页面只保留各自的配置约束与保存时机。
 - `ui\`：`AppIcon.vue`、`HoverBubble.vue` 和 `IconActionButton.vue` 等基础 UI 控件。
 - `gesture\`：`GestureRuleDialog.vue`、`GestureRuleList.vue` 以及 `gesture\rule-dialog\fields\` 下的规则字段组件。
@@ -277,7 +277,7 @@ src\pages
 后端发送：
 
 - `{ type: "status", status: "running|paused|..." }`
-- `{ type: "rules", appVersion: "v...", rules: [...], applications: [{ name, displayName, path, categories, icon }, ...], edgeActions: [...], uiSettings: { sidebar: { collapsed }, update: { checkForUpdates, source }, ... }, ... }`；`appVersion` 来自程序集版本，仅用于配置界面展示，不写入配置文件；`uiSettings.sidebar.collapsed` 保存侧栏收起状态；`categories` 的顺序决定分类规则冲突时的覆盖顺序，越靠前优先级越高，其中 `uiSettings.appBehavior.excludedApplications` 的运行态消息项会额外带 `icon`，不写入配置文件。
+- `{ type: "rules", appVersion: "v...", rules: [...], applications: [{ name, displayName, path, categories, icon }, ...], edgeActions: [...], uiSettings: { sidebar: { collapsed }, update: { checkForUpdates, source }, onboarding: { welcomeCompleted }, ... }, ... }`；`appVersion` 来自程序集版本，仅用于配置界面展示，不写入配置文件；`uiSettings.sidebar.collapsed` 保存侧栏收起状态；`uiSettings.onboarding.welcomeCompleted` 决定是否自动弹出首次引导；`categories` 的顺序决定分类规则冲突时的覆盖顺序，越靠前优先级越高，其中 `uiSettings.appBehavior.excludedApplications` 的运行态消息项会额外带 `icon`，不写入配置文件。
 - `{ type: "application-selected", requestId: "...", name: "...", displayName: "...", path: "...", category: "...", icon: "..." }`
 - `{ type: "gesture-recorded", requestId: "...", button: "right|middle", pattern: ["Down", "Right"] }`
 - `{ type: "hotkey-recorded", requestId: "...", keys: ["Control", "W"] }`
@@ -353,6 +353,10 @@ src\pages
 
 - `checkForUpdates`：进程启动时是否自动检查一次更新，默认 `true`
 - `source`：`gitee`（默认）或 `github`，作为检查更新时的首选源；另一个源只在首选源没有更高版本时才参与比较，两个源都会按版本号取较高者，且不会安装不高于当前版本的包
+
+`uiSettings.onboarding` 当前包含：
+
+- `welcomeCompleted`：首次启动的三屏欢迎引导是否已完成，默认 `false`。完成、跳过关窗（含 Esc 和点击遮罩）都会写回 `true`；标记随主配置导出/导入和 WebDAV 同步，因此恢复配置后不会重复弹出。想重看时从侧栏「?」打开的帮助弹窗点「重新观看引导」，该操作不会清除标记。
 
 ## 测试
 
