@@ -5,6 +5,7 @@ import {
   normalizeBrightnessOperation,
   normalizeMouseButton,
   normalizeVolumeOperation,
+  normalizeWheelModifier,
   normalizeWindowOperation,
   parseScope,
   toPatternText
@@ -13,11 +14,14 @@ import { getGestureMnemonic } from './gestureEditorFormatters'
 
 export function toViewRule(rule, id) {
   const scope = parseScope(rule.scope)
+  const wheelModifier = normalizeWheelModifier(rule.wheelModifier)
   return {
     id,
     scopeKind: scope.kind,
     scopeName: scope.name,
     patternText: toPatternText(rule.pattern),
+    wheelModifier,
+    executeOnWheel: wheelModifier !== '' && Boolean(rule.executeOnWheel),
     mouseButton: normalizeMouseButton(rule.mouseButton),
     actionName: rule.actionName ?? '',
     keysText: Array.isArray(rule.keys) ? rule.keys.join(' + ') : '',
@@ -53,16 +57,24 @@ function normalizeCategories(categories) {
 }
 
 export function createRuleModel(scopeKind, scopeName, values = {}, id) {
+  const wheelModifier = normalizeWheelModifier(values.wheelModifier)
+  const patternText = values.patternText ?? (wheelModifier ? '' : 'Left')
   return {
     id,
     scopeKind,
     scopeName,
-    patternText: values.patternText ?? 'Left',
+    patternText,
+    wheelModifier,
+    executeOnWheel:
+      values.executeOnWheel === undefined
+        ? wheelModifier !== ''
+        : wheelModifier !== '' && Boolean(values.executeOnWheel),
     mouseButton: normalizeMouseButton(values.mouseButton),
     actionName:
       values.actionName ??
       getGestureMnemonic({
-        patternText: values.patternText ?? 'Left',
+        patternText,
+        wheelModifier,
         mouseButton: values.mouseButton
       }),
     keysText: values.keysText ?? '',
@@ -83,6 +95,8 @@ export function createEmptyGestureDraft() {
   return {
     actionName: '',
     patternText: '',
+    wheelModifier: '',
+    executeOnWheel: true,
     mouseButton: MOUSE_BUTTONS.right,
     keysText: '',
     actionType: ACTION_TYPES.hotkey,

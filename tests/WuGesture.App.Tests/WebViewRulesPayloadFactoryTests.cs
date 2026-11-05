@@ -185,6 +185,78 @@ public sealed class WebViewRulesPayloadFactoryTests
     }
 
     [Fact]
+    public void Create_IncludesWheelModifierAndTriggerModeForWheelRules()
+    {
+        var config = new GestureConfig
+        {
+            Rules =
+            [
+                new GestureRuleConfig
+                {
+                    Scope = GestureConfigContract.Scopes.Global,
+                    Pattern = ["Up", "Right"],
+                    WheelModifier = GestureConfigContract.WheelDirections.Up,
+                    ExecuteOnWheel = true,
+                    ActionName = "音量 +",
+                    Action = new GestureActionConfig
+                    {
+                        Type = GestureConfigContract.ActionTypes.Volume,
+                        Operation = GestureConfigContract.Operations.Increase,
+                        Amount = 5
+                    }
+                }
+            ]
+        };
+        var loadedConfig = new LoadedGestureConfig(
+            "test.json",
+            config,
+            GestureConfigMapper.ToRules(config));
+
+        using var document = JsonDocument.Parse(WebViewRulesPayloadFactory.Create(loadedConfig));
+
+        var rule = document.RootElement.GetProperty("rules")[0];
+        Assert.Equal(GestureConfigContract.WheelDirections.Up, rule.GetProperty("wheelModifier").GetString());
+        Assert.True(rule.GetProperty("executeOnWheel").GetBoolean());
+        Assert.Equal(["Up", "Right"], rule.GetProperty("pattern").EnumerateArray().Select(item => item.GetString()));
+    }
+
+    [Fact]
+    public void Create_KeepsHoldAndScrollRulesWithoutAPattern()
+    {
+        var config = new GestureConfig
+        {
+            Rules =
+            [
+                new GestureRuleConfig
+                {
+                    Scope = GestureConfigContract.Scopes.Global,
+                    Pattern = [],
+                    WheelModifier = GestureConfigContract.WheelDirections.Down,
+                    ExecuteOnWheel = false,
+                    ActionName = "静音",
+                    Action = new GestureActionConfig
+                    {
+                        Type = GestureConfigContract.ActionTypes.Volume,
+                        Operation = GestureConfigContract.Operations.Mute,
+                        Amount = 5
+                    }
+                }
+            ]
+        };
+        var loadedConfig = new LoadedGestureConfig(
+            "test.json",
+            config,
+            GestureConfigMapper.ToRules(config));
+
+        using var document = JsonDocument.Parse(WebViewRulesPayloadFactory.Create(loadedConfig));
+
+        var rule = document.RootElement.GetProperty("rules")[0];
+        Assert.Equal(GestureConfigContract.WheelDirections.Down, rule.GetProperty("wheelModifier").GetString());
+        Assert.False(rule.GetProperty("executeOnWheel").GetBoolean());
+        Assert.Equal(0, rule.GetProperty("pattern").GetArrayLength());
+    }
+
+    [Fact]
     public void Create_IncludesOnboardingState()
     {
         var config = GestureConfigNormalizer.Normalize(new GestureConfig

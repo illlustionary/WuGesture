@@ -9,6 +9,7 @@ import {
   normalizeUiSettings,
   normalizeWebDavSettings,
   normalizeVolumeOperation,
+  normalizeWheelModifier,
   normalizeWindowOperation,
   parseKeys,
   parsePattern
@@ -17,10 +18,13 @@ import { getGestureMnemonic } from './gestureEditorFormatters'
 import { ACTION_TYPES } from '@/constants/gestureEditorOptions'
 
 export function toPayloadRule(rule) {
+  const wheelModifier = normalizeWheelModifier(rule.wheelModifier)
   return {
     scope: buildScope(rule.scopeKind, rule.scopeName),
     mouseButton: normalizeMouseButton(rule.mouseButton),
     pattern: parsePattern(rule.patternText),
+    wheelModifier,
+    executeOnWheel: wheelModifier !== '' && Boolean(rule.executeOnWheel),
     actionName: String(rule.actionName ?? '').trim() || getGestureMnemonic(rule),
     action: toPayloadAction(rule)
   }

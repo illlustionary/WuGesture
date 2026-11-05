@@ -20,6 +20,19 @@ public sealed record GestureRule(
     }
 
     public GestureMouseButton MouseButton { get; init; } = GestureMouseButton.Right;
+
+    /// <summary>
+    /// Wheel modifier that must be applied to the held gesture for this rule to match.
+    /// A null value means the rule is triggered by the direction pattern alone.
+    /// </summary>
+    public GestureWheelDirection? WheelModifier { get; init; }
+
+    /// <summary>
+    /// When true, every wheel notch executes the action immediately and keeps executing while
+    /// the button is held. When false, the wheel only selects the rule and the action runs once
+    /// when the gesture button is released.
+    /// </summary>
+    public bool ExecuteOnWheel { get; init; }
 }
 
 public abstract record GestureAction;

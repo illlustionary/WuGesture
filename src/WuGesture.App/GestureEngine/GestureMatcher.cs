@@ -26,6 +26,12 @@ public sealed class GestureMatcher
                 continue;
             }
 
+            // A rule with a wheel modifier is only reachable while that modifier is active.
+            if (rule.WheelModifier is not null)
+            {
+                continue;
+            }
+
             if (!rule.Pattern.SequenceEqual(pattern))
             {
                 continue;
@@ -46,7 +52,55 @@ public sealed class GestureMatcher
         return bestMatch;
     }
 
+    /// <summary>
+    /// Matches the current direction pattern with an active wheel modifier. The wheel direction
+    /// is part of the gesture identity, so a rule only matches the exact pattern and modifier.
+    /// </summary>
+    public GestureRule? MatchWheel(
+        GestureWheelDirection direction,
+        IReadOnlyList<GestureDirection> pattern,
+        GestureScopeContext? context = null,
+        GestureMouseButton button = GestureMouseButton.Right)
+    {
+        context ??= GestureScopeContext.Empty;
+
+        GestureRule? bestMatch = null;
+        var bestPriority = int.MinValue;
+
+        foreach (var rule in rules)
+        {
+            if (rule.MouseButton != button ||
+                rule.WheelModifier != direction ||
+                !rule.Pattern.SequenceEqual(pattern))
+            {
+                continue;
+            }
+
+            if (!TryGetScopePriority(rule.Scope, context, out var priority))
+            {
+                continue;
+            }
+
+            if (priority > bestPriority)
+            {
+                bestPriority = priority;
+                bestMatch = rule;
+            }
+        }
+
+        return bestMatch;
+    }
+
     public IReadOnlyList<GestureRule> Rules => rules;
+
+    /// <summary>
+    /// Used to decide whether wheel input should be swallowed while the given button is held.
+    /// Without any wheel-modifier rule the wheel must keep reaching the target application.
+    /// </summary>
+    public bool HasWheelRules(GestureMouseButton button)
+    {
+        return rules.Any(rule => rule.MouseButton == button && rule.WheelModifier is not null);
+    }
 
     private static bool TryGetScopePriority(string scope, GestureScopeContext context, out int priority)
     {

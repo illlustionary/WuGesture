@@ -35,6 +35,18 @@ public sealed class GestureRuleConfig
 
     public List<string> Pattern { get; set; } = [];
 
+    /// <summary>
+    /// Optional wheel modifier ("up" or "down") applied on top of the direction pattern.
+    /// Empty means the rule is triggered by the direction pattern alone.
+    /// </summary>
+    public string WheelModifier { get; set; } = "";
+
+    /// <summary>
+    /// True to execute on every wheel notch while the button is held; false to execute once
+    /// when the button is released.
+    /// </summary>
+    public bool ExecuteOnWheel { get; set; }
+
     public string ActionName { get; set; } = "";
 
     public GestureActionConfig Action { get; set; } = new();

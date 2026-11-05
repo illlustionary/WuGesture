@@ -1,14 +1,55 @@
 <script setup>
+import { computed } from 'vue'
 import AppIcon from '@/components/ui/AppIcon.vue'
+import CustomSelect from '@/components/form/CustomSelect.vue'
+import GestureRuleField from './GestureRuleField.vue'
+import {
+  DIRECTION_SYMBOLS,
+  MOUSE_BUTTON_OPTIONS,
+  WHEEL_MODIFIER_OPTIONS,
+  WHEEL_TRIGGER_OPTIONS
+} from '@/constants/gestureEditorOptions'
+import { normalizeWheelModifier, parsePattern } from '@/utils/gestureEditorNormalizers'
 
-defineProps({
-  patternLabel: { type: String, required: true },
-  isEmpty: { type: Boolean, default: false },
+const props = defineProps({
+  draft: { type: Object, required: true },
   isRecording: { type: Boolean, default: false },
   message: { type: String, default: '' }
 })
 
 defineEmits(['record'])
+
+const directionLabel = computed(() =>
+  parsePattern(props.draft.patternText)
+    .map(direction => DIRECTION_SYMBOLS[direction] ?? '')
+    .join('')
+)
+
+const hasWheelModifier = computed(() => normalizeWheelModifier(props.draft.wheelModifier) !== '')
+
+const mouseButtonLabel = computed(
+  () => MOUSE_BUTTON_OPTIONS.find(option => option.value === props.draft.mouseButton)?.label ?? '右键'
+)
+
+const wheelTrigger = computed({
+  get: () => (props.draft.executeOnWheel ? 'repeat' : 'once'),
+  set: value => {
+    props.draft.executeOnWheel = value === 'repeat'
+  }
+})
+
+const hint = computed(() => {
+  if (!hasWheelModifier.value) {
+    return `按住${mouseButtonLabel.value}绘制方向手势，松开时执行。`
+  }
+
+  const prefix = directionLabel.value
+    ? `先按住${mouseButtonLabel.value}绘制手势，再继续按住滚动滚轮。`
+    : `按住${mouseButtonLabel.value}直接滚动滚轮即可触发。`
+  return props.draft.executeOnWheel
+    ? `${prefix}每滚动一格执行一次。`
+    : `${prefix}滚轮只用于选择动作，松开${mouseButtonLabel.value}时执行一次。`
+})
 </script>
 
 <template>
@@ -16,13 +57,18 @@ defineEmits(['record'])
     class="gesture-rule-gesture-field"
     aria-labelledby="gesture-dialog-gesture-label"
   >
-    <span
-      id="gesture-dialog-gesture-label"
-      class="gesture-rule-gesture-field__label"
-      >手势</span
-    >
+    <div class="gesture-rule-gesture-field__header">
+      <span
+        id="gesture-dialog-gesture-label"
+        class="gesture-rule-gesture-field__label"
+        >手势</span
+      >
+    </div>
+
     <div class="gesture-rule-gesture-field__control">
-      <strong :class="{ 'is-empty': isEmpty }">{{ patternLabel }}</strong>
+      <strong :class="{ 'is-empty': !directionLabel }">
+        {{ directionLabel || (hasWheelModifier ? '未录制方向手势' : '尚未录制') }}
+      </strong>
       <button
         type="button"
         class="gesture-rule-gesture-field__record"
@@ -34,9 +80,40 @@ defineEmits(['record'])
           class="gesture-rule-gesture-field__record-icon"
           aria-hidden="true"
         />
-        <span>{{ isRecording ? '停止录制' : isEmpty ? '录制手势' : '重新录制' }}</span>
+        <span>{{ isRecording ? '停止录制' : directionLabel ? '重新录制' : '录制手势' }}</span>
       </button>
     </div>
+
+    <div class="gesture-rule-gesture-field__options">
+      <GestureRuleField label="按住按键">
+        <CustomSelect
+          v-model="draft.mouseButton"
+          :options="MOUSE_BUTTON_OPTIONS"
+          placeholder="选择鼠标按键"
+        />
+      </GestureRuleField>
+      <GestureRuleField label="滚轮修饰">
+        <CustomSelect
+          v-model="draft.wheelModifier"
+          :options="WHEEL_MODIFIER_OPTIONS"
+          placeholder="选择滚轮修饰"
+        />
+      </GestureRuleField>
+      <GestureRuleField
+        v-if="hasWheelModifier"
+        label="触发方式"
+      >
+        <CustomSelect
+          v-model="wheelTrigger"
+          :options="WHEEL_TRIGGER_OPTIONS"
+          placeholder="选择触发方式"
+        />
+      </GestureRuleField>
+    </div>
+
+    <p class="gesture-rule-gesture-field__message">
+      {{ hint }}
+    </p>
     <p
       v-if="message"
       class="gesture-rule-gesture-field__message"
@@ -52,10 +129,24 @@ defineEmits(['record'])
   gap: 6px;
 }
 
+.gesture-rule-gesture-field__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .gesture-rule-gesture-field__label {
   color: var(--muted);
   font-size: 13px;
   font-weight: 600;
+}
+
+.gesture-rule-gesture-field__options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-top: 6px;
 }
 
 .gesture-rule-gesture-field__control {

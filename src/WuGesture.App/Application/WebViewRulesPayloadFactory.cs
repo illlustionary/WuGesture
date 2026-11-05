@@ -18,6 +18,8 @@ internal static class WebViewRulesPayloadFactory
                 scope = rule.Scope,
                 mouseButton = string.IsNullOrWhiteSpace(rule.MouseButton) ? GestureConfigContract.MouseButtons.Right : rule.MouseButton,
                 pattern = rule.Pattern,
+                wheelModifier = rule.WheelModifier,
+                executeOnWheel = rule.ExecuteOnWheel,
                 actionName = rule.ActionName,
                 actionType = string.IsNullOrWhiteSpace(rule.Action.Type) ? GestureConfigContract.ActionTypes.Hotkey : rule.Action.Type,
                 keys = rule.Action.Keys,

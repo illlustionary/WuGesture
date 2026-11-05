@@ -36,6 +36,49 @@ describe('toPayloadRule', () => {
   it('保留显式动作名称并去除空白', () => {
     expect(toPayloadRule({ actionName: ' 最大化 ', patternText: 'Up' }).actionName).toBe('最大化')
   })
+
+  it('滚轮修饰与方向路径一起写入 payload', () => {
+    const payload = toPayloadRule({
+      wheelModifier: 'DOWN',
+      patternText: 'Up, Right',
+      executeOnWheel: true,
+      mouseButton: 'middle',
+      actionType: 'volume',
+      volumeOperation: 'increase',
+      amount: 5
+    })
+
+    expect(payload).toMatchObject({
+      mouseButton: 'middle',
+      pattern: ['Up', 'Right'],
+      wheelModifier: 'down',
+      executeOnWheel: true
+    })
+    expect(payload.actionName).toBe('●↑→滚轮↓')
+    expect(
+      toPayloadRule({ patternText: 'Left', wheelModifier: '', executeOnWheel: true, actionType: 'hotkey' })
+        .executeOnWheel
+    ).toBe(false)
+  })
+
+  it('空方向 + 滚轮修饰表示按住直接滚动', () => {
+    const payload = toPayloadRule({
+      patternText: '',
+      wheelModifier: 'up',
+      executeOnWheel: false,
+      mouseButton: 'right',
+      actionType: 'volume',
+      volumeOperation: 'increase',
+      amount: 5
+    })
+
+    expect(payload).toMatchObject({
+      pattern: [],
+      wheelModifier: 'up',
+      executeOnWheel: false
+    })
+    expect(payload.actionName).toBe('◑滚轮↑')
+  })
 })
 
 describe('toPayloadAction', () => {

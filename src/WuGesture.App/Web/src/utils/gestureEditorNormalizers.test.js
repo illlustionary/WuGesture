@@ -12,6 +12,8 @@ import {
   normalizeEdgeActions,
   normalizeExcludedApplications,
   normalizeFrictionCount,
+  normalizeWheelModifier,
+  normalizeWheelTrigger,
   normalizeLevelOsdSettings,
   normalizeMouseButton,
   normalizeMouseTrailSettings,
@@ -214,5 +216,20 @@ describe('边缘操作规范化', () => {
     expect(merged.find(action => action.triggerType === 'corner' && action.location === 'top-left').keysText).toBe(
       'Alt + Tab'
     )
+  })
+})
+
+describe('wheel modifier normalizers', () => {
+  it('滚轮修饰只接受 up/down，空值表示仅方向手势', () => {
+    expect(normalizeWheelModifier(' DOWN ')).toBe('down')
+    expect(normalizeWheelModifier('up')).toBe('up')
+    expect(normalizeWheelModifier('sideways')).toBe('')
+    expect(normalizeWheelModifier(undefined)).toBe('')
+  })
+
+  it('触发方式未知时回退为连续执行', () => {
+    expect(normalizeWheelTrigger('ONCE')).toBe('once')
+    expect(normalizeWheelTrigger('repeat')).toBe('repeat')
+    expect(normalizeWheelTrigger(undefined)).toBe('repeat')
   })
 })

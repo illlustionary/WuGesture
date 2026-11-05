@@ -632,7 +632,8 @@ function getRuleIdentity(rule) {
     String(rule?.scopeKind ?? ''),
     String(rule?.scopeName ?? ''),
     String(rule?.mouseButton ?? ''),
-    String(rule?.patternText ?? '')
+    String(rule?.patternText ?? ''),
+    String(rule?.wheelModifier ?? '')
   ].join('\u0000')
 }
 

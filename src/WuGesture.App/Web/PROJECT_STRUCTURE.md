@@ -95,7 +95,7 @@ src\components
 - `dialog\`：`BaseDialog.vue`、`ConfirmDialog.vue`、`QuickSearchDialog.vue`、`UpdateDialog.vue`、`WelcomeDialog.vue` 和 `HelpDialog.vue` 等共享对话框；`BaseDialog` 统一遮罩关闭、可选右上关闭按钮、默认操作区和关闭动画，自动保存或即时选择类弹层可复用外壳并关闭默认操作区；`UpdateDialog` 展示版本差异、发行说明、下载进度和失败后的重试/发布页入口，下载中禁止遮罩关闭；`WelcomeDialog` 是首次启动的三屏欢迎引导，`HelpDialog` 收拢快速上手、规则生效顺序、边缘操作和常见问题，并提供「重新观看引导」和文档外链。
 - `form\`：`BaseInput.vue`、`BaseRange.vue`、`CustomSelect.vue` 和 `ToggleCheckbox.vue` 等共享表单控件；`BaseInput` / `BaseRange` 统一原生输入控件的 `v-model` 事件、宽度约束和滑块进度填充，页面只保留各自的配置约束与保存时机。
 - `ui\`：`AppIcon.vue`、`HoverBubble.vue` 和 `IconActionButton.vue` 等基础 UI 控件。
-- `gesture\`：`GestureRuleDialog.vue`、`GestureRuleList.vue` 以及 `gesture\rule-dialog\fields\` 下的规则字段组件。
+- `gesture\`：`GestureRuleDialog.vue`、`GestureRuleList.vue` 以及 `gesture\rule-dialog\fields\` 下的规则字段组件；`GestureRuleGestureField.vue` 负责方向手势录制、按住按键、滚轮修饰和触发方式控件，`GestureRuleList.vue` 依次渲染方向箭头与「滚轮」上下修饰。
 - `scope\`：`ScopeCreateDialog.vue`、`ScopePriorityNotice.vue` 和 `ApplicationListItem.vue` 等作用域配置共享组件；程序项仅路径文本可点击以打开所在文件夹，并以可选操作区支持分类页的移除按钮。
 - `rules\RulesSection.vue`：规则页右侧复用区块，统一标题、说明、操作区和内容面板。
 
@@ -135,7 +135,7 @@ src\gestureEditor
 - `gestureEditor\modules\useGestureScopes.js`：分类/程序 scope 选择、新增、重命名、删除和规则查询。
 - `gestureEditor\modules\useGestureApplications.js`：应用程序视图数据读取、创建、显示名和有序分类列表更新。
 - `gestureEditor\modules\useCategoryApplications.js`：分类与应用程序之间的多对多关联、重排和移除。
-- `gestureEditor\modules\useGestureRuleEditor.js`：规则新增/编辑弹窗、规则草稿提交、手势录制和快捷键录制流程。
+- `gestureEditor\modules\useGestureRuleEditor.js`：规则新增/编辑弹窗、规则草稿提交、手势录制和快捷键录制流程；规则身份由方向文本 + 滚轮修饰共同判定，参与同作用域去重校验，滚轮修饰可选择每格连续执行或松键执行一次。
 - `gestureEditor\modules\useGestureConfigPersistence.js`：规则保存节流、配置重载/重置、本地导入导出、WebDAV 备份恢复、UI 设置保存和边缘操作保存流程。
 - `gestureEditor\modules\useGestureEditorNotifications.js`：配置状态消息和通知事件的统一入口；普通自动保存成功只更新内部状态，失败和明确操作结果才发布通知事件。
 - `gestureEditor\modules\useGestureEditorNavigation.js`：路由名称和 scope/exclusion 跳转的统一入口，页面与组合式函数只发布路由意图而不直接执行 router 跳转。
@@ -150,7 +150,7 @@ src\gestureEditor
 src\constants
 ```
 
-- `gestureEditorOptions.js`：手势编辑器使用的契约常量和 UI 选项，包括 scope、鼠标按键、动作类型、操作名、边缘触发、关闭行为、更新源、WebView 消息类型、方向符号和选项 label。
+- `gestureEditorOptions.js`：手势编辑器使用的契约常量和 UI 选项，包括 scope、鼠标按键、滚轮修饰（无/上/下）、触发方式（连续/单次）、动作类型、操作名、边缘触发、关闭行为、更新源、WebView 消息类型、方向符号和选项 label。
 - `gestureEditorUiDefaults.js`：UI 设置和边缘操作的前端默认模板；不包含手势、分类或具体程序示例。
 - `gestureEditorBrowserPreviewData.js`：仅供未连接桌面宿主时的浏览器预览使用，提供示例全局/分类规则和程序。
 - `gestureEditorLimits.js`：手势编辑器输入限制常量，供表单控件和归一化逻辑共用。
@@ -164,9 +164,9 @@ src\utils
 ```
 
 - `gestureEditorNormalizers.js`：规则 scope、手势文本、快捷键、动作类型、边缘操作和 UI 设置的解析与归一化工具；同目录的 `gestureEditorNormalizers.test.js` 用 Vitest 覆盖这些纯函数。
-- `gestureEditorFormatters.js`：手势助记符、动作展示文案和边缘操作展示文案。
-- `gestureEditorPayloads.js`：把编辑器内存模型转换成 WebView 保存、WebDAV 测试/备份使用的配置 payload；`gestureEditorPayloads.test.js` 覆盖各段映射和配置组装。
-- `gestureEditorViewModels.js`：把宿主配置消息转换成编辑器视图模型，并提供规则和手势草稿模板；`gestureEditorViewModels.test.js` 覆盖字段映射和默认值。
+- `gestureEditorFormatters.js`：手势助记符（方向路径 + 滚轮上/下修饰）、动作展示文案和边缘操作展示文案。
+- `gestureEditorPayloads.js`：把编辑器内存模型转换成 WebView 保存、WebDAV 测试/备份使用的配置 payload；规则同时输出 `pattern`、`wheelModifier` 和 `executeOnWheel`，`gestureEditorPayloads.test.js` 覆盖各段映射和配置组装。
+- `gestureEditorViewModels.js`：把宿主配置消息转换成编辑器视图模型（含 `patternText`/`wheelModifier`/`executeOnWheel`），并提供规则和手势草稿模板；`gestureEditorViewModels.test.js` 覆盖字段映射和默认值。
 - `gestureEditorCollections.js`：按规则和应用程序列表聚合分类/程序侧栏条目；`gestureEditorCollections.test.js` 覆盖计数合并、空名称过滤和排序。
 
 ## Pages
@@ -242,7 +242,7 @@ src\pages
 - 程序列表和详情会展示从 exe 路径动态提取的应用图标；图标通过 WebView 消息传递，不写入配置文件。
 - 规则表列为 `名称`、`手势`、`命令`，删除按钮默认隐藏、在行悬浮时才显示；双击规则行、点击手势列或点击命令列都会打开规则编辑弹窗。
 - 全局快速搜索会匹配手势规则的名称、手势、命令和作用域，以及分类、程序和排除项；点击规则会打开其编辑弹窗，点击分类、程序和排除项会定位对应项。
-- 添加/编辑手势通过弹窗完成：弹窗里可选择命令类型，快捷键命令显示录制按钮，窗口控制命令显示操作下拉框。
+- 添加/编辑手势通过弹窗完成：手势区域始终可以录制方向手势，并可选择按住按键、滚轮修饰（无/上/下）和触发方式（每格连续执行/松开时执行一次）。选择滚轮修饰后，方向手势可以留空表示按住直接滚动；右侧仍可选择命令类型，快捷键命令显示录制按钮，窗口控制命令显示操作下拉框。
 - 添加/编辑手势弹窗打开时会通过 WebView 消息暂停全局手势；手势录制由后端接管，前端只接收最终识别结果。
 - 规则编辑、删除、快捷键录制、分类/App 变更会发送 `save-rules` 写入配置文件。
 - 已移除编辑器内的手势提示区，只保留配置结果提示；toast 统一显示在顶部居中。新增、删除、重置、导入导出、WebDAV 操作和配置错误会通过 toast 弹出反馈，普通自动保存成功不弹出提示。
@@ -277,7 +277,7 @@ src\pages
 后端发送：
 
 - `{ type: "status", status: "running|paused|..." }`
-- `{ type: "rules", appVersion: "v...", rules: [...], applications: [{ name, displayName, path, categories, icon }, ...], edgeActions: [...], uiSettings: { sidebar: { collapsed }, update: { checkForUpdates, source }, onboarding: { welcomeCompleted }, ... }, ... }`；`appVersion` 来自程序集版本，仅用于配置界面展示，不写入配置文件；`uiSettings.sidebar.collapsed` 保存侧栏收起状态；`uiSettings.onboarding.welcomeCompleted` 决定是否自动弹出首次引导；`categories` 的顺序决定分类规则冲突时的覆盖顺序，越靠前优先级越高，其中 `uiSettings.appBehavior.excludedApplications` 的运行态消息项会额外带 `icon`，不写入配置文件。
+- `{ type: "rules", appVersion: "v...", rules: [{ scope, mouseButton, pattern, wheelModifier, executeOnWheel, actionName, actionType, ... }], applications: [{ name, displayName, path, categories, icon }, ...], edgeActions: [...], uiSettings: { sidebar: { collapsed }, update: { checkForUpdates, source }, onboarding: { welcomeCompleted }, ... }, ... }`；`wheelModifier` 为 `up`/`down` 时表示方向手势叠加了滚轮修饰，`pattern` 可以为空表示按住直接滚动；`executeOnWheel` 决定每格连续执行还是松键执行一次。`appVersion` 来自程序集版本，仅用于配置界面展示，不写入配置文件；`uiSettings.sidebar.collapsed` 保存侧栏收起状态；`uiSettings.onboarding.welcomeCompleted` 决定是否自动弹出首次引导；`categories` 的顺序决定分类规则冲突时的覆盖顺序，越靠前优先级越高，其中 `uiSettings.appBehavior.excludedApplications` 的运行态消息项会额外带 `icon`，不写入配置文件。
 - `{ type: "application-selected", requestId: "...", name: "...", displayName: "...", path: "...", category: "...", icon: "..." }`
 - `{ type: "gesture-recorded", requestId: "...", button: "right|middle", pattern: ["Down", "Right"] }`
 - `{ type: "hotkey-recorded", requestId: "...", keys: ["Control", "W"] }`

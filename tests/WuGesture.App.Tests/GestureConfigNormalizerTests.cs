@@ -46,6 +46,31 @@ public sealed class GestureConfigNormalizerTests
     }
 
     [Fact]
+    public void Normalize_KeepsPatternAndNormalizesWheelModifier()
+    {
+        var config = new GestureConfig
+        {
+            Rules =
+            [
+                new GestureRuleConfig { WheelModifier = " DOWN ", Pattern = ["Up"], ExecuteOnWheel = true },
+                new GestureRuleConfig { WheelModifier = "sideways", Pattern = ["Left"], ExecuteOnWheel = true },
+                new GestureRuleConfig { Pattern = null!, ExecuteOnWheel = true }
+            ]
+        };
+
+        GestureConfigNormalizer.Normalize(config);
+
+        Assert.Equal(GestureConfigContract.WheelDirections.Down, config.Rules[0].WheelModifier);
+        Assert.Equal(["Up"], config.Rules[0].Pattern);
+        Assert.True(config.Rules[0].ExecuteOnWheel);
+        Assert.Equal("", config.Rules[1].WheelModifier);
+        Assert.Equal(["Left"], config.Rules[1].Pattern);
+        Assert.False(config.Rules[1].ExecuteOnWheel);
+        Assert.Empty(config.Rules[2].Pattern);
+        Assert.False(config.Rules[2].ExecuteOnWheel);
+    }
+
+    [Fact]
     public void Normalize_TrimsAndDeduplicatesCategories()
     {
         var config = new GestureConfig { Categories = [" 工具 ", "", "工具", "浏览器"] };

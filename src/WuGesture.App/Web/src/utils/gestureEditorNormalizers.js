@@ -426,6 +426,17 @@ export function normalizeMouseButton(button) {
   return String(button ?? '').toLowerCase() === MOUSE_BUTTONS.middle ? MOUSE_BUTTONS.middle : MOUSE_BUTTONS.right
 }
 
+export function normalizeWheelModifier(value) {
+  const normalized = String(value ?? '')
+    .trim()
+    .toLowerCase()
+  return normalized === WHEEL_DIRECTIONS.up || normalized === WHEEL_DIRECTIONS.down ? normalized : ''
+}
+
+export function normalizeWheelTrigger(value) {
+  return String(value ?? '').toLowerCase() === 'once' ? 'once' : 'repeat'
+}
+
 export function normalizeActionType(actionType) {
   const normalized = String(actionType ?? '').toLowerCase()
   return Object.values(ACTION_TYPES).includes(normalized) ? normalized : ACTION_TYPES.hotkey

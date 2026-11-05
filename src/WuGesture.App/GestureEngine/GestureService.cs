@@ -38,6 +38,11 @@ public sealed class GestureService : IDisposable
     private bool isPaused;
     private bool disableGesturesInFullscreen;
     private ActiveMouseButton activeMouseButton = ActiveMouseButton.None;
+    private GestureWheelDirection? wheelAccumulatorDirection;
+    private int wheelAccumulator;
+    private IReadOnlyList<GestureDirection>? wheelLockedPattern;
+    private GestureRule? wheelReleaseRule;
+    private string? lastWheelActionName;
     private bool captureDisableGesturesInFullscreen;
     private long nextSessionId;
     private bool started;
@@ -86,11 +91,24 @@ public sealed class GestureService : IDisposable
         inputCapture.GestureStarted += OnGestureStarted;
         inputCapture.GestureMoved += OnGestureMoved;
         inputCapture.GestureEnded += OnGestureEnded;
+        ApplyWheelCaptureButtons();
     }
 
     public void UpdateMatcher(GestureMatcher newMatcher)
     {
-        EnqueueParserAction(service => service.matcher = newMatcher);
+        // Keep the hook-thread capture decision in step with the matcher the parser will use.
+        EnqueueParserAction(service =>
+        {
+            service.matcher = newMatcher;
+            service.ApplyWheelCaptureButtons();
+        });
+    }
+
+    private void ApplyWheelCaptureButtons()
+    {
+        inputCapture.SetWheelCaptureButtons(
+            matcher.HasWheelRules(GestureMouseButton.Right),
+            matcher.HasWheelRules(GestureMouseButton.Middle));
     }
 
     private sealed record GestureStartInput(
@@ -229,6 +247,7 @@ public sealed class GestureService : IDisposable
         mouseHook.MouseMove += OnMouseMove;
         mouseHook.RightButtonUp += OnRightButtonUp;
         mouseHook.MiddleButtonUp += OnMiddleButtonUp;
+        mouseHook.MouseWheel += OnMouseWheel;
         try
         {
             mouseHook.Start();
@@ -240,6 +259,7 @@ public sealed class GestureService : IDisposable
             mouseHook.MouseMove -= OnMouseMove;
             mouseHook.RightButtonUp -= OnRightButtonUp;
             mouseHook.MiddleButtonUp -= OnMiddleButtonUp;
+            mouseHook.MouseWheel -= OnMouseWheel;
             captureGate.Stop();
             parserWorker.Dispose();
             throw;
@@ -260,6 +280,7 @@ public sealed class GestureService : IDisposable
         mouseHook.MouseMove -= OnMouseMove;
         mouseHook.RightButtonUp -= OnRightButtonUp;
         mouseHook.MiddleButtonUp -= OnMiddleButtonUp;
+        mouseHook.MouseWheel -= OnMouseWheel;
         mouseHook.Dispose();
         captureGate.Stop();
         parserWorker.Dispose();
@@ -301,6 +322,29 @@ public sealed class GestureService : IDisposable
     private void OnMiddleButtonUp(object? sender, MouseHookEventArgs e)
     {
         inputCapture.HandleButtonUp(e, GestureInputButton.Middle);
+    }
+
+    private void OnMouseWheel(object? sender, MouseWheelHookEventArgs e)
+    {
+        // Runs on the low-level hook thread: the capture decision must be synchronous and cheap.
+        if (disposed)
+        {
+            return;
+        }
+
+        if (inputCapture.ShouldCaptureWheel())
+        {
+            e.Handled = true;
+            var delta = e.Delta;
+            parserWorker.Enqueue(() => ProcessWheel(delta));
+            return;
+        }
+
+        // Do not leak trailing scroll into the target app right after a gesture action.
+        if (inputCapture.ShouldSuppressWheel())
+        {
+            e.Handled = true;
+        }
     }
 
     private void OnGestureStarted(Point location, GestureInputButton button, long timestamp, string? recordingId)
@@ -389,6 +433,8 @@ public sealed class GestureService : IDisposable
         activeMouseButton = button;
         session.Start(Interlocked.Increment(ref nextSessionId), item.Location);
         activeGestureContext = gestureContext;
+        ResetWheelGestureState();
+        inputCapture.SetWheelCaptureAllowed(true);
         RaisePreviewCleared(session.Id);
         RaiseProgress(session.Id, session.Snapshot(), [], true, ToPublicButton(button), force: true);
     }
@@ -403,6 +449,13 @@ public sealed class GestureService : IDisposable
         if (recordingRequestId is null && IsDisabledInFullscreen())
         {
             CancelTracking();
+            return;
+        }
+
+        // Once a wheel modifier has selected a rule the path is frozen, matching WGestures:
+        // continued pointer movement while scrolling must not change the action.
+        if (session.HasWheelActivity && wheelLockedPattern is not null)
+        {
             return;
         }
 
@@ -421,6 +474,203 @@ public sealed class GestureService : IDisposable
         {
             FinishTracking(location, button);
         }
+    }
+
+    private void ProcessWheel(int delta)
+    {
+        if (disposed || !session.IsTracking || recordingRequestId is not null ||
+            activeMouseButton == ActiveMouseButton.None || delta == 0)
+        {
+            return;
+        }
+
+        if (IsDisabledInFullscreen())
+        {
+            CancelTracking();
+            return;
+        }
+
+        var direction = delta > 0 ? GestureWheelDirection.Up : GestureWheelDirection.Down;
+        if (wheelAccumulatorDirection != direction)
+        {
+            wheelAccumulatorDirection = direction;
+            wheelAccumulator = 0;
+        }
+
+        wheelAccumulator += Math.Abs(delta);
+        var notches = wheelAccumulator / GestureRuntimeDefaults.WheelNotchDelta;
+        if (notches <= 0)
+        {
+            return;
+        }
+
+        // Keep the sub-notch remainder for high-resolution wheels, but cap one burst so a
+        // single large delta cannot flood the action queue.
+        wheelAccumulator -= notches * GestureRuntimeDefaults.WheelNotchDelta;
+        notches = Math.Min(notches, 5);
+        for (var index = 0; index < notches && session.IsTracking; index++)
+        {
+            HandleWheelNotch(direction);
+        }
+    }
+
+    /// <summary>
+    /// Applies one wheel notch as a modifier on the currently held gesture. The direction path
+    /// and the wheel direction together identify the rule, mirroring WGestures' gesture model.
+    /// </summary>
+    private void HandleWheelNotch(GestureWheelDirection direction)
+    {
+        var sessionId = session.Id;
+        var button = ToPublicButton(activeMouseButton);
+        var gestureContext = activeGestureContext;
+
+        // Any consumed notch suppresses the "tiny movement = replay a normal click" fallback,
+        // even when no wheel-modifier rule matches.
+        session.MarkWheelActivity();
+
+        // Freeze the direction path once a wheel modifier has identified a rule: continued
+        // movement while scrolling must not turn the gesture into a different action.
+        var pattern = wheelLockedPattern ?? recognizer.Recognize(session.Points);
+        var rule = matcher.MatchWheel(direction, pattern, gestureContext.ScopeContext, button);
+        if (rule is null)
+        {
+            wheelReleaseRule = null;
+            ClearPreviewMatch(sessionId);
+            return;
+        }
+
+        if (wheelLockedPattern is null)
+        {
+            wheelLockedPattern = pattern.ToArray();
+        }
+
+        var raiseFeedback = lastWheelActionName != rule.ActionName;
+        lastWheelActionName = rule.ActionName;
+        if (raiseFeedback)
+        {
+            ShowWheelPreview(sessionId, pattern, rule);
+        }
+
+        if (rule.ExecuteOnWheel)
+        {
+            // Continuous mode: every notch executes immediately and releasing the button does
+            // not execute again.
+            wheelReleaseRule = null;
+            ExecuteWheelAction(sessionId, session.Snapshot(), pattern, rule, gestureContext, direction, raiseFeedback);
+            return;
+        }
+
+        // One-shot mode: the wheel only selects the rule. The latest modifier wins and the
+        // action executes once when the gesture button is released.
+        wheelReleaseRule = rule;
+    }
+
+    private void ShowWheelPreview(
+        long sessionId,
+        IReadOnlyList<GestureDirection> pattern,
+        GestureRule rule)
+    {
+        if (rule.ActionName == session.PreviewActionName)
+        {
+            return;
+        }
+
+        var path = session.Snapshot();
+        session.PreviewActionName = rule.ActionName;
+        session.PreviewSessionId = sessionId;
+        Post(() =>
+        {
+            if (!disposed)
+            {
+                GesturePreviewMatched?.Invoke(this, new GestureRecognizedEventArgs(sessionId, path, pattern, rule.ActionName));
+            }
+        });
+    }
+
+    private void ExecuteWheelAction(
+        long sessionId,
+        IReadOnlyList<Point> path,
+        IReadOnlyList<GestureDirection> pattern,
+        GestureRule rule,
+        GestureExecutionContext gestureContext,
+        GestureWheelDirection direction,
+        bool raiseRecognized)
+    {
+        Post(() =>
+        {
+            if (disposed)
+            {
+                return;
+            }
+
+            try
+            {
+                if (raiseRecognized)
+                {
+                    GestureRecognized?.Invoke(this, new GestureRecognizedEventArgs(sessionId, path, pattern, rule.ActionName));
+                }
+
+                var targetWindow = gestureContext.UsesStartWindow
+                    ? gestureContext.StartWindow
+                    : GetForegroundWindow();
+                var isRejectedWindowControlTarget = rule.Action is WindowControlAction &&
+                                                    targetWindow != IntPtr.Zero &&
+                                                    !WindowControlTargetPolicy.IsWindowControlTarget(targetWindow);
+                if (isRejectedWindowControlTarget)
+                {
+                    return;
+                }
+
+                if (RunsInBackground(rule))
+                {
+                    if (gestureContext.UsesStartWindow && gestureContext.StartWindow == IntPtr.Zero)
+                    {
+                        return;
+                    }
+
+                    DispatchAction(new PendingAction(
+                        sessionId,
+                        path,
+                        pattern,
+                        rule,
+                        targetWindow,
+                        gestureContext.UsesStartWindow));
+                    return;
+                }
+
+                if (gestureContext.UsesStartWindow)
+                {
+                    if (gestureContext.StartWindow == IntPtr.Zero)
+                    {
+                        return;
+                    }
+
+                    SetForegroundWindowForAction(gestureContext.StartWindow);
+                }
+
+                actionExecutor.Execute(rule, targetWindow);
+            }
+            catch (Exception exception)
+            {
+                AppLogger.Error(
+                    "GestureService",
+                    "wheel-action-failed",
+                    $"Wheel gesture action failed. Session: {sessionId}; action: {rule.ActionName}; direction: {direction}.",
+                    exception);
+                GestureActionFailed?.Invoke(
+                    this,
+                    new GestureActionFailedEventArgs(sessionId, path, pattern, rule.ActionName, exception));
+            }
+        });
+    }
+
+    private void ResetWheelGestureState()
+    {
+        wheelAccumulatorDirection = null;
+        wheelAccumulator = 0;
+        wheelLockedPattern = null;
+        wheelReleaseRule = null;
+        lastWheelActionName = null;
     }
 
     private void EnqueueParserAction(Action<GestureService> action)
@@ -444,6 +694,8 @@ public sealed class GestureService : IDisposable
 
         activeMouseButton = ActiveMouseButton.None;
         activeGestureContext = GestureExecutionContext.Empty;
+        inputCapture.SetWheelCaptureAllowed(false);
+        ResetWheelGestureState();
         ClearPreviewMatch(sessionId);
         session.Cancel();
         RaiseProgress(sessionId, path, [], false, ToPublicButton(button), force: true);
@@ -455,10 +707,22 @@ public sealed class GestureService : IDisposable
         var sessionId = session.Id;
         var recordingId = recordingRequestId;
         var gestureContext = activeGestureContext;
+        var hasWheelActivity = session.HasWheelActivity;
+        var wheelPattern = hasWheelActivity
+            ? wheelLockedPattern ?? recognizer.Recognize(session.Points)
+            : [];
+        var wheelRuleToRun = hasWheelActivity ? wheelReleaseRule : null;
         recordingRequestId = null;
         session.BeginCompleting();
         activeMouseButton = ActiveMouseButton.None;
         activeGestureContext = GestureExecutionContext.Empty;
+        inputCapture.SetWheelCaptureAllowed(false);
+        if (hasWheelActivity)
+        {
+            inputCapture.SuppressWheelFor(GestureRuntimeDefaults.WheelSuppressionAfterGesture);
+        }
+
+        ResetWheelGestureState();
         session.Append(location);
         var path = session.Snapshot();
 
@@ -482,10 +746,33 @@ public sealed class GestureService : IDisposable
             return;
         }
 
+        if (hasWheelActivity)
+        {
+            var wheelButton = ToPublicButton(button);
+            RaiseProgress(sessionId, path, wheelPattern, false, wheelButton, force: true);
+            CompleteSession(sessionId);
+            if (wheelRuleToRun is not null)
+            {
+                // One-shot wheel rules execute after the gesture button is released. Continuous
+                // rules already ran on each notch and are not executed again here.
+                ExecuteWheelAction(
+                    sessionId,
+                    path,
+                    wheelPattern,
+                    wheelRuleToRun,
+                    gestureContext,
+                    wheelRuleToRun.WheelModifier ?? GestureWheelDirection.Up,
+                    raiseRecognized: true);
+            }
+
+            return;
+        }
+
         if (session.Points.Count < 2 || PathLength(session.Points) < minimumGestureDistance)
         {
             RaiseProgress(sessionId, path, [], false, ToPublicButton(button), force: true);
             CompleteSession(sessionId);
+
             if (button == ActiveMouseButton.Right)
             {
                 Post(() =>
@@ -735,11 +1022,16 @@ public sealed class GestureService : IDisposable
             return;
         }
 
-        var pattern = recognizer.Recognize(session.Points);
+        var pattern = wheelLockedPattern ?? recognizer.Recognize(session.Points);
         var path = session.Snapshot();
         RaiseProgress(session.Id, path, pattern, true, ToPublicButton(activeMouseButton), sourceTimestamp: sourceTimestamp);
 
-        RaisePreviewMatch(session.Id, path, pattern, activeGestureContext.ScopeContext, ToPublicButton(activeMouseButton));
+        // While a wheel modifier is active the preview is owned by HandleWheelNotch; a plain
+        // direction preview would incorrectly ignore the modifier.
+        if (!session.HasWheelActivity)
+        {
+            RaisePreviewMatch(session.Id, path, pattern, activeGestureContext.ScopeContext, ToPublicButton(activeMouseButton));
+        }
     }
 
     private void RaisePreviewMatch(
