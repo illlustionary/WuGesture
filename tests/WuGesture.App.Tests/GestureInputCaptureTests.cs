@@ -161,4 +161,78 @@ public sealed class GestureInputCaptureTests
 
         Assert.False(args.Handled);
     }
+
+    [Fact]
+    public void ShouldCaptureWheel_OnlyWhileHeldAndAllowed()
+    {
+        var capture = new GestureInputCapture(_ => true);
+        capture.SetWheelCaptureButtons(rightButtonEnabled: true, middleButtonEnabled: true);
+        Assert.False(capture.ShouldCaptureWheel());
+
+        capture.HandleButtonDown(At(0, 0), GestureInputButton.Right);
+        Assert.True(capture.ShouldCaptureWheel());
+
+        capture.SetWheelCaptureAllowed(false);
+        Assert.False(capture.ShouldCaptureWheel());
+
+        capture.SetWheelCaptureAllowed(true);
+        capture.HandleButtonUp(At(0, 0), GestureInputButton.Right);
+        Assert.False(capture.ShouldCaptureWheel());
+    }
+
+    [Fact]
+    public void ShouldCaptureWheel_RequiresWheelRulesForTheHeldButton()
+    {
+        var capture = new GestureInputCapture(_ => true);
+        capture.SetWheelCaptureButtons(rightButtonEnabled: true, middleButtonEnabled: false);
+
+        capture.HandleButtonDown(At(0, 0), GestureInputButton.Right);
+        Assert.True(capture.ShouldCaptureWheel());
+        capture.HandleButtonUp(At(0, 0), GestureInputButton.Right);
+
+        capture.HandleButtonDown(At(0, 0), GestureInputButton.Middle);
+        Assert.False(capture.ShouldCaptureWheel());
+    }
+
+    [Fact]
+    public void ShouldCaptureWheel_IsDisabledWhileRecording()
+    {
+        var capture = new GestureInputCapture(_ => true);
+        capture.SetWheelCaptureButtons(rightButtonEnabled: true, middleButtonEnabled: true);
+        capture.SetRecordingRequest("recording-1");
+        capture.HandleButtonDown(At(0, 0), GestureInputButton.Right);
+
+        Assert.False(capture.ShouldCaptureWheel());
+
+        capture.SetRecordingRequest(null);
+        Assert.True(capture.ShouldCaptureWheel());
+    }
+
+    [Fact]
+    public void ShouldCaptureWheel_IsDisabledWhenPaused()
+    {
+        var capture = new GestureInputCapture(_ => true);
+        capture.SetWheelCaptureButtons(rightButtonEnabled: true, middleButtonEnabled: true);
+        capture.HandleButtonDown(At(0, 0), GestureInputButton.Right);
+
+        capture.SetPaused(true);
+
+        Assert.False(capture.ShouldCaptureWheel());
+    }
+
+    [Fact]
+    public void ShouldSuppressWheel_SwallowsTrailingNotchesOnlyWhileNoButtonIsHeld()
+    {
+        var capture = new GestureInputCapture(_ => true);
+        Assert.False(capture.ShouldSuppressWheel());
+
+        capture.SuppressWheelFor(TimeSpan.FromSeconds(5));
+        Assert.True(capture.ShouldSuppressWheel());
+
+        capture.HandleButtonDown(At(0, 0), GestureInputButton.Right);
+        Assert.False(capture.ShouldSuppressWheel());
+
+        capture.HandleButtonUp(At(0, 0), GestureInputButton.Right);
+        Assert.True(capture.ShouldSuppressWheel());
+    }
 }

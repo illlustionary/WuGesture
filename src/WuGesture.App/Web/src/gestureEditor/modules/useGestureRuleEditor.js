@@ -5,6 +5,7 @@ import {
   normalizeBrightnessOperation,
   normalizeMouseButton,
   normalizeVolumeOperation,
+  normalizeWheelModifier,
   normalizeWindowOperation,
   parseKeys,
   parsePattern,
@@ -86,10 +87,13 @@ export function useGestureRuleEditor({
   function commitGestureEditor({ allowIncomplete }) {
     const draft = state.gestureDraft
     const pattern = parsePattern(draft.patternText)
+    const wheelModifier = normalizeWheelModifier(draft.wheelModifier)
+    const hasWheelModifier = wheelModifier !== ''
+    const executeOnWheel = hasWheelModifier && Boolean(draft.executeOnWheel)
     const actionType = normalizeActionType(draft.actionType)
 
-    if (pattern.length === 0 && !allowIncomplete) {
-      state.gestureRecognitionMessage = '请先录制手势。'
+    if (pattern.length === 0 && !hasWheelModifier && !allowIncomplete) {
+      state.gestureRecognitionMessage = '请先录制方向手势，或选择滚轮修饰。'
       return false
     }
 
@@ -103,7 +107,14 @@ export function useGestureRuleEditor({
       return false
     }
 
-    if (pattern.length > 0 && findDuplicateGestureRule(pattern, draft.mouseButton)) {
+    if (
+      (pattern.length > 0 || hasWheelModifier) &&
+      findDuplicateGestureRule({
+        pattern,
+        mouseButton: draft.mouseButton,
+        wheelModifier
+      })
+    ) {
       if (!allowIncomplete) {
         state.gestureRecognitionMessage = '⚠ 当前作用域已存在相同手势，请更换后再保存。'
       }
@@ -123,6 +134,8 @@ export function useGestureRuleEditor({
       rule = createRule(state.gestureEditorScopeKind, state.gestureEditorScopeName, {
         actionName,
         patternText: toPatternText(pattern),
+        wheelModifier,
+        executeOnWheel,
         mouseButton: normalizeMouseButton(draft.mouseButton),
         keysText: draft.keysText,
         actionType,
@@ -143,6 +156,8 @@ export function useGestureRuleEditor({
 
     rule.actionName = actionName
     rule.patternText = toPatternText(pattern)
+    rule.wheelModifier = wheelModifier
+    rule.executeOnWheel = executeOnWheel
     rule.mouseButton = normalizeMouseButton(draft.mouseButton)
     rule.keysText = draft.keysText
     rule.actionType = actionType
@@ -269,6 +284,8 @@ export function useGestureRuleEditor({
     state.gestureDraft = {
       actionName: rule?.actionName ?? '',
       patternText: rule?.patternText ?? '',
+      wheelModifier: normalizeWheelModifier(rule?.wheelModifier),
+      executeOnWheel: Boolean(rule?.executeOnWheel),
       mouseButton: normalizeMouseButton(rule?.mouseButton),
       keysText: rule?.keysText ?? '',
       actionType: normalizeActionType(rule?.actionType),
@@ -302,7 +319,13 @@ export function useGestureRuleEditor({
       return
     }
 
-    if (findDuplicateGestureRule(pattern, state.gestureDraft.mouseButton)) {
+    if (
+      findDuplicateGestureRule({
+        pattern,
+        mouseButton: state.gestureDraft.mouseButton,
+        wheelModifier: state.gestureDraft.wheelModifier
+      })
+    ) {
       state.gestureRecognitionMessage = '已识别手势。⚠ 当前作用域已存在相同手势，请更换。'
       setMessage('当前作用域已存在相同手势，未新增规则。', 'error')
       return
@@ -353,20 +376,31 @@ export function useGestureRuleEditor({
     }
   }
 
-  function findDuplicateGestureRule(pattern, mouseButton) {
+  function findDuplicateGestureRule({ pattern, mouseButton, wheelModifier }) {
     const scopeKind = state.gestureEditorScopeKind
     const scopeName = state.gestureEditorScopeName
     const patternText = toPatternText(pattern)
     const normalizedMouseButton = normalizeMouseButton(mouseButton)
+    const normalizedWheelModifier = normalizeWheelModifier(wheelModifier)
 
-    return state.rules.find(
-      rule =>
-        rule.id !== state.gestureEditorRuleId &&
-        rule.scopeKind === scopeKind &&
-        rule.scopeName === scopeName &&
-        normalizeMouseButton(rule.mouseButton) === normalizedMouseButton &&
-        toPatternText(parsePattern(rule.patternText)) === patternText
-    )
+    return state.rules.find(rule => {
+      if (rule.id === state.gestureEditorRuleId) {
+        return false
+      }
+
+      if (rule.scopeKind !== scopeKind || rule.scopeName !== scopeName) {
+        return false
+      }
+
+      if (normalizeMouseButton(rule.mouseButton) !== normalizedMouseButton) {
+        return false
+      }
+
+      return (
+        toPatternText(parsePattern(rule.patternText)) === patternText &&
+        normalizeWheelModifier(rule.wheelModifier) === normalizedWheelModifier
+      )
+    })
   }
 
   function getActionName(source) {

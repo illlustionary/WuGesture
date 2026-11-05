@@ -42,7 +42,19 @@
                 :key="`${rule.id}-${segment.value}-${index}`"
                 class="keycap"
               >
-                <template v-if="segment.isDirection">
+                <template v-if="segment.isWheel">
+                  <span class="gesture-pattern-button__wheel-text">滚轮</span>
+                  <AppIcon
+                    name="arrow"
+                    class="gesture-pattern-button__arrow"
+                    :style="{ '--gesture-arrow-rotation': `${segment.rotation}deg` }"
+                    aria-hidden="true"
+                  />
+                  <span class="gesture-pattern-button__screen-reader-text">
+                    {{ segment.label }}
+                  </span>
+                </template>
+                <template v-else-if="segment.isDirection">
                   <AppIcon
                     name="arrow"
                     class="gesture-pattern-button__arrow"
@@ -104,7 +116,7 @@
         class="gesture-table__empty empty-state empty-state--compact"
       >
         <strong>还没有手势规则</strong>
-        <span>点击右上角“添加手势”创建第一条规则，支持快捷键和窗口控制。</span>
+        <span>点击右上角“添加手势”创建第一条规则，支持方向手势、方向 + 滚轮修饰、快捷键和窗口控制。</span>
       </div>
     </div>
   </div>
@@ -113,7 +125,7 @@
 <script setup>
 import AppIcon from '@/components/ui/AppIcon.vue'
 import IconActionButton from '@/components/ui/IconActionButton.vue'
-import { ACTION_TYPES } from '@/constants/gestureEditorOptions'
+import { ACTION_TYPES, WHEEL_DIRECTIONS } from '@/constants/gestureEditorOptions'
 const DIRECTION_DETAILS = {
   Up: { label: '向上', rotation: 180 },
   Down: { label: '向下', rotation: 0 },
@@ -139,7 +151,7 @@ defineProps({
 defineEmits(['remove', 'edit', 'rename'])
 
 function gestureSegments(rule) {
-  return String(rule?.patternText ?? '')
+  const segments = String(rule?.patternText ?? '')
     .split(/[\s,，]+/)
     .map(part => part.trim())
     .filter(Boolean)
@@ -148,6 +160,20 @@ function gestureSegments(rule) {
 
       return direction ? { value, ...direction, isDirection: true } : { value, label: value, isDirection: false }
     })
+
+  const modifier = String(rule?.wheelModifier ?? '').toLowerCase()
+  if (modifier === WHEEL_DIRECTIONS.up || modifier === WHEEL_DIRECTIONS.down) {
+    const isDown = modifier === WHEEL_DIRECTIONS.down
+    segments.push({
+      value: `wheel-${modifier}`,
+      label: isDown ? '滚轮向下' : '滚轮向上',
+      rotation: isDown ? 0 : 180,
+      isDirection: true,
+      isWheel: true
+    })
+  }
+
+  return segments
 }
 
 function mouseButtonLabel(rule) {
@@ -353,6 +379,12 @@ function isWindowAction(rule) {
     height: 14px;
     fill: currentColor;
     transform: rotate(var(--gesture-arrow-rotation));
+  }
+
+  &__wheel-text {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
   }
 
   &__screen-reader-text {

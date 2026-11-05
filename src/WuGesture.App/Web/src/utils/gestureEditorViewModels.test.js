@@ -48,11 +48,36 @@ describe('toViewRule', () => {
       scopeKind: 'global',
       scopeName: '',
       patternText: '',
+      wheelModifier: '',
+      executeOnWheel: false,
       keysText: '',
       actionType: 'hotkey',
       amount: 5,
       programArguments: [],
       programMissing: false
+    })
+  })
+
+  it('把方向 + 滚轮修饰的宿主规则转换成轮修饰模型', () => {
+    const rule = toViewRule(
+      {
+        scope: 'app:chrome',
+        wheelModifier: 'DOWN',
+        executeOnWheel: true,
+        pattern: ['Up'],
+        mouseButton: 'middle',
+        actionType: 'volume',
+        operation: 'increase',
+        amount: 5
+      },
+      5
+    )
+
+    expect(rule).toMatchObject({
+      wheelModifier: 'down',
+      executeOnWheel: true,
+      patternText: 'Up',
+      mouseButton: 'middle'
     })
   })
 })
@@ -85,6 +110,8 @@ describe('createRuleModel', () => {
       id: 3,
       scopeKind: 'global',
       patternText: 'Left',
+      wheelModifier: '',
+      executeOnWheel: false,
       mouseButton: 'right',
       actionName: '◑←',
       actionType: 'hotkey',
@@ -112,11 +139,35 @@ describe('createRuleModel', () => {
       scopeKind: 'category',
       scopeName: '工具',
       patternText: ' Up ',
+      wheelModifier: '',
+      executeOnWheel: false,
       actionName: '最大化',
       actionType: 'window',
       windowOperation: 'minimize',
       amount: 5,
       programPath: 'C:\\a.exe'
+    })
+  })
+
+  it('方向 + 滚轮修饰保留方向文本并使用组合助记符', () => {
+    const model = createRuleModel('global', '', { patternText: 'Up', wheelModifier: 'down', executeOnWheel: false }, 6)
+
+    expect(model).toMatchObject({
+      patternText: 'Up',
+      wheelModifier: 'down',
+      executeOnWheel: false,
+      actionName: '◑↑滚轮↓'
+    })
+  })
+
+  it('空方向 + 滚轮修饰表示按住直接滚动，默认连续执行', () => {
+    const model = createRuleModel('global', '', { wheelModifier: 'up' }, 7)
+
+    expect(model).toMatchObject({
+      patternText: '',
+      wheelModifier: 'up',
+      executeOnWheel: true,
+      actionName: '◑滚轮↑'
     })
   })
 })
@@ -126,6 +177,8 @@ describe('createEmptyGestureDraft', () => {
     expect(createEmptyGestureDraft()).toEqual({
       actionName: '',
       patternText: '',
+      wheelModifier: '',
+      executeOnWheel: true,
       mouseButton: 'right',
       keysText: '',
       actionType: 'hotkey',

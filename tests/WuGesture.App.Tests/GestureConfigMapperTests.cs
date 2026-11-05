@@ -177,4 +177,96 @@ public sealed class GestureConfigMapperTests
         Assert.Equal(GestureConfigContract.Operations.Mute, action.Operation);
         Assert.Equal(5, action.Amount);
     }
+
+    [Fact]
+    public void ToRules_MapsWheelModifierOnTopOfTheDirectionPattern()
+    {
+        var config = new GestureConfig
+        {
+            Rules =
+            [
+                new GestureRuleConfig
+                {
+                    Scope = "app:chrome",
+                    MouseButton = GestureConfigContract.MouseButtons.Middle,
+                    Pattern = ["Up", "Right"],
+                    WheelModifier = "DOWN",
+                    ExecuteOnWheel = true,
+                    Action = new GestureActionConfig
+                    {
+                        Type = GestureConfigContract.ActionTypes.Hotkey,
+                        Keys = ["Control", "Tab"]
+                    }
+                }
+            ]
+        };
+
+        var rule = Assert.Single(GestureConfigMapper.ToRules(config));
+
+        Assert.Equal([GestureDirection.Up, GestureDirection.Right], rule.Pattern);
+        Assert.Equal(GestureWheelDirection.Down, rule.WheelModifier);
+        Assert.True(rule.ExecuteOnWheel);
+        Assert.Equal(GestureMouseButton.Middle, rule.MouseButton);
+        Assert.Equal("app:chrome", rule.Scope);
+    }
+
+    [Fact]
+    public void ToRules_AllowsHoldAndScrollRulesWithoutADirectionPattern()
+    {
+        var config = new GestureConfig
+        {
+            Rules =
+            [
+                new GestureRuleConfig
+                {
+                    Pattern = [],
+                    WheelModifier = "up",
+                    ExecuteOnWheel = true,
+                    Action = new GestureActionConfig
+                    {
+                        Type = GestureConfigContract.ActionTypes.Volume,
+                        Operation = GestureConfigContract.Operations.Increase
+                    }
+                }
+            ]
+        };
+
+        var rule = Assert.Single(GestureConfigMapper.ToRules(config));
+
+        Assert.Empty(rule.Pattern);
+        Assert.Equal(GestureWheelDirection.Up, rule.WheelModifier);
+        Assert.True(rule.ExecuteOnWheel);
+    }
+
+    [Fact]
+    public void FromRules_WritesWheelModifierAndExecuteModeOnlyForWheelRules()
+    {
+        var repeat = new GestureRule([GestureDirection.Up], "global", "音量+", new VolumeControlAction(VolumeControlOperation.Increase, 5))
+        {
+            WheelModifier = GestureWheelDirection.Up,
+            ExecuteOnWheel = true
+        };
+        var once = new GestureRule([], "global", "静音", new VolumeControlAction(VolumeControlOperation.Mute, 5))
+        {
+            WheelModifier = GestureWheelDirection.Down,
+            ExecuteOnWheel = false
+        };
+        var direction = new GestureRule(
+            [GestureDirection.Down],
+            "global",
+            "最小化",
+            new WindowControlAction(WindowControlOperation.Minimize));
+
+        var config = GestureConfigMapper.FromRules([repeat, once, direction]);
+
+        Assert.Equal(GestureConfigContract.WheelDirections.Up, config.Rules[0].WheelModifier);
+        Assert.True(config.Rules[0].ExecuteOnWheel);
+        Assert.Equal(["Up"], config.Rules[0].Pattern);
+        Assert.Equal(GestureConfigContract.WheelDirections.Down, config.Rules[1].WheelModifier);
+        Assert.False(config.Rules[1].ExecuteOnWheel);
+        Assert.Empty(config.Rules[1].Pattern);
+        Assert.Equal("", config.Rules[2].WheelModifier);
+        Assert.False(config.Rules[2].ExecuteOnWheel);
+        Assert.Single(config.Rules[2].Pattern);
+    }
 }

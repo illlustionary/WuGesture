@@ -4,6 +4,11 @@ internal static class GestureRuntimeDefaults
 {
     public const int MinimumPointDistance = 3;
     public const int MinimumGestureDistance = 45;
+    // One physical wheel notch. High-resolution devices emit smaller deltas that are accumulated.
+    public const int WheelNotchDelta = 120;
+    // Matches WGestures: swallow leftover wheel events briefly after a gesture ends so they
+    // cannot leak into the target application alongside an injected shortcut.
+    public static readonly TimeSpan WheelSuppressionAfterGesture = TimeSpan.FromMilliseconds(300);
     public const double EffectiveMove = 24.0;
     public const double DiagonalTolerance = 22.5;
     public const double DirectionTolerance = 35.0;

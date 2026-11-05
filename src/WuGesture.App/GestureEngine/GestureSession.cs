@@ -24,11 +24,18 @@ internal sealed class GestureSession
 
     public long PreviewSessionId { get; set; }
 
+    /// <summary>
+    /// True once the held button consumed at least one wheel notch. Used to suppress the
+    /// "tiny movement = replay a normal click" fallback when the release ends a wheel gesture.
+    /// </summary>
+    public bool HasWheelActivity { get; private set; }
+
     public void Start(long id, Point startPoint)
     {
         Id = id;
         IsTracking = true;
         IsCompleting = false;
+        HasWheelActivity = false;
         points.Clear();
         points.Add(startPoint);
         LastProgressPattern = [];
@@ -38,6 +45,8 @@ internal sealed class GestureSession
     }
 
     public void Append(Point point) => points.Add(point);
+
+    public void MarkWheelActivity() => HasWheelActivity = true;
 
     public IReadOnlyList<Point> Snapshot() => points.ToArray();
 
@@ -51,6 +60,7 @@ internal sealed class GestureSession
     {
         IsTracking = false;
         IsCompleting = false;
+        HasWheelActivity = false;
         Id = 0;
         points.Clear();
         LastProgressPattern = [];

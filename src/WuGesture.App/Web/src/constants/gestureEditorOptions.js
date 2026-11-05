@@ -8,6 +8,28 @@ export const MOUSE_BUTTONS = {
   middle: 'middle'
 }
 
+export const WHEEL_MODIFIERS = {
+  none: '',
+  up: 'up',
+  down: 'down'
+}
+
+export const WHEEL_MODIFIER_OPTIONS = [
+  { value: WHEEL_MODIFIERS.none, label: '无（仅方向手势）' },
+  { value: WHEEL_MODIFIERS.up, label: '滚轮向上' },
+  { value: WHEEL_MODIFIERS.down, label: '滚轮向下' }
+]
+
+export const WHEEL_TRIGGERS = {
+  repeat: 'repeat',
+  once: 'once'
+}
+
+export const WHEEL_TRIGGER_OPTIONS = [
+  { value: WHEEL_TRIGGERS.repeat, label: '每格执行（连续）' },
+  { value: WHEEL_TRIGGERS.once, label: '松开时执行一次' }
+]
+
 export const SCOPE_KINDS = {
   global: 'global',
   category: 'category',
@@ -42,6 +64,16 @@ export const WHEEL_DIRECTIONS = {
   up: 'up',
   down: 'down'
 }
+
+export const WHEEL_DIRECTION_OPTIONS = [
+  { value: WHEEL_DIRECTIONS.up, label: '滚轮向上' },
+  { value: WHEEL_DIRECTIONS.down, label: '滚轮向下' }
+]
+
+export const MOUSE_BUTTON_OPTIONS = [
+  { value: MOUSE_BUTTONS.right, label: '右键' },
+  { value: MOUSE_BUTTONS.middle, label: '中键' }
+]
 
 export const CLOSE_BUTTON_BEHAVIORS = {
   minimizeToTray: 'minimize-to-tray',

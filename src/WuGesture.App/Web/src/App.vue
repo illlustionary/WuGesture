@@ -238,7 +238,6 @@ watch(
       :message="overlay.gestureRecognitionMessage"
       :is-recording-hotkey="overlay.isRecordingHotkey"
       :is-recording-gesture="overlay.gestureRecordingActive"
-      :get-gesture-mnemonic="overlay.getGestureMnemonic"
       :window-operations="overlay.windowOperations"
       :volume-operations="overlay.volumeOperations"
       :brightness-operations="overlay.brightnessOperations"

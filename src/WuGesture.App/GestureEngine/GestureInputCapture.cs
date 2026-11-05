@@ -16,6 +16,10 @@ internal sealed class GestureInputCapture
     private readonly Func<Point, bool> canCaptureNormalGesture;
     private GestureInputButton activeButton;
     private GestureInputButton suppressedReleaseButton;
+    private bool wheelEnabledForRightButton;
+    private bool wheelEnabledForMiddleButton;
+    private bool wheelCaptureAllowed;
+    private long suppressWheelUntilTick;
     private bool isPaused;
     private string? recordingRequestId;
     private bool disposed;
@@ -45,6 +49,7 @@ internal sealed class GestureInputCapture
             {
                 suppressedReleaseButton = activeButton;
                 activeButton = GestureInputButton.None;
+                wheelCaptureAllowed = false;
             }
         }
     }
@@ -54,6 +59,77 @@ internal sealed class GestureInputCapture
         lock (stateLock)
         {
             recordingRequestId = requestId;
+            if (requestId is not null)
+            {
+                wheelCaptureAllowed = false;
+            }
+        }
+    }
+
+    /// <summary>
+    /// True while a held gesture button may consume wheel notches. The parser turns this off
+    /// when the session ends; wheel capture also stays disabled while no wheel-modifier rule
+    /// is configured for the held button, so users who never configure wheel gestures keep
+    /// their normal scroll behavior.
+    /// </summary>
+    public void SetWheelCaptureAllowed(bool allowed)
+    {
+        lock (stateLock)
+        {
+            wheelCaptureAllowed = allowed && !disposed;
+        }
+    }
+
+    public void SetWheelCaptureButtons(bool rightButtonEnabled, bool middleButtonEnabled)
+    {
+        lock (stateLock)
+        {
+            wheelEnabledForRightButton = rightButtonEnabled;
+            wheelEnabledForMiddleButton = middleButtonEnabled;
+        }
+    }
+
+    public bool ShouldCaptureWheel()
+    {
+        lock (stateLock)
+        {
+            var isEnabledForActiveButton = activeButton switch
+            {
+                GestureInputButton.Right => wheelEnabledForRightButton,
+                GestureInputButton.Middle => wheelEnabledForMiddleButton,
+                _ => false
+            };
+
+            return !disposed &&
+                   !isPaused &&
+                   recordingRequestId is null &&
+                   activeButton != GestureInputButton.None &&
+                   wheelCaptureAllowed &&
+                   isEnabledForActiveButton;
+        }
+    }
+
+    /// <summary>
+    /// Wheel events that arrive shortly after a gesture ends are swallowed without being
+    /// dispatched. This prevents leftover scroll from a middle-button gesture or its injected
+    /// shortcut from leaking into the target application (for example Ctrl+wheel zoom).
+    /// </summary>
+    public void SuppressWheelFor(TimeSpan duration)
+    {
+        lock (stateLock)
+        {
+            suppressWheelUntilTick = Environment.TickCount64 + (long)duration.TotalMilliseconds;
+        }
+    }
+
+    public bool ShouldSuppressWheel()
+    {
+        lock (stateLock)
+        {
+            return !disposed &&
+                   !isPaused &&
+                   activeButton == GestureInputButton.None &&
+                   Environment.TickCount64 < suppressWheelUntilTick;
         }
     }
 
@@ -64,6 +140,8 @@ internal sealed class GestureInputCapture
             disposed = true;
             activeButton = GestureInputButton.None;
             suppressedReleaseButton = GestureInputButton.None;
+            wheelCaptureAllowed = false;
+            suppressWheelUntilTick = 0;
             recordingRequestId = null;
         }
     }
@@ -100,6 +178,7 @@ internal sealed class GestureInputCapture
             }
 
             activeButton = button;
+            wheelCaptureAllowed = true;
             if (suppressedReleaseButton == button)
             {
                 suppressedReleaseButton = GestureInputButton.None;
@@ -130,6 +209,7 @@ internal sealed class GestureInputCapture
             if (suppressedReleaseButton == button)
             {
                 suppressedReleaseButton = GestureInputButton.None;
+                wheelCaptureAllowed = false;
                 e.Handled = true;
                 return;
             }
@@ -140,6 +220,7 @@ internal sealed class GestureInputCapture
             }
 
             activeButton = GestureInputButton.None;
+            wheelCaptureAllowed = false;
             e.Handled = true;
         }
 

@@ -31,6 +31,11 @@ internal static class GestureConfigNormalizer
     {
         foreach (var rule in rules)
         {
+            rule.Pattern ??= [];
+            rule.WheelModifier = NormalizeWheelModifier(rule.WheelModifier);
+            // The execute-on-wheel switch only applies when a wheel modifier is configured.
+            rule.ExecuteOnWheel = rule.WheelModifier.Length > 0 && rule.ExecuteOnWheel;
+
             rule.Action ??= new GestureActionConfig();
             rule.Action.Path = (rule.Action.Path ?? "").Trim();
             rule.Action.Arguments ??= [];
@@ -39,6 +44,22 @@ internal static class GestureConfigNormalizer
                 .Where(argument => argument.Length > 0)
                 .ToList();
         }
+    }
+
+    private static string NormalizeWheelModifier(string? value)
+    {
+        var normalized = (value ?? "").Trim();
+        if (string.Equals(normalized, GestureConfigContract.WheelDirections.Up, StringComparison.OrdinalIgnoreCase))
+        {
+            return GestureConfigContract.WheelDirections.Up;
+        }
+
+        if (string.Equals(normalized, GestureConfigContract.WheelDirections.Down, StringComparison.OrdinalIgnoreCase))
+        {
+            return GestureConfigContract.WheelDirections.Down;
+        }
+
+        return "";
     }
 
     private static List<string> NormalizeCategories(IEnumerable<string>? categories)

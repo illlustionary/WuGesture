@@ -44,6 +44,28 @@ export const PREVIEW_RULES = [
     windowOperation: OPERATIONS.toggleMaximize
   },
   {
+    scope: 'global',
+    mouseButton: 'right',
+    pattern: ['Up'],
+    wheelModifier: 'up',
+    executeOnWheel: true,
+    actionName: '音量 +',
+    actionType: ACTION_TYPES.volume,
+    operation: OPERATIONS.increase,
+    amount: 5
+  },
+  {
+    scope: 'global',
+    mouseButton: 'middle',
+    pattern: [],
+    wheelModifier: 'down',
+    executeOnWheel: false,
+    actionName: '静音',
+    actionType: ACTION_TYPES.volume,
+    operation: OPERATIONS.mute,
+    amount: 5
+  },
+  {
     scope: 'category:浏览器和编辑器',
     pattern: ['Left'],
     actionName: '返回',

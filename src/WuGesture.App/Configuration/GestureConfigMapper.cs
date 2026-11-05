@@ -27,6 +27,8 @@ public static class GestureConfigMapper
                     : GestureConfigContract.MouseButtons.Right,
                 ActionName = rule.ActionName,
                 Pattern = rule.Pattern.Select(direction => direction.ToString()).ToList(),
+                WheelModifier = ToConfigWheelModifier(rule.WheelModifier),
+                ExecuteOnWheel = rule.WheelModifier is not null && rule.ExecuteOnWheel,
                 Action = ToConfigAction(rule.Action)
             }).ToList()
         };
@@ -34,8 +36,19 @@ public static class GestureConfigMapper
 
     private static GestureRule? ToRule(GestureRuleConfig config)
     {
+        var action = ToAction(config.Action);
+        if (action is null)
+        {
+            return null;
+        }
+
+        var scope = NormalizeScope(config.Scope);
+        var actionName = string.IsNullOrWhiteSpace(config.ActionName)
+            ? GetDefaultActionName(config.Action, action)
+            : config.ActionName;
+        var mouseButton = ParseMouseButton(config.MouseButton);
         var pattern = new List<GestureDirection>();
-        foreach (var directionName in config.Pattern)
+        foreach (var directionName in config.Pattern ?? [])
         {
             if (!Enum.TryParse<GestureDirection>(directionName, ignoreCase: true, out var direction))
             {
@@ -45,23 +58,24 @@ public static class GestureConfigMapper
             pattern.Add(direction);
         }
 
-        if (pattern.Count == 0)
-        {
-            return null;
-        }
-
-        var action = ToAction(config.Action);
-        if (action is null)
+        // The wheel direction is a modifier on top of the optional direction pattern.
+        // With neither a pattern nor a wheel modifier the rule can never match.
+        var hasWheelModifier = TryParseWheelModifier(config.WheelModifier, out var wheelModifier);
+        if (pattern.Count == 0 && !hasWheelModifier)
         {
             return null;
         }
 
         return new GestureRule(
             pattern,
-            NormalizeScope(config.Scope),
-            string.IsNullOrWhiteSpace(config.ActionName) ? GetDefaultActionName(config.Action, action) : config.ActionName,
+            scope,
+            actionName,
             action,
-            ParseMouseButton(config.MouseButton));
+            mouseButton)
+        {
+            WheelModifier = hasWheelModifier ? wheelModifier : null,
+            ExecuteOnWheel = hasWheelModifier && config.ExecuteOnWheel
+        };
     }
 
     public static GestureAction? ToAction(GestureActionConfig config)
@@ -186,6 +200,39 @@ public static class GestureConfigMapper
         return string.Equals(mouseButton, GestureConfigContract.MouseButtons.Middle, StringComparison.OrdinalIgnoreCase)
             ? GestureMouseButton.Middle
             : GestureMouseButton.Right;
+    }
+
+    private static bool TryParseWheelModifier(string? value, out GestureWheelDirection direction)
+    {
+        direction = GestureWheelDirection.Up;
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        if (string.Equals(value, GestureConfigContract.WheelDirections.Up, StringComparison.OrdinalIgnoreCase))
+        {
+            direction = GestureWheelDirection.Up;
+            return true;
+        }
+
+        if (string.Equals(value, GestureConfigContract.WheelDirections.Down, StringComparison.OrdinalIgnoreCase))
+        {
+            direction = GestureWheelDirection.Down;
+            return true;
+        }
+
+        return false;
+    }
+
+    private static string ToConfigWheelModifier(GestureWheelDirection? direction)
+    {
+        return direction switch
+        {
+            GestureWheelDirection.Up => GestureConfigContract.WheelDirections.Up,
+            GestureWheelDirection.Down => GestureConfigContract.WheelDirections.Down,
+            _ => ""
+        };
     }
 
     private static bool TryParseKey(string value, out Keys key)

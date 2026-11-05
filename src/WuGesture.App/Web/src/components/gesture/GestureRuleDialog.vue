@@ -1,5 +1,4 @@
 <script setup>
-import { computed } from 'vue'
 import BaseDialog from '@/components/dialog/BaseDialog.vue'
 import GestureRuleCommandFields from './rule-dialog/fields/GestureRuleCommandFields.vue'
 import GestureRuleGestureField from './rule-dialog/fields/GestureRuleGestureField.vue'
@@ -13,15 +12,12 @@ const props = defineProps({
   message: { type: String, default: '' },
   isRecordingHotkey: { type: Function, default: null },
   isRecordingGesture: { type: Boolean, default: false },
-  getGestureMnemonic: { type: Function, default: null },
   windowOperations: { type: Array, default: () => [] },
   volumeOperations: { type: Array, default: () => [] },
   brightnessOperations: { type: Array, default: () => [] }
 })
 
 defineEmits(['close', 'persist', 'record', 'record-hotkey', 'select-program', 'open-application-folder'])
-
-const patternLabel = computed(() => props.getGestureMnemonic?.(props.draft) || '尚未录制')
 </script>
 
 <template>
@@ -39,8 +35,7 @@ const patternLabel = computed(() => props.getGestureMnemonic?.(props.draft) || '
     <div class="gesture-dialog__form">
       <GestureRuleNameField :draft="draft" />
       <GestureRuleGestureField
-        :pattern-label="patternLabel"
-        :is-empty="!getGestureMnemonic?.(draft)"
+        :draft="draft"
         :is-recording="isRecordingGesture"
         :message="message"
         @record="$emit('record')"

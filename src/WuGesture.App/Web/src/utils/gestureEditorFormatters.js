@@ -17,19 +17,23 @@ import {
   normalizeEdgeTriggerType,
   normalizeMouseButton,
   normalizeVolumeOperation,
+  normalizeWheelModifier,
   normalizeWindowOperation,
   parsePattern
 } from './gestureEditorNormalizers'
 
 export function getGestureMnemonic(source) {
+  const button = MOUSE_BUTTON_SYMBOLS[normalizeMouseButton(source?.mouseButton)] ?? MOUSE_BUTTON_SYMBOLS.right
   const pattern = Array.isArray(source?.pattern) ? source.pattern : parsePattern(source?.patternText)
-  if (pattern.length === 0) {
+  const directions = pattern.map(direction => DIRECTION_SYMBOLS[direction] ?? '').join('')
+  const modifier = normalizeWheelModifier(source?.wheelModifier)
+  const wheel = modifier === WHEEL_DIRECTIONS.down ? '滚轮↓' : modifier === WHEEL_DIRECTIONS.up ? '滚轮↑' : ''
+
+  if (!directions && !wheel) {
     return ''
   }
 
-  const button = MOUSE_BUTTON_SYMBOLS[normalizeMouseButton(source?.mouseButton)] ?? MOUSE_BUTTON_SYMBOLS.right
-  const directions = pattern.map(direction => DIRECTION_SYMBOLS[direction] ?? '').join('')
-  return directions ? `${button}${directions}` : ''
+  return `${button}${directions}${wheel}`
 }
 
 export function getActionLabel(rule) {
