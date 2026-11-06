@@ -27,6 +27,7 @@ public sealed partial class MainForm
     private const int WmNcMouseLeave = 0x02A2;
     private const int WmLButtonUp = 0x0202;
     private const int WmCaptureChanged = 0x0215;
+    private const int WmShowWindow = 0x0018;
     private const int HtCaption = 2;
     private const int HtMinButton = 8;
     private const int HtMaxButton = 9;
@@ -513,6 +514,26 @@ public sealed partial class MainForm
                 }
 
                 break;
+            case WmShowWindow when message.WParam != IntPtr.Zero && ShouldKeepWindowHidden():
+                // Alt+Tab and Task View hold a snapshot of the windows that were visible when they opened.
+                // Releasing the switcher can therefore ask the shell to show a form that has already been
+                // hidden to the tray. That path does not run RestoreFromTray, so the WebView2 host is still
+                // released and the window would paint an empty client area. The close request wins: refuse
+                // the show, and hide once more through the message queue in case the shell completes its
+                // ShowWindow call after this message returns.
+                AppLogger.Information(
+                    "MainForm",
+                    "hidden-window-rehidden",
+                    "An external activation tried to show the configuration window while it was hidden to the tray; keeping it hidden.");
+                ForceHideWindow();
+                BeginInvokeSafe(() =>
+                {
+                    if (ShouldKeepWindowHidden())
+                    {
+                        ForceHideWindow();
+                    }
+                });
+                return;
         }
 
         base.WndProc(ref message);

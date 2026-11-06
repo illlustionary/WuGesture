@@ -6,6 +6,7 @@ namespace WuGesture.App;
 
 public sealed partial class MainForm
 {
+    private const int SwHide = 0;
     private const int SwShow = 5;
     private const int SwMinimize = 6;
     private const int SwRestore = 9;
@@ -70,6 +71,23 @@ public sealed partial class MainForm
     private void MinimizeWindow()
     {
         ShowWindow(Handle, SwMinimize);
+    }
+
+    /// <summary>
+    /// Hides the window even when WinForms already believes it is invisible.
+    /// </summary>
+    /// <remarks>
+    /// The shell can show a hidden window with a native <c>ShowWindow</c> call without going through the
+    /// WinForms visibility setter. <see cref="Control.Hide"/> is then a no-op because the managed state is
+    /// still false, so the native visibility has to be cleared explicitly.
+    /// </remarks>
+    private void ForceHideWindow()
+    {
+        Hide();
+        if (IsHandleCreated)
+        {
+            ShowWindow(Handle, SwHide);
+        }
     }
 
     private void BringWindowToFront(bool attachToForegroundInputFirst = false)

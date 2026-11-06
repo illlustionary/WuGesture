@@ -30,8 +30,8 @@ public sealed partial class MainForm : Form
     private bool isClosing;
     private bool isExiting;
     private bool isRestoringConfiguration;
-    private bool removeTaskbarButtonAfterMinimize;
     private bool hideConfigWindowOnLaunch;
+    private bool isHiddenToTray;
     private bool isUserPaused;
     private bool isEditorPaused;
     private bool hasWebUiLoaded;
@@ -224,25 +224,40 @@ public sealed partial class MainForm : Form
             // promptable. Flush it as soon as the window is back on screen, otherwise it stays stuck until the
             // next check or WebView reload.
             updateCoordinator.PostPendingPrompt();
-            return;
         }
+    }
 
-        if (!removeTaskbarButtonAfterMinimize)
+    private bool ShouldKeepWindowHidden()
+    {
+        return TrayVisibilityPolicy.ShouldKeepHidden(
+            isHiddenToTray,
+            isRestoringConfiguration,
+            isClosing || isExiting || IsDisposed || Disposing);
+    }
+
+    /// <summary>
+    /// Hides the configuration window immediately and releases the WebView2 host.
+    /// </summary>
+    /// <remarks>
+    /// The close request must not minimize first. While Alt+Tab or Task View is open, the shell keeps a
+    /// snapshot of the visible windows; a minimize leaves the form in that snapshot, and Explorer can restore
+    /// it after the WebView2 host has been released, which paints an empty configuration window. Hiding
+    /// synchronously takes the form out of the switcher before the close request returns, and
+    /// <see cref="ShouldKeepWindowHidden"/> rejects any later shell-initiated show.
+    /// </remarks>
+    private void HideToTray()
+    {
+        if (!TrayVisibilityPolicy.ShouldHideToTray(
+                isHiddenToTray,
+                isClosing || isExiting || IsDisposed || Disposing))
         {
             return;
         }
 
-        removeTaskbarButtonAfterMinimize = false;
-        BeginInvokeSafe(() =>
-        {
-            if (WindowState == FormWindowState.Minimized)
-            {
-                ShowInTaskbar = false;
-                Hide();
-                AppLogger.Information("MainForm", "hidden-to-tray", "The configuration window was hidden; releasing the WebView2 host.");
-                DisposeWebView();
-            }
-        });
+        isHiddenToTray = true;
+        ForceHideWindow();
+        AppLogger.Information("MainForm", "hidden-to-tray", "The configuration window was hidden; releasing the WebView2 host.");
+        DisposeWebView();
     }
 
     private bool HandleConfiguredUserClose()
@@ -265,13 +280,13 @@ public sealed partial class MainForm : Form
         }
         else
         {
-            MinimizeToTray();
+            HideToTrayOnClose();
         }
 
         return true;
     }
 
-    private void MinimizeToTray()
+    private void HideToTrayOnClose()
     {
         SaveWindowState();
         hotkeyRecorder.Stop();
@@ -279,9 +294,7 @@ public sealed partial class MainForm : Form
         isEditorPaused = false;
         ApplyGesturePauseState();
         mouseTrailForm?.HideTrail();
-        ShowInTaskbar = true;
-        removeTaskbarButtonAfterMinimize = true;
-        MinimizeWindow();
+        HideToTray();
     }
 
     private void MinimizeToTaskbar()
@@ -292,7 +305,6 @@ public sealed partial class MainForm : Form
         isEditorPaused = false;
         ApplyGesturePauseState();
         mouseTrailForm?.HideTrail();
-        removeTaskbarButtonAfterMinimize = false;
         ShowInTaskbar = true;
         MinimizeWindow();
     }
@@ -304,12 +316,15 @@ public sealed partial class MainForm : Form
             return;
         }
 
+        // From here on the window is intentionally visible; external-show protection must not fight the
+        // tray restore while the WebView2 host is being rebuilt.
+        isHiddenToTray = false;
+
         // The window is already on screen (possibly minimized to the taskbar or restored from it) and still
         // owns a live WebView: activate it in place. Running the fade-in and WebView rebuild here made a tray
         // double-click look like the application was closed and reopened, including a title-bar flash.
         if (Visible && webViewHost.IsReady)
         {
-            removeTaskbarButtonAfterMinimize = false;
             ShowInTaskbar = true;
             BeginInvokeSafe(() =>
             {
@@ -322,7 +337,6 @@ public sealed partial class MainForm : Form
         isRestoringConfiguration = true;
         try
         {
-            removeTaskbarButtonAfterMinimize = false;
             ShowInTaskbar = false;
             Opacity = 0;
             ApplyWindowTheme(loadedConfig?.Config.UiSettings.Appearance ?? new AppearanceUiSettings());
@@ -357,6 +371,7 @@ public sealed partial class MainForm : Form
 
     private void HideStartupWindow()
     {
+        isHiddenToTray = true;
         ShowInTaskbar = false;
         Hide();
         Opacity = 1;
@@ -370,7 +385,7 @@ public sealed partial class MainForm : Form
 
     public void ShowExistingInstance()
     {
-        if (Visible && WindowState != FormWindowState.Minimized)
+        if (Visible && WindowState != FormWindowState.Minimized && !isHiddenToTray)
         {
             BringWindowToFront(attachToForegroundInputFirst: true);
             return;
