@@ -19,6 +19,7 @@ import {
   normalizeMouseTrailSettings,
   normalizeObjectKeys,
   normalizeOnboardingSettings,
+  normalizeSidebarSettings,
   normalizeUpdateSettings,
   normalizeVolumeOperation,
   normalizeWheelDirection,
@@ -231,5 +232,14 @@ describe('wheel modifier normalizers', () => {
     expect(normalizeWheelTrigger('ONCE')).toBe('once')
     expect(normalizeWheelTrigger('repeat')).toBe('repeat')
     expect(normalizeWheelTrigger(undefined)).toBe('repeat')
+  })
+})
+
+describe('normalizeSidebarSettings', () => {
+  it('把侧栏唤醒距离收敛到 4-80 像素，缺失时使用默认值', () => {
+    expect(normalizeSidebarSettings({ revealDistance: 1 }).revealDistance).toBe(4)
+    expect(normalizeSidebarSettings({ revealDistance: 999 }).revealDistance).toBe(80)
+    expect(normalizeSidebarSettings({}).revealDistance).toBe(24)
+    expect(normalizeSidebarSettings({ collapsed: true }).collapsed).toBe(true)
   })
 })

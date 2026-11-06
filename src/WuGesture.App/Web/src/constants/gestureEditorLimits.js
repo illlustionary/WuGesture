@@ -16,5 +16,6 @@ export const GESTURE_EDITOR_LIMITS = {
   hintWidthPercent: { min: 10, max: 90 },
   hintHeightPercent: { min: 5, max: 40 },
   hintCornerRadius: { min: 0, max: 80 },
-  hintBottomOffsetPercent: { min: 0, max: 100 }
+  hintBottomOffsetPercent: { min: 0, max: 100 },
+  sidebarRevealDistance: { min: 4, max: 80, fallback: 24 }
 }

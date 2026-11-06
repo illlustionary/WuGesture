@@ -41,6 +41,8 @@ public sealed class AppearanceUiSettings
 public sealed class SidebarUiSettings
 {
     public bool Collapsed { get; set; }
+
+    public int RevealDistance { get; set; } = 24;
 }
 
 public sealed class AppBehaviorUiSettings

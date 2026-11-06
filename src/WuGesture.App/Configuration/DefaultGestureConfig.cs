@@ -15,7 +15,8 @@ public static class DefaultGestureConfig
             },
             Sidebar = new SidebarUiSettings
             {
-                Collapsed = true
+                Collapsed = true,
+                RevealDistance = 24
             },
             MouseTrail = new MouseTrailUiSettings
             {
