@@ -37,6 +37,7 @@ public sealed class GestureService : IDisposable
     private SynchronizationContext? synchronizationContext;
     private bool isPaused;
     private bool disableGesturesInFullscreen;
+    private bool disableGesturesOnDesktop;
     private ActiveMouseButton activeMouseButton = ActiveMouseButton.None;
     private GestureWheelDirection? wheelAccumulatorDirection;
     private int wheelAccumulator;
@@ -44,6 +45,7 @@ public sealed class GestureService : IDisposable
     private GestureRule? wheelReleaseRule;
     private string? lastWheelActionName;
     private bool captureDisableGesturesInFullscreen;
+    private bool captureDisableGesturesOnDesktop;
     private long nextSessionId;
     private bool started;
     private volatile bool disposed;
@@ -148,6 +150,19 @@ public sealed class GestureService : IDisposable
         {
             service.disableGesturesInFullscreen = disableGestures;
             if (service.disableGesturesInFullscreen && ForegroundWindowFullscreenDetector.IsFullscreenForegroundWindow())
+            {
+                service.CancelTracking();
+            }
+        });
+    }
+
+    public void UpdateDesktopBehavior(bool disableGestures)
+    {
+        Volatile.Write(ref captureDisableGesturesOnDesktop, disableGestures);
+        EnqueueParserAction(service =>
+        {
+            service.disableGesturesOnDesktop = disableGestures;
+            if (service.disableGesturesOnDesktop && DesktopWindowClassifier.IsDesktopSurface(GetForegroundWindow()))
             {
                 service.CancelTracking();
             }
@@ -1182,6 +1197,11 @@ public sealed class GestureService : IDisposable
             ? exclusionMatcher.IsGestureExcluded(window)
             : exclusionMatcher.IsGestureExcluded();
         if (isExcluded)
+        {
+            return true;
+        }
+
+        if (Volatile.Read(ref captureDisableGesturesOnDesktop) && DesktopWindowClassifier.IsDesktopSurface(window))
         {
             return true;
         }
