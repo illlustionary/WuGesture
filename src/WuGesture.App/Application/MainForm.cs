@@ -148,6 +148,7 @@ public sealed partial class MainForm : Form
         gestureService = new GestureService(new GestureMatcher(config.Rules), scopeContextProvider);
         gestureService.UpdateExcludedApplications(config.Config.UiSettings.AppBehavior.ExcludedApplications);
         gestureService.UpdateFullscreenBehavior(config.Config.UiSettings.AppBehavior.DisableGesturesInFullscreen);
+        gestureService.UpdateDesktopBehavior(config.Config.UiSettings.AppBehavior.DisableGesturesOnDesktop);
         gestureService.UpdateTargetWindowMode(config.Config.UiSettings.AppBehavior.TargetWindowMode);
         edgeActionService = new EdgeActionService(config.Config.EdgeActions);
         edgeActionService.UpdateExcludedApplications(config.Config.UiSettings.AppBehavior.ExcludedApplications);
@@ -729,6 +730,7 @@ public sealed partial class MainForm : Form
         gestureService?.UpdateMatcher(new GestureMatcher(loadedConfig.Rules));
         gestureService?.UpdateExcludedApplications(loadedConfig.Config.UiSettings.AppBehavior.ExcludedApplications);
         gestureService?.UpdateFullscreenBehavior(loadedConfig.Config.UiSettings.AppBehavior.DisableGesturesInFullscreen);
+        gestureService?.UpdateDesktopBehavior(loadedConfig.Config.UiSettings.AppBehavior.DisableGesturesOnDesktop);
         gestureService?.UpdateTargetWindowMode(loadedConfig.Config.UiSettings.AppBehavior.TargetWindowMode);
         edgeActionService?.UpdateActions(loadedConfig.Config.EdgeActions);
         edgeActionService?.UpdateExcludedApplications(loadedConfig.Config.UiSettings.AppBehavior.ExcludedApplications);

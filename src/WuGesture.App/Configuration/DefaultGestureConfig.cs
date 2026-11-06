@@ -66,6 +66,7 @@ public static class DefaultGestureConfig
                 CloseButtonBehavior = GestureConfigContract.CloseButtonBehaviors.MinimizeToTray,
                 TargetWindowMode = GestureConfigContract.WindowTargetModes.StartWindow,
                 DisableGesturesInFullscreen = false,
+                DisableGesturesOnDesktop = false,
                 DisableEdgeActionsInFullscreen = false,
                 ExcludedApplications = []
             },

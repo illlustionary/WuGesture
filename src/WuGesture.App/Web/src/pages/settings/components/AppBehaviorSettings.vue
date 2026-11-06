@@ -48,6 +48,11 @@ function commit() {
           @change="commit"
         />
         <ToggleCheckbox
+          v-model="draft.appBehavior.disableGesturesOnDesktop"
+          label="在桌面禁用鼠标手势"
+          @change="commit"
+        />
+        <ToggleCheckbox
           v-model="draft.appBehavior.disableEdgeActionsInFullscreen"
           label="全屏时禁用边缘操作"
           @change="commit"

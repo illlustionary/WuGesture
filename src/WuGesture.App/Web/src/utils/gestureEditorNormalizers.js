@@ -262,6 +262,9 @@ export function normalizeAppBehaviorSettings(settings) {
     disableGesturesInFullscreen: Boolean(
       settings?.disableGesturesInFullscreen ?? DEFAULT_UI_SETTINGS.appBehavior.disableGesturesInFullscreen
     ),
+    disableGesturesOnDesktop: Boolean(
+      settings?.disableGesturesOnDesktop ?? DEFAULT_UI_SETTINGS.appBehavior.disableGesturesOnDesktop
+    ),
     disableEdgeActionsInFullscreen: Boolean(
       settings?.disableEdgeActionsInFullscreen ?? DEFAULT_UI_SETTINGS.appBehavior.disableEdgeActionsInFullscreen
     ),

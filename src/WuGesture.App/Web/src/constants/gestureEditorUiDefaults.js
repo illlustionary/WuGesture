@@ -69,6 +69,7 @@ export const DEFAULT_UI_SETTINGS = {
     showConfigWindowOnLaunch: true,
     runAsAdministrator: false,
     disableGesturesInFullscreen: false,
+    disableGesturesOnDesktop: false,
     disableEdgeActionsInFullscreen: false,
     closeButtonBehavior: CLOSE_BUTTON_BEHAVIORS.minimizeToTray,
     targetWindowMode: WINDOW_TARGET_MODES.startWindow,
