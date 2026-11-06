@@ -43,6 +43,12 @@ export default {
       props: { section: 'app-behavior' }
     },
     {
+      path: 'sidebar',
+      name: 'settings-sidebar',
+      component: settingsPage,
+      props: { section: 'sidebar' }
+    },
+    {
       path: 'webdav',
       name: 'settings-webdav',
       component: settingsPage,

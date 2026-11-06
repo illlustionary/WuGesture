@@ -72,7 +72,8 @@ internal static class WebViewRulesPayloadFactory
             },
             sidebar = new
             {
-                collapsed = uiSettings.Sidebar.Collapsed
+                collapsed = uiSettings.Sidebar.Collapsed,
+                revealDistance = uiSettings.Sidebar.RevealDistance
             },
             mouseTrail = uiSettings.MouseTrail,
             gestureHint = uiSettings.GestureHint,

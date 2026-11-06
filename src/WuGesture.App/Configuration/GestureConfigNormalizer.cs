@@ -94,6 +94,9 @@ internal static class GestureConfigNormalizer
         appearance.DarkTitleBarColor = NormalizeColor(appearance.DarkTitleBarColor, defaultAppearance.DarkTitleBarColor);
         appearance.DarkTitleBarTextColor = NormalizeColor(appearance.DarkTitleBarTextColor, defaultAppearance.DarkTitleBarTextColor);
 
+        var sidebar = settings.Sidebar;
+        sidebar.RevealDistance = ClampInteger(sidebar.RevealDistance, 4, 80);
+
         var mouseTrail = settings.MouseTrail;
         mouseTrail.Enabled ??= true;
         var defaultMouseTrail = new MouseTrailUiSettings();

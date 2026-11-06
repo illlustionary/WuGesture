@@ -36,7 +36,6 @@ const {
   isSidebarVisible,
   isSidebarHidden,
   showOverlay,
-  cancelPendingOverlay,
   hideOverlay,
   toggleSidebar,
   completeTransition
@@ -44,13 +43,6 @@ const {
 </script>
 
 <template>
-  <div
-    v-show="isCollapsed"
-    class="app-sidebar__hotzone"
-    aria-hidden="true"
-    @pointerenter="showOverlay"
-    @pointerleave="cancelPendingOverlay"
-  />
   <aside
     class="app-sidebar"
     :class="{
@@ -121,8 +113,8 @@ const {
   border-right: 1px solid var(--border);
   background: var(--panel);
   transition:
-    opacity 180ms ease,
-    transform 180ms ease;
+    opacity 160ms ease,
+    transform 160ms ease;
 
   &.is-collapsing {
     opacity: 0;
@@ -140,11 +132,15 @@ const {
     opacity: 0;
     pointer-events: none;
     transform: translateX(-20px);
+    will-change: transform, opacity;
+    transition:
+      opacity 130ms ease-out,
+      transform 130ms cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   &.is-overlay-mounted {
     visibility: visible;
-    box-shadow: var(--shadow-float);
+    box-shadow: var(--shadow-sidebar);
   }
 
   &.is-overlay-visible {
@@ -152,13 +148,6 @@ const {
     pointer-events: auto;
     transform: translateX(0);
   }
-}
-
-.app-sidebar__hotzone {
-  position: fixed;
-  z-index: 29;
-  inset: 0 auto 0 0;
-  width: 15px;
 }
 
 .app-sidebar__nav {

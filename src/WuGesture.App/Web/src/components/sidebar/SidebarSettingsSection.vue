@@ -18,6 +18,7 @@ const items = [
   { to: '/settings/level-osd', label: '音量/亮度提示', icon: 'monitor' },
   { to: '/settings/sensitivity', label: '手势灵敏度', icon: 'gauge' },
   { to: '/settings/app-behavior', label: '应用行为', icon: 'toggle-left' },
+  { to: '/settings/sidebar', label: '侧栏', icon: 'panel-left' },
   { to: '/settings/update', label: '更新', icon: 'refresh-cw' },
   { to: '/settings/webdav', label: 'WebDAV', icon: 'cloud' }
 ]

@@ -142,6 +142,20 @@ public sealed class GestureConfigNormalizerTests
         Assert.Equal(new MouseTrailUiSettings().ActiveColor, config.UiSettings.MouseTrail.ActiveColor);
     }
 
+    [Theory]
+    [InlineData(0, 4)]
+    [InlineData(20, 20)]
+    [InlineData(200, 80)]
+    public void Normalize_ClampsSidebarRevealDistance(int source, int expected)
+    {
+        var config = new GestureConfig();
+        config.UiSettings.Sidebar.RevealDistance = source;
+
+        GestureConfigNormalizer.Normalize(config);
+
+        Assert.Equal(expected, config.UiSettings.Sidebar.RevealDistance);
+    }
+
     [Fact]
     public void Normalize_FallsBackForUnknownContractValues()
     {

@@ -50,7 +50,13 @@ export function normalizeOnboardingSettings(settings) {
 export function normalizeSidebarSettings(settings) {
   settings = normalizeObjectKeys(settings)
   return {
-    collapsed: Boolean(settings?.collapsed ?? DEFAULT_UI_SETTINGS.sidebar.collapsed)
+    collapsed: Boolean(settings?.collapsed ?? DEFAULT_UI_SETTINGS.sidebar.collapsed),
+    revealDistance: clampInteger(
+      settings?.revealDistance,
+      GESTURE_EDITOR_LIMITS.sidebarRevealDistance.min,
+      GESTURE_EDITOR_LIMITS.sidebarRevealDistance.max,
+      GESTURE_EDITOR_LIMITS.sidebarRevealDistance.fallback
+    )
   }
 }
 

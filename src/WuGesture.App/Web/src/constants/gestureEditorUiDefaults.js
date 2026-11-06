@@ -18,7 +18,8 @@ export const DEFAULT_UI_SETTINGS = {
     darkTitleBarTextColor: '#EDF2F7'
   },
   sidebar: {
-    collapsed: true
+    collapsed: true,
+    revealDistance: 24
   },
   mouseTrail: {
     enabled: true,
