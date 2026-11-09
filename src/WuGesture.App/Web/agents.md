@@ -7,9 +7,10 @@ This repository is a Vite + Vue 3 web frontend for the WuGesture application. It
 ## Root Structure
 
 - `index.html`: Vite entry HTML.
-- `package.json`: project metadata, scripts, and dependencies.
+- `package.json`: project metadata, scripts, and dependencies (`dev`, `build`, `test`, `typecheck`, `format`).
 - `pnpm-lock.yaml`: locked dependency tree.
 - `pnpm-workspace.yaml`: workspace configuration.
+- `tsconfig.json`: TypeScript / Vue type-check configuration. `allowJs` is on and `checkJs` is off, so existing `.js` files keep working; only `.ts`, `.d.ts` and `.vue` are checked.
 - `vite.config.js`: Vite build and dev server configuration, including `vite-svg-loader` and the `@`/`@resources` path aliases.
 - `src/`: application source code.
 
@@ -17,15 +18,17 @@ This repository is a Vite + Vue 3 web frontend for the WuGesture application. It
 
 - `src/main.js`: app bootstrap, router setup, and global style import.
 - `src/App.vue`: top-level shell with the main navigation, status bar, and global dialogs.
+- `src/env.d.ts`: Vite client types plus `*.svg` / `*.svg?component` module declarations for TypeScript imports.
 - `src/styles.scss`: shared visual styling for the entire app.
 - `src/gestureEditor/`: gesture editor domain module, including context, narrow stores, and internal workflow modules for rule editing, scope selection, persistence, and WebView message handling.
 - `src/components/`: reusable UI pieces grouped by responsibility: `sidebar/`, `layout/`, `dialog/`, `form/`, `ui/`, `gesture/`, `scope/`, and `rules/`.
 - `src/pages/*/components/`: page-private components that are only used by their owning route, such as category application items and edge/settings form sections.
 - `src/assets/`: SVG assets used by the UI, including add, close, and delete icons. These are imported as Vue components.
 - `src/pages/`: route-level views.
-  - `GlobalRulesPage.vue`: global rule scope page with the same split layout pattern as the other editor pages.
-  - `CategoryRulesPage.vue`: category rule scope page.
-  - `AppRulesPage.vue`: application rule scope page.
+  - `global/index.vue`: global rule scope page.
+  - `category/index.vue`: category rule scope page.
+  - `app/index.vue`: application rule scope page.
+  - `dev/md3/index.vue`: MD3 design-token preview page, registered only when `import.meta.env.DEV` is true; it never ships in production builds.
 
 ## Functional Areas
 
@@ -43,4 +46,5 @@ This repository is a Vite + Vue 3 web frontend for the WuGesture application. It
 - When a page, route, layout, or reusable UI component changes, check whether this document needs to be updated.
 - When UI icon assets or shared button components change, update this document if the source tree or responsibilities changed.
 - If the change affects project structure, startup flow, configuration, build/release behavior, WebView message flow, core module responsibilities, or test structure, update this document in the same change.
+- Write new modules and new components in TypeScript; do not migrate existing `.js` files unless they are being rewritten (see `docs/design/md3-redesign-plan.md`, Appendix D).
 - Keep this guide aligned with the actual source tree, especially when new pages or components are added.

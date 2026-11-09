@@ -15,7 +15,7 @@ src\WuGesture.App\Web
 ├─ package.json
 ├─ pnpm-lock.yaml
 ├─ pnpm-workspace.yaml
-├─ jsconfig.json
+├─ tsconfig.json
 ├─ uno.config.js
 ├─ vite.config.js
 ├─ PROJECT_STRUCTURE.md
@@ -27,10 +27,10 @@ src\WuGesture.App\Web
 
 - `agents.md`：Web 子项目的代理指令。
 - `index.html`：Vite 入口 HTML，页面标题为 `WuGesture`。
-- `package.json`：前端工程依赖与脚本；`format` 和 `format:check` 使用本地 Prettier 按仓库根目录的 `.prettierrc.json` 格式化或校验前端源码，`test` 使用 Vitest 运行前端单元测试。
+- `package.json`：前端工程依赖与脚本；`format` 和 `format:check` 使用本地 Prettier 按仓库根目录的 `.prettierrc.json` 格式化或校验前端源码，`test` 使用 Vitest 运行前端单元测试，`typecheck` 使用 `vue-tsc --noEmit` 做类型检查。
 - `pnpm-lock.yaml`：锁定依赖树。
 - `pnpm-workspace.yaml`：工作区配置，并放行 `@parcel/watcher` 的本地构建脚本，避免非交互环境下依赖安装中断。
-- `jsconfig.json`：配置编辑器路径提示，`@/*` 指向 `src/*`，`@resources/*` 指向桌面宿主的 `Resources/*`。
+- `tsconfig.json`：TypeScript / Vue 类型检查配置；`allowJs: true` 且 `checkJs: false`，只检查 `src` 下的 `.ts`、`.d.ts` 和 `.vue`，存量 `.js` 与 SFC 不受影响。`@/*` 指向 `src/*`，`@resources/*` 指向桌面宿主的 `Resources/*`。原 `jsconfig.json` 已被该文件取代。
 - `uno.config.js`：UnoCSS 配置，集中定义页面区块、表单、列表等常用 shortcuts。
 - `vite.config.js`：Vite 构建配置，包含 `vite-svg-loader`、UnoCSS Vite 插件，以及 `@` 到 `src`、`@resources` 到桌面宿主 `Resources` 目录的路径别名。`vite-svg-loader` 的 SVGO 配置覆盖了 `removeViewBox`，保证 24×24 描边图标在按 CSS 缩放到 18px 等尺寸时仍能等比缩放。
 - `PROJECT_STRUCTURE.md`：当前 Web 子项目地图。
@@ -42,6 +42,7 @@ src\WuGesture.App\Web
 src
 ├─ main.js
 ├─ App.vue
+├─ env.d.ts
 ├─ router
 ├─ styles.scss
 ├─ assets
@@ -60,6 +61,7 @@ src
 - `src\router\routes\scopeRoutes.js`：分类和程序动态子路由。
 - `src\router\routes\edgeRoutes.js`：触发角、摩擦边和边缘滚动子路由。
 - `src\router\routes\settingsRoutes.js`：各设置项子路由。
+- `src\env.d.ts`：Vite 客户端类型引用与 `*.svg`、`*.svg?component` 模块声明；后续 TypeScript 文件可直接导入 SVG，无需重复声明。
 - `src\App.vue`：侧栏/页面工作区、路由切换过渡和全局弹窗挂载；窗口标题栏由桌面宿主在 WebView 上方自绘（不进入前端页面），分类/程序侧栏操作和主题状态由组合式函数协调。首次启动引导只在 `state.hostConfigLoaded` 为 true 且 `uiSettings.onboarding.welcomeCompleted` 为 false 时自动弹出，每个会话最多一次，浏览器预览不触发；帮助弹窗由侧栏底部「?」打开。全局弹窗不会随页面卸载，因此 `App.vue` 在路由路径变化时统一关闭应用选择器、手势规则编辑器、快速搜索、帮助弹窗和分类/程序新增重命名弹窗，避免切换页面后残留；欢迎引导和更新弹窗属于全局流程，不受路由切换影响；恢复默认设置的确认弹窗属于设置页，随页面卸载自动关闭。
 - `src\icons\appIcons.js`：本地 SVG 图标的唯一显式注册表；使用文件名作为图标名称，供 `AppIcon` 和业务组件按名称查找。
 - `src\styles.scss`：编辑器全局设计 token、reset、通用按钮、输入框、弹窗和图标样式；常用布局/区块/表单/列表样式优先用 UnoCSS shortcuts，复杂动态样式和组件专属样式放在对应 `.vue` 文件的 scoped SCSS 中。
@@ -206,6 +208,7 @@ src\pages
   - `settings\composables\useUiSettingsDraft.js`：基于 `gestureEditorNormalizers.js` 的共享设置深拷贝创建草稿，负责 debounce 保存、重置和预览样式计算；导入配置前会丢弃未提交的草稿，避免旧值在导入完成后覆盖新配置。
 - `about\index.vue`：侧栏最外层的“关于&更新”页，分「关于」和「更新」两个区块；「关于」展示软件简介、当前版本、更新源和自动检查状态（只读），「更新」提供检查更新按钮、状态提示和“查看更新”入口，修改更新设置需要前往“设置 > 更新”。更新后首次启动会自动切到本页并提示已完成更新及当前版本。
   - `about\components\AboutUpdatePanel.vue`：两个区块的具体布局、更新状态文案和来源标注。
+- `dev\md3\index.vue`：仅开发环境注册的 MD3 设计令牌预览页（`#/dev/md3`），展示颜色角色、字体、形状和间距令牌；阶段 1 注入 `--md-sys-*` 变量后自动显示真实取值。生产构建会移除该路由和对应 chunk，不进入发布产物。
 
 ## Routing
 
@@ -217,7 +220,8 @@ src\pages
 - `edge/corner`、`edge/friction`、`edge/wheel`
 - `exclusions`
 - `about`（侧栏最外层的“关于&更新”独立页面）
-- `settings/config`、`settings/mouse-trail`、`settings/gesture-hint`、`settings/level-osd`、`settings/sensitivity`、`settings/app-behavior`、`settings/update`、`settings/webdav`
+- `settings/config`、`settings/mouse-trail`、`settings/gesture-hint`、`settings/level-osd`、`settings/sensitivity`、`settings/app-behavior`、`settings/sidebar`、`settings/update`、`settings/webdav`
+- `dev/md3`（仅开发环境；`import.meta.env.DEV` 为 false 时路由和页面 chunk 都不会生成）
 
 页面组件通过动态 `import()` 加载，`router/routes` 下的路由模块只在路由命中时加载对应页面 chunk。
 
@@ -360,13 +364,19 @@ src\pages
 
 ## 测试
 
-前端单元测试使用 Vitest，测试文件与被测模块同目录，命名为 `*.test.js`：
+前端单元测试使用 Vitest，测试文件与被测模块同目录，命名为 `*.test.js`（已迁移到 TypeScript 的模块使用 `*.test.ts`）：
 
 ```powershell
 pnpm test
 ```
 
-Vitest 直接复用 `vite.config.js` 的路径别名，不需要额外的测试配置。测试文件与被测模块同目录，当前覆盖 `utils` 下的纯函数：`gestureEditorNormalizers`（枚举回退、数值收敛、作用域解析、排除项进程名归一化和去重、边缘操作合并）、`gestureEditorPayloads`（配置 payload 映射）、`gestureEditorViewModels`（宿主消息到编辑器模型）和 `gestureEditorCollections`（侧栏条目聚合）。`*.test.js` 不参与 `vite build`，也被桌面工程的增量前端构建排除。
+类型检查单独执行，只检查 `src` 下的 `.ts`、`.d.ts` 和 `.vue`，存量 `.js` 不纳入检查：
+
+```powershell
+pnpm typecheck
+```
+
+Vitest 直接复用 `vite.config.js` 的路径别名，不需要额外的测试配置。测试文件与被测模块同目录，当前覆盖 `utils` 下的纯函数：`gestureEditorNormalizers`（枚举回退、数值收敛、作用域解析、排除项进程名归一化和去重、边缘操作合并）、`gestureEditorPayloads`（配置 payload 映射）、`gestureEditorViewModels`（宿主消息到编辑器模型）和 `gestureEditorCollections`（侧栏条目聚合）。`*.test.js` / `*.test.ts` 不参与 `vite build`，也被桌面工程的增量前端构建排除。
 
 ## 构建
 
@@ -374,6 +384,7 @@ Vitest 直接复用 `vite.config.js` 的路径别名，不需要额外的测试�
 
 - 正常构建/发布不需要手动执行 `pnpm build`；`WuGesture.App.csproj` 会在 `.NET` 构建前自动调用 `vite build`，源文件未变化时会跳过。
 - 手动 `pnpm build` 只用于单独验证前端，产物落在 `Web\dist`（已被 Git 忽略），不会进入发行包。
+- `pnpm typecheck` 只做类型检查，不产出文件；CI 在格式检查和单元测试之间执行该步骤。
 
 ## 何时更新此文件
 
@@ -384,5 +395,6 @@ Vitest 直接复用 `vite.config.js` 的路径别名，不需要额外的测试�
 - 前端构建配置和输出路径（仅前端侧约定，宿主侧构建见根文档）
 - 前端收发的 WebView 消息（宿主侧处理逻辑见根文档）
 - 前端测试结构、测试命令或测试框架
+- TypeScript 配置、类型检查脚本或 CI 检查步骤
 - 规则编辑器、边缘操作或设置页的核心职责
 - 图标资产和共享 UI 组件职责
