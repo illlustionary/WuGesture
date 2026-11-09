@@ -10,6 +10,8 @@ public sealed class ActionExecutor
     private const uint InputKeyboard = 1;
     private const uint KeyEventFExtendedKey = 0x0001;
     private const uint KeyEventFKeyUp = 0x0002;
+    private const uint MapVkToVsc = 0;
+    private const uint MapVkToVscEx = 4;
     private const int SwMinimize = 6;
     private const int SwMaximize = 3;
     private const int SwRestore = 9;
@@ -29,10 +31,15 @@ public sealed class ActionExecutor
         IntPtr targetWindow,
         bool useCurrentWindowWhenTargetMissing = false)
     {
+        if (targetWindow == IntPtr.Zero && useCurrentWindowWhenTargetMissing)
+        {
+            targetWindow = GetForegroundWindow();
+        }
+
         switch (rule.Action)
         {
             case HotkeyAction hotkey:
-                ExecuteHotkey(hotkey);
+                ExecuteHotkey(hotkey, targetWindow);
                 break;
             case WindowControlAction window:
                 ExecuteWindowControl(window, targetWindow, useCurrentWindowWhenTargetMissing);
@@ -49,23 +56,28 @@ public sealed class ActionExecutor
         }
     }
 
-    private static void ExecuteHotkey(HotkeyAction action)
+    private static void ExecuteHotkey(HotkeyAction action, IntPtr targetWindow)
     {
         if (action.Keys.Count == 0)
         {
             return;
         }
 
+        // Flutter builds its physical-key identity from the scan code. Leaving ScanCode at 0 makes
+        // every injected letter share one physical key, so the framework drops the key-down and
+        // shortcuts such as Ctrl+C/V do nothing. Translate with the target thread's keyboard
+        // layout so keyboard-layout remapping and extended keys are preserved.
+        var keyboardLayout = ResolveKeyboardLayout(targetWindow);
         var keyDowns = new Input[action.Keys.Count];
         for (var i = 0; i < action.Keys.Count; i++)
         {
-            keyDowns[i] = CreateKeyboardInput(action.Keys[i], keyUp: false);
+            keyDowns[i] = CreateKeyboardInput(action.Keys[i], keyUp: false, keyboardLayout);
         }
 
         var keyUps = new Input[action.Keys.Count];
         for (var i = 0; i < action.Keys.Count; i++)
         {
-            keyUps[i] = CreateKeyboardInput(action.Keys[action.Keys.Count - 1 - i], keyUp: true);
+            keyUps[i] = CreateKeyboardInput(action.Keys[action.Keys.Count - 1 - i], keyUp: true, keyboardLayout);
         }
 
         var batch = new Input[keyDowns.Length + keyUps.Length];
@@ -166,7 +178,7 @@ public sealed class ActionExecutor
 
             if (key != Keys.None)
             {
-                ExecuteHotkey(new HotkeyAction([key]));
+                ExecuteHotkey(new HotkeyAction([key]), IntPtr.Zero);
             }
 
             return;
@@ -243,9 +255,10 @@ public sealed class ActionExecutor
             SwpNoMove | SwpNoSize | SwpNoActivate);
     }
 
-    private static Input CreateKeyboardInput(Keys key, bool keyUp)
+    private static Input CreateKeyboardInput(Keys key, bool keyUp, IntPtr keyboardLayout)
     {
-        var flags = IsExtendedKey(key) ? KeyEventFExtendedKey : 0;
+        var scanCode = ResolveScanCode(key, keyboardLayout);
+        var flags = scanCode.IsExtended ? KeyEventFExtendedKey : 0;
         if (keyUp)
         {
             flags |= KeyEventFKeyUp;
@@ -259,13 +272,52 @@ public sealed class ActionExecutor
                 KeyboardInput = new KeyboardInput
                 {
                     VirtualKey = (ushort)key,
-                    ScanCode = 0,
+                    ScanCode = scanCode.Code,
                     Flags = flags,
                     Time = 0,
                     ExtraInfo = IntPtr.Zero
                 }
             }
         };
+    }
+
+    internal static IntPtr ResolveKeyboardLayout(IntPtr targetWindow)
+    {
+        if (targetWindow != IntPtr.Zero)
+        {
+            var threadId = GetWindowThreadProcessId(targetWindow, out _);
+            if (threadId != 0)
+            {
+                var layout = GetKeyboardLayout(threadId);
+                if (layout != IntPtr.Zero)
+                {
+                    return layout;
+                }
+            }
+        }
+
+        return GetKeyboardLayout(0);
+    }
+
+    internal static (ushort Code, bool IsExtended) ResolveScanCode(Keys key, IntPtr keyboardLayout)
+    {
+        var extended = MapVirtualKeyEx((uint)key, MapVkToVscEx, keyboardLayout);
+        if (extended != 0)
+        {
+            return InterpretScanCode(extended, IsExtendedKey(key));
+        }
+
+        // Some virtual keys (notably ones without a left/right distinction) only translate with
+        // the plain VK-to-VSC mode; keep the known extended-key table as the fallback signal.
+        var basic = MapVirtualKeyEx((uint)key, MapVkToVsc, keyboardLayout);
+        return InterpretScanCode(basic, IsExtendedKey(key));
+    }
+
+    internal static (ushort Code, bool IsExtended) InterpretScanCode(uint mapResult, bool knownExtended)
+    {
+        // MAPVK_VK_TO_VSC_EX prefixes extended scan codes with 0xE0 or 0xE1 in the high byte.
+        var isExtended = (mapResult & 0xFF00) != 0 || knownExtended;
+        return ((ushort)(mapResult & 0xFF), isExtended);
     }
 
     private static bool IsExtendedKey(Keys key)
@@ -292,6 +344,15 @@ public sealed class ActionExecutor
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern uint SendInput(uint nInputs, Input[] pInputs, int cbSize);
+
+    [DllImport("user32.dll", EntryPoint = "MapVirtualKeyExW")]
+    private static extern uint MapVirtualKeyEx(uint uCode, uint uMapType, IntPtr dwhkl);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetKeyboardLayout(uint idThread);
+
+    [DllImport("user32.dll")]
+    private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
 
     [DllImport("user32.dll")]
     private static extern bool IsWindow(IntPtr hWnd);

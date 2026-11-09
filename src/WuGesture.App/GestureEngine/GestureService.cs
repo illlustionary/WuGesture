@@ -7,6 +7,9 @@ namespace WuGesture.App.GestureEngine;
 
 public sealed class GestureService : IDisposable
 {
+    private const int HotkeyForegroundWaitMilliseconds = 150;
+    private const int HotkeyForegroundPollMilliseconds = 10;
+
     private enum ActiveMouseButton
     {
         None,
@@ -956,6 +959,21 @@ public sealed class GestureService : IDisposable
                         SetForegroundWindowForAction(pendingAction.TargetWindow);
                     }
 
+                    // Shortcut injection is delivered to whichever window owns the foreground
+                    // queue. If activation was denied (foreground lock, another app stealing
+                    // focus), sending anyway would type into the wrong window or nowhere at all,
+                    // so give the target a short chance to become foreground and skip otherwise.
+                    if (pendingAction.Rule.Action is HotkeyAction &&
+                        !EnsureHotkeyTargetForeground(pendingAction.TargetWindow))
+                    {
+                        outcome = "hotkey-target-not-foreground";
+                        AppLogger.Warning(
+                            "GestureService",
+                            "hotkey-target-not-foreground",
+                            $"Skipped hotkey action '{pendingAction.Rule.ActionName}' for session {pendingAction.SessionId}: target window 0x{pendingAction.TargetWindow.ToInt64():X} did not become foreground.");
+                        continue;
+                    }
+
                     actionExecutor.Execute(pendingAction.Rule, pendingAction.TargetWindow);
                 }
                 catch (Exception exception)
@@ -1017,6 +1035,64 @@ public sealed class GestureService : IDisposable
         }
 
         SetForegroundWindow(window);
+    }
+
+    /// <summary>
+    /// Makes sure a hotkey action is injected into the intended window. The check only applies to
+    /// real application windows: shell surfaces and unresolved targets keep the previous
+    /// best-effort behavior. Returns false when the target could not be brought to the foreground
+    /// within the short grace period.
+    /// </summary>
+    internal static bool EnsureHotkeyTargetForeground(IntPtr window)
+    {
+        if (window == IntPtr.Zero || !WindowControlTargetPolicy.IsWindowControlTarget(window))
+        {
+            return true;
+        }
+
+        if (IsForegroundWindow(window))
+        {
+            return true;
+        }
+
+        SetForegroundWindow(window);
+        var deadline = Environment.TickCount64 + HotkeyForegroundWaitMilliseconds;
+        while (Environment.TickCount64 < deadline)
+        {
+            if (IsForegroundWindow(window))
+            {
+                return true;
+            }
+
+            Thread.Sleep(HotkeyForegroundPollMilliseconds);
+        }
+
+        return IsForegroundWindow(window);
+    }
+
+    private static bool IsForegroundWindow(IntPtr window)
+    {
+        var foreground = GetForegroundWindow();
+        if (foreground == window)
+        {
+            return true;
+        }
+
+        if (foreground == IntPtr.Zero)
+        {
+            return false;
+        }
+
+        if (GetAncestor(foreground, GetAncestorRoot) == window)
+        {
+            return true;
+        }
+
+        // An owned popup or modal dialog is still served by the target's UI thread, so injected
+        // keys reach the same input queue even though the foreground handle differs.
+        var foregroundThread = GetWindowThreadProcessId(foreground, out _);
+        return foregroundThread != 0 &&
+               foregroundThread == GetWindowThreadProcessId(window, out _);
     }
 
     internal bool HasNewerSession(long sessionId)
@@ -1300,6 +1376,9 @@ public sealed class GestureService : IDisposable
 
     [DllImport("user32.dll")]
     private static extern IntPtr GetAncestor(IntPtr hwnd, uint gaFlags);
+
+    [DllImport("user32.dll")]
+    private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
 
     private const uint GetAncestorRoot = 2;
 }
