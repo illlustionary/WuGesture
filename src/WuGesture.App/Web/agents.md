@@ -19,7 +19,9 @@ This repository is a Vite + Vue 3 web frontend for the WuGesture application. It
 - `src/main.js`: app bootstrap, router setup, and global style import.
 - `src/App.vue`: top-level shell with the main navigation, status bar, and global dialogs.
 - `src/env.d.ts`: Vite client types plus `*.svg` / `*.svg?component` module declarations for TypeScript imports.
-- `src/styles.scss`: shared visual styling for the entire app.
+- `src/styles.scss`: shared visual styling entry point for the entire app.
+- `src/styles/tokens/`: MD3 design tokens split into color, typescale, shape, spacing, elevation, motion, state and legacy alias partials. Colors ship with a static `#529EF1` baseline and will be overridden by the runtime theme engine in stage 6.
+- `src/theme/`: TypeScript contracts for design tokens (`tokens.ts`) and the eight preset seed palettes (`palettes.ts`).
 - `src/gestureEditor/`: gesture editor domain module, including context, narrow stores, and internal workflow modules for rule editing, scope selection, persistence, and WebView message handling.
 - `src/components/`: reusable UI pieces grouped by responsibility: `sidebar/`, `layout/`, `dialog/`, `form/`, `ui/`, `gesture/`, `scope/`, and `rules/`.
 - `src/pages/*/components/`: page-private components that are only used by their owning route, such as category application items and edge/settings form sections.

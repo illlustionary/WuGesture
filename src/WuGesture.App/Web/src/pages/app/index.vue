@@ -223,7 +223,7 @@ const orderedCategories = computed({
     background: var(--interactive-icon-bg);
     color: var(--accent-strong);
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 600;
   }
 
   &__name {

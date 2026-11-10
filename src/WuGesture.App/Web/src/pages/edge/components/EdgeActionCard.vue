@@ -94,7 +94,7 @@ const emit = defineEmits(['open'])
 
     strong {
       font-size: 14px;
-      font-weight: 700;
+      font-weight: 600;
     }
 
     small {

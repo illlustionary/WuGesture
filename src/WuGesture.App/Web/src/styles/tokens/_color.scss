@@ -1,0 +1,121 @@
+// MD3 颜色角色基线。
+// 当前使用计划书 4.1 节的 seed `#529EF1` / Tonal Spot 基线值；
+// 阶段 6 会由 src/theme/scheme.ts 在运行时生成并通过 <style id="md-scheme"> 覆盖这里，
+// 因此本文件只作为首屏兜底与离线基线，不要在组件里直接引用具体色值。
+:root {
+  color-scheme: light;
+
+  /* Primary */
+  --md-sys-color-primary: #0061a4;
+  --md-sys-color-on-primary: #ffffff;
+  --md-sys-color-primary-container: #d1e4ff;
+  --md-sys-color-on-primary-container: #001d36;
+  --md-sys-color-inverse-primary: #9ecaff;
+
+  /* Secondary */
+  --md-sys-color-secondary: #535f70;
+  --md-sys-color-on-secondary: #ffffff;
+  --md-sys-color-secondary-container: #d7e3f7;
+  --md-sys-color-on-secondary-container: #101c2b;
+
+  /* Tertiary */
+  --md-sys-color-tertiary: #6b5778;
+  --md-sys-color-on-tertiary: #ffffff;
+  --md-sys-color-tertiary-container: #f2daff;
+  --md-sys-color-on-tertiary-container: #251431;
+
+  /* Error */
+  --md-sys-color-error: #ba1a1a;
+  --md-sys-color-on-error: #ffffff;
+  --md-sys-color-error-container: #ffdad6;
+  --md-sys-color-on-error-container: #410002;
+
+  /* Surface */
+  --md-sys-color-surface: #fdfcff;
+  --md-sys-color-on-surface: #1a1c1e;
+  --md-sys-color-on-surface-variant: #43474e;
+  --md-sys-color-surface-dim: #ded9df;
+  --md-sys-color-surface-bright: #fdfcff;
+  --md-sys-color-surface-container-lowest: #ffffff;
+  --md-sys-color-surface-container-low: #f7f2fa;
+  --md-sys-color-surface-container: #f1ecf4;
+  --md-sys-color-surface-container-high: #ece6f0;
+  --md-sys-color-surface-container-highest: #e6e0e9;
+
+  /* Outline / Inverse */
+  --md-sys-color-outline: #73777f;
+  --md-sys-color-outline-variant: #c3c7cf;
+  --md-sys-color-inverse-surface: #2f3033;
+  --md-sys-color-inverse-on-surface: #f1f0f4;
+  --md-sys-color-scrim: #000000;
+  --md-sys-color-shadow: #000000;
+
+  /* 项目扩展角色：MD3 没有 success / warning，这两组不随 seed 生成，保持语义稳定。 */
+  --md-sys-color-success: #1b6c2f;
+  --md-sys-color-on-success: #ffffff;
+  --md-sys-color-success-container: #a5f5b3;
+  --md-sys-color-on-success-container: #00210b;
+  --md-sys-color-warning: #7a5900;
+  --md-sys-color-on-warning: #ffffff;
+  --md-sys-color-warning-container: #ffdf9e;
+  --md-sys-color-on-warning-container: #261a00;
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  /* Primary */
+  --md-sys-color-primary: #9ecaff;
+  --md-sys-color-on-primary: #003258;
+  --md-sys-color-primary-container: #00497d;
+  --md-sys-color-on-primary-container: #d1e4ff;
+  --md-sys-color-inverse-primary: #0061a4;
+
+  /* Secondary */
+  --md-sys-color-secondary: #bbc7db;
+  --md-sys-color-on-secondary: #253140;
+  --md-sys-color-secondary-container: #3b4858;
+  --md-sys-color-on-secondary-container: #d7e3f7;
+
+  /* Tertiary */
+  --md-sys-color-tertiary: #d6bee4;
+  --md-sys-color-on-tertiary: #3b2948;
+  --md-sys-color-tertiary-container: #523f5f;
+  --md-sys-color-on-tertiary-container: #f2daff;
+
+  /* Error */
+  --md-sys-color-error: #ffb4ab;
+  --md-sys-color-on-error: #690005;
+  --md-sys-color-error-container: #93000a;
+  --md-sys-color-on-error-container: #ffdad6;
+
+  /* Surface */
+  --md-sys-color-surface: #1a1c1e;
+  --md-sys-color-on-surface: #e2e2e6;
+  --md-sys-color-on-surface-variant: #c3c7cf;
+  --md-sys-color-surface-dim: #111416;
+  --md-sys-color-surface-bright: #37393c;
+  --md-sys-color-surface-container-lowest: #0f1113;
+  --md-sys-color-surface-container-low: #1a1c1e;
+  --md-sys-color-surface-container: #1e2022;
+  --md-sys-color-surface-container-high: #282a2c;
+  --md-sys-color-surface-container-highest: #333537;
+
+  /* Outline / Inverse */
+  --md-sys-color-outline: #8d9199;
+  --md-sys-color-outline-variant: #43474e;
+  --md-sys-color-inverse-surface: #e2e2e6;
+  --md-sys-color-inverse-on-surface: #2f3033;
+  --md-sys-color-scrim: #000000;
+  --md-sys-color-shadow: #000000;
+
+  /* 项目扩展角色 */
+  --md-sys-color-success: #8ad59a;
+  --md-sys-color-on-success: #003913;
+  --md-sys-color-success-container: #00521f;
+  --md-sys-color-on-success-container: #a5f5b3;
+  --md-sys-color-warning: #f5c04e;
+  --md-sys-color-on-warning: #402d00;
+  --md-sys-color-warning-container: #5b4300;
+  --md-sys-color-on-warning-container: #ffdf9e;
+}

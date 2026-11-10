@@ -142,7 +142,7 @@ function togglePause() {
 
 .sidebar-app-status__name {
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.2;
 }
 

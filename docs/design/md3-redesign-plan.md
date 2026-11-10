@@ -4,9 +4,9 @@
 
 | 项 | 内容 |
 |---|---|
-| 文档版本 | v1.2 |
+| 文档版本 | v1.3 |
 | 编写日期 | 2026-11-09 |
-| 状态 | 已评审，待实施 |
+| 状态 | 实施中（阶段 0–1 已完成） |
 | 适用范围 | `src\WuGesture.App\Web`（配置界面）、`src\WuGesture.App` 中与主题相关的宿主代码 |
 | 不改动 | WebView 消息契约、手势引擎、动作执行、覆盖层渲染逻辑 |
 
@@ -151,7 +151,7 @@
 | scrim | `#000000` | `#000000` |
 | shadow | `#000000` | `#000000` |
 
-命名统一为 `--md-sys-color-*`，全部由 JS 在运行时按 seed 生成并注入，**不在 SCSS 里写死**。
+命名统一为 `--md-sys-color-*`。阶段 1 先在 `src/styles/tokens/_color.scss` 写入 seed `#529EF1` 的基线值作为首屏兜底；阶段 6 起由 JS 按 seed 生成并通过 `<style id="md-scheme">` 覆盖。组件里不得直接引用具体色值。另有两组项目扩展角色 `success*` / `warning*`，不随 seed 生成，保持语义稳定。
 
 ### 4.2 旧变量别名（迁移兼容）
 
@@ -612,7 +612,7 @@ C# 读取强调色 → rules 消息 appearance.systemAccent
 | 阶段 | 状态 | 完成内容 |
 |---|---|---|
 | 阶段 0：设计定稿与工具链地基 | 已完成（2026-11-09） | `tsconfig.json`、`src/env.d.ts`、`typecheck` 脚本、Prettier TS 匹配、CI 类型检查步骤、`#/dev/md3` 令牌预览页；删除 `jsconfig.json` |
-| 阶段 1：令牌层 | 未开始 | — |
+| 阶段 1：令牌层 | 已完成（2026-11-10） | `styles.scss` 拆为 `styles/tokens/*` + `_base` + `_components`；旧变量全部加别名；UnoCSS 写死 rgba 改语义色；恢复 `:focus-visible`；6px 细滚动条；新增 `theme/tokens.ts`、`theme/palettes.ts` |
 | 阶段 2：基础控件 | 未开始 | — |
 | 阶段 3：容器与导航 | 未开始 | — |
 | 阶段 4：页面落地 | 未开始 | — |
@@ -635,7 +635,9 @@ C# 读取强调色 → rules 消息 appearance.systemAccent
 
 | 层 | 文件 |
 |---|---|
-| 全局样式 | `Web/src/styles.scss` |
+| 全局样式 | `Web/src/styles.scss`、`Web/src/styles/tokens/*`、`Web/src/styles/_base.scss`、`Web/src/styles/_components.scss` |
+| 令牌类型 | `Web/src/theme/tokens.ts`、`Web/src/theme/palettes.ts` |
+| UnoCSS | `Web/uno.config.js` |
 | 应用外壳 | `Web/src/App.vue` |
 | 侧栏 | `Web/src/components/sidebar/AppSidebar.vue` |
 | 规则列表 | `Web/src/components/gesture/GestureRuleList.vue` |

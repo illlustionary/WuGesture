@@ -327,11 +327,8 @@ watch(
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
-  scrollbar-width: none;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
+  /* 预留滚动条槽位，滚动条出现/消失时内容不横向跳动。 */
+  scrollbar-gutter: stable;
 }
 
 .route-transition-frame {

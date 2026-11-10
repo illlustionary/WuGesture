@@ -131,7 +131,7 @@ const hasActions = computed(() => props.removable || Boolean(slots.actions))
     background: var(--warning-bg);
     color: var(--warning-text);
     font-size: 10px;
-    font-weight: 800;
+    font-weight: 600;
     border: 1px solid var(--border-inverse-strong);
     box-shadow: var(--shadow-inline);
   }
@@ -139,7 +139,7 @@ const hasActions = computed(() => props.removable || Boolean(slots.actions))
 
 .app-list__fallback {
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .app-list__content {

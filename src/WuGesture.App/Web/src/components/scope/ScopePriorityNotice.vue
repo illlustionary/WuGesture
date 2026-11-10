@@ -25,7 +25,7 @@
     gap: 6px;
     color: var(--accent-strong);
     font-size: 14px;
-    font-weight: 700;
+    font-weight: 600;
   }
 
   &__order span {

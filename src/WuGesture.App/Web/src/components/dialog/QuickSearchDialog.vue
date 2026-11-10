@@ -210,7 +210,7 @@ function handleKeydown(event) {
     margin: 0 0 2px;
     color: var(--muted);
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 600;
   }
 }
 

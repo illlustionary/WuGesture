@@ -341,7 +341,7 @@ const {
   }
   &.is-active {
     color: var(--accent-strong);
-    font-weight: 700;
+    font-weight: 600;
   }
 }
 .sidebar-child__icon {
@@ -354,7 +354,7 @@ const {
   background: var(--interactive-icon-bg);
   color: var(--accent-strong);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
 }
 .sidebar-child__svg-icon {
   padding: 4px;
@@ -438,7 +438,7 @@ const {
 }
 .app-sidebar__help {
   font-size: 17px;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1;
 }
 .app-sidebar.is-collapsed .app-sidebar__collapse svg {

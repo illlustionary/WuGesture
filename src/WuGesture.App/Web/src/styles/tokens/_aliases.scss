@@ -1,0 +1,104 @@
+// 旧变量别名：让存量组件不改一行也能跟着 MD3 色板走。
+// 阶段 2–4 重写组件时逐步删除不再使用的别名；新增代码禁止再引用这里的变量。
+:root {
+  /* 品牌色 */
+  --accent: var(--md-sys-color-primary);
+  --accent-strong: var(--md-sys-color-primary);
+  --accent-soft: color-mix(in srgb, var(--md-sys-color-primary) 12%, transparent);
+  --accent-border: color-mix(in srgb, var(--md-sys-color-primary) 28%, transparent);
+  --accent-border-strong: var(--md-sys-color-primary);
+  --interactive-icon-bg: color-mix(in srgb, var(--md-sys-color-primary) 12%, transparent);
+  --focus-ring: color-mix(in srgb, var(--md-sys-color-primary) 24%, transparent);
+
+  /* 页面与容器 */
+  --bg: var(--md-sys-color-surface-container-lowest);
+  --bg-accent: var(--md-sys-color-surface-container-low);
+  --bg-glow: color-mix(in srgb, var(--md-sys-color-primary) 14%, transparent);
+  --bg-wash: var(--md-sys-color-surface-container);
+  --panel: var(--md-sys-color-surface-container-low);
+  --panel-solid: var(--md-sys-color-surface);
+  --panel-soft: var(--md-sys-color-surface-container-low);
+  --panel-strong: var(--md-sys-color-surface-container-high);
+  --panel-control: var(--md-sys-color-surface-container-highest);
+  --panel-muted: var(--md-sys-color-surface-container);
+  --panel-hover: var(--md-sys-color-surface-container-high);
+  --panel-inset: var(--md-sys-color-surface-container);
+  --section-panel: var(--md-sys-color-surface-container-low);
+
+  /* 边框 */
+  --border: var(--md-sys-color-outline-variant);
+  --border-muted: color-mix(in srgb, var(--md-sys-color-outline-variant) 60%, transparent);
+  --border-subtle: color-mix(in srgb, var(--md-sys-color-outline-variant) 75%, transparent);
+  --border-medium: var(--md-sys-color-outline-variant);
+  --border-dashed: var(--md-sys-color-outline);
+  --border-strong: var(--md-sys-color-outline);
+  --border-inverse: color-mix(in srgb, var(--md-sys-color-inverse-on-surface) 12%, transparent);
+  --border-inverse-strong: var(--md-sys-color-inverse-on-surface);
+
+  /* 文本 */
+  --text: var(--md-sys-color-on-surface);
+  --muted: var(--md-sys-color-on-surface-variant);
+  --muted-strong: var(--md-sys-color-on-surface-variant);
+  --text-subtle: var(--md-sys-color-outline);
+  --text-inverse: var(--md-sys-color-on-primary);
+  --text-preview: var(--md-sys-color-on-surface);
+
+  /* 交互表面 */
+  --interactive-bg: var(--md-sys-color-surface-container-low);
+  --interactive-hover-bg: var(--md-sys-color-surface-container-high);
+  --interactive-active-bg: var(--md-sys-color-surface-container-highest);
+
+  /* 语义色 */
+  --danger: var(--md-sys-color-error);
+  --danger-border: color-mix(in srgb, var(--md-sys-color-error) 34%, transparent);
+  --success-border: color-mix(in srgb, var(--md-sys-color-success) 40%, transparent);
+  --warning-bg: var(--md-sys-color-warning-container);
+  --warning-text: var(--md-sys-color-on-warning-container);
+
+  /* 录制态 */
+  --recording-text: var(--md-sys-color-on-tertiary-container);
+  --recording-bg: var(--md-sys-color-tertiary-container);
+  --recording-bg-start: var(--md-sys-color-tertiary-container);
+  --recording-bg-end: color-mix(in srgb, var(--md-sys-color-tertiary-container) 80%, var(--md-sys-color-surface));
+
+  /* 遮罩与禁用 */
+  --scrim: color-mix(in srgb, var(--md-sys-color-scrim) 32%, transparent);
+  --scrim-subtle: color-mix(in srgb, var(--md-sys-color-scrim) 12%, transparent);
+  --disabled-bg: color-mix(in srgb, var(--md-sys-color-on-surface) 32%, transparent);
+
+  /* 键盘帽 */
+  --keycap-bg-start: var(--md-sys-color-surface-container-highest);
+  --keycap-bg-end: var(--md-sys-color-surface-container-high);
+  --keycap-highlight: rgba(255, 255, 255, 0.6);
+
+  /* 装饰噪点 */
+  --bg-noise-light: rgba(255, 255, 255, 0.16);
+  --bg-noise-dark: rgba(18, 30, 42, 0.02);
+
+  --level-preview-signal: var(--md-sys-color-primary);
+
+  /* 阴影收敛到 MD3 的 3 级：卡片/按钮/侧栏不再有投影。 */
+  --shadow-soft: var(--md-sys-elevation-level0);
+  --shadow-float: var(--md-sys-elevation-level3);
+  --shadow-sidebar: var(--md-sys-elevation-level0);
+  --shadow-panel: var(--md-sys-elevation-level0);
+  --shadow-control: var(--md-sys-elevation-level0);
+  --shadow-accent: var(--md-sys-elevation-level0);
+  --shadow-popover: var(--md-sys-elevation-level2);
+  --shadow-inline: var(--md-sys-elevation-level1);
+  --shadow-thumb: var(--md-sys-elevation-level1);
+
+  /* 圆角 */
+  --radius-xs: var(--md-sys-shape-corner-extra-small);
+  --radius-sm: var(--md-sys-shape-corner-small);
+  --radius-md: var(--md-sys-shape-corner-medium);
+  --radius-lg: var(--md-sys-shape-corner-large);
+  --radius-pill: var(--md-sys-shape-corner-full);
+}
+
+[data-theme='dark'] {
+  /* 暗色下需要单独取值的装饰项，其余别名会自动跟随颜色令牌。 */
+  --keycap-highlight: rgba(255, 255, 255, 0.07);
+  --bg-noise-light: rgba(255, 255, 255, 0.035);
+  --bg-noise-dark: rgba(0, 0, 0, 0.12);
+}

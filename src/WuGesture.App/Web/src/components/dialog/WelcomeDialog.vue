@@ -325,7 +325,7 @@ function previous() {
 
 .welcome-dialog__title {
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .welcome-dialog__lead {
@@ -375,7 +375,7 @@ function previous() {
 .wd-result-text {
   fill: var(--accent-strong);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .wd-pill {

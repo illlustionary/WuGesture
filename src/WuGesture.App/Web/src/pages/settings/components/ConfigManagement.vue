@@ -87,7 +87,7 @@ const emit = defineEmits(['export', 'import', 'reset'])
 .config-management__title {
   margin: 0;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--muted);
 }
 
@@ -110,7 +110,7 @@ const emit = defineEmits(['export', 'import', 'reset'])
 
 .config-management__label {
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text);
 }
 
@@ -129,7 +129,7 @@ const emit = defineEmits(['export', 'import', 'reset'])
   background: var(--panel-control);
   color: var(--text);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
   transition:
     border-color 120ms ease,

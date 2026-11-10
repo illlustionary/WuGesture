@@ -115,7 +115,7 @@ const emit = defineEmits(['close', 'replay'])
 
   h4 {
     font-size: 14px;
-    font-weight: 700;
+    font-weight: 600;
   }
 
   p,

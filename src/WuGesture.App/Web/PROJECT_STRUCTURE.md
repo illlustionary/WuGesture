@@ -31,7 +31,7 @@ src\WuGesture.App\Web
 - `pnpm-lock.yaml`：锁定依赖树。
 - `pnpm-workspace.yaml`：工作区配置，并放行 `@parcel/watcher` 的本地构建脚本，避免非交互环境下依赖安装中断。
 - `tsconfig.json`：TypeScript / Vue 类型检查配置；`allowJs: true` 且 `checkJs: false`，只检查 `src` 下的 `.ts`、`.d.ts` 和 `.vue`，存量 `.js` 与 SFC 不受影响。`@/*` 指向 `src/*`，`@resources/*` 指向桌面宿主的 `Resources/*`。原 `jsconfig.json` 已被该文件取代。
-- `uno.config.js`：UnoCSS 配置，集中定义页面区块、表单、列表等常用 shortcuts。
+- `uno.config.js`：UnoCSS 配置，集中定义页面区块、表单、列表等常用 shortcuts；颜色统一映射到 `--md-sys-color-*` 语义令牌，shortcut 里不再出现写死的 rgba 色值。
 - `vite.config.js`：Vite 构建配置，包含 `vite-svg-loader`、UnoCSS Vite 插件，以及 `@` 到 `src`、`@resources` 到桌面宿主 `Resources` 目录的路径别名。`vite-svg-loader` 的 SVGO 配置覆盖了 `removeViewBox`，保证 24×24 描边图标在按 CSS 缩放到 18px 等尺寸时仍能等比缩放。
 - `PROJECT_STRUCTURE.md`：当前 Web 子项目地图。
 - `node_modules`：本地依赖目录，不纳入源码维护。
@@ -45,6 +45,8 @@ src
 ├─ env.d.ts
 ├─ router
 ├─ styles.scss
+├─ styles
+├─ theme
 ├─ assets
 ├─ components
 ├─ composables
@@ -64,7 +66,12 @@ src
 - `src\env.d.ts`：Vite 客户端类型引用与 `*.svg`、`*.svg?component` 模块声明；后续 TypeScript 文件可直接导入 SVG，无需重复声明。
 - `src\App.vue`：侧栏/页面工作区、路由切换过渡和全局弹窗挂载；窗口标题栏由桌面宿主在 WebView 上方自绘（不进入前端页面），分类/程序侧栏操作和主题状态由组合式函数协调。首次启动引导只在 `state.hostConfigLoaded` 为 true 且 `uiSettings.onboarding.welcomeCompleted` 为 false 时自动弹出，每个会话最多一次，浏览器预览不触发；帮助弹窗由侧栏底部「?」打开。全局弹窗不会随页面卸载，因此 `App.vue` 在路由路径变化时统一关闭应用选择器、手势规则编辑器、快速搜索、帮助弹窗和分类/程序新增重命名弹窗，避免切换页面后残留；欢迎引导和更新弹窗属于全局流程，不受路由切换影响；恢复默认设置的确认弹窗属于设置页，随页面卸载自动关闭。
 - `src\icons\appIcons.js`：本地 SVG 图标的唯一显式注册表；使用文件名作为图标名称，供 `AppIcon` 和业务组件按名称查找。
-- `src\styles.scss`：编辑器全局设计 token、reset、通用按钮、输入框、弹窗和图标样式；常用布局/区块/表单/列表样式优先用 UnoCSS shortcuts，复杂动态样式和组件专属样式放在对应 `.vue` 文件的 scoped SCSS 中。
+- `src\styles.scss`：全局样式入口，只负责按顺序 `@use` 令牌层、基础样式和共用组件类；新增样式不要直接追加到这个文件。
+- `src\styles\tokens\`：MD3 设计令牌层，按 `_color`、`_typescale`、`_shape`、`_spacing`、`_elevation`、`_motion`、`_state`、`_aliases` 拆分。颜色以 seed `#529EF1` 的静态基线兜底，阶段 6 由主题引擎在运行时覆盖；`_aliases.scss` 把 `--bg`、`--panel`、`--accent` 等旧变量映射到新令牌，保证存量组件零改动。
+- `src\styles\_base.scss`：reset、`:focus-visible` 焦点环、6px 细滚动条、原生输入框/滑块/取色器样式。
+- `src\styles\_components.scss`：存量页面共用的 `.section-card`、`.list-stack`、按钮、`.keycap`、弹窗外壳和空状态样式。
+- `src\theme\tokens.ts`：颜色角色、Typescale、形状、间距和动效的类型契约，以及 `colorVar()` 等引用工具；新增令牌时必须与 SCSS 同步。
+- `src\theme\palettes.ts`：8 套预设 seed 色板（蓝/青/绿/紫/粉/橙/红/灰）与默认色 `#529EF1`；保存色值而非索引。
 
 ## Assets
 
@@ -397,4 +404,5 @@ Vitest 直接复用 `vite.config.js` 的路径别名，不需要额外的测试�
 - 前端测试结构、测试命令或测试框架
 - TypeScript 配置、类型检查脚本或 CI 检查步骤
 - 规则编辑器、边缘操作或设置页的核心职责
+- 设计令牌、颜色角色、Typescale、形状/间距/动效令牌或主题类型
 - 图标资产和共享 UI 组件职责

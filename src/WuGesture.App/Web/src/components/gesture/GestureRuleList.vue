@@ -230,7 +230,7 @@ function isWindowAction(rule) {
     min-height: 38px;
     color: var(--muted-strong);
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 600;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     background: var(--panel-muted);
@@ -336,7 +336,7 @@ function isWindowAction(rule) {
     strong {
       color: var(--text);
       font-size: 14px;
-      font-weight: 700;
+      font-weight: 600;
     }
 
     span {
