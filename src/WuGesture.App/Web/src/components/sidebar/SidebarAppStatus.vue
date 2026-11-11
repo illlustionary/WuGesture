@@ -52,37 +52,36 @@ function togglePause() {
 .sidebar-app-status {
   display: flex;
   width: 100%;
-  margin-bottom: 8px;
+  margin-bottom: var(--md-sys-spacing-sm);
 }
 
 .sidebar-app-status__button {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--md-sys-spacing-md);
   width: 100%;
-  min-height: 52px;
-  padding: 8px 10px;
+  min-height: 56px;
+  padding: var(--md-sys-spacing-sm) var(--md-sys-spacing-md);
   border: 0;
-  border-radius: var(--radius-sm);
+  border-radius: var(--md-sys-shape-corner-full);
   background: transparent;
-  color: var(--text);
+  color: var(--md-sys-color-on-surface);
   cursor: pointer;
   text-align: left;
   transition:
-    background-color 120ms ease,
-    color 120ms ease;
+    background-color var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard),
+    color var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
 
   &:hover {
-    background: var(--interactive-hover-bg);
+    background: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent);
   }
 
   &:focus-visible {
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 2px;
+    outline-offset: -2px;
   }
 
   &.is-paused {
-    color: var(--muted);
+    color: var(--md-sys-color-on-surface-variant);
 
     .sidebar-app-status__icon,
     .sidebar-app-status__copy {
@@ -97,7 +96,7 @@ function togglePause() {
   width: 32px;
   height: 32px;
   flex: 0 0 auto;
-  border-radius: 50%;
+  border-radius: var(--md-sys-shape-corner-full);
   object-fit: contain;
   transition:
     filter 120ms ease,
@@ -124,12 +123,13 @@ function togglePause() {
   width: 6px;
   height: 6px;
   flex: 0 0 auto;
-  border-radius: 50%;
-  background: #62c98d;
-  box-shadow: 0 0 0 3px rgba(98, 201, 141, 0.12);
+  border-radius: var(--md-sys-shape-corner-full);
+  background: var(--md-sys-color-success);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--md-sys-color-success) 18%, transparent);
 
   &.is-paused {
-    box-shadow: 0 0 0 3px rgba(214, 165, 71, 0.12);
+    background: var(--md-sys-color-warning);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--md-sys-color-warning) 18%, transparent);
   }
 }
 
@@ -141,14 +141,14 @@ function togglePause() {
 }
 
 .sidebar-app-status__name {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--md-sys-typescale-label-large-size);
+  font-weight: var(--md-sys-typescale-label-large-weight);
   line-height: 1.2;
 }
 
 .sidebar-app-status__version {
-  color: var(--text-subtle);
-  font-size: 11px;
+  color: var(--md-sys-color-outline);
+  font-size: var(--md-sys-typescale-label-small-size);
   font-weight: 400;
   line-height: 1.2;
 }

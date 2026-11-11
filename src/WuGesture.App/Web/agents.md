@@ -19,12 +19,20 @@ This repository is a Vite + Vue 3 web frontend for the WuGesture application. It
 - `src/main.js`: app bootstrap, router setup, and global style import.
 - `src/App.vue`: top-level shell with the main navigation, status bar, and global dialogs.
 - `src/env.d.ts`: Vite client types plus `*.svg` / `*.svg?component` module declarations for TypeScript imports.
-- `src/styles.scss`: shared visual styling entry point for the entire app.
+- `src/styles.scss`: shared visual styling entry point for the entire app; it only `@use`s the token layer, base styles, shared component classes and the Toast override.
 - `src/styles/tokens/`: MD3 design tokens split into color, typescale, shape, spacing, elevation, motion, state and legacy alias partials. Colors ship with a static `#529EF1` baseline and will be overridden by the runtime theme engine in stage 6.
+- `src/styles/_toast.scss`: maps `vue-toastification` to the MD3 Snackbar (`inverseSurface`, 4 radius, 48 min-height, icon colour per type).
 - `src/theme/`: TypeScript contracts for design tokens (`tokens.ts`) and the eight preset seed palettes (`palettes.ts`).
 - `src/types/`: shared TypeScript contracts for base controls (`ui.ts` holds `SelectOption`, `SelectOptionValue`, `ButtonVariant`, `ButtonSize`, `ChipVariant`).
 - `src/gestureEditor/`: gesture editor domain module, including context, narrow stores, and internal workflow modules for rule editing, scope selection, persistence, and WebView message handling.
 - `src/components/`: reusable UI pieces grouped by responsibility: `sidebar/`, `layout/`, `dialog/`, `form/`, `ui/`, `gesture/`, `scope/`, and `rules/`.
+- `src/pages/*/components/`: page-private components that are only used by their owning route, such as category application items and edge/settings form sections.
+- `src/assets/`: SVG assets used by the UI, including add, close, and delete icons. These are imported as Vue components.
+- `src/pages/`: route-level views.
+  - `global/index.vue`: global rule scope page.
+  - `category/index.vue`: category rule scope page.
+  - `app/index.vue`: application rule scope page.
+  - `dev/md3/index.vue`: MD3 design-token preview page, registered only when `import.meta.env.DEV` is true; it never ships in production builds.
 
 ### Base Controls (MD3)
 
@@ -41,17 +49,20 @@ Stage 2 introduced a self-built control kit; new code should use these component
 - `src/components/form/BaseRange.vue`: native range wrapper that keeps the `--range-progress` contract and `$attrs` passthrough (`disabled` relies on it).
 - `src/components/form/AppCheckbox.vue`: 18×18 MD3 checkbox with `indeterminate` support.
 - The global `.primary-button` / `.secondary-button` / `.ghost-button` / `.danger-button` / `.icon-button` classes in `styles/_components.scss` still exist and are now MD3-styled, so untouched legacy markup gets the new look.
-- `src/pages/*/components/`: page-private components that are only used by their owning route, such as category application items and edge/settings form sections.
-- `src/assets/`: SVG assets used by the UI, including add, close, and delete icons. These are imported as Vue components.
-- `src/pages/`: route-level views.
-  - `global/index.vue`: global rule scope page.
-  - `category/index.vue`: category rule scope page.
-  - `app/index.vue`: application rule scope page.
-  - `dev/md3/index.vue`: MD3 design-token preview page, registered only when `import.meta.env.DEV` is true; it never ships in production builds.
+
+### Containers & Navigation (MD3)
+
+Stage 3 rebuilt the page shell, navigation drawer and list containers.
+
+- `src/components/layout/AppShell.vue`: page shell with a 56-high header (`title` / `description` props, `header` and `actions` slots), 24 side/bottom padding and a `min-height: 0` content grid. Pages pass `title` / `description` instead of rendering their own headings.
+- `src/components/sidebar/AppSidebar.vue`: MD3 Navigation Drawer on a 256-wide `surfaceContainerLow` rail; 48-high full-radius items, `secondaryContainer` active pill, 40-high child rows, no left accent bar.
+- `src/components/gesture/GestureRuleList.vue`: list with a 40-high 12/16 muted header and 56-high rows, hover state layer, always-visible delete icon button and `outlineVariant` dividers.
+- `src/components/dialog/BaseDialog.vue`: 28 radius, 24 padding, `surfaceContainerHigh` panel, 22/28 title and `AppButton` action row.
+- `src/styles/_components.scss`: `.section-card` / `.list-stack` are filled cards (12 radius, `surfaceContainerLow`, 1px outline, no shadow); `.page-stack` and sibling cards use a 16 gap instead of collapsed borders.
 
 ## Functional Areas
 
-- Routing is hash-based and currently exposes `global`, `category`, and `app` rule scopes.
+- Routing is hash-based and exposes the `global`, `category`, `app` rule scopes, plus `edge/*`, `exclusions`, `settings/*` and `about`.
 - `src/gestureEditor/context/gestureEditorContext.js` is the main coordination layer for:
   - loading and saving rules,
   - tracking selected scope and application/category state,

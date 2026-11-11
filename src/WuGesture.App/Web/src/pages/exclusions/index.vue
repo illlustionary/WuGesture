@@ -20,23 +20,27 @@ function toggleDisableEdgeActions(application) {
 </script>
 
 <template>
-  <AppShell layout-class="page-shell__grid--single page-shell__grid--editor">
+  <AppShell
+    title="排除项"
+    description="这些程序不会触发手势与边缘操作"
+    layout-class="page-shell__grid--single page-shell__grid--editor"
+  >
+    <template #actions>
+      <IconActionButton
+        icon="add"
+        label="添加程序"
+        color="var(--accent-strong)"
+        class="exclusion-add-button"
+        @click="exclusionsStore.openExcludedApplicationPicker()"
+      />
+    </template>
+
     <template #right>
       <section class="rules-panel">
         <RulesSection
           title="排除项"
           flex
         >
-          <template #actions>
-            <IconActionButton
-              icon="add"
-              label="添加程序"
-              color="var(--accent-strong)"
-              class="exclusion-add-button"
-              @click="exclusionsStore.openExcludedApplicationPicker()"
-            />
-          </template>
-
           <section
             v-if="exclusionsStore.hasExclusions"
             class="exclusion-list"

@@ -1,11 +1,41 @@
+<script setup lang="ts">
+defineProps<{
+  layoutClass?: string
+  title?: string
+  description?: string
+}>()
+</script>
+
 <template>
   <section class="page-shell">
-    <div
-      v-if="$slots.actions"
-      class="page-shell__actions"
+    <header
+      v-if="title || description || $slots.actions || $slots.header"
+      class="page-shell__header"
     >
-      <slot name="actions" />
-    </div>
+      <div class="page-shell__heading">
+        <slot name="header">
+          <h1
+            v-if="title"
+            class="page-shell__title"
+          >
+            {{ title }}
+          </h1>
+          <p
+            v-if="description"
+            class="page-shell__description"
+          >
+            {{ description }}
+          </p>
+        </slot>
+      </div>
+
+      <div
+        v-if="$slots.actions"
+        class="page-shell__actions"
+      >
+        <slot name="actions" />
+      </div>
+    </header>
 
     <div
       class="page-shell__grid"
@@ -17,37 +47,65 @@
   </section>
 </template>
 
-<script setup>
-defineProps({ layoutClass: { type: String, default: '' } })
-</script>
-
 <style scoped lang="scss">
-.panel {
-  border: 1px solid var(--border);
-  background: var(--panel);
-  box-shadow: var(--shadow-soft);
-  backdrop-filter: blur(24px) saturate(1.18);
-}
-
 .page-shell {
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
+  gap: var(--md-sys-spacing-lg);
   width: 100%;
   min-height: 100%;
+  padding: 0 var(--md-sys-spacing-xl) var(--md-sys-spacing-xl);
+
+  &__header {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--md-sys-spacing-lg);
+    min-height: 56px;
+  }
+
+  &__heading {
+    display: grid;
+    min-width: 0;
+    gap: 2px;
+  }
+
+  &__title {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--md-sys-color-on-surface);
+    font-size: var(--md-sys-typescale-title-large-size);
+    line-height: var(--md-sys-typescale-title-large-line-height);
+    font-weight: var(--md-sys-typescale-title-large-weight);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__description {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--md-sys-color-on-surface-variant);
+    font-size: var(--md-sys-typescale-body-small-size);
+    line-height: var(--md-sys-typescale-body-small-line-height);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 
   &__actions {
     display: flex;
+    flex: 0 0 auto;
     align-items: center;
-    justify-content: flex-end;
-    margin-bottom: 12px;
+    gap: var(--md-sys-spacing-sm);
   }
 
   &__grid {
     display: grid;
     flex: 1 1 auto;
-    gap: 0;
-    min-height: 100%;
+    align-items: stretch;
+    gap: var(--md-sys-spacing-xl);
+    min-height: 0;
 
     &--split {
       grid-template-columns: 258px minmax(0, 1fr);

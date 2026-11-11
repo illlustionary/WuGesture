@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import SidebarAppStatus from '@/components/sidebar/SidebarAppStatus.vue'
 import SidebarAboutLink from '@/components/sidebar/SidebarAboutLink.vue'
 import SidebarApplicationSection from '@/components/sidebar/SidebarApplicationSection.vue'
@@ -10,21 +10,26 @@ import SidebarSettingsSection from '@/components/sidebar/SidebarSettingsSection.
 import { useSidebarOverlay } from '@/composables/useSidebarOverlay'
 import { useGestureEditorContext } from '@/gestureEditor/context/gestureEditorContext'
 
-const props = defineProps({
-  isDarkTheme: { type: Boolean, default: false }
-})
+const props = withDefaults(
+  defineProps<{
+    isDarkTheme?: boolean
+  }>(),
+  {
+    isDarkTheme: false
+  }
+)
 
-const emit = defineEmits([
-  'open-help',
-  'open-search',
-  'open-category-dialog',
-  'open-category-rename',
-  'delete-category',
-  'open-app-picker',
-  'open-app-rename',
-  'delete-app',
-  'toggle-theme'
-])
+const emit = defineEmits<{
+  'open-help': []
+  'open-search': []
+  'open-category-dialog': []
+  'open-category-rename': [category: unknown]
+  'delete-category': [name: string]
+  'open-app-picker': []
+  'open-app-rename': [app: unknown]
+  'delete-app': [name: string]
+  'toggle-theme': []
+}>()
 
 const rulesStore = useGestureEditorContext()
 const {
@@ -105,13 +110,13 @@ const {
 <style lang="scss">
 .app-sidebar {
   display: flex;
-  flex: 0 0 238px;
+  flex: 0 0 var(--md-sys-size-sidebar-width);
   flex-direction: column;
-  min-width: 238px;
+  min-width: var(--md-sys-size-sidebar-width);
   height: 100%;
-  padding: 14px 10px;
-  border-right: 1px solid var(--border);
-  background: var(--panel);
+  padding: var(--md-sys-spacing-md);
+  border-right: 1px solid var(--md-sys-color-outline-variant);
+  background: var(--md-sys-color-surface-container-low);
   transition:
     opacity 160ms ease,
     transform 160ms ease;
@@ -126,8 +131,8 @@ const {
     position: fixed;
     z-index: 30;
     inset: 0 auto 0 0;
-    width: 238px;
-    min-width: 238px;
+    width: var(--md-sys-size-sidebar-width);
+    min-width: var(--md-sys-size-sidebar-width);
     visibility: hidden;
     opacity: 0;
     pointer-events: none;
@@ -140,7 +145,6 @@ const {
 
   &.is-overlay-mounted {
     visibility: visible;
-    box-shadow: var(--shadow-sidebar);
   }
 
   &.is-overlay-visible {
@@ -155,7 +159,8 @@ const {
   min-height: 0;
   flex: 1 1 auto;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--md-sys-spacing-xs);
+  padding: 0 var(--md-sys-spacing-xs);
   overflow-y: auto;
   scrollbar-width: thin;
 
@@ -171,64 +176,48 @@ const {
   }
 }
 
+/* NavigationDrawer 一级项：48 高、full 圆角、激活 secondaryContainer 胶囊。 */
 .app-sidebar__item,
 .sidebar-group__head {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--md-sys-spacing-md);
   width: 100%;
-  min-height: 40px;
-  padding: 0 12px;
+  min-height: var(--md-sys-size-sidebar-item);
+  padding: 0 var(--md-sys-spacing-lg);
   border: 0;
-  border-radius: var(--radius-md);
-  color: var(--muted);
-  font-size: 14px;
-  font-weight: 600;
+  border-radius: var(--md-sys-shape-corner-full);
+  color: var(--md-sys-color-on-surface-variant);
+  font-family: inherit;
+  font-size: var(--md-sys-typescale-label-large-size);
+  line-height: var(--md-sys-typescale-label-large-line-height);
+  font-weight: var(--md-sys-typescale-label-large-weight);
   text-decoration: none;
   background: transparent;
   cursor: pointer;
   transition:
-    background-color 120ms ease,
-    color 120ms ease;
+    background-color var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard),
+    color var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
 
   &:hover {
-    color: var(--text);
-    background: var(--interactive-hover-bg);
+    color: var(--md-sys-color-on-surface);
+    background: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent);
   }
 
   &:focus-visible {
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 2px;
+    outline-offset: -2px;
   }
 
   &.is-active {
-    color: var(--accent-strong);
-    background: var(--accent-soft);
-
-    &::after {
-      transform: scaleY(1);
-    }
-  }
-
-  &::after {
-    content: '';
-    position: absolute;
-    top: 8px;
-    bottom: 8px;
-    left: 0;
-    width: 3px;
-    border-radius: 0 3px 3px 0;
-    background: var(--accent-strong);
-    transform: scaleY(0);
-    transform-origin: center;
-    transition: transform 180ms ease-in-out;
+    color: var(--md-sys-color-on-secondary-container);
+    background: var(--md-sys-color-secondary-container);
   }
 }
 
 .app-sidebar__item-icon {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   flex: 0 0 auto;
   fill: none;
 }
@@ -237,198 +226,242 @@ const {
   display: grid;
   gap: 2px;
 }
+
 .sidebar-group__title {
   min-width: 0;
   flex: 1;
   text-align: left;
 }
+
 .sidebar-group__chevron {
   width: 7px;
   height: 7px;
-  margin-right: 3px;
+  margin-right: 4px;
   border-right: 1.5px solid currentColor;
   border-bottom: 1.5px solid currentColor;
   transform: rotate(45deg) translateY(-2px);
-  transition: transform 150ms ease;
+  transition: transform var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
 }
+
 .sidebar-group.is-expanded .sidebar-group__chevron {
   transform: rotate(225deg) translate(-1px, -1px);
 }
+
 .sidebar-group.is-active .sidebar-group__head {
-  color: var(--accent-strong);
+  color: var(--md-sys-color-on-surface);
   background: transparent;
 
-  &::after {
-    transform: scaleY(1);
+  &:hover {
+    background: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent);
   }
 }
+
 .sidebar-group__body {
   display: grid;
-  gap: 5px;
-  padding: 1px 0 4px 14px;
+  gap: 2px;
+  padding: 2px 0 6px var(--md-sys-spacing-lg);
 }
+
 .sidebar-group__toolbar {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--md-sys-spacing-xs);
+  padding: 2px 4px 4px 0;
 }
+
 .sidebar-group__search {
   display: flex;
-  align-items: center;
-  gap: 6px;
   min-width: 0;
   flex: 1;
-  min-height: 30px;
-  padding: 0 8px;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  background: var(--panel-control);
-  color: var(--muted);
+  align-items: center;
+  gap: var(--md-sys-spacing-sm);
+  min-height: 36px;
+  padding: 0 var(--md-sys-spacing-md);
+  border: 1px solid transparent;
+  border-radius: var(--md-sys-shape-corner-full);
+  background: var(--md-sys-color-surface-container-highest);
+  color: var(--md-sys-color-on-surface-variant);
+  transition:
+    border-color var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard),
+    background-color var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
+
+  &:focus-within {
+    border-color: var(--md-sys-color-primary);
+    background: var(--md-sys-color-surface-container-high);
+  }
 
   svg {
-    width: 14px;
-    height: 14px;
+    width: 16px;
+    height: 16px;
     flex: 0 0 auto;
     fill: none;
     stroke: currentColor;
   }
+
   input {
     width: 100%;
     min-width: 0;
-    min-height: 28px;
+    min-height: 32px;
     padding: 0;
     border: 0;
     outline: 0;
     background: transparent;
-    color: var(--text);
-    font-size: 12px;
+    color: var(--md-sys-color-on-surface);
+    font-size: var(--md-sys-typescale-body-medium-size);
   }
 }
+
 .sidebar-group__action {
-  min-width: 30px;
-  min-height: 30px;
+  min-width: 36px;
+  min-height: 36px;
 }
+
 .sidebar-group__children {
   display: grid;
   gap: 2px;
 }
+
 .sidebar-child {
   display: flex;
   align-items: center;
   min-width: 0;
-  border-radius: var(--radius-sm);
+  border-radius: var(--md-sys-shape-corner-full);
+  transition: background-color var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
 
   &:hover,
   &:focus-within {
-    background: var(--interactive-hover-bg);
+    background: color-mix(in srgb, var(--md-sys-color-on-surface) 6%, transparent);
   }
 }
+
 .sidebar-child__link {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--md-sys-spacing-sm);
   min-width: 0;
   flex: 1;
-  min-height: 34px;
-  padding: 4px 5px;
-  border-radius: var(--radius-sm);
-  color: var(--muted);
-  font-size: 12px;
+  min-height: 40px;
+  padding: 0 var(--md-sys-spacing-md);
+  border-radius: var(--md-sys-shape-corner-full);
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--md-sys-typescale-body-medium-size);
+  line-height: var(--md-sys-typescale-body-medium-line-height);
   text-decoration: none;
+  transition:
+    background-color var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard),
+    color var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
 
   &:hover {
-    color: var(--text);
+    color: var(--md-sys-color-on-surface);
   }
+
+  &:focus-visible {
+    outline-offset: -2px;
+  }
+
   &.is-active {
-    color: var(--accent-strong);
-    font-weight: 600;
+    color: var(--md-sys-color-on-secondary-container);
+    background: var(--md-sys-color-secondary-container);
+    font-weight: var(--md-sys-typescale-label-large-weight);
   }
 }
+
 .sidebar-child__icon {
   display: grid;
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   flex: 0 0 auto;
   place-items: center;
-  border-radius: var(--radius-xs);
-  background: var(--interactive-icon-bg);
-  color: var(--accent-strong);
+  border-radius: var(--md-sys-shape-corner-small);
+  background: color-mix(in srgb, var(--md-sys-color-primary) 14%, transparent);
+  color: var(--md-sys-color-primary);
   font-size: 11px;
   font-weight: 600;
 }
+
 .sidebar-child__svg-icon {
   padding: 4px;
   fill: none;
 }
+
 .sidebar-child__copy {
   display: grid;
   min-width: 0;
   gap: 1px;
 }
+
 .sidebar-child__label,
 .sidebar-child__meta {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
 .sidebar-child__meta {
-  color: var(--text-subtle);
-  font-size: 10px;
+  color: var(--md-sys-color-outline);
+  font-size: var(--md-sys-typescale-label-small-size);
 }
+
 .sidebar-child__delete {
   min-width: 28px;
   min-height: 28px;
-  margin-right: 2px;
-  color: var(--danger);
+  margin-right: 4px;
+  color: var(--md-sys-color-error);
   opacity: 0;
-  transition: opacity 120ms ease;
+  transition: opacity var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
 }
+
 .sidebar-child:hover .sidebar-child__delete,
 .sidebar-child:focus-within .sidebar-child__delete,
 .sidebar-child:has(.sidebar-child__link.is-active) .sidebar-child__delete {
   opacity: 1;
 }
+
 .sidebar-group__empty {
-  padding: 5px;
-  color: var(--text-subtle);
-  font-size: 11px;
+  padding: 6px var(--md-sys-spacing-md);
+  color: var(--md-sys-color-outline);
+  font-size: var(--md-sys-typescale-body-small-size);
 }
+
 .app-sidebar__footer {
   display: flex;
   justify-content: space-between;
-  margin-top: 6px;
-  padding: 4px 2px 0;
+  margin-top: var(--md-sys-spacing-sm);
+  padding: var(--md-sys-spacing-xs) 0 0;
 }
+
 .app-sidebar__footer-actions,
 .app-sidebar__footer-controls {
   display: flex;
   gap: 2px;
 }
+
 .app-sidebar__collapse,
 .app-sidebar__theme,
 .app-sidebar__search,
 .app-sidebar__help {
   display: grid;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   place-items: center;
   border: 0;
-  border-radius: var(--radius-md);
+  border-radius: var(--md-sys-shape-corner-full);
   background: transparent;
-  color: var(--muted);
+  color: var(--md-sys-color-on-surface-variant);
   cursor: pointer;
   transition:
-    background-color 120ms ease,
-    color 120ms ease;
+    background-color var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard),
+    color var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
 
   &:hover {
-    color: var(--text);
-    background: var(--interactive-hover-bg);
+    color: var(--md-sys-color-on-surface);
+    background: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent);
   }
+
   &:focus-visible {
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 2px;
+    outline-offset: -2px;
   }
+
   svg {
     width: 20px;
     height: 20px;
@@ -436,11 +469,13 @@ const {
     stroke: currentColor;
   }
 }
+
 .app-sidebar__help {
   font-size: 17px;
   font-weight: 600;
   line-height: 1;
 }
+
 .app-sidebar.is-collapsed .app-sidebar__collapse svg {
   transform: rotate(180deg);
 }

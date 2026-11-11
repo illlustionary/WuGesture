@@ -1,0 +1,65 @@
+// Toast → MD3 Snackbar：inverseSurface、4 圆角、48 高、深色模式一致。
+// vue-toastification 默认带主题色，这里统一覆盖为反色表面，只用图标区分类型。
+.Vue-Toastification__container {
+  z-index: 60;
+}
+
+.Vue-Toastification__toast {
+  min-height: 48px;
+  padding: 12px 16px;
+  border-radius: var(--md-sys-shape-corner-extra-small);
+  background: var(--md-sys-color-inverse-surface);
+  box-shadow: var(--md-sys-elevation-level3);
+  color: var(--md-sys-color-inverse-on-surface);
+  font-family: var(--md-sys-typescale-font-family);
+  font-size: var(--md-sys-typescale-body-medium-size);
+  line-height: var(--md-sys-typescale-body-medium-line-height);
+  font-weight: 400;
+}
+
+.Vue-Toastification__toast--default,
+.Vue-Toastification__toast--info,
+.Vue-Toastification__toast--success,
+.Vue-Toastification__toast--error,
+.Vue-Toastification__toast--warning {
+  background: var(--md-sys-color-inverse-surface);
+  color: var(--md-sys-color-inverse-on-surface);
+}
+
+.Vue-Toastification__toast-body {
+  color: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.Vue-Toastification__icon {
+  margin: auto 12px auto 0;
+  width: 20px;
+  height: 20px;
+}
+
+.Vue-Toastification__toast--success .Vue-Toastification__icon {
+  color: var(--md-sys-color-success);
+}
+
+.Vue-Toastification__toast--warning .Vue-Toastification__icon {
+  color: var(--md-sys-color-warning);
+}
+
+.Vue-Toastification__toast--error .Vue-Toastification__icon {
+  color: var(--md-sys-color-error);
+}
+
+.Vue-Toastification__close-button {
+  color: inherit;
+  opacity: 0.72;
+
+  &:hover,
+  &:focus {
+    opacity: 1;
+  }
+}
+
+.Vue-Toastification__progress-bar {
+  background: var(--md-sys-color-inverse-primary);
+}

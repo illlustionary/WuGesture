@@ -119,7 +119,7 @@ function closeFromMask(event: PointerEvent) {
   z-index: 20;
   display: grid;
   place-items: center;
-  padding: 20px;
+  padding: var(--md-sys-spacing-xl);
   background: var(--scrim);
 }
 
@@ -127,12 +127,11 @@ function closeFromMask(event: PointerEvent) {
   width: min(480px, 100%);
   max-height: calc(100vh - 40px);
   overflow: auto;
-  padding: 16px;
-  border: 1px solid var(--border-medium);
-  border-radius: var(--radius-lg);
-  background: var(--panel);
-  box-shadow: var(--shadow-float);
-  backdrop-filter: blur(28px) saturate(1.2);
+  padding: var(--md-sys-spacing-xl);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-extra-large);
+  background: var(--md-sys-color-surface-container-high);
+  box-shadow: var(--md-sys-elevation-level3);
 }
 
 .base-dialog__head {
@@ -146,15 +145,17 @@ function closeFromMask(event: PointerEvent) {
   min-width: 0;
 
   h3 {
-    font-size: 16px;
-    font-weight: 600;
+    color: var(--md-sys-color-on-surface);
+    font-size: var(--md-sys-typescale-title-large-size);
+    line-height: var(--md-sys-typescale-title-large-line-height);
+    font-weight: var(--md-sys-typescale-title-large-weight);
   }
 
   p {
-    margin-top: 4px;
-    color: var(--muted);
-    font-size: 13px;
-    line-height: 1.5;
+    margin-top: 6px;
+    color: var(--md-sys-color-on-surface-variant);
+    font-size: var(--md-sys-typescale-body-medium-size);
+    line-height: var(--md-sys-typescale-body-medium-line-height);
   }
 }
 
@@ -165,14 +166,14 @@ function closeFromMask(event: PointerEvent) {
 
 .base-dialog__body {
   min-width: 0;
-  margin-top: 12px;
+  margin-top: var(--md-sys-spacing-lg);
 }
 
 .base-dialog__actions {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
-  margin-top: 20px;
+  gap: var(--md-sys-spacing-sm);
+  margin-top: var(--md-sys-spacing-xl);
 }
 
 .base-dialog-enter-active,

@@ -45,7 +45,11 @@ function addApplication() {
 </script>
 
 <template>
-  <AppShell layout-class="page-shell__grid--single page-shell__grid--editor">
+  <AppShell
+    :title="selectedName || '分类'"
+    description="分类下的关联程序与手势规则"
+    layout-class="page-shell__grid--single page-shell__grid--editor"
+  >
     <template #right>
       <section
         v-if="selectedName"

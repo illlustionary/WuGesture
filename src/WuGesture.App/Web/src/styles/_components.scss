@@ -4,39 +4,59 @@
 
 .surface-card {
   border: 1px solid var(--md-sys-color-outline-variant);
-  border-radius: var(--md-sys-shape-corner-none);
+  border-radius: var(--md-sys-shape-corner-medium);
   background: var(--md-sys-color-surface-container-low);
   box-shadow: var(--md-sys-elevation-level0);
 }
 
+/* Filled Card：12 圆角、surfaceContainerLow、1px 描边、无阴影。 */
 .section-card {
   display: flex;
   min-width: 0;
   flex-direction: column;
-  gap: 20px;
-  padding: 22px;
+  gap: var(--md-sys-spacing-lg);
+  padding: var(--md-sys-spacing-xl);
   border: 1px solid var(--md-sys-color-outline-variant);
-  border-top: none;
-  border-bottom: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-medium);
   background: var(--md-sys-color-surface-container-low);
+  box-shadow: var(--md-sys-elevation-level0);
+}
+
+.page-stack {
+  display: grid;
+  align-content: start;
+  gap: var(--md-sys-spacing-lg);
+  min-width: 0;
 }
 
 .list-stack {
   display: grid;
   gap: 0;
+  overflow: hidden;
   border: 1px solid var(--md-sys-color-outline-variant);
   border-radius: var(--md-sys-shape-corner-medium);
-  overflow: hidden;
+  background: var(--md-sys-color-surface-container-low);
 }
 
-.page-stack > .section-card + .section-card,
-.rules-panel > .section-card + .section-card,
 .list-stack > * + * {
-  border-top-width: 0 !important;
+  border-top: 1px solid var(--md-sys-color-outline-variant);
 }
 
-.page-shell__grid--split > .rules-panel > .section-card {
-  border-left-width: 0;
+.rules-panel > .section-card + .section-card {
+  margin-top: var(--md-sys-spacing-lg);
+}
+
+.section-title {
+  color: var(--md-sys-color-on-surface);
+  font-size: var(--md-sys-typescale-title-medium-size);
+  line-height: var(--md-sys-typescale-title-medium-line-height);
+  font-weight: var(--md-sys-typescale-title-medium-weight);
+}
+
+.section-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--md-sys-spacing-sm);
 }
 
 .primary-button,
@@ -167,7 +187,7 @@
 
 .modal-panel {
   width: min(480px, 100%);
-  padding: 24px;
+  padding: var(--md-sys-spacing-xl);
   border: 1px solid var(--md-sys-color-outline-variant);
   border-radius: var(--md-sys-shape-corner-extra-large);
   background: var(--md-sys-color-surface-container-high);

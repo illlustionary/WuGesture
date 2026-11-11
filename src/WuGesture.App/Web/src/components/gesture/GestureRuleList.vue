@@ -1,3 +1,110 @@
+<script setup lang="ts">
+import AppIcon from '@/components/ui/AppIcon.vue'
+import IconActionButton from '@/components/ui/IconActionButton.vue'
+import { ACTION_TYPES, WHEEL_DIRECTIONS } from '@/constants/gestureEditorOptions'
+
+interface RuleRow {
+  id: string | number
+  actionName?: string
+  patternText?: string
+  wheelModifier?: string
+  mouseButton?: string
+  keysText?: string
+  actionType?: string
+  [key: string]: unknown
+}
+
+interface DirectionDetails {
+  label: string
+  rotation: number
+}
+
+interface GestureSegment extends DirectionDetails {
+  value: string
+  isDirection: boolean
+  isWheel?: boolean
+}
+
+const DIRECTION_DETAILS: Record<string, DirectionDetails> = {
+  Up: { label: '向上', rotation: 180 },
+  Down: { label: '向下', rotation: 0 },
+  Left: { label: '向左', rotation: 90 },
+  Right: { label: '向右', rotation: -90 },
+  UpLeft: { label: '向左上', rotation: 135 },
+  UpRight: { label: '向右上', rotation: -135 },
+  DownLeft: { label: '向左下', rotation: 45 },
+  DownRight: { label: '向右下', rotation: -45 }
+}
+
+const BUTTON_LABELS: Record<string, string> = {
+  right: '右键',
+  middle: '中键'
+}
+
+defineProps<{
+  rules: RuleRow[]
+  getGestureMnemonic?: ((rule: RuleRow) => string) | null
+  getActionLabel?: ((rule: RuleRow) => string) | null
+}>()
+
+const emit = defineEmits<{
+  remove: [id: string | number]
+  edit: [id: string | number]
+  rename: [rule: RuleRow, value: string]
+}>()
+
+function gestureSegments(rule: RuleRow): GestureSegment[] {
+  const segments: GestureSegment[] = String(rule?.patternText ?? '')
+    .split(/[\s,，]+/)
+    .map(part => part.trim())
+    .filter(Boolean)
+    .map(value => {
+      const direction = DIRECTION_DETAILS[value]
+
+      return direction
+        ? { value, ...direction, isDirection: true }
+        : { value, label: value, rotation: 0, isDirection: false }
+    })
+
+  const modifier = String(rule?.wheelModifier ?? '').toLowerCase()
+  if (modifier === WHEEL_DIRECTIONS.up || modifier === WHEEL_DIRECTIONS.down) {
+    const isDown = modifier === WHEEL_DIRECTIONS.down
+    segments.push({
+      value: `wheel-${modifier}`,
+      label: isDown ? '滚轮向下' : '滚轮向上',
+      rotation: isDown ? 0 : 180,
+      isDirection: true,
+      isWheel: true
+    })
+  }
+
+  return segments
+}
+
+function mouseButtonLabel(rule: RuleRow): string {
+  return BUTTON_LABELS[String(rule?.mouseButton ?? '').toLowerCase()] ?? '右键'
+}
+
+function actionKeys(rule: RuleRow): string[] {
+  if (isWindowAction(rule)) {
+    return []
+  }
+
+  return String(rule?.keysText ?? '')
+    .split('+')
+    .map(part => part.trim())
+    .filter(Boolean)
+}
+
+function isWindowAction(rule: RuleRow): boolean {
+  return String(rule?.actionType ?? '').toLowerCase() === ACTION_TYPES.window
+}
+
+function emitRename(rule: RuleRow, event: Event) {
+  emit('rename', rule, (event.target as HTMLInputElement).value)
+}
+</script>
+
 <template>
   <div class="gesture-table">
     <header class="gesture-table__head">
@@ -16,19 +123,19 @@
           v-for="rule in rules"
           :key="rule.id"
           class="gesture-table__row"
-          @dblclick="$emit('edit', rule.id)"
+          @dblclick="emit('edit', rule.id)"
         >
           <input
             :value="rule.actionName"
             class="gesture-table__cell gesture-table__cell--name"
             placeholder="名称"
             spellcheck="false"
-            @blur="$emit('rename', rule, $event.target.value)"
+            @blur="emitRename(rule, $event)"
           />
           <button
             type="button"
             class="gesture-table__cell gesture-pattern-button gesture"
-            @click="$emit('edit', rule.id)"
+            @click="emit('edit', rule.id)"
           >
             <span
               v-if="gestureSegments(rule).length > 0"
@@ -80,7 +187,7 @@
           <button
             type="button"
             class="gesture-table__cell command-button"
-            @click.stop="$emit('edit', rule.id)"
+            @click.stop="emit('edit', rule.id)"
           >
             <template v-if="isWindowAction(rule)">
               <span class="keycap keycap--subtle">{{ getActionLabel?.(rule) || '窗口控制' }}</span>
@@ -106,7 +213,7 @@
             label="删除规则"
             tone="danger"
             class="gesture-table__remove icon-button icon-button--danger"
-            @click="$emit('remove', rule.id)"
+            @click="emit('remove', rule.id)"
           />
         </div>
       </div>
@@ -122,89 +229,15 @@
   </div>
 </template>
 
-<script setup>
-import AppIcon from '@/components/ui/AppIcon.vue'
-import IconActionButton from '@/components/ui/IconActionButton.vue'
-import { ACTION_TYPES, WHEEL_DIRECTIONS } from '@/constants/gestureEditorOptions'
-const DIRECTION_DETAILS = {
-  Up: { label: '向上', rotation: 180 },
-  Down: { label: '向下', rotation: 0 },
-  Left: { label: '向左', rotation: 90 },
-  Right: { label: '向右', rotation: -90 },
-  UpLeft: { label: '向左上', rotation: 135 },
-  UpRight: { label: '向右上', rotation: -135 },
-  DownLeft: { label: '向左下', rotation: 45 },
-  DownRight: { label: '向右下', rotation: -45 }
-}
-
-const BUTTON_LABELS = {
-  right: '右键',
-  middle: '中键'
-}
-
-defineProps({
-  rules: { type: Array, required: true },
-  getGestureMnemonic: { type: Function, default: null },
-  getActionLabel: { type: Function, default: null }
-})
-
-defineEmits(['remove', 'edit', 'rename'])
-
-function gestureSegments(rule) {
-  const segments = String(rule?.patternText ?? '')
-    .split(/[\s,，]+/)
-    .map(part => part.trim())
-    .filter(Boolean)
-    .map(value => {
-      const direction = DIRECTION_DETAILS[value]
-
-      return direction ? { value, ...direction, isDirection: true } : { value, label: value, isDirection: false }
-    })
-
-  const modifier = String(rule?.wheelModifier ?? '').toLowerCase()
-  if (modifier === WHEEL_DIRECTIONS.up || modifier === WHEEL_DIRECTIONS.down) {
-    const isDown = modifier === WHEEL_DIRECTIONS.down
-    segments.push({
-      value: `wheel-${modifier}`,
-      label: isDown ? '滚轮向下' : '滚轮向上',
-      rotation: isDown ? 0 : 180,
-      isDirection: true,
-      isWheel: true
-    })
-  }
-
-  return segments
-}
-
-function mouseButtonLabel(rule) {
-  return BUTTON_LABELS[String(rule?.mouseButton ?? '').toLowerCase()] ?? '右键'
-}
-
-function actionKeys(rule) {
-  if (isWindowAction(rule)) {
-    return []
-  }
-
-  return String(rule?.keysText ?? '')
-    .split('+')
-    .map(part => part.trim())
-    .filter(Boolean)
-}
-
-function isWindowAction(rule) {
-  return String(rule?.actionType ?? '').toLowerCase() === ACTION_TYPES.window
-}
-</script>
-
 <style scoped lang="scss">
 .gesture-table {
   display: flex;
   flex-direction: column;
   gap: 0;
   overflow: hidden;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  background: var(--panel-soft);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-medium);
+  background: var(--md-sys-color-surface-container-low);
 
   &__body {
     padding: 0;
@@ -214,27 +247,26 @@ function isWindowAction(rule) {
   &__row,
   &__empty {
     margin: 0;
-    padding: 0 10px;
+    padding: 0 var(--md-sys-spacing-md);
   }
 
   &__head,
   &__row {
     display: grid;
     grid-template-columns: minmax(150px, 1fr) minmax(230px, 1.45fr) minmax(170px, 1.25fr) 44px;
-    gap: 8px;
+    gap: var(--md-sys-spacing-sm);
     align-items: center;
   }
 
   &__head {
     text-align: left;
-    min-height: 38px;
-    color: var(--muted-strong);
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    background: var(--panel-muted);
-    border-bottom: 1px solid var(--border-muted);
+    min-height: 40px;
+    color: var(--md-sys-color-on-surface-variant);
+    font-size: var(--md-sys-typescale-label-medium-size);
+    line-height: var(--md-sys-typescale-label-medium-line-height);
+    font-weight: var(--md-sys-typescale-label-medium-weight);
+    background: var(--md-sys-color-surface-container);
+    border-bottom: 1px solid var(--md-sys-color-outline-variant);
 
     .gesture {
       text-align: center;
@@ -243,7 +275,7 @@ function isWindowAction(rule) {
 
   &__head-name,
   &__head-command {
-    padding-inline: 12px;
+    padding-inline: var(--md-sys-spacing-md);
   }
 
   &__rows {
@@ -251,20 +283,22 @@ function isWindowAction(rule) {
     gap: 0;
   }
 
+  /* List 行：56 高、hover 状态层、底部 1px 分割线。 */
   &__row {
-    min-height: 60px;
-    padding-block: 1px;
+    min-height: var(--md-sys-size-row-single);
+    padding-block: 0;
     border: 0;
-    border-bottom: 1px solid var(--border-muted);
+    border-bottom: 1px solid var(--md-sys-color-outline-variant);
     border-radius: 0;
-    background: var(--interactive-bg);
-    transition:
-      background-color 140ms ease,
-      border-color 140ms ease;
+    background: transparent;
+    transition: background-color var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
 
     &:hover {
-      background: var(--interactive-hover-bg);
-      box-shadow: inset 2px 0 0 var(--accent);
+      background: color-mix(in srgb, var(--md-sys-color-on-surface) 6%, transparent);
+    }
+
+    &:focus-within {
+      background: color-mix(in srgb, var(--md-sys-color-on-surface) 4%, transparent);
     }
   }
 
@@ -275,68 +309,72 @@ function isWindowAction(rule) {
   &__cell {
     width: 100%;
     min-height: 40px;
-    padding: 8px 12px;
+    padding: 0 var(--md-sys-spacing-md);
     border: none;
-    border-radius: var(--radius-md);
+    border-radius: var(--md-sys-shape-corner-small);
     background-color: transparent;
   }
 
   &__cell--name {
-    padding-inline: 12px;
+    padding-inline: var(--md-sys-spacing-md);
     border: 1px solid transparent;
-    color: var(--text);
+    color: var(--md-sys-color-on-surface);
     text-align: left;
-    font-weight: 600;
+    font-weight: var(--md-sys-typescale-label-large-weight);
     transition:
-      border-color 120ms ease,
-      box-shadow 120ms ease,
-      background-color 120ms ease;
+      border-color var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard),
+      box-shadow var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard),
+      background-color var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
+
+    &:hover {
+      background: var(--md-sys-color-surface-container-highest);
+    }
 
     &:focus {
       outline: none;
-      border-color: var(--accent-border-strong);
-      background: var(--panel-control);
-      box-shadow: 0 0 0 4px var(--focus-ring);
+      border-color: transparent;
+      background: var(--md-sys-color-surface-container-highest);
+      box-shadow: inset 0 -2px 0 0 var(--md-sys-color-primary);
     }
   }
 
   :deep(.gesture-table__remove) {
     flex-shrink: 0;
     justify-self: end;
-    opacity: 0;
-    transform: translateY(2px);
-    pointer-events: none;
-    svg {
-      width: 16px;
-      height: 16px;
-    }
-  }
-
-  &__row:hover :deep(.gesture-table__remove),
-  &__row:focus-within :deep(.gesture-table__remove) {
+    color: var(--md-sys-color-on-surface-variant);
     opacity: 1;
-    transform: translateY(0);
     pointer-events: auto;
+
+    &:hover,
+    &:focus-visible {
+      color: var(--md-sys-color-error);
+    }
+
+    svg {
+      width: 18px;
+      height: 18px;
+    }
   }
 
   &__empty {
     display: grid;
-    gap: 4px;
+    gap: var(--md-sys-spacing-xs);
     min-height: 146px;
     align-content: center;
     justify-items: center;
-    margin: 0;
-    padding: 20px 18px;
-    border: 1px dashed var(--border-dashed);
-    border-radius: 0;
-    background: var(--panel-soft);
-    color: var(--muted);
+    margin: var(--md-sys-spacing-md);
+    padding: var(--md-sys-spacing-xl) var(--md-sys-spacing-lg);
+    border: 1px dashed var(--md-sys-color-outline);
+    border-radius: var(--md-sys-shape-corner-medium);
+    background: transparent;
+    color: var(--md-sys-color-on-surface-variant);
     text-align: center;
 
     strong {
-      color: var(--text);
-      font-size: 14px;
-      font-weight: 600;
+      color: var(--md-sys-color-on-surface);
+      font-size: var(--md-sys-typescale-title-small-size);
+      line-height: var(--md-sys-typescale-title-small-line-height);
+      font-weight: var(--md-sys-typescale-title-small-weight);
     }
 
     span {
@@ -350,9 +388,9 @@ function isWindowAction(rule) {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: var(--md-sys-spacing-sm);
   min-height: 40px;
-  padding: 10px 12px;
+  padding: 0 var(--md-sys-spacing-md);
   overflow: hidden;
   border: none;
   appearance: none;
@@ -361,8 +399,12 @@ function isWindowAction(rule) {
   text-align: center;
   cursor: pointer;
   transition:
-    background-color 140ms ease,
-    color 140ms ease;
+    background-color var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard),
+    color var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
+
+  &:hover {
+    background: color-mix(in srgb, var(--md-sys-color-on-surface) 6%, transparent);
+  }
 
   &__keys {
     display: inline-flex;
@@ -382,8 +424,8 @@ function isWindowAction(rule) {
   }
 
   &__wheel-text {
-    font-size: 11px;
-    font-weight: 600;
+    font-size: var(--md-sys-typescale-label-small-size);
+    font-weight: var(--md-sys-typescale-label-small-weight);
     letter-spacing: 0.02em;
   }
 
@@ -398,7 +440,7 @@ function isWindowAction(rule) {
   }
 
   &__empty {
-    color: var(--muted);
+    color: var(--md-sys-color-on-surface-variant);
   }
 }
 
@@ -411,17 +453,20 @@ function isWindowAction(rule) {
   border: none;
   appearance: none;
   background: transparent;
-  color: inherit;
+  color: var(--md-sys-color-on-surface);
   text-align: left;
   white-space: normal;
   cursor: pointer;
-  color: var(--text);
   transition:
-    background-color 140ms ease,
-    color 140ms ease;
+    background-color var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard),
+    color var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
+
+  &:hover {
+    background: color-mix(in srgb, var(--md-sys-color-on-surface) 6%, transparent);
+  }
 
   &__empty {
-    color: var(--muted);
+    color: var(--md-sys-color-on-surface-variant);
   }
 }
 </style>

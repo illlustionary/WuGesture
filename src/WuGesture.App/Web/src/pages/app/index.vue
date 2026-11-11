@@ -50,7 +50,11 @@ const orderedCategories = computed({
 </script>
 
 <template>
-  <AppShell layout-class="page-shell__grid--single page-shell__grid--editor">
+  <AppShell
+    :title="selectedApplication?.displayName || selectedName || '程序'"
+    description="程序关联的分类与专属手势规则"
+    layout-class="page-shell__grid--single page-shell__grid--editor"
+  >
     <template #right>
       <section
         v-if="selectedName"

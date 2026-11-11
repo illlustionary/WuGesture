@@ -18,6 +18,19 @@ const props = defineProps({
   section: { type: String, default: 'mouse-trail' }
 })
 
+const SECTION_TITLES = {
+  config: '配置管理',
+  'mouse-trail': '鼠标轨迹',
+  'gesture-hint': '手势提示',
+  'level-osd': '音量/亮度提示',
+  sensitivity: '手势灵敏度',
+  'app-behavior': '应用行为',
+  sidebar: '侧栏',
+  update: '更新',
+  webdav: 'WebDAV'
+}
+const pageTitle = computed(() => SECTION_TITLES[props.section] ?? '设置')
+
 const settingsStore = useGestureEditorContext()
 const {
   draft,
@@ -78,7 +91,10 @@ function previewLevelOsd(kind) {
 </script>
 
 <template>
-  <AppShell layout-class="page-shell__grid--single page-shell__grid--settings">
+  <AppShell
+    :title="pageTitle"
+    layout-class="page-shell__grid--single page-shell__grid--settings"
+  >
     <template #right>
       <section class="page-stack">
         <ConfigManagement

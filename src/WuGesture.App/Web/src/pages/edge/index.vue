@@ -128,7 +128,11 @@ function recordHotkey() {
 </script>
 
 <template>
-  <AppShell layout-class="page-shell__grid--single">
+  <AppShell
+    :title="activeGroup.title"
+    description="鼠标移动到屏幕边缘时执行的动作"
+    layout-class="page-shell__grid--single"
+  >
     <template #right>
       <div class="page-stack">
         <EdgeActionSection

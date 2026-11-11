@@ -67,10 +67,11 @@ src
 - `src\env.d.ts`：Vite 客户端类型引用与 `*.svg`、`*.svg?component` 模块声明；后续 TypeScript 文件可直接导入 SVG，无需重复声明。
 - `src\App.vue`：侧栏/页面工作区、路由切换过渡和全局弹窗挂载；窗口标题栏由桌面宿主在 WebView 上方自绘（不进入前端页面），分类/程序侧栏操作和主题状态由组合式函数协调。首次启动引导只在 `state.hostConfigLoaded` 为 true 且 `uiSettings.onboarding.welcomeCompleted` 为 false 时自动弹出，每个会话最多一次，浏览器预览不触发；帮助弹窗由侧栏底部「?」打开。全局弹窗不会随页面卸载，因此 `App.vue` 在路由路径变化时统一关闭应用选择器、手势规则编辑器、快速搜索、帮助弹窗和分类/程序新增重命名弹窗，避免切换页面后残留；欢迎引导和更新弹窗属于全局流程，不受路由切换影响；恢复默认设置的确认弹窗属于设置页，随页面卸载自动关闭。
 - `src\icons\appIcons.js`：本地 SVG 图标的唯一显式注册表；使用文件名作为图标名称，供 `AppIcon` 和业务组件按名称查找。
-- `src\styles.scss`：全局样式入口，只负责按顺序 `@use` 令牌层、基础样式和共用组件类；新增样式不要直接追加到这个文件。
+- `src\styles.scss`：全局样式入口，只负责按顺序 `@use` 令牌层、基础样式、共用组件类和 Toast 覆盖；新增样式不要直接追加到这个文件。
 - `src\styles\tokens\`：MD3 设计令牌层，按 `_color`、`_typescale`、`_shape`、`_spacing`、`_elevation`、`_motion`、`_state`、`_aliases` 拆分。颜色以 seed `#529EF1` 的静态基线兜底，阶段 6 由主题引擎在运行时覆盖；`_aliases.scss` 把 `--bg`、`--panel`、`--accent` 等旧变量映射到新令牌，保证存量组件零改动。
 - `src\styles\_base.scss`：reset、`:focus-visible` 焦点环、6px 细滚动条、原生输入框/滑块/取色器样式。
-- `src\styles\_components.scss`：存量页面共用的 `.section-card`、`.list-stack`、`.primary-button` / `.secondary-button` / `.ghost-button` / `.danger-button`、`.keycap`、`.icon-button`、弹窗外壳和空状态样式；按钮类已按 MD3 统一为高 40、full 圆角、状态层。
+- `src\styles\_components.scss`：存量页面共用的容器与按钮类。`.section-card` / `.list-stack` 为 Filled Card（12 圆角、`surfaceContainerLow`、1px 描边、无阴影），`.page-stack` 与相邻卡片改用 16 间距；`.section-title` / `.section-actions` 统一分组标题与操作区；`.primary-button` / `.secondary-button` / `.ghost-button` / `.danger-button` / `.keycap` / `.icon-button` / 弹窗外壳和空状态样式均已映射到 MD3。
+- `src\styles\_toast.scss`：把 `vue-toastification` 统一成 MD3 Snackbar：`inverseSurface` 背景、4 圆角、48 最小高度，各类型只给图标着色。
 - `src\theme\tokens.ts`：颜色角色、Typescale、形状、间距和动效的类型契约，以及 `colorVar()` 等引用工具；新增令牌时必须与 SCSS 同步。
 - `src\theme\palettes.ts`：8 套预设 seed 色板（蓝/青/绿/紫/粉/橙/红/灰）与默认色 `#529EF1`；保存色值而非索引。
 - `src\types\ui.ts`：基础控件的共享类型契约（`SelectOption`、`SelectOptionValue`、`ButtonVariant`、`ButtonSize`、`ChipVariant`）。
@@ -89,7 +90,7 @@ src
 - `src\components\form\ToggleCheckbox.vue`：MD3 Switch（轨道 52×32、滑块 24/16），整行可点、Switch 在行尾，保留 `label` / `note` 与 `change` 事件。
 - `src\components\form\BaseRange.vue`：原生 range 包装，保留 `--range-progress` 契约与 `$attrs` 透传（`disabled` 由此生效）。
 - `src\components\form\AppCheckbox.vue`：18×18 MD3 复选框，支持 `indeterminate`。
-- 阶段 2 已完成的重写组件统一为 `<script setup lang="ts">`；存量 `.js` 逻辑层未迁移。
+- 阶段 2–3 重写的组件统一为 `<script setup lang="ts">`（含 `AppShell`、`AppSidebar`、`GestureRuleList`）；存量 `.js` 逻辑层未迁移。
 
 ## Assets
 
@@ -117,12 +118,12 @@ SVG 按使用位置分目录：
 src\components
 ```
 
-- `sidebar\`：侧栏壳和固定导航、分类、程序、边缘操作、设置、关于&更新及底部区域组件。
-- `layout\`：`AppShell.vue` 页面布局壳和 `NestedRouteView.vue` 嵌套路由承载组件。
-- `dialog\`：`BaseDialog.vue`、`ConfirmDialog.vue`、`QuickSearchDialog.vue`、`UpdateDialog.vue`、`WelcomeDialog.vue` 和 `HelpDialog.vue` 等共享对话框；`BaseDialog` 统一遮罩关闭、可选右上关闭按钮、默认操作区和关闭动画，自动保存或即时选择类弹层可复用外壳并关闭默认操作区；`UpdateDialog` 展示版本差异、发行说明、下载进度和失败后的重试/发布页入口，下载中禁止遮罩关闭；`WelcomeDialog` 是首次启动的三屏欢迎引导，`HelpDialog` 收拢快速上手、规则生效顺序、边缘操作和常见问题，并提供「重新观看引导」和文档外链。
+- `sidebar\`：MD3 Navigation Drawer 壳和固定导航、分类、程序、边缘操作、设置、关于&更新及底部区域组件；一级项 48 高、full 圆角，激活态为 `secondaryContainer` 胶囊，子项 40 高。
+- `layout\`：`AppShell.vue` 页面布局壳（56 高页面头 + 标题/描述 + `actions` 插槽 + 24 内边距内容网格）和 `NestedRouteView.vue` 嵌套路由承载组件；页面通过 `title` / `description` 传入页面头内容，不再自己渲染标题。
+- `dialog\`：`BaseDialog.vue`、`ConfirmDialog.vue`、`QuickSearchDialog.vue`、`UpdateDialog.vue`、`WelcomeDialog.vue` 和 `HelpDialog.vue` 等共享对话框；`BaseDialog` 统一为 28 圆角、24 内边距、`surfaceContainerHigh` 面板，标题 22/28，默认操作区使用 `AppButton`，并保留遮罩关闭、可选右上关闭按钮和关闭动画；自动保存或即时选择类弹层可复用外壳并关闭默认操作区；`UpdateDialog` 展示版本差异、发行说明、下载进度和失败后的重试/发布页入口，下载中禁止遮罩关闭；`WelcomeDialog` 是首次启动的三屏欢迎引导，`HelpDialog` 收拢快速上手、规则生效顺序、边缘操作和常见问题，并提供「重新观看引导」和文档外链。
 - `form\`：`BaseInput.vue`、`BaseRange.vue`、`CustomSelect.vue` 和 `ToggleCheckbox.vue` 等共享表单控件；`BaseInput` / `BaseRange` 统一原生输入控件的 `v-model` 事件、宽度约束和滑块进度填充，页面只保留各自的配置约束与保存时机。
 - `ui\`：`AppIcon.vue`、`HoverBubble.vue` 和 `IconActionButton.vue` 等基础 UI 控件。
-- `gesture\`：`GestureRuleDialog.vue`、`GestureRuleList.vue` 以及 `gesture\rule-dialog\fields\` 下的规则字段组件；`GestureRuleGestureField.vue` 负责方向手势录制、按住按键、滚轮修饰和触发方式控件，`GestureRuleList.vue` 依次渲染方向箭头与「滚轮」上下修饰。
+- `gesture\`：`GestureRuleDialog.vue`、`GestureRuleList.vue` 以及 `gesture\rule-dialog\fields\` 下的规则字段组件；`GestureRuleList.vue` 按 MD3 List 排版（表头 40 高 / 12/16 500，行 56 高，hover 状态层，删除按钮常显），依次渲染方向箭头与「滚轮」上下修饰；`GestureRuleGestureField.vue` 负责方向手势录制、按住按键、滚轮修饰和触发方式控件。
 - `scope\`：`ScopeCreateDialog.vue`、`ScopePriorityNotice.vue` 和 `ApplicationListItem.vue` 等作用域配置共享组件；程序项仅路径文本可点击以打开所在文件夹，并以可选操作区支持分类页的移除按钮。
 - `rules\RulesSection.vue`：规则页右侧复用区块，统一标题、说明、操作区和内容面板。
 
@@ -254,7 +255,7 @@ src\pages
 
 ## 当前 UI
 
-界面外壳：窗口控制由桌面宿主自绘的标题栏负责（标题条位于 WebView 上方，属于宿主绘制区域，不进入前端页面）；其下方侧栏顶部的 `SidebarAppStatus` 组件可点击，临时暂停或恢复 WuGesture，并在图标右侧显示名称与程序集版本。侧栏的导航、分类、程序、边缘操作、设置和关于&更新各自使用独立区域组件，页脚控制也独立封装；分类/程序子项动态来自当前配置，边缘操作和设置子项对应独立嵌套路由，关于&更新是与导航同级的最外层入口（`/about`）。侧栏收起状态保存在 `uiSettings.sidebar.collapsed`，重建配置页面后保持不变。收起时热区通过 `v-show` 控制，侧栏自身以固定定位、`visibility`、透明度和鼠标事件状态隐藏；导航分组内容继续参与布局，因此不会压缩滚动高度或重置滚动位置。进入热区后淡入，离开侧栏后淡出。侧栏只有一个滚动区域：导航列（`.app-sidebar__nav`）整体滚动，展开后的分类/程序子项按内容自然撑开，分组内部不再单独滚动。
+界面外壳：窗口控制由桌面宿主自绘的标题栏负责（标题条位于 WebView 上方，属于宿主绘制区域，不进入前端页面）；其下方是 256 宽的 MD3 Navigation Drawer，一级项 48 高、full 圆角，激活态为 `secondaryContainer` 胶囊，子项 40 高。每个页面在内容区顶部保留 56 高页面头，显示标题（22/28）与描述（12/16），页面级操作放在头部右侧。侧栏顶部的 `SidebarAppStatus` 组件可点击，临时暂停或恢复 WuGesture，并在图标右侧显示名称与程序集版本。侧栏的导航、分类、程序、边缘操作、设置和关于&更新各自使用独立区域组件，页脚控制也独立封装；分类/程序子项动态来自当前配置，边缘操作和设置子项对应独立嵌套路由，关于&更新是与导航同级的最外层入口（`/about`）。侧栏收起状态保存在 `uiSettings.sidebar.collapsed`，重建配置页面后保持不变。收起时热区通过 `v-show` 控制，侧栏自身以固定定位、`visibility`、透明度和鼠标事件状态隐藏；导航分组内容继续参与布局，因此不会压缩滚动高度或重置滚动位置。进入热区后淡入，离开侧栏后淡出。侧栏只有一个滚动区域：导航列（`.app-sidebar__nav`）整体滚动，展开后的分类/程序子项按内容自然撑开，分组内部不再单独滚动。
 
 - `全局` 采用单列表布局，直接编辑整张全局规则表，不显示左侧作用域区域。
 - 页面切换使用方向感过渡：按顶部标签顺序向右切换时新页面从右侧滑入并渐显，向左切换时从左侧滑入并渐显，旧页面会轻微反向淡出；分类和程序子项切换与边缘操作、设置一样先完成路由切换，再由目标页面同步选中作用域，避免过渡中重复更新内容。
@@ -269,7 +270,7 @@ src\pages
 - 分类新增通过名称弹窗完成，不再使用左侧内联输入框；分类和程序名称都通过双击列表项后在弹窗里重命名。
 - 分类页、程序页和排除项页添加程序时都会先显示前端弹窗，用户可通过“拖动选择窗口”将鼠标移到目标窗口后松开，或选择“浏览 exe 文件”作为备用方式。
 - 程序列表和详情会展示从 exe 路径动态提取的应用图标；图标通过 WebView 消息传递，不写入配置文件。
-- 规则表列为 `名称`、`手势`、`命令`，删除按钮默认隐藏、在行悬浮时才显示；双击规则行、点击手势列或点击命令列都会打开规则编辑弹窗。
+- 规则表列为 `名称`、`手势`、`命令`，行高 56、表头 12/16 muted，删除按钮常显为行尾图标按钮；双击规则行、点击手势列或点击命令列都会打开规则编辑弹窗。全局与排除项页的“添加”按钮位于页面头右侧，分类与程序页保留分组内的操作。
 - 全局快速搜索会匹配手势规则的名称、手势、命令和作用域，以及分类、程序和排除项；点击规则会打开其编辑弹窗，点击分类、程序和排除项会定位对应项。
 - 添加/编辑手势通过弹窗完成：手势区域始终可以录制方向手势，并可选择按住按键、滚轮修饰（无/上/下）和触发方式（每格连续执行/松开时执行一次）。选择滚轮修饰后，方向手势可以留空表示按住直接滚动；右侧仍可选择命令类型，快捷键命令显示录制按钮，窗口控制命令显示操作下拉框。
 - 添加/编辑手势弹窗打开时会通过 WebView 消息暂停全局手势；手势录制由后端接管，前端只接收最终识别结果。

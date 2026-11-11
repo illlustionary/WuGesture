@@ -431,7 +431,8 @@ C# 读取强调色 → rules 消息 appearance.systemAccent
 | 布尔项 | `form/ToggleCheckbox.vue` | Switch：轨道 52×32、滑块 24/16 | 整行可点，Switch 在行尾 |
 | 滑块 | `form/BaseRange.vue` | 轨道 4、滑块 20 | 保留 `--range-progress` 与 `disabled` 透传 |
 | 复选框 | `components/form/AppCheckbox.vue` | 18×18、2px 描边、选中 primary | 支持 `indeterminate` |
-| 卡片 / 分组 | `styles/_components.scss` | Filled Card：12 圆角、`surfaceContainerLow`、1px 描边、无阴影 | 去掉 0 圆角特例 |
+| 页面头 / 内容网格 | `layout/AppShell.vue` | Page header：高 56、标题 22/28、描述 12/16、右侧 `actions`；内容区内边距 24、间距 16 | 页面统一通过 `title` / `description` 传值 |
+| 卡片 / 分组 | `styles/_components.scss` | Filled Card：12 圆角、`surfaceContainerLow`、1px 描边、无阴影 | 去掉 0 圆角特例；相邻卡片用 16 间距而非折叠边框 |
 | 规则列表 | `gesture/GestureRuleList.vue` | List：行高 56、表头 12/16 500 muted、行 hover 状态层 | 删除按钮改为常显 IconButton |
 | 快捷键标签 | `.keycap` | 4 圆角、`surfaceContainerHighest` + `outlineVariant` | 去投影、去胶囊 |
 | 侧栏 | `sidebar/AppSidebar.vue` | Navigation Drawer：宽 256、项高 48、激活 full 胶囊 `secondaryContainer` | 去掉左侧蓝条 |
@@ -617,7 +618,7 @@ C# 读取强调色 → rules 消息 appearance.systemAccent
 | 阶段 0：设计定稿与工具链地基 | 已完成（2026-11-09） | `tsconfig.json`、`src/env.d.ts`、`typecheck` 脚本、Prettier TS 匹配、CI 类型检查步骤、`#/dev/md3` 令牌预览页；删除 `jsconfig.json` |
 | 阶段 1：令牌层 | 已完成（2026-11-10） | `styles.scss` 拆为 `styles/tokens/*` + `_base` + `_components`；旧变量全部加别名；UnoCSS 写死 rgba 改语义色；恢复 `:focus-visible`；6px 细滚动条；新增 `theme/tokens.ts`、`theme/palettes.ts` |
 | 阶段 2：基础控件 | 已完成（2026-11-10） | 新增 `AppButton` / `AppChip` / `AppDivider` / `AppCheckbox` / `types/ui.ts`；重写 `IconActionButton`、`HoverBubble`、`BaseInput`、`CustomSelect`、`ToggleCheckbox`、`BaseRange` 为 `<script setup lang="ts">`；全局 `.primary-button` 等类映射到 MD3；`BaseDialog` 按钮改用 `AppButton`；规则参数改用 `AppChip` |
-| 阶段 3：容器与导航 | 未开始 | — |
+| 阶段 3：容器与导航 | 已完成（2026-11-11） | `AppShell` 重写为 TS 并新增 56 高页面头（`title` / `description` / `actions`），各页面统一传标题；`AppSidebar` 改为 256 宽 Navigation Drawer（48 高 full 圆角项、`secondaryContainer` 激活胶囊、去掉左侧蓝条），`SidebarAppStatus` 状态色令牌化；`.section-card` / `.list-stack` / `.page-stack` 改为 Filled Card + 16 间距；`BaseDialog` 改为 28 圆角 / 24 内边距 / `surfaceContainerHigh` / 22-28 标题；`GestureRuleList` 重写为 TS 并改为 56 高行 + 40 高表头 + 常显删除按钮；新增 `styles/_toast.scss` 把 Toast 统一为 Snackbar |
 | 阶段 4：页面落地 | 未开始 | — |
 | 阶段 5：后端配置扩展 | 未开始 | — |
 | 阶段 6：前端主题系统 | 未开始 | — |
