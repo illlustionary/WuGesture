@@ -47,6 +47,7 @@ src
 ├─ styles.scss
 ├─ styles
 ├─ theme
+├─ types
 ├─ assets
 ├─ components
 ├─ composables
@@ -69,9 +70,26 @@ src
 - `src\styles.scss`：全局样式入口，只负责按顺序 `@use` 令牌层、基础样式和共用组件类；新增样式不要直接追加到这个文件。
 - `src\styles\tokens\`：MD3 设计令牌层，按 `_color`、`_typescale`、`_shape`、`_spacing`、`_elevation`、`_motion`、`_state`、`_aliases` 拆分。颜色以 seed `#529EF1` 的静态基线兜底，阶段 6 由主题引擎在运行时覆盖；`_aliases.scss` 把 `--bg`、`--panel`、`--accent` 等旧变量映射到新令牌，保证存量组件零改动。
 - `src\styles\_base.scss`：reset、`:focus-visible` 焦点环、6px 细滚动条、原生输入框/滑块/取色器样式。
-- `src\styles\_components.scss`：存量页面共用的 `.section-card`、`.list-stack`、按钮、`.keycap`、弹窗外壳和空状态样式。
+- `src\styles\_components.scss`：存量页面共用的 `.section-card`、`.list-stack`、`.primary-button` / `.secondary-button` / `.ghost-button` / `.danger-button`、`.keycap`、`.icon-button`、弹窗外壳和空状态样式；按钮类已按 MD3 统一为高 40、full 圆角、状态层。
 - `src\theme\tokens.ts`：颜色角色、Typescale、形状、间距和动效的类型契约，以及 `colorVar()` 等引用工具；新增令牌时必须与 SCSS 同步。
 - `src\theme\palettes.ts`：8 套预设 seed 色板（蓝/青/绿/紫/粉/橙/红/灰）与默认色 `#529EF1`；保存色值而非索引。
+- `src\types\ui.ts`：基础控件的共享类型契约（`SelectOption`、`SelectOptionValue`、`ButtonVariant`、`ButtonSize`、`ChipVariant`）。
+
+## MD3 Base Controls
+
+阶段 2 起基础控件独立成套，新代码优先使用组件而不是全局 class：
+
+- `src\components\ui\AppButton.vue`：MD3 按钮，`variant` 支持 `filled` / `tonal` / `outlined` / `text` / `danger`，`size` 支持 `md`（40）/ `sm`（32），`leading` 插槽放 18px 图标。
+- `src\components\ui\AppChip.vue`：高 32、8 圆角的 Chip，支持 `selected` / `disabled` / `removable`（`remove` 事件）。
+- `src\components\ui\AppDivider.vue`：1px `outlineVariant` 分割线，支持 `inset` / `vertical`。
+- `src\components\ui\IconActionButton.vue`：36×36 图标按钮，`icon` / `label` / `tone` / `color` / `showTooltip`；`inheritAttrs: false`，class、`disabled`、`@click` 直接落到内部 `<button>`。
+- `src\components\ui\HoverBubble.vue`：MD3 plain tooltip，`inverseSurface` + 4 圆角、无箭头，延迟 500ms，`pointerenter` 与键盘 `focus-visible` 都会显示；根节点固定为 `.hover-bubble-trigger`。
+- `src\components\form\BaseInput.vue`：Filled Text Field（高 48、顶角 8、聚焦 2px primary 底边），仍是单根 `<input>`；`type=color/range` 交回全局原生样式。
+- `src\components\form\CustomSelect.vue`：Exposed Dropdown，触发器 48、菜单圆角 4、项高 48、选中项 `secondaryContainer` + 勾选；保留 `modelValue` / `value` 双入口、键盘导航和 Teleport。
+- `src\components\form\ToggleCheckbox.vue`：MD3 Switch（轨道 52×32、滑块 24/16），整行可点、Switch 在行尾，保留 `label` / `note` 与 `change` 事件。
+- `src\components\form\BaseRange.vue`：原生 range 包装，保留 `--range-progress` 契约与 `$attrs` 透传（`disabled` 由此生效）。
+- `src\components\form\AppCheckbox.vue`：18×18 MD3 复选框，支持 `indeterminate`。
+- 阶段 2 已完成的重写组件统一为 `<script setup lang="ts">`；存量 `.js` 逻辑层未迁移。
 
 ## Assets
 

@@ -1,30 +1,47 @@
-<script setup>
+<script setup lang="ts">
+import AppButton from '@/components/ui/AppButton.vue'
 import IconActionButton from '@/components/ui/IconActionButton.vue'
 
-const props = defineProps({
-  open: { type: Boolean, required: true },
-  title: { type: String, required: true },
-  description: { type: String, default: '' },
-  titleId: { type: String, required: true },
-  showClose: { type: Boolean, default: false },
-  closeOnMask: { type: Boolean, default: true },
-  showActions: { type: Boolean, default: true },
-  cancelText: { type: String, default: '取消' },
-  confirmText: { type: String, default: '确认' },
-  confirmTone: {
-    type: String,
-    default: 'primary',
-    validator: value => ['primary', 'danger'].includes(value)
-  },
-  confirmDisabled: { type: Boolean, default: false },
-  keepMounted: { type: Boolean, default: false },
-  backdropClass: { type: [String, Array, Object], default: '' },
-  panelClass: { type: [String, Array, Object], default: '' }
-})
+type ClassBinding = string | unknown[] | Record<string, unknown>
 
-const emit = defineEmits(['close', 'confirm'])
+const props = withDefaults(
+  defineProps<{
+    open: boolean
+    title: string
+    description?: string
+    titleId: string
+    showClose?: boolean
+    closeOnMask?: boolean
+    showActions?: boolean
+    cancelText?: string
+    confirmText?: string
+    confirmTone?: 'primary' | 'danger'
+    confirmDisabled?: boolean
+    keepMounted?: boolean
+    backdropClass?: ClassBinding
+    panelClass?: ClassBinding
+  }>(),
+  {
+    description: '',
+    showClose: false,
+    closeOnMask: true,
+    showActions: true,
+    cancelText: '取消',
+    confirmText: '确认',
+    confirmTone: 'primary',
+    confirmDisabled: false,
+    keepMounted: false,
+    backdropClass: '',
+    panelClass: ''
+  }
+)
 
-function closeFromMask(event) {
+const emit = defineEmits<{
+  close: []
+  confirm: []
+}>()
+
+function closeFromMask(event: PointerEvent) {
   if (props.closeOnMask && event.target === event.currentTarget) {
     emit('close')
   }
@@ -75,22 +92,19 @@ function closeFromMask(event) {
           class="base-dialog__actions"
         >
           <slot name="actions">
-            <button
-              type="button"
-              class="base-dialog__button base-dialog__button--cancel"
+            <AppButton
+              variant="text"
               @click="emit('close')"
             >
               {{ cancelText }}
-            </button>
-            <button
-              type="button"
-              class="base-dialog__button base-dialog__button--confirm"
-              :class="`base-dialog__button--${confirmTone}`"
+            </AppButton>
+            <AppButton
+              :variant="confirmTone === 'danger' ? 'danger' : 'filled'"
               :disabled="confirmDisabled"
               @click="emit('confirm')"
             >
               {{ confirmText }}
-            </button>
+            </AppButton>
           </slot>
         </footer>
       </section>
@@ -146,7 +160,7 @@ function closeFromMask(event) {
 
 :deep(.base-dialog__close) {
   flex: 0 0 auto;
-  color: var(--muted);
+  color: var(--md-sys-color-on-surface-variant);
 }
 
 .base-dialog__body {
@@ -159,47 +173,6 @@ function closeFromMask(event) {
   justify-content: flex-end;
   gap: 8px;
   margin-top: 20px;
-}
-
-.base-dialog__button {
-  min-width: 72px;
-  min-height: 34px;
-  padding: 0 14px;
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: opacity 120ms ease;
-  font-size: 13px;
-  &:hover,
-  &:focus-visible {
-    opacity: 0.76;
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 2px;
-  }
-
-  &:disabled {
-    cursor: not-allowed;
-    opacity: 0.48;
-  }
-
-  &--cancel {
-    border-color: var(--border);
-    background: var(--interactive-bg);
-    color: var(--text);
-  }
-
-  &--primary {
-    background: var(--accent-strong);
-    color: var(--text-inverse);
-  }
-
-  &--danger {
-    background: var(--danger);
-    color: var(--text-inverse);
-  }
 }
 
 .base-dialog-enter-active,

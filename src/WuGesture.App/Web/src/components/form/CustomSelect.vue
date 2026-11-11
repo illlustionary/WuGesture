@@ -1,22 +1,34 @@
-<script setup>
+<script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import AppIcon from '@/components/ui/AppIcon.vue'
+import type { SelectOption, SelectOptionValue } from '@/types/ui'
 
-const props = defineProps({
-  modelValue: { type: [String, Number], default: '' },
-  value: { type: [String, Number], default: undefined },
-  options: { type: Array, required: true },
-  placeholder: { type: String, default: '请选择' },
-  disabled: { type: Boolean, default: false }
-})
+const props = withDefaults(
+  defineProps<{
+    modelValue?: SelectOptionValue
+    value?: SelectOptionValue
+    options: SelectOption[]
+    placeholder?: string
+    disabled?: boolean
+  }>(),
+  {
+    modelValue: '',
+    placeholder: '请选择',
+    disabled: false
+  }
+)
 
-const emit = defineEmits(['update:modelValue', 'change'])
+const emit = defineEmits<{
+  'update:modelValue': [value: SelectOptionValue]
+  change: [value: SelectOptionValue]
+}>()
 
-const rootRef = ref(null)
-const listRef = ref(null)
+const rootRef = ref<HTMLElement | null>(null)
+const listRef = ref<HTMLElement | null>(null)
 const open = ref(false)
 const activeIndex = ref(-1)
-const menuStyle = ref({})
-const placement = ref('below')
+const menuStyle = ref<Record<string, string>>({})
+const placement = ref<'above' | 'below'>('below')
 
 const currentValue = computed(() => (props.value === undefined ? props.modelValue : props.value))
 
@@ -46,6 +58,8 @@ watch(open, isOpen => {
 
 onBeforeUnmount(() => {
   document.removeEventListener('pointerdown', handleOutsidePointerDown, true)
+  window.removeEventListener('resize', updateMenuPosition)
+  window.removeEventListener('scroll', updateMenuPosition, true)
 })
 
 function toggleOpen() {
@@ -60,13 +74,14 @@ function close() {
   open.value = false
 }
 
-function handleOutsidePointerDown(event) {
-  if (!rootRef.value?.contains(event.target) && !listRef.value?.contains(event.target)) {
+function handleOutsidePointerDown(event: Event) {
+  const target = event.target as Node
+  if (!rootRef.value?.contains(target) && !listRef.value?.contains(target)) {
     close()
   }
 }
 
-function selectOption(option) {
+function selectOption(option: SelectOption | undefined) {
   if (!option || option.disabled) {
     return
   }
@@ -76,7 +91,7 @@ function selectOption(option) {
   close()
 }
 
-function moveActive(delta) {
+function moveActive(delta: number) {
   if (!props.options.length) {
     return
   }
@@ -99,7 +114,7 @@ function moveActive(delta) {
   }
 }
 
-function handleKeydown(event) {
+function handleKeydown(event: KeyboardEvent) {
   if (props.disabled) {
     return
   }
@@ -131,6 +146,8 @@ function handleKeydown(event) {
   } else if (event.key === 'Escape') {
     event.preventDefault()
     close()
+  } else if (event.key === 'Tab') {
+    close()
   }
 }
 
@@ -146,7 +163,7 @@ function scrollActiveOptionIntoView() {
 }
 
 function updateMenuPosition() {
-  const button = rootRef.value?.querySelector('.custom-select__button')
+  const button = rootRef.value?.querySelector<HTMLElement>('.custom-select__button')
   const menu = listRef.value
   if (!button || !menu) {
     return
@@ -233,7 +250,13 @@ function updateMenuPosition() {
             @mouseenter="activeIndex = index"
             @click="selectOption(option)"
           >
-            <span>{{ option.label }}</span>
+            <span class="custom-select__option-label">{{ option.label }}</span>
+            <AppIcon
+              v-if="option.value === currentValue"
+              name="check"
+              class="custom-select__check"
+              aria-hidden="true"
+            />
           </button>
         </div>
       </Transition>
@@ -248,38 +271,38 @@ function updateMenuPosition() {
 
   &.is-disabled {
     cursor: not-allowed;
-    opacity: 0.58;
+    opacity: var(--md-sys-state-disabled-content-opacity);
   }
 }
 
+/* Exposed Dropdown 触发器沿用 Filled Text Field 造型。 */
 .custom-select__button {
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   width: 100%;
-  min-height: 42px;
-  padding: 0 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  background: var(--panel-control);
-  color: var(--text);
+  min-height: 48px;
+  padding: 0 12px 0 16px;
+  border: 0;
+  border-bottom: 1px solid var(--md-sys-color-on-surface-variant);
+  border-radius: var(--md-sys-shape-corner-extra-small) var(--md-sys-shape-corner-extra-small) 0 0;
+  background: var(--md-sys-color-surface-container-highest);
+  color: var(--md-sys-color-on-surface);
   text-align: left;
-  box-shadow: var(--shadow-control);
+  cursor: pointer;
   transition:
-    border-color 120ms ease,
-    background-color 120ms ease,
-    box-shadow 120ms ease;
+    background-color var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard),
+    box-shadow var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
 
   &:hover:not(:disabled) {
-    border-color: var(--border-strong);
-    background: var(--interactive-hover-bg);
+    background: color-mix(in srgb, var(--md-sys-color-on-surface) 6%, var(--md-sys-color-surface-container-highest));
   }
 
   &:focus-visible {
-    border-color: var(--accent-border-strong);
     outline: none;
-    box-shadow: 0 0 0 4px var(--focus-ring);
+    border-bottom-color: var(--md-sys-color-primary);
+    box-shadow: inset 0 -2px 0 0 var(--md-sys-color-primary);
   }
 
   &:disabled {
@@ -288,34 +311,33 @@ function updateMenuPosition() {
 }
 
 .custom-select.is-open .custom-select__button {
-  border-color: var(--accent-border-strong);
-  box-shadow: 0 0 0 4px var(--focus-ring);
+  border-bottom-color: var(--md-sys-color-primary);
+  box-shadow: inset 0 -2px 0 0 var(--md-sys-color-primary);
 }
 
 .custom-select__value {
   min-width: 0;
   overflow: hidden;
-  color: var(--text);
-  font-size: 13px;
-  font-weight: 650;
-  line-height: 1.25;
+  color: var(--md-sys-color-on-surface);
+  font-size: var(--md-sys-typescale-body-large-size);
+  line-height: var(--md-sys-typescale-body-large-line-height);
   text-overflow: ellipsis;
   white-space: nowrap;
 
   &.is-placeholder {
-    color: var(--muted);
+    color: var(--md-sys-color-on-surface-variant);
   }
 }
 
 .custom-select__chevron {
   width: 8px;
   height: 8px;
-  margin: 0 2px 3px 12px;
-  border-right: 2px solid var(--muted);
-  border-bottom: 2px solid var(--muted);
+  margin: 0 6px 3px 12px;
+  border-right: 2px solid var(--md-sys-color-on-surface-variant);
+  border-bottom: 2px solid var(--md-sys-color-on-surface-variant);
   pointer-events: none;
   transform: rotate(45deg);
-  transition: transform 120ms ease;
+  transition: transform var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
 }
 
 .custom-select.is-open .custom-select__chevron {
@@ -327,64 +349,70 @@ function updateMenuPosition() {
   position: fixed;
   z-index: 30;
   display: grid;
-  gap: 4px;
+  gap: 0;
   max-height: min(240px, 45vh);
-  padding: 6px;
+  padding: 8px 0;
   overflow-y: auto;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-lg);
-  background: var(--panel-solid);
-  box-shadow: var(--shadow-popover);
+  border-radius: var(--md-sys-shape-corner-extra-small);
+  background: var(--md-sys-color-surface-container);
+  box-shadow: var(--md-sys-elevation-level2);
+  transform-origin: top center;
 }
 
 .custom-select__option {
   display: flex;
   align-items: center;
-  min-height: 34px;
-  padding: 7px 10px;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  padding: 0 16px;
   border: 0;
-  border-radius: var(--radius-md);
+  border-radius: 0;
   background: transparent;
-  color: var(--text);
+  color: var(--md-sys-color-on-surface);
   text-align: left;
-  box-shadow: none;
+  cursor: pointer;
 
-  span {
-    min-width: 0;
-    overflow: hidden;
-    font-size: 13px;
-    font-weight: 600;
-    line-height: 1.25;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  &:hover:not(:disabled),
   &.is-active {
-    background: var(--interactive-hover-bg);
+    background: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent);
   }
 
   &.is-selected {
-    color: var(--accent-strong);
-    background: var(--interactive-active-bg);
+    background: var(--md-sys-color-secondary-container);
+    color: var(--md-sys-color-on-secondary-container);
   }
 
   &:disabled {
     cursor: not-allowed;
-    opacity: 0.55;
+    opacity: var(--md-sys-state-disabled-content-opacity);
   }
+}
+
+.custom-select__option-label {
+  min-width: 0;
+  overflow: hidden;
+  font-size: var(--md-sys-typescale-body-medium-size);
+  line-height: var(--md-sys-typescale-body-medium-line-height);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.custom-select__check {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
 }
 
 .custom-select-pop-enter-active,
 .custom-select-pop-leave-active {
   transition:
-    opacity 100ms ease,
-    transform 100ms ease;
+    opacity var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard),
+    transform var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
 }
 
 .custom-select-pop-enter-from,
 .custom-select-pop-leave-to {
   opacity: 0;
-  transform: translateY(-4px);
+  transform: translateY(-4px) scaleY(0.96);
 }
 </style>

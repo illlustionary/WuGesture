@@ -99,13 +99,15 @@
 | 元素 | 高度 | 圆角 |
 |---|---|---|
 | Button | 40 | 20（full） |
-| IconButton | 40×40 | full |
+| IconButton | 36×36（40 密度 -1） | full |
 | 输入框 / 下拉触发器 | 48 | 顶部 8 |
 | 列表行（单行 / 双行） | 56 / 72 | 0（容器 12） |
 | 侧栏项 | 48 | full |
 | Chip | 32 | 8 |
-| Switch 轨道 | 32 | 16 |
+| Switch 轨道 | 52×32 | 16 |
 | 弹窗 | — | 28 |
+
+> IconButton 取 36 而非 40，是为了塞进现有 40px 侧栏分组头和 56px 规则行；图标统一 20px。
 
 ---
 
@@ -422,21 +424,22 @@ C# 读取强调色 → rules 消息 appearance.systemAccent
 
 | 组件 | 现文件 | MD3 规格 | 验收要点 |
 |---|---|---|---|
-| Filled / Tonal / Outlined / Text Button | `styles.scss:360-390` | 高 40、full 圆角、无阴影、label 14/20 500、状态层 | 4 变体 × 3 尺寸，图标 18 |
-| IconButton | `components/ui/IconActionButton.vue` | 40×40、图标 24、full 圆角 | hover / pressed / focus 可辨 |
-| 输入框 | `styles.scss:181-212` | Filled Text Field：高 48、顶角 8、`surfaceContainerHighest`、聚焦 2px primary 底边 | 浮动标签、错误态、禁用态 |
+| Filled / Tonal / Outlined / Text Button | `components/ui/AppButton.vue` | 高 40（`sm` 32）、full 圆角、无阴影、label 14/20 500、状态层 | 5 变体（filled / tonal / outlined / text / danger）× 2 尺寸，图标 18 |
+| IconButton | `components/ui/IconActionButton.vue` | 36×36、图标 20、full 圆角、状态层 | hover / pressed / focus 可辨，`$attrs` 透传保持 |
+| 输入框 | `components/form/BaseInput.vue` | Filled Text Field：高 48、顶角 8、`surfaceContainerHighest`、聚焦 2px primary 底边 | 单根 `input`；`type=color/range` 交回原生样式 |
 | 下拉 | `form/CustomSelect.vue` | Exposed Dropdown：触发器 48、Menu 圆角 4、项高 48、选中 `secondaryContainer` + 勾选 | 保留键盘导航与 Teleport |
 | 布尔项 | `form/ToggleCheckbox.vue` | Switch：轨道 52×32、滑块 24/16 | 整行可点，Switch 在行尾 |
-| 滑块 | `form/BaseRange.vue` | 轨道 4、滑块 20、拖动值提示 | 保留 `--range-progress` |
-| 卡片 / 分组 | `styles.scss:323-354` | Filled Card：12 圆角、`surfaceContainerLow`、1px 描边、无阴影 | 去掉 0 圆角特例 |
+| 滑块 | `form/BaseRange.vue` | 轨道 4、滑块 20 | 保留 `--range-progress` 与 `disabled` 透传 |
+| 复选框 | `components/form/AppCheckbox.vue` | 18×18、2px 描边、选中 primary | 支持 `indeterminate` |
+| 卡片 / 分组 | `styles/_components.scss` | Filled Card：12 圆角、`surfaceContainerLow`、1px 描边、无阴影 | 去掉 0 圆角特例 |
 | 规则列表 | `gesture/GestureRuleList.vue` | List：行高 56、表头 12/16 500 muted、行 hover 状态层 | 删除按钮改为常显 IconButton |
-| 快捷键标签 | 行内样式 | 4 圆角、`surfaceContainerHighest` + `outlineVariant` | 去投影、去胶囊 |
+| 快捷键标签 | `.keycap` | 4 圆角、`surfaceContainerHighest` + `outlineVariant` | 去投影、去胶囊 |
 | 侧栏 | `sidebar/AppSidebar.vue` | Navigation Drawer：宽 256、项高 48、激活 full 胶囊 `secondaryContainer` | 去掉左侧蓝条 |
-| 弹窗 | `dialog/BaseDialog.vue` | 28 圆角、24 内边距、遮罩 `scrim` 32%、按钮右下 | 标题 22/28 |
+| 弹窗 | `dialog/BaseDialog.vue` | 28 圆角、24 内边距、遮罩 `scrim` 32%、按钮右下 | 按钮改为 `AppButton` |
 | Toast | `vue-toastification` | Snackbar：`inverseSurface`、4 圆角、高 48 | 深色模式一致 |
-| Chip | 各处 pill | 高 32、8 圆角、1px 描边、14/20 500 | 分类/作用域标签 |
-| Tooltip | `ui/HoverBubble.vue` | `inverseSurface`、4 圆角、12/16 | 延迟 500ms |
-| 分割线 | 各处 | 1px `outlineVariant`，缩进 16 | 统一 |
+| Chip | `components/ui/AppChip.vue` | 高 32、8 圆角、1px 描边、label-medium | 支持 `selected` / `removable` |
+| Tooltip | `ui/HoverBubble.vue` | `inverseSurface`、4 圆角、12/16、无箭头 | 延迟 500ms，键盘聚焦也显示 |
+| 分割线 | `components/ui/AppDivider.vue` | 1px `outlineVariant`，缩进 16 | 支持 `inset` / `vertical` |
 | 图标 | `icons/appIcons.js` + SVG | 24dp 网格、统一视觉重量 | 第 7 阶段替换 |
 | 引导 / 帮助 / 更新弹窗 | `WelcomeDialog.vue` 等 | 同 Dialog 规范 | 内联 SVG 统一描边 |
 
@@ -613,7 +616,7 @@ C# 读取强调色 → rules 消息 appearance.systemAccent
 |---|---|---|
 | 阶段 0：设计定稿与工具链地基 | 已完成（2026-11-09） | `tsconfig.json`、`src/env.d.ts`、`typecheck` 脚本、Prettier TS 匹配、CI 类型检查步骤、`#/dev/md3` 令牌预览页；删除 `jsconfig.json` |
 | 阶段 1：令牌层 | 已完成（2026-11-10） | `styles.scss` 拆为 `styles/tokens/*` + `_base` + `_components`；旧变量全部加别名；UnoCSS 写死 rgba 改语义色；恢复 `:focus-visible`；6px 细滚动条；新增 `theme/tokens.ts`、`theme/palettes.ts` |
-| 阶段 2：基础控件 | 未开始 | — |
+| 阶段 2：基础控件 | 已完成（2026-11-10） | 新增 `AppButton` / `AppChip` / `AppDivider` / `AppCheckbox` / `types/ui.ts`；重写 `IconActionButton`、`HoverBubble`、`BaseInput`、`CustomSelect`、`ToggleCheckbox`、`BaseRange` 为 `<script setup lang="ts">`；全局 `.primary-button` 等类映射到 MD3；`BaseDialog` 按钮改用 `AppButton`；规则参数改用 `AppChip` |
 | 阶段 3：容器与导航 | 未开始 | — |
 | 阶段 4：页面落地 | 未开始 | — |
 | 阶段 5：后端配置扩展 | 未开始 | — |

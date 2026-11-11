@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import ApplicationListItem from '@/components/scope/ApplicationListItem.vue'
+import AppChip from '@/components/ui/AppChip.vue'
 import IconActionButton from '@/components/ui/IconActionButton.vue'
 
 const props = defineProps({
@@ -133,22 +134,17 @@ function removeArgument(index) {
           v-else
           class="gesture-rule-program-fields__arguments"
         >
-          <span
+          <AppChip
             v-for="(argument, index) in draft.programArguments"
             :key="`${argument}-${index}`"
+            removable
             class="gesture-rule-program-fields__argument"
             :class="{ 'is-removing': removingArguments.has(index) }"
             tabindex="0"
+            @remove="removeArgument(index)"
           >
-            <span class="gesture-rule-program-fields__argument-text">{{ argument }}</span>
-            <IconActionButton
-              icon="close"
-              label="删除运行参数"
-              :show-tooltip="false"
-              class="gesture-rule-program-fields__argument-remove"
-              @click="removeArgument(index)"
-            />
-          </span>
+            {{ argument }}
+          </AppChip>
         </div>
       </div>
     </section>
@@ -257,25 +253,13 @@ function removeArgument(index) {
 }
 
 .gesture-rule-program-fields__argument {
-  display: inline-flex;
   max-width: 100%;
-  min-height: 32px;
-  padding: 3px 4px 3px 10px;
-  align-items: center;
-  gap: 4px;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  background: var(--interactive-bg);
   transition:
     opacity 160ms ease,
-    transform 160ms ease,
-    border-color 120ms ease,
-    background-color 120ms ease;
+    transform 160ms ease;
 
   &:hover,
   &:focus-within {
-    border-color: var(--accent-strong);
-    background: var(--interactive-hover-bg);
     transform: scale(1.03);
   }
 
@@ -285,20 +269,11 @@ function removeArgument(index) {
   }
 }
 
-.gesture-rule-program-fields__argument-text {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-:deep(.gesture-rule-program-fields__argument-remove) {
-  min-width: 24px;
-  min-height: 24px;
-  color: var(--text-subtle);
+:deep(.gesture-rule-program-fields__argument .app-chip__remove) {
+  color: var(--md-sys-color-on-surface-variant);
 
   &:hover {
-    color: var(--danger);
+    color: var(--md-sys-color-error);
   }
 }
 

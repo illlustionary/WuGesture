@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import AppIcon from '@/components/ui/AppIcon.vue'
 import HoverBubble from '@/components/ui/HoverBubble.vue'
 
@@ -6,28 +6,20 @@ defineOptions({
   inheritAttrs: false
 })
 
-const props = defineProps({
-  icon: {
-    type: String,
-    required: true
-  },
-  label: {
-    type: String,
-    required: true
-  },
-  tone: {
-    type: String,
-    default: 'neutral'
-  },
-  color: {
-    type: String,
-    default: ''
-  },
-  showTooltip: {
-    type: Boolean,
-    default: true
+withDefaults(
+  defineProps<{
+    icon: string
+    label: string
+    tone?: string
+    color?: string
+    showTooltip?: boolean
+  }>(),
+  {
+    tone: 'neutral',
+    color: '',
+    showTooltip: true
   }
-})
+)
 </script>
 
 <template>
@@ -54,45 +46,76 @@ const props = defineProps({
 </template>
 
 <style scoped lang="scss">
+@use '../../styles/tokens/state' as *;
+
 .icon-action-button {
+  @include state-layer(currentColor);
+
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0;
-  min-width: 34px;
-  min-height: 34px;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
   padding: 0;
-  line-height: 0;
-  color: currentColor;
-  border: none;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--md-sys-shape-corner-full);
   background: transparent;
-  box-shadow: none;
-  outline: none;
+  color: var(--md-sys-color-on-surface-variant);
+  line-height: 0;
   cursor: pointer;
+  transition:
+    background-color var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard),
+    color var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
 
-  &:hover {
-    background: transparent;
-    box-shadow: none;
+  &:disabled {
+    cursor: not-allowed;
+    opacity: var(--md-sys-state-disabled-content-opacity);
+  }
+
+  /* 图标名兜底色，放在变体之前，变体样式可覆盖。 */
+  &.add {
+    color: var(--md-sys-color-primary);
+  }
+
+  &.delete {
+    color: var(--md-sys-color-error);
+  }
+
+  &.close {
+    color: var(--md-sys-color-on-surface);
+  }
+
+  &[data-tone='danger'] {
+    color: var(--md-sys-color-error);
+  }
+
+  &[data-tone='muted'] {
+    color: var(--md-sys-color-on-surface-variant);
   }
 
   &.primary-button {
-    min-width: 34px;
-    min-height: 34px;
+    background: var(--md-sys-color-primary);
+    color: var(--md-sys-color-on-primary);
   }
 
-  &.ghost-button,
   &.secondary-button {
-    color: var(--muted);
+    background: var(--md-sys-color-surface-container-highest);
+    color: var(--md-sys-color-on-surface);
   }
 
-  &.add {
-    color: var(--accent-strong);
+  &.ghost-button {
+    color: var(--md-sys-color-on-surface-variant);
   }
-  &.delete {
-    color: var(--danger);
+
+  &.icon-button {
+    color: var(--md-sys-color-on-surface-variant);
   }
-  &.close {
-    color: var(--text);
+
+  &.icon-button--danger {
+    color: var(--md-sys-color-error);
   }
 }
 
@@ -104,9 +127,9 @@ const props = defineProps({
   color: inherit;
 
   :deep(svg) {
+    display: block;
     width: 100%;
     height: 100%;
-    display: block;
     fill: currentColor;
   }
 }

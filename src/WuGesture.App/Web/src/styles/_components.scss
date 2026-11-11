@@ -1,5 +1,7 @@
 // 全局组件类：存量页面共用的容器、按钮、键帽、弹窗外壳。
 // 阶段 2–4 会把这些类替换为独立组件，这里先统一到 MD3 令牌。
+@use './tokens/state' as *;
+
 .surface-card {
   border: 1px solid var(--md-sys-color-outline-variant);
   border-radius: var(--md-sys-shape-corner-none);
@@ -41,9 +43,31 @@
 .secondary-button,
 .danger-button,
 .ghost-button {
-  min-height: 34px;
-  padding: 0 14px;
-  border-radius: var(--md-sys-shape-corner-small);
+  @include state-layer(currentColor);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 24px;
+  overflow: hidden;
+  border: 1px solid transparent;
+  border-radius: var(--md-sys-shape-corner-full);
+  font-family: inherit;
+  font-size: var(--md-sys-typescale-label-large-size);
+  line-height: var(--md-sys-typescale-label-large-line-height);
+  font-weight: var(--md-sys-typescale-label-large-weight);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard),
+    color var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: var(--md-sys-state-disabled-content-opacity);
+  }
 }
 
 .primary-button {
@@ -55,17 +79,15 @@
 
 .secondary-button,
 .ghost-button {
-  color: var(--md-sys-color-on-surface);
+  color: var(--md-sys-color-primary);
   border: 1px solid var(--md-sys-color-outline-variant);
-  background: var(--md-sys-color-surface-container-low);
-
-  &:hover {
-    background: var(--md-sys-color-surface-container-high);
-  }
+  background: transparent;
 }
 
 .danger-button {
   color: var(--md-sys-color-error);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  background: transparent;
 }
 
 .scope-input {
@@ -108,16 +130,20 @@
 }
 
 .icon-button {
+  @include state-layer(currentColor);
+
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 36px;
   height: 36px;
   padding: 0;
+  overflow: hidden;
   border: none;
   border-radius: var(--md-sys-shape-corner-full);
-  color: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-surface-variant);
   background-color: transparent;
+  cursor: pointer;
 }
 
 .icon-button--danger {

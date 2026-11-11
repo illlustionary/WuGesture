@@ -1,4 +1,16 @@
 <script setup lang="ts">
+import { ref } from 'vue'
+import AppCheckbox from '@/components/form/AppCheckbox.vue'
+import BaseInput from '@/components/form/BaseInput.vue'
+import BaseRange from '@/components/form/BaseRange.vue'
+import CustomSelect from '@/components/form/CustomSelect.vue'
+import ToggleCheckbox from '@/components/form/ToggleCheckbox.vue'
+import AppButton from '@/components/ui/AppButton.vue'
+import AppChip from '@/components/ui/AppChip.vue'
+import AppDivider from '@/components/ui/AppDivider.vue'
+import IconActionButton from '@/components/ui/IconActionButton.vue'
+import type { SelectOption } from '@/types/ui'
+
 interface TokenGroup {
   title: string
   roles: string[]
@@ -78,6 +90,30 @@ const shapeSamples: ShapeSample[] = [
 ]
 
 const spacingSteps = [4, 8, 12, 16, 24, 32, 48]
+
+/* 阶段 2 基础控件示例状态 */
+const textValue = ref('')
+const selectValue = ref('a')
+const switchValue = ref(true)
+const checkboxValue = ref(true)
+const rangeValue = ref(40)
+const CHIP_POOL = ['窗口控制', '音量控制', '启动程序']
+const chips = ref([...CHIP_POOL])
+
+const demoOptions: SelectOption[] = [
+  { value: 'a', label: '窗口控制：最大化/还原' },
+  { value: 'b', label: '音量控制：音量 + 5' },
+  { value: 'c', label: '快捷键：Ctrl + Shift + Esc' },
+  { value: 'd', label: '启动程序（禁用示例）', disabled: true }
+]
+
+function removeChip(chip: string) {
+  chips.value = chips.value.filter(item => item !== chip)
+}
+
+function resetChips() {
+  chips.value = [...CHIP_POOL]
+}
 </script>
 
 <template>
@@ -155,6 +191,115 @@ const spacingSteps = [4, 8, 12, 16, 24, 32, 48]
         </div>
       </div>
     </section>
+
+    <section class="md3-preview__section">
+      <h2>Components（阶段 2）</h2>
+
+      <h3>Button</h3>
+      <div class="md3-preview__row">
+        <AppButton variant="filled">确定</AppButton>
+        <AppButton variant="tonal">次要操作</AppButton>
+        <AppButton variant="outlined">描边按钮</AppButton>
+        <AppButton variant="text">文字按钮</AppButton>
+        <AppButton variant="danger">删除</AppButton>
+        <AppButton
+          variant="filled"
+          size="sm"
+          >Small</AppButton
+        >
+        <AppButton
+          variant="filled"
+          disabled
+          >Disabled</AppButton
+        >
+      </div>
+
+      <h3>IconButton / Tooltip</h3>
+      <div class="md3-preview__row">
+        <IconActionButton
+          icon="add"
+          label="添加规则"
+          class="primary-button"
+        />
+        <IconActionButton
+          icon="delete"
+          label="删除规则"
+          class="icon-button icon-button--danger"
+        />
+        <IconActionButton
+          icon="test"
+          label="悬停可看气泡提示"
+          class="secondary-button"
+          color="var(--md-sys-color-primary)"
+        />
+        <span class="md3-preview__hint">鼠标悬停或 Tab 聚焦图标按钮查看 Tooltip</span>
+      </div>
+
+      <h3>Chip</h3>
+      <div class="md3-preview__row">
+        <AppChip>辅助</AppChip>
+        <AppChip selected>已选中</AppChip>
+        <AppChip disabled>禁用</AppChip>
+        <AppChip
+          v-for="chip in chips"
+          :key="chip"
+          removable
+          @remove="removeChip(chip)"
+        >
+          {{ chip }}
+        </AppChip>
+        <AppButton
+          v-if="chips.length < CHIP_POOL.length"
+          variant="text"
+          size="sm"
+          @click="resetChips"
+        >
+          恢复
+        </AppButton>
+      </div>
+
+      <h3>TextField / Select</h3>
+      <div class="md3-preview__grid">
+        <BaseInput
+          v-model="textValue"
+          placeholder="输入手势名称"
+        />
+        <CustomSelect
+          v-model="selectValue"
+          :options="demoOptions"
+          placeholder="选择命令类型"
+        />
+      </div>
+
+      <h3>Switch / Checkbox / Slider</h3>
+      <div class="md3-preview__stack">
+        <ToggleCheckbox
+          v-model="switchValue"
+          label="启动时自动检查更新"
+          note="只比较版本号，不会自动下载"
+        />
+        <AppCheckbox
+          v-model="checkboxValue"
+          label="启用手势轨迹提示"
+        />
+        <BaseRange
+          v-model.number="rangeValue"
+          :min="0"
+          :max="100"
+        />
+      </div>
+
+      <h3>Divider</h3>
+      <div class="md3-preview__stack">
+        <AppDivider />
+        <AppDivider inset />
+        <div class="md3-preview__row">
+          <span>左侧</span>
+          <AppDivider vertical />
+          <span>右侧</span>
+        </div>
+      </div>
+    </section>
   </section>
 </template>
 
@@ -204,6 +349,32 @@ const spacingSteps = [4, 8, 12, 16, 24, 32, 48]
   margin: 0 0 16px;
   font-size: var(--md-sys-typescale-title-medium-size, 16px);
   font-weight: var(--md-sys-typescale-title-medium-weight, 500);
+}
+
+.md3-preview__section h3 {
+  margin: 24px 0 12px;
+  color: var(--md-sys-color-on-surface-variant, #43474e);
+  font-size: var(--md-sys-typescale-label-large-size, 14px);
+  font-weight: var(--md-sys-typescale-label-large-weight, 500);
+}
+
+.md3-preview__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.md3-preview__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.md3-preview__hint {
+  color: var(--md-sys-color-on-surface-variant, #43474e);
+  font-size: var(--md-sys-typescale-body-small-size, 12px);
 }
 
 .md3-preview__swatches {

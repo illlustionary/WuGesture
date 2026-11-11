@@ -180,15 +180,4 @@ function previewLevelOsd(kind) {
   border-radius: var(--radius-lg);
   background: var(--panel-control);
 }
-
-:deep(input[type='text']),
-:deep(input[type='url']),
-:deep(input[type='password']) {
-  min-height: 42px;
-  padding: 0 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  background: var(--panel-control);
-  color: var(--text);
-}
 </style>
