@@ -1,14 +1,29 @@
-<script setup>
+<script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
+import AppButton from '@/components/ui/AppButton.vue'
 import BaseDialog from './BaseDialog.vue'
 
-const props = defineProps({
-  open: { type: Boolean, default: false }
-})
+interface WelcomeStep {
+  key: 'gesture' | 'scope' | 'feedback'
+  title: string
+  lead: string
+  note: string
+}
 
-const emit = defineEmits(['complete'])
+const props = withDefaults(
+  defineProps<{
+    open?: boolean
+  }>(),
+  {
+    open: false
+  }
+)
 
-const steps = [
+const emit = defineEmits<{
+  complete: []
+}>()
+
+const steps: WelcomeStep[] = [
   {
     key: 'gesture',
     title: '按住右键，划一笔',
@@ -30,7 +45,7 @@ const steps = [
 ]
 
 const stepIndex = ref(0)
-const primaryButton = ref(null)
+const primaryButton = ref<{ $el: HTMLButtonElement } | null>(null)
 const step = computed(() => steps[stepIndex.value])
 const isLastStep = computed(() => stepIndex.value === steps.length - 1)
 
@@ -49,7 +64,7 @@ watch(
 watch(stepIndex, () => focusPrimary())
 
 function focusPrimary() {
-  nextTick(() => primaryButton.value?.focus())
+  nextTick(() => primaryButton.value?.$el?.focus())
 }
 
 function next() {
@@ -247,13 +262,12 @@ function previous() {
 
     <template #actions>
       <div class="welcome-dialog__actions">
-        <button
-          type="button"
-          class="welcome-dialog__skip"
+        <AppButton
+          variant="text"
           @click="emit('complete')"
         >
           跳过
-        </button>
+        </AppButton>
 
         <div
           class="welcome-dialog__progress"
@@ -267,22 +281,19 @@ function previous() {
           />
         </div>
 
-        <button
+        <AppButton
           v-if="stepIndex > 0"
-          type="button"
-          class="secondary-button"
+          variant="outlined"
           @click="previous"
         >
           上一步
-        </button>
-        <button
+        </AppButton>
+        <AppButton
           ref="primaryButton"
-          type="button"
-          class="primary-button"
           @click="next"
         >
           {{ isLastStep ? '开始使用' : '下一步' }}
-        </button>
+        </AppButton>
       </div>
     </template>
   </BaseDialog>
@@ -296,17 +307,17 @@ function previous() {
 .welcome-dialog__body {
   display: grid;
   grid-template-columns: minmax(0, 172px) minmax(0, 1fr);
-  gap: 22px;
+  gap: var(--md-sys-spacing-xl);
   align-items: center;
 }
 
 .welcome-dialog__visual {
   display: grid;
   place-items: center;
-  padding: 8px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--interactive-bg);
+  padding: var(--md-sys-spacing-sm);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-medium);
+  background: var(--md-sys-color-surface-container);
 
   svg {
     width: 100%;
@@ -320,151 +331,135 @@ function previous() {
 
 .welcome-dialog__copy {
   display: grid;
-  gap: 8px;
+  gap: var(--md-sys-spacing-sm);
 }
 
 .welcome-dialog__title {
-  font-size: 15px;
+  color: var(--md-sys-color-on-surface);
+  font-size: var(--md-sys-typescale-title-small-size);
+  line-height: var(--md-sys-typescale-title-small-line-height);
   font-weight: 600;
 }
 
 .welcome-dialog__lead {
-  color: var(--text);
-  font-size: 13px;
+  color: var(--md-sys-color-on-surface);
+  font-size: var(--md-sys-typescale-body-medium-size);
   line-height: 1.65;
 }
 
 .welcome-dialog__note {
-  color: var(--muted);
-  font-size: 12px;
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--md-sys-typescale-body-small-size);
   line-height: 1.6;
 }
 
 .wd-mouse {
-  fill: var(--panel-control);
-  stroke: var(--border-strong);
+  fill: var(--md-sys-color-surface-container-lowest);
+  stroke: var(--md-sys-color-outline);
   stroke-width: 1.5;
 }
 
 .wd-mouse-button {
-  fill: var(--accent-soft);
-  stroke: var(--accent-border-strong);
+  fill: var(--md-sys-color-primary-container);
+  stroke: var(--md-sys-color-primary);
   stroke-width: 1.5;
 }
 
 .wd-mouse-line {
   fill: none;
-  stroke: var(--border-strong);
+  stroke: var(--md-sys-color-outline);
   stroke-width: 1.5;
 }
 
 .wd-arrow {
   fill: none;
-  stroke: var(--accent-strong);
+  stroke: var(--md-sys-color-primary);
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
 .wd-result {
-  fill: var(--accent-soft);
-  stroke: var(--accent-border-strong);
+  fill: var(--md-sys-color-primary-container);
+  stroke: var(--md-sys-color-primary);
   stroke-width: 1;
 }
 
 .wd-result-text {
-  fill: var(--accent-strong);
+  fill: var(--md-sys-color-on-primary-container);
   font-size: 12px;
   font-weight: 600;
 }
 
 .wd-pill {
-  fill: var(--panel-control);
-  stroke: var(--border);
+  fill: var(--md-sys-color-surface-container-lowest);
+  stroke: var(--md-sys-color-outline-variant);
   stroke-width: 1;
 }
 
 .wd-pill--accent {
-  fill: var(--accent-soft);
-  stroke: var(--accent-border-strong);
+  fill: var(--md-sys-color-primary-container);
+  stroke: var(--md-sys-color-primary);
 }
 
 .wd-pill-text {
-  fill: var(--muted);
+  fill: var(--md-sys-color-on-surface-variant);
   font-size: 12px;
   font-weight: 600;
 }
 
 .wd-pill-text--accent {
-  fill: var(--accent-strong);
+  fill: var(--md-sys-color-on-primary-container);
 }
 
 .wd-trail {
   fill: none;
-  stroke: var(--accent-strong);
+  stroke: var(--md-sys-color-primary);
   stroke-width: 3;
   stroke-linecap: round;
 }
 
 .wd-track {
-  fill: var(--border-strong);
+  fill: var(--md-sys-color-outline-variant);
 }
 
 .wd-track-fill {
-  fill: var(--accent-strong);
+  fill: var(--md-sys-color-primary);
 }
 
 .welcome-dialog__actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--md-sys-spacing-sm);
   width: 100%;
-}
-
-.welcome-dialog__skip {
-  padding: 0 4px;
-  border: 0;
-  background: none;
-  color: var(--muted);
-  font-size: 13px;
-  cursor: pointer;
-
-  &:hover {
-    color: var(--text);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 2px;
-  }
 }
 
 .welcome-dialog__progress {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--md-sys-spacing-xs);
   margin: 0 auto;
 }
 
 .welcome-dialog__dot {
   width: 6px;
   height: 6px;
-  border-radius: 999px;
-  background: var(--border-strong);
+  border-radius: var(--md-sys-shape-corner-full);
+  background: var(--md-sys-color-outline-variant);
   transition:
-    width 160ms ease,
-    background-color 160ms ease;
+    width var(--md-sys-motion-duration-medium) var(--md-sys-motion-easing-emphasized),
+    background-color var(--md-sys-motion-duration-medium) var(--md-sys-motion-easing-emphasized);
 
   &.is-active {
     width: 18px;
-    background: var(--accent-strong);
+    background: var(--md-sys-color-primary);
   }
 }
 
 @media (max-width: 520px) {
   .welcome-dialog__body {
     grid-template-columns: minmax(0, 1fr);
-    gap: 14px;
+    gap: var(--md-sys-spacing-lg);
   }
 
   .welcome-dialog__copy {

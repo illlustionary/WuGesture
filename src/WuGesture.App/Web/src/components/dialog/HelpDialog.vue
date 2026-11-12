@@ -1,12 +1,21 @@
-<script setup>
-import BaseDialog from './BaseDialog.vue'
+<script setup lang="ts">
+import AppButton from '@/components/ui/AppButton.vue'
 import ScopePriorityNotice from '@/components/scope/ScopePriorityNotice.vue'
+import BaseDialog from './BaseDialog.vue'
 
-defineProps({
-  open: { type: Boolean, default: false }
-})
+withDefaults(
+  defineProps<{
+    open?: boolean
+  }>(),
+  {
+    open: false
+  }
+)
 
-const emit = defineEmits(['close', 'replay'])
+const emit = defineEmits<{
+  close: []
+  replay: []
+}>()
 </script>
 
 <template>
@@ -68,13 +77,12 @@ const emit = defineEmits(['close', 'replay'])
 
     <template #actions>
       <div class="help-dialog__actions">
-        <button
-          type="button"
-          class="ghost-button"
+        <AppButton
+          variant="text"
           @click="emit('replay')"
         >
           重新观看引导
-        </button>
+        </AppButton>
         <a
           class="help-dialog__link"
           href="https://github.com/illlustionary/WuGesture#readme"
@@ -82,13 +90,7 @@ const emit = defineEmits(['close', 'replay'])
           rel="noreferrer"
           >完整文档</a
         >
-        <button
-          type="button"
-          class="primary-button"
-          @click="emit('close')"
-        >
-          知道了
-        </button>
+        <AppButton @click="emit('close')">知道了</AppButton>
       </div>
     </template>
   </BaseDialog>
@@ -101,75 +103,88 @@ const emit = defineEmits(['close', 'replay'])
 
 .help-dialog__body {
   display: grid;
-  gap: 18px;
+  gap: var(--md-sys-spacing-lg);
 }
 
 .help-dialog__section {
   display: grid;
-  gap: 8px;
+  gap: var(--md-sys-spacing-sm);
 
   &:not(:last-child) {
-    padding-bottom: 16px;
-    border-bottom: 1px solid var(--border);
+    padding-bottom: var(--md-sys-spacing-lg);
+    border-bottom: 1px solid var(--md-sys-color-outline-variant);
   }
 
   h4 {
-    font-size: 14px;
-    font-weight: 600;
+    color: var(--md-sys-color-on-surface);
+    font-size: var(--md-sys-typescale-title-small-size);
+    line-height: var(--md-sys-typescale-title-small-line-height);
+    font-weight: var(--md-sys-typescale-title-small-weight);
   }
 
   p,
   li {
-    color: var(--muted);
-    font-size: 13px;
-    line-height: 1.6;
+    color: var(--md-sys-color-on-surface-variant);
+    font-size: var(--md-sys-typescale-body-medium-size);
+    line-height: 1.65;
   }
 
   ol,
   ul {
     display: grid;
-    gap: 6px;
+    gap: var(--md-sys-spacing-xs);
     margin: 0;
     padding-left: 18px;
   }
 
   strong {
-    color: var(--text);
-    font-weight: 600;
+    color: var(--md-sys-color-on-surface);
+    font-weight: 500;
   }
 }
 
 .help-dialog__section details {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--interactive-bg);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-small);
+  background: var(--md-sys-color-surface-container);
 
   summary {
-    padding: 8px 10px;
-    color: var(--text);
-    font-size: 13px;
+    padding: var(--md-sys-spacing-sm) var(--md-sys-spacing-md);
+    color: var(--md-sys-color-on-surface);
+    font-size: var(--md-sys-typescale-body-medium-size);
+    font-weight: 500;
     cursor: pointer;
   }
 
   p {
-    padding: 0 10px 8px;
+    padding: 0 var(--md-sys-spacing-md) var(--md-sys-spacing-sm);
+    font-size: var(--md-sys-typescale-body-small-size);
+    line-height: 1.6;
   }
 }
 
 .help-dialog__actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--md-sys-spacing-sm);
   width: 100%;
 }
 
 .help-dialog__link {
   margin-right: auto;
-  color: var(--muted);
-  font-size: 13px;
+  color: var(--md-sys-color-primary);
+  font-size: var(--md-sys-typescale-label-large-size);
+  line-height: var(--md-sys-typescale-label-large-line-height);
+  font-weight: var(--md-sys-typescale-label-large-weight);
+  text-decoration: none;
 
   &:hover {
-    color: var(--text);
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--md-sys-color-primary);
+    outline-offset: 2px;
   }
 }
 </style>
