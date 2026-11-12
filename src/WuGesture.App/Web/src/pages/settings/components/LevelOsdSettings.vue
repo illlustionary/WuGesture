@@ -2,7 +2,8 @@
 import CustomSelect from '@/components/form/CustomSelect.vue'
 import BaseInput from '@/components/form/BaseInput.vue'
 import BaseRange from '@/components/form/BaseRange.vue'
-import IconActionButton from '@/components/ui/IconActionButton.vue'
+import AppButton from '@/components/ui/AppButton.vue'
+import AppIcon from '@/components/ui/AppIcon.vue'
 import ToggleCheckbox from '@/components/form/ToggleCheckbox.vue'
 import SettingsField from './SettingsField.vue'
 import SettingsFormGrid from './SettingsFormGrid.vue'
@@ -25,23 +26,6 @@ function commit() {
 
 <template>
   <SettingsSectionCard title="音量/亮度提示">
-    <template #actions>
-      <IconActionButton
-        icon="test"
-        label="测试音量提示"
-        class="secondary-button"
-        color="var(--accent-strong)"
-        @click="emit('preview', 'volume')"
-      />
-      <IconActionButton
-        icon="test"
-        label="测试亮度提示"
-        class="secondary-button"
-        color="var(--accent-strong)"
-        @click="emit('preview', 'brightness')"
-      />
-    </template>
-
     <div class="field-card">
       <ToggleCheckbox
         v-model="draft.levelOsd.enabled"
@@ -251,6 +235,27 @@ function commit() {
         />
       </SettingsField>
     </SettingsFormGrid>
+
+    <template #footer>
+      <AppButton
+        variant="outlined"
+        @click="emit('preview', 'volume')"
+      >
+        <template #leading>
+          <AppIcon name="test" />
+        </template>
+        测试音量提示
+      </AppButton>
+      <AppButton
+        variant="outlined"
+        @click="emit('preview', 'brightness')"
+      >
+        <template #leading>
+          <AppIcon name="test" />
+        </template>
+        测试亮度提示
+      </AppButton>
+    </template>
   </SettingsSectionCard>
 </template>
 

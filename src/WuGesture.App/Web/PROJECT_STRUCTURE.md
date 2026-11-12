@@ -102,7 +102,7 @@ src\assets
 
 SVG 按使用位置分目录：
 
-- `actions\`：通用操作，包括新增、删除、导入导出、重置、测试、WebDAV 上传下载，以及密码显示/隐藏用的 `eye`、`eye-off`。
+- `actions\`：通用操作，包括新增、删除、导入导出、重置、测试（`test`，播放态圆标）、WebDAV 连接（`link`，链环）、WebDAV 上传下载，以及密码显示/隐藏用的 `eye`、`eye-off`。
 - `category\`：分类显示图标，包括浏览器、代码、媒体和星光。
 - `gesture\`：手势录制与选择图标，包括准星、键盘和录制。
 - `navigation\`：侧栏、搜索和应用状态图标。侧栏导航图标统一为 Lucide 风格（ISC 许可，24×24、`stroke-width` 1.8、路径 `currentColor`），包括 `globe`、`ban`、`folder`、`app-window`、`frame`、`corner-down-right`、`move-horizontal`、`mouse`、`setting`、`database`、`spline`、`message-square`、`monitor`、`gauge`、`toggle-left`、`refresh-cw`、`cloud`、`info`、`sun`、`moon`、`panel-left` 和 `search`；旧版实心图标仅 `briefcase`、`circle-dashed`、`close-alt` 保留给分类默认图标或无图标兜底。
@@ -220,7 +220,7 @@ src\pages
   - `edge\composables\useEdgeActionDraft.js`：边缘操作编辑草稿、打开、关闭和保存逻辑。
 - `exclusions\index.vue`：排除项页，用于维护不执行鼠标手势的程序列表，并可对单个排除项禁用边缘操作。
 - `settings\index.vue`：设置子页，通过路由参数只展示配置管理、轨迹线、手势提示、音量/亮度 OSD、灵敏度、应用行为、更新源或 WebDAV 中的一项；本地配置导入、导出和恢复默认统一放在「设置 > 配置」页。
-  - `settings\components\SettingsSectionCard.vue`：设置页大项标题、说明、操作区和内容布局。
+  - `settings\components\SettingsSectionCard.vue`：设置页大项卡片，统一标题、内容、说明和底部操作区；测试、备份、恢复等页级动作放到底部，表单在上、动作在下。
   - `settings\components\ConfigManagement.vue`：配置管理页，分「备份与迁移」（导出、导入）和「恢复默认」两组，说明导入导出的范围并强调不可撤销。
   - `settings\components\SettingsFormGrid.vue`：设置项双列表单布局。
   - `settings\components\SettingsField.vue`：设置项卡片。

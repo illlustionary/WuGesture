@@ -161,7 +161,7 @@ function updateValue(event: Event) {
   }
 }
 
-.toggle-checkbox:hover .toggle-checkbox__native:checked + .toggle-checkbox__track .toggle-checkbox__thumb {
+.toggle-checkbox__control:active .toggle-checkbox__native:checked + .toggle-checkbox__track .toggle-checkbox__thumb {
   left: 16px;
   width: 28px;
   height: 28px;

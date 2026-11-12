@@ -6,6 +6,7 @@ import DeleteIcon from '@/assets/actions/delete.svg'
 import DownloadIcon from '@/assets/actions/download.svg'
 import EyeIcon from '@/assets/actions/eye.svg'
 import EyeOffIcon from '@/assets/actions/eye-off.svg'
+import LinkIcon from '@/assets/actions/link.svg'
 import ResetIcon from '@/assets/actions/reset.svg'
 import TestIcon from '@/assets/actions/test.svg'
 import UploadIcon from '@/assets/actions/upload.svg'
@@ -53,6 +54,7 @@ export const appIcons = Object.freeze({
   download: DownloadIcon,
   eye: EyeIcon,
   'eye-off': EyeOffIcon,
+  link: LinkIcon,
   reset: ResetIcon,
   test: TestIcon,
   upload: UploadIcon,
