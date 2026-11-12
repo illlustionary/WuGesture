@@ -222,8 +222,9 @@ src\pages
 - `settings\index.vue`：设置子页，通过路由参数只展示配置管理、轨迹线、手势提示、音量/亮度 OSD、灵敏度、应用行为、更新源或 WebDAV 中的一项；本地配置导入、导出和恢复默认统一放在「设置 > 配置」页。
   - `settings\components\SettingsSectionCard.vue`：设置页大项卡片，统一标题、内容、说明和底部操作区；测试、备份、恢复等页级动作放到底部，表单在上、动作在下。
   - `settings\components\ConfigManagement.vue`：配置管理页，分「备份与迁移」（导出、导入）和「恢复默认」两组，说明导入导出的范围并强调不可撤销。
-  - `settings\components\SettingsFormGrid.vue`：设置项双列表单布局。
-  - `settings\components\SettingsField.vue`：设置项卡片。
+  - `settings\components\SettingsFormGrid.vue`：设置项双列表单布局，16 间距，960 以下自动单列。
+  - `settings\components\SettingsField.vue`：设置字段容器，标签在上、控件在下，`surfaceContainer` + 8 圆角 + 12 内边距。
+  - `settings\components\SettingsToggleRow.vue`：设置页开关行容器，复用 `ToggleCheckbox` 自带的 56 高行与 8 圆角状态。
   - `settings\components\MouseTrailSettings.vue`：轨迹线配置，顶部内置轨迹线实时预览。
   - `settings\components\LevelOsdSettings.vue`：音量/亮度 OSD 配置，顶部内置位置、尺寸和圆角实时预览。
   - `settings\components\AppBehaviorSettings.vue`：应用行为配置，包括开机启动、管理员启动、目标窗口模式、全屏禁用开关和关闭按钮行为。

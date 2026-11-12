@@ -41,32 +41,39 @@ const emit = defineEmits(['open'])
 </template>
 
 <style scoped lang="scss">
+@use '../../../styles/tokens/state' as *;
+
 .edge-card {
+  @include state-layer(var(--md-sys-color-on-surface));
+
   display: grid;
-  gap: 12px;
+  gap: var(--md-sys-spacing-md);
   min-width: 0;
-  padding: 14px;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  background: var(--panel-soft);
+  padding: var(--md-sys-spacing-md);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-medium);
+  background: var(--md-sys-color-surface-container);
   text-align: left;
   cursor: pointer;
 
   &:hover,
   &:focus-visible {
-    border-color: var(--border-strong);
-    background: var(--interactive-hover-bg);
+    border-color: var(--md-sys-color-outline);
     outline: none;
   }
 
+  &:focus-visible {
+    box-shadow: 0 0 0 2px var(--md-sys-color-primary);
+  }
+
   &.is-disabled {
-    opacity: 0.62;
+    opacity: var(--md-sys-state-disabled-content-opacity);
   }
 
   &__head {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: var(--md-sys-spacing-sm);
 
     strong,
     small {
@@ -74,46 +81,54 @@ const emit = defineEmits(['open'])
     }
 
     strong {
-      font-size: 14px;
+      color: var(--md-sys-color-on-surface);
+      font-size: var(--md-sys-typescale-title-small-size);
+      line-height: var(--md-sys-typescale-title-small-line-height);
+      font-weight: var(--md-sys-typescale-title-small-weight);
     }
 
     small {
-      color: var(--muted);
-      font-size: 12px;
+      color: var(--md-sys-color-on-surface-variant);
+      font-size: var(--md-sys-typescale-body-small-size);
+      line-height: var(--md-sys-typescale-body-small-line-height);
     }
   }
 
   &__summary {
     display: grid;
-    gap: 4px;
+    gap: var(--md-sys-spacing-xs);
 
     span {
-      color: var(--text);
-      font-size: 13px;
+      color: var(--md-sys-color-on-surface-variant);
+      font-size: var(--md-sys-typescale-label-large-size);
+      line-height: var(--md-sys-typescale-label-large-line-height);
     }
 
     strong {
-      font-size: 14px;
+      color: var(--md-sys-color-on-surface);
+      font-size: var(--md-sys-typescale-body-medium-size);
+      line-height: var(--md-sys-typescale-body-medium-line-height);
       font-weight: 600;
     }
 
     small {
-      color: var(--muted);
-      font-size: 12px;
+      color: var(--md-sys-color-on-surface-variant);
+      font-size: var(--md-sys-typescale-body-small-size);
+      line-height: var(--md-sys-typescale-body-small-line-height);
     }
   }
 }
 
 .edge-status {
+  flex: 0 0 auto;
   width: 12px;
   height: 12px;
-  border-radius: var(--radius-pill);
-  flex: 0 0 auto;
-  background: var(--disabled-bg);
+  border-radius: var(--md-sys-shape-corner-full);
+  background: var(--md-sys-color-outline-variant);
 
   &.is-enabled {
-    background: var(--accent);
-    box-shadow: 0 0 0 4px var(--focus-ring);
+    background: var(--md-sys-color-primary);
+    box-shadow: 0 0 0 4px var(--md-sys-color-primary-container);
   }
 }
 </style>

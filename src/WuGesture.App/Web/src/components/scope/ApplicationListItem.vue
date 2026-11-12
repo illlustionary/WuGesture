@@ -1,18 +1,37 @@
-<script setup>
+<script setup lang="ts">
 import { computed, useSlots } from 'vue'
 import IconActionButton from '@/components/ui/IconActionButton.vue'
 
-const props = defineProps({
-  app: { type: Object, required: true },
-  removable: { type: Boolean, default: false },
-  removeLabel: { type: String, default: '移除' },
-  missingPathText: { type: String, default: '未设置路径' }
-})
+interface ApplicationItem {
+  name?: string
+  displayName?: string
+  path?: string
+  pathMissing?: boolean
+  icon?: string
+}
 
-const emit = defineEmits(['remove', 'open-path'])
+const props = withDefaults(
+  defineProps<{
+    app: ApplicationItem
+    removable?: boolean
+    removeLabel?: string
+    missingPathText?: string
+  }>(),
+  {
+    removable: false,
+    removeLabel: '移除',
+    missingPathText: '未设置路径'
+  }
+)
+
+const emit = defineEmits<{
+  remove: [app: ApplicationItem]
+  'open-path': [path: string]
+}>()
+
 const slots = useSlots()
 
-const displayName = computed(() => props.app.displayName || props.app.name)
+const displayName = computed(() => props.app.displayName || props.app.name || '')
 const pathText = computed(() => props.app.path || props.missingPathText)
 const fallbackGlyph = computed(() => (displayName.value || '?').slice(0, 1).toUpperCase())
 const missingPath = computed(() => !String(props.app.path ?? '').trim())
@@ -50,7 +69,7 @@ const hasActions = computed(() => props.removable || Boolean(slots.actions))
         type="button"
         class="app-list__path"
         :title="app.path"
-        @click.stop="emit('open-path', app.path)"
+        @click.stop="emit('open-path', app.path ?? '')"
       >
         {{ pathText }}
       </button>
@@ -85,38 +104,35 @@ const hasActions = computed(() => props.removable || Boolean(slots.actions))
 </template>
 
 <style scoped lang="scss">
+@use '../../styles/tokens/state' as *;
+
 .app-list__item {
+  @include state-layer(var(--md-sys-color-on-surface));
+
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  gap: 12px;
-  min-height: 64px;
-  padding: 12px 14px;
+  gap: var(--md-sys-spacing-md);
+  min-height: var(--md-sys-size-row-single);
+  padding: var(--md-sys-spacing-sm) var(--md-sys-spacing-lg);
   align-items: center;
-  border-radius: 0;
-  background: var(--interactive-bg);
-  transition:
-    background-color 120ms ease,
-    border-color 120ms ease;
+  background: transparent;
 
   &--with-actions {
     grid-template-columns: auto minmax(0, 1fr) auto;
   }
 }
 
-.app-list__item:hover {
-  background: var(--interactive-hover-bg);
-}
-
 .app-list__icon {
   position: relative;
+  z-index: 1;
   display: grid;
   place-items: center;
   width: 32px;
   height: 32px;
-  border-radius: var(--radius-md);
-  background: var(--interactive-icon-bg);
-  color: var(--accent-strong);
   overflow: hidden;
+  border-radius: var(--md-sys-shape-corner-small);
+  background: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-primary);
 
   &--missing::after {
     content: '!';
@@ -127,33 +143,37 @@ const hasActions = computed(() => props.removable || Boolean(slots.actions))
     place-items: center;
     width: 14px;
     height: 14px;
-    border-radius: var(--radius-pill);
-    background: var(--warning-bg);
-    color: var(--warning-text);
+    border: 1px solid var(--md-sys-color-surface-container-lowest);
+    border-radius: var(--md-sys-shape-corner-full);
+    background: var(--md-sys-color-warning-container);
+    color: var(--md-sys-color-on-warning-container);
     font-size: 10px;
     font-weight: 600;
-    border: 1px solid var(--border-inverse-strong);
-    box-shadow: var(--shadow-inline);
   }
 }
 
 .app-list__fallback {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--md-sys-typescale-title-small-size);
+  font-weight: var(--md-sys-typescale-title-small-weight);
 }
 
 .app-list__content {
+  position: relative;
+  z-index: 1;
   display: grid;
   min-width: 0;
-  gap: 4px;
+  gap: 2px;
 }
 
 .app-list__name {
   min-width: 0;
   overflow: hidden;
+  color: var(--md-sys-color-on-surface);
+  font-size: var(--md-sys-typescale-body-medium-size);
+  line-height: var(--md-sys-typescale-body-medium-line-height);
+  font-weight: 500;
   white-space: nowrap;
   text-overflow: ellipsis;
-  font-weight: 600;
 }
 
 .app-list__path {
@@ -162,12 +182,11 @@ const hasActions = computed(() => props.removable || Boolean(slots.actions))
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--accent-strong);
+  color: var(--md-sys-color-primary);
   font: inherit;
-  font-size: 12px;
-  line-height: inherit;
+  font-size: var(--md-sys-typescale-body-small-size);
+  line-height: var(--md-sys-typescale-body-small-line-height);
   text-align: left;
-  text-decoration: underline;
   text-overflow: ellipsis;
   white-space: nowrap;
 
@@ -175,45 +194,29 @@ const hasActions = computed(() => props.removable || Boolean(slots.actions))
     cursor: pointer;
   }
 
-  &:where(button):hover {
-    color: var(--accent);
-  }
-
   &:where(button):focus-visible {
-    outline: 2px solid var(--accent-strong);
+    outline: 2px solid var(--md-sys-color-primary);
     outline-offset: 2px;
   }
 }
 
 .app-list__path--missing {
-  color: var(--text-subtle);
-  text-decoration: none;
+  color: var(--md-sys-color-on-surface-variant);
 }
 
 .app-list__missing-state {
-  color: var(--warning-text);
-  font-size: 12px;
+  color: var(--md-sys-color-warning);
+  font-size: var(--md-sys-typescale-body-small-size);
+  line-height: var(--md-sys-typescale-body-small-line-height);
 }
 
 .app-list__status {
+  position: relative;
+  z-index: 1;
   display: inline-flex;
-  align-items: center;
-  gap: 8px;
   flex: 0 0 auto;
-}
-
-:deep(.app-list__delete) {
-  opacity: 0;
-  transform: scale(0.92);
-  transition:
-    opacity 120ms ease,
-    transform 120ms ease;
-}
-
-.app-list__item:hover :deep(.app-list__delete),
-.app-list__item:focus-within :deep(.app-list__delete) {
-  opacity: 1;
-  transform: scale(1);
+  align-items: center;
+  gap: var(--md-sys-spacing-sm);
 }
 
 @media (max-width: 720px) {

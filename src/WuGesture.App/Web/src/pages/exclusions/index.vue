@@ -29,7 +29,6 @@ function toggleDisableEdgeActions(application) {
       <IconActionButton
         icon="add"
         label="添加程序"
-        color="var(--accent-strong)"
         class="exclusion-add-button"
         @click="exclusionsStore.openExcludedApplicationPicker()"
       />
@@ -97,9 +96,14 @@ function toggleDisableEdgeActions(application) {
 </template>
 
 <style scoped lang="scss">
+@use '../../styles/tokens/state' as *;
+
 .exclusion-list {
   display: grid;
-  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-medium);
+  background: var(--md-sys-color-surface-container-lowest);
 }
 
 :deep(.exclusion-add-button) {
@@ -116,48 +120,45 @@ function toggleDisableEdgeActions(application) {
 }
 
 .exclusion-item {
+  @include state-layer(var(--md-sys-color-on-surface));
+
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto auto;
   align-items: center;
-  gap: 12px;
-  padding: 12px;
-  border: 1px solid var(--border-subtle);
-  border-radius: 0;
-  background: var(--panel-inset);
+  gap: var(--md-sys-spacing-md);
+  min-height: var(--md-sys-size-row-single);
+  padding: var(--md-sys-spacing-sm) var(--md-sys-spacing-sm) var(--md-sys-spacing-sm) var(--md-sys-spacing-lg);
+  background: transparent;
 
   &--selected {
-    border-color: var(--accent-border);
-    box-shadow: 0 0 0 3px var(--focus-ring);
-  }
-
-  &:hover :deep(.exclusion-item__delete),
-  &:focus-within :deep(.exclusion-item__delete),
-  &--selected :deep(.exclusion-item__delete) {
-    opacity: 1;
-    pointer-events: auto;
+    background: var(--md-sys-color-secondary-container);
   }
 }
 
 .exclusion-item + .exclusion-item {
-  border-top-width: 0;
+  border-top: 1px solid var(--md-sys-color-outline-variant);
 }
 
 .exclusion-item__icon {
+  position: relative;
+  z-index: 1;
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: var(--radius-md);
-  background: var(--interactive-icon-bg);
-  color: var(--accent-strong);
-  font-size: 14px;
-  font-weight: 600;
+  width: 32px;
+  height: 32px;
   overflow: hidden;
+  border-radius: var(--md-sys-shape-corner-small);
+  background: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-primary);
+  font-size: var(--md-sys-typescale-title-small-size);
+  font-weight: var(--md-sys-typescale-title-small-weight);
 }
 
 .exclusion-item__main {
+  position: relative;
+  z-index: 1;
   display: grid;
-  gap: 4px;
+  gap: 2px;
   min-width: 0;
 
   strong,
@@ -168,32 +169,38 @@ function toggleDisableEdgeActions(application) {
   }
 
   strong {
-    color: var(--text);
-    font-size: 13px;
+    color: var(--md-sys-color-on-surface);
+    font-size: var(--md-sys-typescale-body-medium-size);
+    line-height: var(--md-sys-typescale-body-medium-line-height);
+    font-weight: 500;
   }
 
   span {
-    color: var(--muted);
-    font-size: 12px;
+    color: var(--md-sys-color-on-surface-variant);
+    font-size: var(--md-sys-typescale-body-small-size);
+    line-height: var(--md-sys-typescale-body-small-line-height);
   }
 }
 
-:deep(.exclusion-item__delete) {
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 120ms ease;
+.exclusion-item :deep(.toggle-checkbox),
+.exclusion-item :deep(.exclusion-item__delete) {
+  position: relative;
+  z-index: 1;
 }
-.exclusion-item,
-.exclusion-empty {
-  border-radius: var(--radius-md);
+
+.exclusion-item :deep(.toggle-checkbox) {
+  gap: var(--md-sys-spacing-md);
 }
+
 .exclusion-empty {
   margin: 0;
-  padding: 18px;
-  border: 1px dashed var(--border);
-  color: var(--muted);
-  background: var(--panel-inset);
-  font-size: 13px;
+  padding: var(--md-sys-spacing-lg);
+  border: 1px dashed var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-medium);
+  background: transparent;
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--md-sys-typescale-body-small-size);
+  line-height: var(--md-sys-typescale-body-small-line-height);
 }
 
 @media (max-width: 720px) {

@@ -619,7 +619,7 @@ C# 读取强调色 → rules 消息 appearance.systemAccent
 | 阶段 1：令牌层 | 已完成（2026-11-10） | `styles.scss` 拆为 `styles/tokens/*` + `_base` + `_components`；旧变量全部加别名；UnoCSS 写死 rgba 改语义色；恢复 `:focus-visible`；6px 细滚动条；新增 `theme/tokens.ts`、`theme/palettes.ts` |
 | 阶段 2：基础控件 | 已完成（2026-11-10） | 新增 `AppButton` / `AppChip` / `AppDivider` / `AppCheckbox` / `types/ui.ts`；重写 `IconActionButton`、`HoverBubble`、`BaseInput`、`CustomSelect`、`ToggleCheckbox`、`BaseRange` 为 `<script setup lang="ts">`；全局 `.primary-button` 等类映射到 MD3；`BaseDialog` 按钮改用 `AppButton`；规则参数改用 `AppChip` |
 | 阶段 3：容器与导航 | 已完成（2026-11-11） | `AppShell` 重写为 TS 并新增 56 高页面头（`title` / `description` / `actions`），各页面统一传标题；`AppSidebar` 改为 256 宽 Navigation Drawer（48 高 full 圆角项、`secondaryContainer` 激活胶囊、去掉左侧蓝条），`SidebarAppStatus` 状态色令牌化；`.section-card` / `.list-stack` / `.page-stack` 改为 Filled Card + 16 间距；`BaseDialog` 改为 28 圆角 / 24 内边距 / `surfaceContainerHigh` / 22-28 标题；`GestureRuleList` 重写为 TS 并改为 56 高行 + 40 高表头 + 常显删除按钮；新增 `styles/_toast.scss` 把 Toast 统一为 Snackbar |
-| 阶段 4：页面落地 | 未开始 | — |
+| 阶段 4：页面落地 | 进行中（第 1/3 批完成） | 第 1 批：`SettingsField` / `SettingsFormGrid` / `SettingsToggleRow` / `ConfigManagement` 改为 MD3 令牌容器；`ApplicationListItem` 重写为 TS 56 高列表行（hover 状态层、常显删除）；`ScopePriorityNotice` 改 `tertiaryContainer`；程序页分类排序列表、排除项页、边缘操作卡片/弹窗、关于更新面板令牌化；清理 `field-card` 等 UnoCSS shortcut |
 | 阶段 5：后端配置扩展 | 未开始 | — |
 | 阶段 6：前端主题系统 | 未开始 | — |
 | 阶段 7：图标与打磨 | 未开始 | — |

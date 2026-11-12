@@ -137,12 +137,13 @@ function addApplication() {
   align-content: center;
   justify-items: center;
   min-height: 100%;
-  gap: 8px;
-  color: var(--muted);
+  gap: var(--md-sys-spacing-sm);
+  color: var(--md-sys-color-on-surface-variant);
 
   h2 {
-    color: var(--text);
-    font-size: 20px;
+    color: var(--md-sys-color-on-surface);
+    font-size: var(--md-sys-typescale-title-large-size);
+    line-height: var(--md-sys-typescale-title-large-line-height);
   }
 }
 </style>

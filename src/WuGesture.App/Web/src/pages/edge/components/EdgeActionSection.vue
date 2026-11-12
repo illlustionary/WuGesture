@@ -40,12 +40,12 @@ const emit = defineEmits(['open'])
 .edge-section {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--md-sys-spacing-lg);
 
   &__head {
     display: flex;
     justify-content: space-between;
-    gap: 12px;
+    gap: var(--md-sys-spacing-md);
   }
 }
 
@@ -53,7 +53,7 @@ const emit = defineEmits(['open'])
   flex: 1;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px 5px;
+  gap: var(--md-sys-spacing-md);
   align-content: start;
 }
 

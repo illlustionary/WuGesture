@@ -47,15 +47,6 @@ export default defineConfig({
     'page-stack': 'grid gap-0',
     'section-head': 'flex items-start justify-between gap-10px mb-16px',
     'section-title': 'text-16px font-500',
-    'section-desc': 'mt-4px text-13px text-muted',
-    'section-actions': 'flex flex-wrap justify-end gap-8px',
-    'form-grid': 'grid grid-cols-2 gap-14px',
-    'form-grid-one': 'grid grid-cols-1 gap-14px',
-    'field-card': 'grid gap-8px border border-outline-variant m-b-0',
-    'field-label': 'text-13px text-muted',
-    'field-note': 'text-12px text-muted',
-    'list-card': 'border border-outline-variant bg-surface-container-low',
-    'card-hover': 'hover:bg-surface-container-high hover:border-outline',
-    'text-truncate': 'min-w-0 overflow-hidden whitespace-nowrap text-ellipsis'
+    'section-actions': 'flex flex-wrap justify-end gap-8px'
   }
 })

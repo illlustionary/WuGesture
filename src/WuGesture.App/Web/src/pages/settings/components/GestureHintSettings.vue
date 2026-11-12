@@ -2,6 +2,7 @@
 import SettingsField from './SettingsField.vue'
 import SettingsFormGrid from './SettingsFormGrid.vue'
 import SettingsSectionCard from './SettingsSectionCard.vue'
+import SettingsToggleRow from './SettingsToggleRow.vue'
 import BaseInput from '@/components/form/BaseInput.vue'
 import BaseRange from '@/components/form/BaseRange.vue'
 import ToggleCheckbox from '@/components/form/ToggleCheckbox.vue'
@@ -22,14 +23,14 @@ function commit() {
 
 <template>
   <SettingsSectionCard title="底部提示窗">
-    <div class="field-card">
+    <SettingsToggleRow>
       <ToggleCheckbox
         v-model="draft.gestureHint.enabled"
         label="显示触发提示"
         note="关闭后不再显示手势触发后的弹窗。"
         @change="commit"
       />
-    </div>
+    </SettingsToggleRow>
 
     <div class="gesture-hint-preview">
       <div
@@ -128,13 +129,13 @@ function commit() {
           @change="emit('flush-persist')"
         />
       </SettingsField>
-      <div class="field-card">
+      <SettingsToggleRow>
         <ToggleCheckbox
           v-model="draft.gestureHint.autoWidth"
           label="自动适应内容宽度"
           @change="commit"
         />
-      </div>
+      </SettingsToggleRow>
       <SettingsField
         label="高度"
         :note="`${draft.gestureHint.heightPercent}%`"

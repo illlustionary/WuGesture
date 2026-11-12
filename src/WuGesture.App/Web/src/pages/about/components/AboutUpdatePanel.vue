@@ -1,21 +1,43 @@
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue'
+import AppButton from '@/components/ui/AppButton.vue'
 
-const props = defineProps({
-  appVersion: { type: String, default: 'v0.0.0' },
-  updateSource: { type: String, default: 'gitee' },
-  autoCheck: { type: Boolean, default: true },
-  checking: { type: Boolean, default: false },
-  status: { type: String, default: 'idle' },
-  info: { type: Object, default: null },
-  error: { type: String, default: '' },
-  progress: { type: Number, default: 0 },
-  phase: { type: String, default: '' }
-})
+interface UpdateInfo {
+  source?: string
+  latestVersion?: string
+}
 
-const emit = defineEmits(['check', 'show-details'])
+const props = withDefaults(
+  defineProps<{
+    appVersion?: string
+    updateSource?: string
+    autoCheck?: boolean
+    checking?: boolean
+    status?: string
+    info?: UpdateInfo | null
+    error?: string
+    progress?: number
+    phase?: string
+  }>(),
+  {
+    appVersion: 'v0.0.0',
+    updateSource: 'gitee',
+    autoCheck: true,
+    checking: false,
+    status: 'idle',
+    info: null,
+    error: '',
+    progress: 0,
+    phase: ''
+  }
+)
 
-const phaseLabels = {
+const emit = defineEmits<{
+  check: []
+  'show-details': []
+}>()
+
+const phaseLabels: Record<string, string> = {
   downloading: '下载更新包',
   verifying: '校验更新包',
   extracting: '解压更新包',
@@ -114,22 +136,21 @@ const canShowDetails = computed(() => props.status === 'available' && Boolean(pr
       <h3 class="section-title">更新</h3>
     </div>
     <div class="about-panel__actions">
-      <button
-        type="button"
-        class="primary-button about-panel__button"
+      <AppButton
+        class="about-panel__button"
         :disabled="checking"
         @click="emit('check')"
       >
         {{ checking ? '检查中…' : '检查更新' }}
-      </button>
-      <button
+      </AppButton>
+      <AppButton
         v-if="canShowDetails"
-        type="button"
-        class="secondary-button about-panel__button"
+        variant="outlined"
+        class="about-panel__button"
         @click="emit('show-details')"
       >
         查看更新
-      </button>
+      </AppButton>
       <span
         v-if="statusText"
         class="about-panel__status"
@@ -145,45 +166,44 @@ const canShowDetails = computed(() => props.status === 'available' && Boolean(pr
 <style scoped lang="scss">
 .about-panel__intro {
   display: grid;
-  gap: 10px;
-  color: var(--text);
-  font-size: 13px;
+  gap: var(--md-sys-spacing-sm);
+  color: var(--md-sys-color-on-surface);
+  font-size: var(--md-sys-typescale-body-medium-size);
   line-height: 1.7;
 }
 
 .about-panel__facts {
   display: grid;
-  gap: 10px;
+  gap: var(--md-sys-spacing-sm);
   margin: 0;
-  padding: 14px 16px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  background: var(--panel-control);
+  padding: var(--md-sys-spacing-md) var(--md-sys-spacing-lg);
+  border-radius: var(--md-sys-shape-corner-small);
+  background: var(--md-sys-color-surface-container);
 }
 
 .about-panel__fact {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 16px;
+  gap: var(--md-sys-spacing-lg);
   margin: 0;
 
   dt {
-    color: var(--muted);
-    font-size: 12px;
+    color: var(--md-sys-color-on-surface-variant);
+    font-size: var(--md-sys-typescale-body-small-size);
   }
 
   dd {
     margin: 0;
-    color: var(--text);
-    font-size: 13px;
-    font-weight: 600;
+    color: var(--md-sys-color-on-surface);
+    font-size: var(--md-sys-typescale-body-medium-size);
+    font-weight: 500;
   }
 }
 
 .about-panel__hint {
-  color: var(--text-subtle);
-  font-size: 12px;
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--md-sys-typescale-body-small-size);
   line-height: 1.6;
 }
 
@@ -191,33 +211,28 @@ const canShowDetails = computed(() => props.status === 'available' && Boolean(pr
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: var(--md-sys-spacing-md);
 }
 
 .about-panel__button {
   min-width: 108px;
 }
 
-.about-panel__button:disabled {
-  cursor: not-allowed;
-  opacity: 0.56;
-}
-
 .about-panel__status {
-  color: var(--muted);
-  font-size: 12px;
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--md-sys-typescale-body-small-size);
   line-height: 1.5;
 
   &--accent {
-    color: var(--accent-strong);
+    color: var(--md-sys-color-primary);
   }
 
   &--success {
-    color: var(--success, var(--accent-strong));
+    color: var(--md-sys-color-success);
   }
 
   &--error {
-    color: var(--danger);
+    color: var(--md-sys-color-error);
   }
 }
 </style>

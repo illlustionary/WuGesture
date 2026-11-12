@@ -160,6 +160,8 @@ const orderedCategories = computed({
 </template>
 
 <style scoped lang="scss">
+@use '../../styles/tokens/state' as *;
+
 .rules-panel {
   display: flex;
   flex-direction: column;
@@ -173,42 +175,46 @@ const orderedCategories = computed({
   align-content: center;
   justify-items: center;
   min-height: 100%;
-  gap: 8px;
-  color: var(--muted);
+  gap: var(--md-sys-spacing-sm);
+  color: var(--md-sys-color-on-surface-variant);
 
   h2 {
-    color: var(--text);
-    font-size: 20px;
+    color: var(--md-sys-color-on-surface);
+    font-size: var(--md-sys-typescale-title-large-size);
+    line-height: var(--md-sys-typescale-title-large-line-height);
   }
 }
 
 .category-order-list {
   display: grid;
   gap: 0;
-  border-radius: var(--radius-md);
   overflow: hidden;
-  border: 1px solid var(--border);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-medium);
+  background: var(--md-sys-color-surface-container-lowest);
 }
 
 .category-order-item {
+  @include state-layer(var(--md-sys-color-on-surface));
+
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-height: 50px;
-  padding: 9px 12px;
-  border-radius: 0;
-  background: var(--interactive-bg);
+  gap: var(--md-sys-spacing-sm);
+  min-height: var(--md-sys-size-row-single);
+  padding: var(--md-sys-spacing-sm) var(--md-sys-spacing-md);
+  background: transparent;
+
   &--ghost {
-    opacity: 0.45;
+    opacity: var(--md-sys-state-disabled-content-opacity);
   }
 
   & + & {
-    border-top-width: 0;
+    border-top: 1px solid var(--md-sys-color-outline-variant);
   }
 
   &__drag-handle {
     cursor: grab;
-    color: var(--text-subtle);
+    color: var(--md-sys-color-on-surface-variant);
     font-size: 18px;
     line-height: 1;
     user-select: none;
@@ -223,43 +229,49 @@ const orderedCategories = computed({
     width: 24px;
     height: 24px;
     place-items: center;
-    border-radius: var(--radius-pill);
-    background: var(--interactive-icon-bg);
-    color: var(--accent-strong);
-    font-size: 12px;
-    font-weight: 600;
+    border-radius: var(--md-sys-shape-corner-full);
+    background: var(--md-sys-color-surface-container-high);
+    color: var(--md-sys-color-primary);
+    font-size: var(--md-sys-typescale-label-medium-size);
+    font-weight: var(--md-sys-typescale-label-medium-weight);
   }
 
   &__name {
     min-width: 0;
     flex: 1;
     overflow: hidden;
+    color: var(--md-sys-color-on-surface);
+    font-size: var(--md-sys-typescale-body-medium-size);
+    line-height: var(--md-sys-typescale-body-medium-line-height);
+    font-weight: 500;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-weight: 600;
   }
 
   &__actions {
+    position: relative;
+    z-index: 1;
     display: inline-flex;
-    gap: 6px;
+    gap: var(--md-sys-spacing-xs);
   }
 
   &__button {
-    padding: 5px 8px;
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-sm);
+    padding: var(--md-sys-spacing-xs) var(--md-sys-spacing-sm);
+    border: 1px solid var(--md-sys-color-outline-variant);
+    border-radius: var(--md-sys-shape-corner-small);
     background: transparent;
-    color: var(--text-subtle);
-    font-size: 12px;
+    color: var(--md-sys-color-on-surface-variant);
+    font-size: var(--md-sys-typescale-label-medium-size);
+    line-height: var(--md-sys-typescale-label-medium-line-height);
 
     &:hover:not(:disabled) {
-      border-color: var(--border-strong);
-      color: var(--text);
+      border-color: var(--md-sys-color-outline);
+      color: var(--md-sys-color-on-surface);
     }
 
     &:disabled {
       cursor: not-allowed;
-      opacity: 0.4;
+      opacity: var(--md-sys-state-disabled-content-opacity);
     }
   }
 }

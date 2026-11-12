@@ -26,14 +26,14 @@ function commit() {
 
 <template>
   <SettingsSectionCard title="音量/亮度提示">
-    <div class="field-card">
+    <SettingsToggleRow>
       <ToggleCheckbox
         v-model="draft.levelOsd.enabled"
         label="显示音量/亮度提示"
         note="关闭后调节音量或亮度时不再显示提示窗。"
         @change="commit"
       />
-    </div>
+    </SettingsToggleRow>
 
     <div class="level-osd-preview">
       <div

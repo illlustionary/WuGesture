@@ -1,7 +1,12 @@
-<script setup>
+<script setup lang="ts">
+import AppButton from '@/components/ui/AppButton.vue'
 import SettingsSectionCard from './SettingsSectionCard.vue'
 
-const emit = defineEmits(['export', 'import', 'reset'])
+const emit = defineEmits<{
+  export: []
+  import: []
+  reset: []
+}>()
 </script>
 
 <template>
@@ -18,13 +23,12 @@ const emit = defineEmits(['export', 'import', 'reset'])
             <span class="config-management__label">导出配置</span>
             <span class="config-management__desc"> 把当前配置保存为 JSON 文件，便于备份或迁移到其他电脑。 </span>
           </div>
-          <button
-            type="button"
-            class="config-management__button"
+          <AppButton
+            variant="outlined"
             @click="emit('export')"
           >
             导出
-          </button>
+          </AppButton>
         </div>
 
         <div class="config-management__item">
@@ -34,13 +38,12 @@ const emit = defineEmits(['export', 'import', 'reset'])
               选择 JSON 文件覆盖当前配置；选择文件后会再次确认，导入后无法撤销。
             </span>
           </div>
-          <button
-            type="button"
-            class="config-management__button"
+          <AppButton
+            variant="outlined"
             @click="emit('import')"
           >
             导入
-          </button>
+          </AppButton>
         </div>
       </section>
 
@@ -55,13 +58,12 @@ const emit = defineEmits(['export', 'import', 'reset'])
               和更新设置恢复为默认值；手势规则、分类、程序和边缘操作不会改变。
             </span>
           </div>
-          <button
-            type="button"
-            class="config-management__button config-management__button--danger"
+          <AppButton
+            variant="danger"
             @click="emit('reset')"
           >
             恢复默认
-          </button>
+          </AppButton>
         </div>
       </section>
     </div>
@@ -71,89 +73,54 @@ const emit = defineEmits(['export', 'import', 'reset'])
 <style scoped lang="scss">
 .config-management {
   display: grid;
-  gap: 22px;
+  gap: var(--md-sys-spacing-xl);
 }
 
 .config-management__group {
   display: grid;
-  gap: 10px;
+  gap: var(--md-sys-spacing-md);
 }
 
 .config-management__group--danger {
-  padding-top: 18px;
-  border-top: 1px solid var(--border-subtle);
+  padding-top: var(--md-sys-spacing-lg);
+  border-top: 1px solid var(--md-sys-color-outline-variant);
 }
 
 .config-management__title {
   margin: 0;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--muted);
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--md-sys-typescale-label-large-size);
+  line-height: var(--md-sys-typescale-label-large-line-height);
+  font-weight: var(--md-sys-typescale-label-large-weight);
 }
 
 .config-management__item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 14px 16px;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  background: var(--interactive-bg);
+  gap: var(--md-sys-spacing-lg);
+  padding: var(--md-sys-spacing-md) var(--md-sys-spacing-lg);
+  border-radius: var(--md-sys-shape-corner-small);
+  background: var(--md-sys-color-surface-container);
 }
 
 .config-management__copy {
   display: grid;
-  gap: 4px;
+  gap: var(--md-sys-spacing-xs);
   min-width: 0;
 }
 
 .config-management__label {
-  font-size: 13px;
+  color: var(--md-sys-color-on-surface);
+  font-size: var(--md-sys-typescale-body-medium-size);
+  line-height: var(--md-sys-typescale-body-medium-line-height);
   font-weight: 600;
-  color: var(--text);
 }
 
 .config-management__desc {
-  font-size: 12px;
-  line-height: 1.55;
-  color: var(--muted);
-}
-
-.config-management__button {
-  flex: 0 0 auto;
-  min-height: 34px;
-  padding: 0 16px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--panel-control);
-  color: var(--text);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition:
-    border-color 120ms ease,
-    background-color 120ms ease,
-    color 120ms ease;
-
-  &:hover {
-    border-color: var(--border-strong);
-    background: var(--interactive-hover-bg);
-  }
-
-  &:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 3px var(--focus-ring);
-  }
-}
-
-.config-management__button--danger {
-  color: var(--danger);
-  border-color: var(--danger-border);
-
-  &:hover {
-    border-color: var(--danger);
-  }
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--md-sys-typescale-body-small-size);
+  line-height: var(--md-sys-typescale-body-small-line-height);
 }
 
 @media (max-width: 640px) {
@@ -162,7 +129,7 @@ const emit = defineEmits(['export', 'import', 'reset'])
     align-items: stretch;
   }
 
-  .config-management__button {
+  .config-management__item :deep(.app-button) {
     width: 100%;
   }
 }

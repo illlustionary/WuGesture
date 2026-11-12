@@ -192,8 +192,8 @@ function previewLevelOsd(kind) {
   width: 100%;
   min-height: 44px;
   padding: 4px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  background: var(--panel-control);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-small);
+  background: var(--md-sys-color-surface-container-high);
 }
 </style>
