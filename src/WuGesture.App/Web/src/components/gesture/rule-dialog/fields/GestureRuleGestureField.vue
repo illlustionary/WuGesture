@@ -126,50 +126,52 @@ const hint = computed(() => {
 <style scoped lang="scss">
 .gesture-rule-gesture-field {
   display: grid;
-  gap: 6px;
+  gap: var(--md-sys-spacing-sm);
 }
 
 .gesture-rule-gesture-field__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--md-sys-spacing-md);
 }
 
 .gesture-rule-gesture-field__label {
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 600;
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--md-sys-typescale-label-large-size);
+  line-height: var(--md-sys-typescale-label-large-line-height);
+  font-weight: var(--md-sys-typescale-label-large-weight);
 }
 
 .gesture-rule-gesture-field__options {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 12px;
-  margin-top: 6px;
+  gap: var(--md-sys-spacing-md);
+  margin-top: var(--md-sys-spacing-sm);
 }
 
 .gesture-rule-gesture-field__control {
   display: flex;
   align-items: center;
-  min-height: 52px;
+  min-height: var(--md-sys-size-field-height);
   overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--panel-inset);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-small);
+  background: var(--md-sys-color-surface-container);
 
   strong {
     min-width: 0;
     flex: 1 1 auto;
-    padding: 0 14px;
+    padding: 0 var(--md-sys-spacing-lg);
     overflow: hidden;
-    color: var(--text);
-    font-size: 14px;
+    color: var(--md-sys-color-on-surface);
+    font-size: var(--md-sys-typescale-body-medium-size);
+    line-height: var(--md-sys-typescale-body-medium-line-height);
     text-overflow: ellipsis;
     white-space: nowrap;
 
     &.is-empty {
-      color: var(--text-subtle);
+      color: var(--md-sys-color-outline);
       font-weight: 500;
     }
   }
@@ -180,25 +182,25 @@ const hint = computed(() => {
   align-self: stretch;
   align-items: center;
   justify-content: center;
-  gap: 7px;
+  gap: var(--md-sys-spacing-sm);
   min-width: 128px;
-  padding: 0 16px;
+  padding: 0 var(--md-sys-spacing-lg);
   border: 0;
-  border-left: 1px solid var(--border-muted);
+  border-left: 1px solid color-mix(in srgb, var(--md-sys-color-outline-variant) 60%, transparent);
   background: transparent;
-  color: var(--accent-strong);
+  color: var(--md-sys-color-primary);
   cursor: pointer;
   transition:
-    background-color 120ms ease,
-    color 120ms ease;
+    background-color var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard),
+    color var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
 
   &:hover {
-    background: var(--accent-soft);
+    background: color-mix(in srgb, var(--md-sys-color-primary) 12%, transparent);
   }
 
   &.is-recording {
-    background: var(--recording-bg);
-    color: var(--recording-text);
+    background: var(--md-sys-color-tertiary-container);
+    color: var(--md-sys-color-on-tertiary-container);
   }
 }
 
@@ -208,9 +210,9 @@ const hint = computed(() => {
 }
 
 .gesture-rule-gesture-field__message {
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.45;
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--md-sys-typescale-body-small-size);
+  line-height: var(--md-sys-typescale-body-small-line-height);
 }
 
 @media (max-width: 720px) {
@@ -220,7 +222,7 @@ const hint = computed(() => {
     .gesture-rule-gesture-field__record {
       width: 100%;
       min-height: 40px;
-      border-top: 1px solid var(--border-muted);
+      border-top: 1px solid color-mix(in srgb, var(--md-sys-color-outline-variant) 60%, transparent);
       border-left: 0;
     }
   }

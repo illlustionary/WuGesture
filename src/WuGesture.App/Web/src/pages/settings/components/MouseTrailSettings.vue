@@ -120,13 +120,13 @@ function commit() {
 <style scoped lang="scss">
 .mouse-trail-preview {
   display: grid;
-  gap: 18px;
+  gap: var(--md-sys-spacing-lg);
   min-height: 150px;
-  margin-bottom: 14px;
-  padding: 24px;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  background: var(--panel-inset);
+  margin-bottom: var(--md-sys-spacing-lg);
+  padding: var(--md-sys-spacing-xl);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-medium);
+  background: var(--md-sys-color-surface-container);
 }
 
 .mouse-trail-preview__row {
@@ -140,9 +140,9 @@ function commit() {
   align-items: center;
   min-height: 28px;
   flex-basis: 80px;
-  padding: 0 10px;
-  border-radius: var(--radius-pill);
-  color: var(--text-preview);
+  padding: 0 var(--md-sys-spacing-md);
+  border-radius: var(--md-sys-shape-corner-full);
+  color: var(--md-sys-color-on-surface);
   font-size: 12px;
   font-weight: 600;
 
@@ -158,7 +158,7 @@ function commit() {
 
 .mouse-trail-preview__path {
   height: 0;
-  border-radius: var(--radius-pill);
+  border-radius: var(--md-sys-shape-corner-full);
 
   &--inactive {
     width: 72%;

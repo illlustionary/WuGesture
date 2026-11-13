@@ -148,30 +148,30 @@ const webDavTestState = computed(() => {
 
 .webdav-password__toggle {
   position: absolute;
-  right: 4px;
+  right: var(--md-sys-spacing-xs);
   display: inline-grid;
   place-items: center;
   width: 34px;
   height: 34px;
   padding: 0;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--md-sys-shape-corner-small);
   background: transparent;
-  color: var(--muted);
+  color: var(--md-sys-color-on-surface-variant);
   cursor: pointer;
   transition:
-    color 120ms ease,
-    background-color 120ms ease;
+    color var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard),
+    background-color var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
 
   &:hover {
-    color: var(--text);
-    background: var(--interactive-hover-bg);
+    color: var(--md-sys-color-on-surface);
+    background: var(--md-sys-color-surface-container-high);
   }
 
   &:focus-visible {
     outline: none;
-    color: var(--text);
-    box-shadow: 0 0 0 3px var(--focus-ring);
+    color: var(--md-sys-color-on-surface);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--md-sys-color-primary) 24%, transparent);
   }
 
   :deep(svg) {

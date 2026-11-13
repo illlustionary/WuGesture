@@ -72,21 +72,22 @@ const actionTypeOptions = ACTION_TYPE_OPTIONS
 <style scoped lang="scss">
 .gesture-rule-command-fields {
   display: grid;
-  gap: 12px;
-  padding-top: 18px;
-  border-top: 1px solid var(--border-muted);
+  gap: var(--md-sys-spacing-md);
+  padding-top: var(--md-sys-spacing-lg);
+  border-top: 1px solid color-mix(in srgb, var(--md-sys-color-outline-variant) 60%, transparent);
 }
 
 .gesture-rule-command-fields__title {
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 600;
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--md-sys-typescale-label-large-size);
+  line-height: var(--md-sys-typescale-label-large-line-height);
+  font-weight: var(--md-sys-typescale-label-large-weight);
 }
 
 .gesture-rule-command-fields__grid {
   display: grid;
   grid-template-columns: minmax(150px, 0.8fr) minmax(0, 1.6fr);
-  gap: 12px;
+  gap: var(--md-sys-spacing-md);
 }
 
 .gesture-rule-command-fields__detail {

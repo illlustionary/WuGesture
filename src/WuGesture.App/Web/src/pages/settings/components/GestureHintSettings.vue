@@ -182,25 +182,25 @@ function commit() {
   align-items: flex-end;
   justify-content: center;
   min-height: 180px;
-  margin-bottom: 14px;
-  padding: 18px;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  background: var(--panel-inset);
+  margin-bottom: var(--md-sys-spacing-lg);
+  padding: var(--md-sys-spacing-lg);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-medium);
+  background: var(--md-sys-color-surface-container);
   overflow: hidden;
 }
 
 .gesture-hint-preview__bubble {
   display: grid;
-  gap: 8px;
+  gap: var(--md-sys-spacing-sm);
   justify-items: start;
   margin-bottom: var(--hint-bottom-offset);
-  padding: 16px 28px;
-  border: 1px solid var(--border-inverse);
+  padding: var(--md-sys-spacing-lg) var(--md-sys-spacing-xl);
+  border: 1px solid color-mix(in srgb, var(--md-sys-color-inverse-on-surface) 12%, transparent);
   border-radius: var(--hint-radius);
   color: var(--hint-color);
   background: var(--hint-background-rgba);
-  box-shadow: var(--shadow-popover);
+  box-shadow: var(--md-sys-elevation-level2);
 
   strong {
     font-size: var(--hint-font-size);

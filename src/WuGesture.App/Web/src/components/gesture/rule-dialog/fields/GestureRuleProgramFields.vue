@@ -155,20 +155,21 @@ function removeArgument(index) {
 .gesture-rule-program-fields,
 .gesture-rule-program-fields__section {
   display: grid;
-  gap: 8px;
+  gap: var(--md-sys-spacing-sm);
 }
 
 .gesture-rule-program-fields__title {
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 600;
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--md-sys-typescale-label-large-size);
+  line-height: var(--md-sys-typescale-label-large-line-height);
+  font-weight: var(--md-sys-typescale-label-large-weight);
 }
 
 .gesture-rule-program-fields__row {
   display: grid;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--interactive-bg);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-small);
+  background: var(--md-sys-color-surface-container);
 }
 
 .gesture-rule-program-fields__program-row {
@@ -177,14 +178,15 @@ function removeArgument(index) {
 
 .gesture-rule-program-fields__picker-row {
   grid-template-columns: 1fr auto;
-  min-height: 52px;
-  padding: 8px 10px 8px 14px;
+  min-height: var(--md-sys-size-field-height);
+  padding: var(--md-sys-spacing-sm) var(--md-sys-spacing-md) var(--md-sys-spacing-sm) var(--md-sys-spacing-lg);
   align-items: center;
 }
 
 .gesture-rule-program-fields__picker-hint {
-  color: var(--text-subtle);
-  font-size: 13px;
+  color: var(--md-sys-color-outline);
+  font-size: var(--md-sys-typescale-body-small-size);
+  line-height: var(--md-sys-typescale-body-small-line-height);
 }
 
 .gesture-rule-program-fields__program {
@@ -194,27 +196,29 @@ function removeArgument(index) {
 .gesture-rule-program-fields__empty {
   display: flex;
   min-height: 64px;
-  padding: 12px 14px;
+  padding: var(--md-sys-spacing-md) var(--md-sys-spacing-lg);
   align-items: center;
-  color: var(--text-subtle);
+  color: var(--md-sys-color-outline);
+  font-size: var(--md-sys-typescale-body-medium-size);
+  line-height: var(--md-sys-typescale-body-medium-line-height);
 }
 
 .gesture-rule-program-fields__add-button {
   align-self: center;
-  margin: 0 10px;
+  margin: 0 var(--md-sys-spacing-md);
 }
 
 .gesture-rule-program-fields__argument-row {
-  gap: 12px;
-  min-height: 52px;
-  padding: 8px 10px 8px 14px;
+  gap: var(--md-sys-spacing-md);
+  min-height: var(--md-sys-size-field-height);
+  padding: var(--md-sys-spacing-sm) var(--md-sys-spacing-md) var(--md-sys-spacing-sm) var(--md-sys-spacing-lg);
   align-items: center;
 }
 
 .gesture-rule-program-fields__argument-control {
   flex: 1;
   display: flex;
-  gap: 8px;
+  gap: var(--md-sys-spacing-sm);
   align-items: center;
 }
 
@@ -227,36 +231,37 @@ function removeArgument(index) {
 
 .gesture-rule-program-fields__argument-empty {
   display: grid;
-  gap: 4px;
+  gap: var(--md-sys-spacing-xs);
   min-height: 40px;
-  padding: 2px 0;
-  color: var(--text-subtle);
-  font-size: 12px;
+  padding: var(--md-sys-spacing-xs) 0;
+  color: var(--md-sys-color-outline);
+  font-size: var(--md-sys-typescale-body-small-size);
+  line-height: var(--md-sys-typescale-body-small-line-height);
 }
 
 .gesture-rule-program-fields__argument-list {
   display: grid;
-  gap: 8px;
-  min-height: 52px;
-  padding: 12px 14px;
+  gap: var(--md-sys-spacing-sm);
+  min-height: var(--md-sys-size-field-height);
+  padding: var(--md-sys-spacing-md) var(--md-sys-spacing-lg);
   align-content: center;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--interactive-bg);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-small);
+  background: var(--md-sys-color-surface-container);
 }
 
 .gesture-rule-program-fields__arguments {
   display: flex;
   min-height: 34px;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--md-sys-spacing-sm);
 }
 
 .gesture-rule-program-fields__argument {
   max-width: 100%;
   transition:
-    opacity 160ms ease,
-    transform 160ms ease;
+    opacity var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard),
+    transform var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
 
   &:hover,
   &:focus-within {
@@ -284,7 +289,7 @@ function removeArgument(index) {
 @media (max-width: 560px) {
   .gesture-rule-program-fields__argument-row {
     grid-template-columns: 1fr;
-    gap: 6px;
+    gap: var(--md-sys-spacing-sm);
   }
 }
 </style>
