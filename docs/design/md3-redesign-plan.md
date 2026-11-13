@@ -620,7 +620,7 @@ C# 读取强调色 → rules 消息 appearance.systemAccent
 | 阶段 2：基础控件 | 已完成（2026-11-10） | 新增 `AppButton` / `AppChip` / `AppDivider` / `AppCheckbox` / `types/ui.ts`；重写 `IconActionButton`、`HoverBubble`、`BaseInput`、`CustomSelect`、`ToggleCheckbox`、`BaseRange` 为 `<script setup lang="ts">`；全局 `.primary-button` 等类映射到 MD3；`BaseDialog` 按钮改用 `AppButton`；规则参数改用 `AppChip` |
 | 阶段 3：容器与导航 | 已完成（2026-11-11） | `AppShell` 重写为 TS 并新增 56 高页面头（`title` / `description` / `actions`），各页面统一传标题；`AppSidebar` 改为 256 宽 Navigation Drawer（48 高 full 圆角项、`secondaryContainer` 激活胶囊、去掉左侧蓝条），`SidebarAppStatus` 状态色令牌化；`.section-card` / `.list-stack` / `.page-stack` 改为 Filled Card + 16 间距；`BaseDialog` 改为 28 圆角 / 24 内边距 / `surfaceContainerHigh` / 22-28 标题；`GestureRuleList` 重写为 TS 并改为 56 高行 + 40 高表头 + 常显删除按钮；新增 `styles/_toast.scss` 把 Toast 统一为 Snackbar |
 | 阶段 4：页面落地 | 已完成（2026-11-13） | 第 1 批：`SettingsField` / `SettingsFormGrid` / `SettingsToggleRow` / `ConfigManagement` 改为 MD3 令牌容器；`ApplicationListItem` 重写为 TS 56 高列表行（hover 状态层、常显删除）；`ScopePriorityNotice` 改 `tertiaryContainer`；程序页分类排序列表、排除项页、边缘操作卡片/弹窗、关于更新面板令牌化；清理 `field-card` 等 UnoCSS shortcut。第 2 批：确认、快速查找、帮助、引导、更新、新建范围弹窗全部改用 `BaseDialog` + `AppButton`，搜索框与结果列表按 MD3 重做。第 3 批：设置页轨迹线/手势提示/音量亮度/WebDAV 预览容器与规则弹窗字段令牌化；`src` 内旧别名引用清零，仅保留 `_aliases.scss` 映射与运行时动态变量 |
-| 阶段 5：后端配置扩展 | 未开始 | — |
+| 阶段 5：后端配置扩展 | 已完成（2026-11-13） | `AppearanceUiSettings` 新增 `colorSource` / `seedColor` / `schemeVariant`；`GestureConfigContract` 增加配色来源与变体白名单；Normalizer 校验枚举与六位十六进制种子色；`WebViewRulesPayloadFactory` 下发新字段与 `systemAccent`；新增 `WindowsAccentColor`（DWM 强调色 + 2 秒缓存）；托盘调色板改为从外观配置派生；前端默认值、Normalizer 与 payload 同步保留新字段 |
 | 阶段 6：前端主题系统 | 未开始 | — |
 | 阶段 7：图标与打磨 | 未开始 | — |
 

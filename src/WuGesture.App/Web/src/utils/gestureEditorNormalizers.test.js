@@ -145,6 +145,20 @@ describe('界面设置规范化', () => {
     expect(normalizeAppearanceSettings({ theme: 'neon' }).theme).toBe('dark')
   })
 
+  it('配色来源与变体只接受白名单，未知值回退默认', () => {
+    expect(normalizeAppearanceSettings({ colorSource: 'SYSTEM' }).colorSource).toBe('system')
+    expect(normalizeAppearanceSettings({ colorSource: 'wallpaper' }).colorSource).toBe('preset')
+    expect(normalizeAppearanceSettings({ schemeVariant: 'vibrant' }).schemeVariant).toBe('vibrant')
+    expect(normalizeAppearanceSettings({ schemeVariant: 'unknown' }).schemeVariant).toBe('tonalSpot')
+  })
+
+  it('种子色接受三位或六位十六进制并统一为六位大写', () => {
+    expect(normalizeAppearanceSettings({ seedColor: '#529ef1' }).seedColor).toBe('#529EF1')
+    expect(normalizeAppearanceSettings({ seedColor: '5af' }).seedColor).toBe('#55AAFF')
+    expect(normalizeAppearanceSettings({ seedColor: '#12345' }).seedColor).toBe('#529EF1')
+    expect(normalizeAppearanceSettings({ seedColor: '#GGGGGG' }).seedColor).toBe('#529EF1')
+  })
+
   it('排除项去除空白、忽略空项并按路径去重', () => {
     const result = normalizeExcludedApplications([
       { name: 'code.exe', path: ' C:\\Code\\Code.exe ' },

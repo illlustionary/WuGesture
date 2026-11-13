@@ -29,6 +29,12 @@ public sealed class AppearanceUiSettings
 {
     public string Theme { get; set; } = GestureConfigContract.AppearanceThemes.System;
 
+    public string ColorSource { get; set; } = GestureConfigContract.AppearanceColorSources.Preset;
+
+    public string SeedColor { get; set; } = "#529EF1";
+
+    public string SchemeVariant { get; set; } = GestureConfigContract.AppearanceSchemeVariants.TonalSpot;
+
     public string LightTitleBarColor { get; set; } = "#FFFFFF";
 
     public string LightTitleBarTextColor { get; set; } = "#16202B";

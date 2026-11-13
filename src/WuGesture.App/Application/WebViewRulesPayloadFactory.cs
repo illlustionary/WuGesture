@@ -65,6 +65,10 @@ internal static class WebViewRulesPayloadFactory
             appearance = new
             {
                 theme = uiSettings.Appearance.Theme,
+                colorSource = uiSettings.Appearance.ColorSource,
+                seedColor = uiSettings.Appearance.SeedColor,
+                schemeVariant = uiSettings.Appearance.SchemeVariant,
+                systemAccent = WindowsAccentColor.Read(),
                 lightTitleBarColor = uiSettings.Appearance.LightTitleBarColor,
                 lightTitleBarTextColor = uiSettings.Appearance.LightTitleBarTextColor,
                 darkTitleBarColor = uiSettings.Appearance.DarkTitleBarColor,

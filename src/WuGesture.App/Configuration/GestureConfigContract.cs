@@ -85,6 +85,22 @@ public static class GestureConfigContract
         public const string Dark = "dark";
     }
 
+    public static class AppearanceColorSources
+    {
+        public const string Preset = "preset";
+        public const string Custom = "custom";
+        public const string System = "system";
+    }
+
+    public static class AppearanceSchemeVariants
+    {
+        public const string TonalSpot = "tonalSpot";
+        public const string Neutral = "neutral";
+        public const string Vibrant = "vibrant";
+        public const string Expressive = "expressive";
+        public const string Monochrome = "monochrome";
+    }
+
     public static class UpdateSources
     {
         public const string Gitee = "gitee";

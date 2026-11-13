@@ -308,7 +308,7 @@ src\pages
 后端发送：
 
 - `{ type: "status", status: "running|paused|..." }`
-- `{ type: "rules", appVersion: "v...", rules: [{ scope, mouseButton, pattern, wheelModifier, executeOnWheel, actionName, actionType, ... }], applications: [{ name, displayName, path, categories, icon }, ...], edgeActions: [...], uiSettings: { sidebar: { collapsed }, update: { checkForUpdates, source }, onboarding: { welcomeCompleted }, ... }, ... }`；`wheelModifier` 为 `up`/`down` 时表示方向手势叠加了滚轮修饰，`pattern` 可以为空表示按住直接滚动；`executeOnWheel` 决定每格连续执行还是松键执行一次。`appVersion` 来自程序集版本，仅用于配置界面展示，不写入配置文件；`uiSettings.sidebar.collapsed` 保存侧栏收起状态；`uiSettings.onboarding.welcomeCompleted` 决定是否自动弹出首次引导；`categories` 的顺序决定分类规则冲突时的覆盖顺序，越靠前优先级越高，其中 `uiSettings.appBehavior.excludedApplications` 的运行态消息项会额外带 `icon`，不写入配置文件。
+- `{ type: "rules", appVersion: "v...", rules: [{ scope, mouseButton, pattern, wheelModifier, executeOnWheel, actionName, actionType, ... }], applications: [{ name, displayName, path, categories, icon }, ...], edgeActions: [...], uiSettings: { appearance: { theme, colorSource, seedColor, schemeVariant, systemAccent, ... }, sidebar: { collapsed }, update: { checkForUpdates, source }, onboarding: { welcomeCompleted }, ... }, ... }`；`wheelModifier` 为 `up`/`down` 时表示方向手势叠加了滚轮修饰，`pattern` 可以为空表示按住直接滚动；`executeOnWheel` 决定每格连续执行还是松键执行一次。`appVersion` 来自程序集版本，仅用于配置界面展示，不写入配置文件；`uiSettings.sidebar.collapsed` 保存侧栏收起状态；`uiSettings.onboarding.welcomeCompleted` 决定是否自动弹出首次引导；`categories` 的顺序决定分类规则冲突时的覆盖顺序，越靠前优先级越高，其中 `uiSettings.appBehavior.excludedApplications` 的运行态消息项会额外带 `icon`，不写入配置文件。`uiSettings.appearance.systemAccent` 只出现在宿主下发的消息里，由宿主读取 Windows 强调色，不写入配置文件。
 - `{ type: "application-selected", requestId: "...", name: "...", displayName: "...", path: "...", category: "...", icon: "..." }`
 - `{ type: "gesture-recorded", requestId: "...", button: "right|middle", pattern: ["Down", "Right"] }`
 - `{ type: "hotkey-recorded", requestId: "...", keys: ["Control", "W"] }`
@@ -323,6 +323,14 @@ src\pages
 - `{ type: "update-failed", message }`：下载、校验或启动更新程序失败。
 - `{ type: "update-restarting", message }`：更新程序已启动，应用即将退出重启。
 - `{ type: "update-completed", version, message }`：更新成功后首次启动、Web 界面完成 `get-status` 后由宿主发送一次；前端提示更新成功、关闭更新弹窗并切换到“关于&更新”页。
+
+`uiSettings.appearance` 当前包含：
+
+- `theme`：`system` / `light` / `dark`
+- `colorSource`：`preset`（默认）/ `custom` / `system`
+- `seedColor`：六位十六进制种子色，默认 `#529EF1`
+- `schemeVariant`：预留的调色板变体，默认 `tonalSpot`
+- `lightTitleBarColor` / `lightTitleBarTextColor` / `darkTitleBarColor` / `darkTitleBarTextColor`
 
 `uiSettings.appBehavior` 当前包含：
 

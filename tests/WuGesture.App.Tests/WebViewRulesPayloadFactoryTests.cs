@@ -160,6 +160,41 @@ public sealed class WebViewRulesPayloadFactoryTests
     }
 
     [Fact]
+    public void Create_IncludesAppearanceColorSourceAndSystemAccent()
+    {
+        var config = GestureConfigNormalizer.Normalize(new GestureConfig
+        {
+            UiSettings = new GestureUiSettings
+            {
+                Appearance = new AppearanceUiSettings
+                {
+                    ColorSource = GestureConfigContract.AppearanceColorSources.Custom,
+                    SeedColor = "#009688",
+                    SchemeVariant = GestureConfigContract.AppearanceSchemeVariants.Vibrant
+                }
+            }
+        });
+        var loadedConfig = new LoadedGestureConfig(
+            "test.json",
+            config,
+            GestureConfigMapper.ToRules(config));
+
+        using var document = JsonDocument.Parse(WebViewRulesPayloadFactory.Create(loadedConfig));
+        var appearance = document.RootElement
+            .GetProperty("uiSettings")
+            .GetProperty("appearance");
+
+        Assert.Equal(
+            GestureConfigContract.AppearanceColorSources.Custom,
+            appearance.GetProperty("colorSource").GetString());
+        Assert.Equal("#009688", appearance.GetProperty("seedColor").GetString());
+        Assert.Equal(
+            GestureConfigContract.AppearanceSchemeVariants.Vibrant,
+            appearance.GetProperty("schemeVariant").GetString());
+        Assert.Equal(WindowsAccentColor.Read(), appearance.GetProperty("systemAccent").GetString());
+    }
+
+    [Fact]
     public void Create_IncludesSidebarCollapsedState()
     {
         var config = GestureConfigNormalizer.Normalize(new GestureConfig

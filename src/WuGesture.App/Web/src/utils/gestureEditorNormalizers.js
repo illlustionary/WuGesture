@@ -231,6 +231,18 @@ function normalizeColor(value, fallback) {
   return normalized || fallback
 }
 
+function normalizeSeedColor(value, fallback) {
+  const normalized = String(value ?? '').trim()
+  const match = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(normalized)
+  if (!match) {
+    return fallback
+  }
+
+  const digits = match[1]
+  const expanded = digits.length === 3 ? digits.replace(/./g, digit => digit + digit) : digits
+  return `#${expanded.toUpperCase()}`
+}
+
 function normalizeMouseTrailColor(value, fallback) {
   const normalized = normalizeColor(value, fallback)
   return /^#ff[0-9a-f]{6}$/i.test(normalized) ? `#${normalized.slice(3)}` : normalized
@@ -283,8 +295,17 @@ export function normalizeAppBehaviorSettings(settings) {
 export function normalizeAppearanceSettings(settings) {
   settings = normalizeObjectKeys(settings)
   const theme = String(settings?.theme ?? DEFAULT_UI_SETTINGS.appearance.theme).toLowerCase()
+  const colorSource = String(settings?.colorSource ?? DEFAULT_UI_SETTINGS.appearance.colorSource).toLowerCase()
+  const schemeVariant = String(settings?.schemeVariant ?? DEFAULT_UI_SETTINGS.appearance.schemeVariant).trim()
   return {
     theme: ['system', 'light', 'dark'].includes(theme) ? theme : DEFAULT_UI_SETTINGS.appearance.theme,
+    colorSource: ['preset', 'custom', 'system'].includes(colorSource)
+      ? colorSource
+      : DEFAULT_UI_SETTINGS.appearance.colorSource,
+    seedColor: normalizeSeedColor(settings?.seedColor, DEFAULT_UI_SETTINGS.appearance.seedColor),
+    schemeVariant: ['tonalSpot', 'neutral', 'vibrant', 'expressive', 'monochrome'].includes(schemeVariant)
+      ? schemeVariant
+      : DEFAULT_UI_SETTINGS.appearance.schemeVariant,
     lightTitleBarColor: normalizeColor(settings?.lightTitleBarColor, DEFAULT_UI_SETTINGS.appearance.lightTitleBarColor),
     lightTitleBarTextColor: normalizeColor(
       settings?.lightTitleBarTextColor,

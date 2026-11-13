@@ -12,6 +12,9 @@ import {
 export const DEFAULT_UI_SETTINGS = {
   appearance: {
     theme: 'dark',
+    colorSource: 'preset',
+    seedColor: '#529EF1',
+    schemeVariant: 'tonalSpot',
     lightTitleBarColor: '#FFFFFF',
     lightTitleBarTextColor: '#16202B',
     darkTitleBarColor: '#1B222B',

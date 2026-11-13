@@ -178,6 +178,40 @@ public sealed class GestureConfigNormalizerTests
     }
 
     [Fact]
+    public void Normalize_FallsBackForUnknownAppearanceColorSettings()
+    {
+        var config = new GestureConfig();
+        config.UiSettings.Appearance.ColorSource = "wallpaper";
+        config.UiSettings.Appearance.SeedColor = "#12345";
+        config.UiSettings.Appearance.SchemeVariant = "rainbow";
+
+        GestureConfigNormalizer.Normalize(config);
+
+        Assert.Equal(
+            GestureConfigContract.AppearanceColorSources.Preset,
+            config.UiSettings.Appearance.ColorSource);
+        Assert.Equal("#529EF1", config.UiSettings.Appearance.SeedColor);
+        Assert.Equal(
+            GestureConfigContract.AppearanceSchemeVariants.TonalSpot,
+            config.UiSettings.Appearance.SchemeVariant);
+    }
+
+    [Theory]
+    [InlineData("#529ef1", "#529EF1")]
+    [InlineData("5af", "#55AAFF")]
+    [InlineData(" #009688 ", "#009688")]
+    [InlineData("#GGGGGG", "#529EF1")]
+    public void Normalize_ValidatesSeedColor(string source, string expected)
+    {
+        var config = new GestureConfig();
+        config.UiSettings.Appearance.SeedColor = source;
+
+        GestureConfigNormalizer.Normalize(config);
+
+        Assert.Equal(expected, config.UiSettings.Appearance.SeedColor);
+    }
+
+    [Fact]
     public void Normalize_CleansExcludedApplications()
     {
         var config = new GestureConfig();
