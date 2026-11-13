@@ -94,9 +94,11 @@ input[type='number'] {
     background: var(--md-sys-color-surface-container-high);
   }
 
-  &:focus {
+  &:focus,
+  &:focus-visible {
+    outline: none;
     border-color: var(--md-sys-color-primary);
-    box-shadow: inset 0 -2px 0 0 var(--md-sys-color-primary);
+    box-shadow: inset 0 0 0 1px var(--md-sys-color-primary);
   }
 
   &:disabled {
@@ -155,8 +157,12 @@ input[type='range'] {
     background: var(--md-sys-color-primary);
   }
 
-  &:focus-visible::-webkit-slider-thumb {
-    box-shadow: 0 0 0 4px var(--md-sys-color-primary-container);
+  &:focus-visible {
+    outline: none;
+
+    &::-webkit-slider-thumb {
+      box-shadow: 0 0 0 4px var(--md-sys-color-primary-container);
+    }
   }
 
   &:disabled {
@@ -184,7 +190,8 @@ input[type='color'] {
 
   &:focus-visible {
     border-color: var(--md-sys-color-primary);
-    box-shadow: inset 0 -2px 0 0 var(--md-sys-color-primary);
+    outline: none;
+    box-shadow: inset 0 0 0 1px var(--md-sys-color-primary);
   }
 
   &::-webkit-color-swatch-wrapper {
