@@ -66,8 +66,9 @@ jobs:
         shell: pwsh
         run: |
           git remote add gitee "https://oauth2:$env:GITEE_TOKEN@gitee.com/$env:GITEE_REPOSITORY.git"
-          git push gitee "${env:GITHUB_SHA}:refs/heads/main"
-          git push gitee "refs/tags/${env:GITHUB_REF_NAME}:refs/tags/${env:GITHUB_REF_NAME}"
+          # 镜像仓库只做单向同步，历史被重写后仍需强制推送。
+          git push --force gitee "${env:GITHUB_SHA}:refs/heads/main"
+          git push --force gitee "refs/tags/${env:GITHUB_REF_NAME}:refs/tags/${env:GITHUB_REF_NAME}"
 
       - name: Create Gitee release
         if: ${{ env.GITEE_REPOSITORY != '' && env.GITEE_TOKEN != '' }}
