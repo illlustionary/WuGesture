@@ -77,7 +77,7 @@ git push origin :refs/tags/v0.97
 
 若需在 GitHub Actions 同步发布至 Gitee，请在 GitHub 仓库 Actions secrets 中配置：
 
-- `GITEE_REPOSITORY`：Gitee 仓库路径，例如 `neko_nya/WuGesture`。
+- `GITEE_REPOSITORY`：Gitee 仓库路径，例如 `<your-gitee-name>/WuGesture`。
 - `GITEE_TOKEN`：拥有仓库写入权限的 Gitee 私人令牌。
 
 两个 secret 都已配置时，工作流会镜像 `main` 和发行标签到 Gitee，并发布相同的 ZIP 附件和更新说明（含 SHA256 校验行）。未配置时，Gitee 同步会被跳过，GitHub Release 不受影响。
@@ -85,8 +85,8 @@ git push origin :refs/tags/v0.97
 首次使用双远程时，可保留 Gitee 为 `origin`，并添加 GitHub 远程：
 
 ```powershell
-git remote set-url origin git@gitee.com:neko_nya/WuGesture.git
-git remote add github git@github.com:illlustionary/WuGesture.git
+git remote set-url origin git@gitee.com:<your-gitee-name>/WuGesture.git
+git remote add github git@github.com:<your-github-name>/WuGesture.git
 git push -u github main
 git push github --tags
 ```
