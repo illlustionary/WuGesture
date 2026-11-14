@@ -120,6 +120,7 @@ export function useGestureConfigPersistence({
 
   function resetUiSettings() {
     state.uiSettings = createDefaultUiSettings()
+    state.webDavOperation = ''
     state.webDavTestState = 'idle'
     state.webDavTestedSignature = ''
     pendingWebDavTestSignature = ''
@@ -152,7 +153,7 @@ export function useGestureConfigPersistence({
       return
     }
 
-    state.webDavTesting = true
+    state.webDavOperation = 'test'
     state.webDavTestState = 'idle'
     state.webDavTestedSignature = ''
     pendingWebDavTestSignature = signature
@@ -163,6 +164,10 @@ export function useGestureConfigPersistence({
   }
 
   function saveConfigToWebDav() {
+    if (state.webDavOperation) {
+      return
+    }
+
     const payload = getConfigPayload()
     if (payload.rules.length === 0) {
       setMessage('至少保留一条规则。', 'error')
@@ -174,6 +179,12 @@ export function useGestureConfigPersistence({
       return
     }
 
+    if (!webView.isAvailable()) {
+      setMessage('浏览器预览不支持备份到 WebDAV，请在 WuGesture 桌面应用中操作。', 'error')
+      return
+    }
+
+    state.webDavOperation = 'save'
     webView.post({
       type: WEBVIEW_MESSAGE_TYPES.webDavSave,
       ...payload
@@ -181,12 +192,22 @@ export function useGestureConfigPersistence({
   }
 
   function restoreConfigFromWebDav() {
+    if (state.webDavOperation) {
+      return
+    }
+
     const payload = getConfigPayload()
     if (!isWebDavTested(payload.uiSettings.webDav)) {
       setMessage('请先测试连接，确认当前 WebDAV 配置可用。', 'error')
       return
     }
 
+    if (!webView.isAvailable()) {
+      setMessage('浏览器预览不支持从 WebDAV 恢复配置，请在 WuGesture 桌面应用中操作。', 'error')
+      return
+    }
+
+    state.webDavOperation = 'restore'
     webView.post({
       type: WEBVIEW_MESSAGE_TYPES.webDavRestore,
       ...payload
@@ -217,7 +238,6 @@ export function useGestureConfigPersistence({
 
   function handleWebDavResult(message) {
     if (message.operation === 'test') {
-      state.webDavTesting = false
       if (message.success) {
         state.webDavTestedSignature = pendingWebDavTestSignature
         state.webDavTestState = 'success'
@@ -228,6 +248,7 @@ export function useGestureConfigPersistence({
       pendingWebDavTestSignature = ''
     }
 
+    state.webDavOperation = ''
     setMessage(message.message, message.success ? 'success' : 'error')
   }
 

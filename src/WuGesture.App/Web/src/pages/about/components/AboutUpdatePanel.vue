@@ -109,10 +109,30 @@ const canShowDetails = computed(() => props.status === 'available' && Boolean(pr
         WuGesture 是一个 Windows 鼠标手势工具：按住右键或中键划出轨迹，就能执行快捷键、窗口控制、
         音量或亮度调节，也可以启动程序。
       </p>
-      <p>
-        规则按全局、分类和程序三个作用域匹配，另外支持触发角、摩擦边和边缘滚动。配置保存在本机，也可以 通过 WebDAV
-        备份。
-      </p>
+      <dl class="about-panel__repos">
+        <div class="about-panel__repo">
+          <dt>GitHub</dt>
+          <dd>
+            <a
+              href="https://github.com/illlustionary/WuGesture"
+              target="_blank"
+              rel="noreferrer"
+              >github.com/illlustionary/WuGesture</a
+            >
+          </dd>
+        </div>
+        <div class="about-panel__repo">
+          <dt>Gitee</dt>
+          <dd>
+            <a
+              href="https://gitee.com/neko_nya/WuGesture"
+              target="_blank"
+              rel="noreferrer"
+              >gitee.com/neko_nya/WuGesture</a
+            >
+          </dd>
+        </div>
+      </dl>
     </div>
     <dl class="about-panel__facts">
       <div class="about-panel__fact">
@@ -170,6 +190,48 @@ const canShowDetails = computed(() => props.status === 'available' && Boolean(pr
   color: var(--md-sys-color-on-surface);
   font-size: var(--md-sys-typescale-body-medium-size);
   line-height: 1.7;
+}
+
+.about-panel__repos {
+  display: grid;
+  gap: var(--md-sys-spacing-xs);
+  margin: 0;
+}
+
+.about-panel__repo {
+  display: flex;
+  align-items: baseline;
+  gap: var(--md-sys-spacing-md);
+  margin: 0;
+
+  dt {
+    flex: 0 0 auto;
+    min-width: 52px;
+    color: var(--md-sys-color-on-surface-variant);
+    font-size: var(--md-sys-typescale-body-small-size);
+  }
+
+  dd {
+    margin: 0;
+    min-width: 0;
+    font-size: var(--md-sys-typescale-body-medium-size);
+  }
+
+  a {
+    color: var(--md-sys-color-primary);
+    text-decoration: none;
+    overflow-wrap: anywhere;
+
+    &:hover {
+      text-decoration: underline;
+    }
+
+    &:focus-visible {
+      outline: none;
+      border-radius: 2px;
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--md-sys-color-primary) 24%, transparent);
+    }
+  }
 }
 
 .about-panel__facts {

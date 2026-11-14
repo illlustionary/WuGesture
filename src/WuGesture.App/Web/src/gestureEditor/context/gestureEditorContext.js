@@ -70,7 +70,7 @@ const state = reactive({
   gestureRecognitionMessage: '',
   gestureRecordingActive: false,
   gestureRecordingRequestId: '',
-  webDavTesting: false,
+  webDavOperation: '',
   webDavTestState: 'idle',
   webDavTestedSignature: '',
   updateChecking: false,
