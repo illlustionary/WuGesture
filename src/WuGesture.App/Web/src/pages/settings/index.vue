@@ -149,7 +149,7 @@ function previewLevelOsd(kind) {
           :draft="draft"
           :ready="webDavReady"
           :test-state="settingsStore.state.webDavTestState"
-          :testing="settingsStore.state.webDavTesting"
+          :operation="settingsStore.state.webDavOperation"
           @queue-persist="queuePersistDraft"
           @flush-persist="flushPersistDraft"
           @test="testWebDav"

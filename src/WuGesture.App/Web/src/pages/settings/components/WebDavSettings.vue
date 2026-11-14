@@ -11,12 +11,13 @@ const props = defineProps({
   draft: { type: Object, required: true },
   ready: { type: Boolean, required: true },
   testState: { type: String, required: true },
-  testing: { type: Boolean, required: true }
+  operation: { type: String, default: '' }
 })
 
 const emit = defineEmits(['queue-persist', 'flush-persist', 'test', 'restore', 'save'])
 
 const showPassword = ref(false)
+const busy = computed(() => Boolean(props.operation))
 
 const webDavTestState = computed(() => {
   if (props.ready && props.testState === 'success') {
@@ -103,33 +104,33 @@ const webDavTestState = computed(() => {
         variant="outlined"
         class="webdav-test-button"
         :class="`webdav-test-button--${webDavTestState}`"
-        :disabled="testing"
+        :disabled="busy"
         @click="emit('test')"
       >
         <template #leading>
           <AppIcon name="link" />
         </template>
-        {{ testing ? '测试中…' : '测试连接' }}
+        {{ operation === 'test' ? '测试中…' : '测试连接' }}
       </AppButton>
       <AppButton
         variant="filled"
-        :disabled="!ready || testing"
+        :disabled="!ready || busy"
         @click="emit('save')"
       >
         <template #leading>
           <AppIcon name="cloud-upload" />
         </template>
-        备份
+        {{ operation === 'save' ? '备份中…' : '备份' }}
       </AppButton>
       <AppButton
         variant="outlined"
-        :disabled="!ready || testing"
+        :disabled="!ready || busy"
         @click="emit('restore')"
       >
         <template #leading>
           <AppIcon name="cloud-download" />
         </template>
-        恢复
+        {{ operation === 'restore' ? '恢复中…' : '恢复' }}
       </AppButton>
     </template>
   </SettingsSectionCard>
