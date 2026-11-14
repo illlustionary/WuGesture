@@ -9,13 +9,16 @@ import SidebarFooter from '@/components/sidebar/SidebarFooter.vue'
 import SidebarSettingsSection from '@/components/sidebar/SidebarSettingsSection.vue'
 import { useSidebarOverlay } from '@/composables/useSidebarOverlay'
 import { useGestureEditorContext } from '@/gestureEditor/context/gestureEditorContext'
+import type { ThemeMode } from '@/theme/scheme'
 
 const props = withDefaults(
   defineProps<{
     isDarkTheme?: boolean
+    themeMode?: ThemeMode
   }>(),
   {
-    isDarkTheme: false
+    isDarkTheme: false,
+    themeMode: 'system'
   }
 )
 
@@ -28,7 +31,7 @@ const emit = defineEmits<{
   'open-app-picker': []
   'open-app-rename': [app: unknown]
   'delete-app': [name: string]
-  'toggle-theme': []
+  'cycle-theme': []
 }>()
 
 const rulesStore = useGestureEditorContext()
@@ -99,9 +102,10 @@ const {
     <SidebarFooter
       :is-collapsed="isCollapsed"
       :is-dark-theme="props.isDarkTheme"
+      :theme-mode="props.themeMode"
       @open-help="emit('open-help')"
       @open-search="emit('open-search')"
-      @toggle-theme="emit('toggle-theme')"
+      @cycle-theme="emit('cycle-theme')"
       @toggle-sidebar="toggleSidebar"
     />
   </aside>

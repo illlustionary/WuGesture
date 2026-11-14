@@ -115,45 +115,45 @@
 
 ### 4.1 颜色角色（浅色 / 深色）
 
-以 seed `#529EF1`、Tonal Spot 方案生成；落地值以 `src/theme/palettes.ts` 中的生成结果为准，下表为基线校验值。
+以 seed `#529EF1`、Tonal Spot 方案、`@material/material-color-utilities` 0.4.0（Spec 2021）生成；下表为落地值，`src/styles/tokens/_color.scss` 的首屏兜底与 `src/theme/scheme.ts` 的运行时结果一致。旧版计划中的 `#0061A4` 等取值来自紫色 MD3 基线色板，与蓝色 seed 的实际生成结果不符，已按引擎输出校正。
 
 | 角色 | Light | Dark |
 |---|---|---|
-| primary | `#0061A4` | `#9ECAFF` |
-| onPrimary | `#FFFFFF` | `#003258` |
-| primaryContainer | `#D1E4FF` | `#00497D` |
-| onPrimaryContainer | `#001D36` | `#D1E4FF` |
+| primary | `#38608F` | `#A2C9FE` |
+| onPrimary | `#FFFFFF` | `#00325A` |
+| primaryContainer | `#D2E4FF` | `#1D4875` |
+| onPrimaryContainer | `#1D4875` | `#D2E4FF` |
 | secondary | `#535F70` | `#BBC7DB` |
-| onSecondary | `#FFFFFF` | `#253140` |
-| secondaryContainer | `#D7E3F7` | `#3B4858` |
-| onSecondaryContainer | `#101C2B` | `#D7E3F7` |
-| tertiary | `#6B5778` | `#D6BEE4` |
-| onTertiary | `#FFFFFF` | `#3B2948` |
-| tertiaryContainer | `#F2DAFF` | `#523F5F` |
-| onTertiaryContainer | `#251431` | `#F2DAFF` |
+| onSecondary | `#FFFFFF` | `#263141` |
+| secondaryContainer | `#D7E3F8` | `#3C4858` |
+| onSecondaryContainer | `#3C4858` | `#D7E3F8` |
+| tertiary | `#6C5677` | `#D8BDE4` |
+| onTertiary | `#FFFFFF` | `#3C2947` |
+| tertiaryContainer | `#F4D9FF` | `#533F5F` |
+| onTertiaryContainer | `#533F5F` | `#F4D9FF` |
 | error | `#BA1A1A` | `#FFB4AB` |
 | onError | `#FFFFFF` | `#690005` |
 | errorContainer | `#FFDAD6` | `#93000A` |
-| onErrorContainer | `#410002` | `#FFDAD6` |
-| surface | `#FDFCFF` | `#1A1C1E` |
-| onSurface | `#1A1C1E` | `#E2E2E6` |
-| onSurfaceVariant | `#43474E` | `#C3C7CF` |
-| surfaceDim | `#DED9DF` | `#111416` |
-| surfaceBright | `#FDFCFF` | `#37393C` |
-| surfaceContainerLowest | `#FFFFFF` | `#0F1113` |
-| surfaceContainerLow | `#F7F2FA` | `#1A1C1E` |
-| surfaceContainer | `#F1ECF4` | `#1E2022` |
-| surfaceContainerHigh | `#ECE6F0` | `#282A2C` |
-| surfaceContainerHighest | `#E6E0E9` | `#333537` |
+| onErrorContainer | `#93000A` | `#FFDAD6` |
+| surface | `#F8F9FF` | `#111418` |
+| onSurface | `#191C20` | `#E1E2E8` |
+| onSurfaceVariant | `#43474E` | `#C3C6CF` |
+| surfaceDim | `#D8DAE0` | `#111418` |
+| surfaceBright | `#F8F9FF` | `#37393E` |
+| surfaceContainerLowest | `#FFFFFF` | `#0B0E13` |
+| surfaceContainerLow | `#F2F3FA` | `#191C20` |
+| surfaceContainer | `#ECEDF4` | `#1D2024` |
+| surfaceContainerHigh | `#E7E8EE` | `#272A2F` |
+| surfaceContainerHighest | `#E1E2E8` | `#32353A` |
 | outline | `#73777F` | `#8D9199` |
-| outlineVariant | `#C3C7CF` | `#43474E` |
-| inverseSurface | `#2F3033` | `#E2E2E6` |
-| inverseOnSurface | `#F1F0F4` | `#2F3033` |
-| inversePrimary | `#9ECAFF` | `#0061A4` |
+| outlineVariant | `#C3C6CF` | `#43474E` |
+| inverseSurface | `#2E3035` | `#E1E2E8` |
+| inverseOnSurface | `#EFF0F7` | `#2E3035` |
+| inversePrimary | `#A2C9FE` | `#38608F` |
 | scrim | `#000000` | `#000000` |
 | shadow | `#000000` | `#000000` |
 
-命名统一为 `--md-sys-color-*`。阶段 1 先在 `src/styles/tokens/_color.scss` 写入 seed `#529EF1` 的基线值作为首屏兜底；阶段 6 起由 JS 按 seed 生成并通过 `<style id="md-scheme">` 覆盖。组件里不得直接引用具体色值。另有两组项目扩展角色 `success*` / `warning*`，不随 seed 生成，保持语义稳定。
+命名统一为 `--md-sys-color-*`。阶段 1 先在 `src/styles/tokens/_color.scss` 写入 seed `#529EF1` 的基线值作为首屏兜底；阶段 6 起由 JS 按 seed 生成并通过 `<style id="md-scheme">` 覆盖，兜底色板已同步为引擎输出。组件里不得直接引用具体色值。另有两组项目扩展角色 `success*` / `warning*`，不随 seed 生成，保持语义稳定。
 
 ### 4.2 旧变量别名（迁移兼容）
 
@@ -331,8 +331,8 @@ C# 读取强调色 → rules 消息 appearance.systemAccent
 
 ### 5.6 首屏与切换
 
-- 宿主已有 `data-theme` 预注入，主题模式无闪烁。
-- 色板解析结果缓存到 `localStorage`（seed + variant + mode → 角色色），应用挂载前先用缓存值注入，`rules` 消息到达后校正。
+- 宿主已有 `data-theme` 预注入，主题模式无闪烁；缓存里只存色板，不存 mode。
+- 色板解析结果缓存到 `localStorage`（seed + variant → 浅/深两套角色色），应用挂载前先用缓存值注入，`rules` 消息到达后校正。
 - 切换配色只替换 `<style id="md-scheme">` 内容，不重建组件，耗时目标 < 100ms。
 
 ---
@@ -621,7 +621,7 @@ C# 读取强调色 → rules 消息 appearance.systemAccent
 | 阶段 3：容器与导航 | 已完成（2026-11-11） | `AppShell` 重写为 TS 并新增 56 高页面头（`title` / `description` / `actions`），各页面统一传标题；`AppSidebar` 改为 256 宽 Navigation Drawer（48 高 full 圆角项、`secondaryContainer` 激活胶囊、去掉左侧蓝条），`SidebarAppStatus` 状态色令牌化；`.section-card` / `.list-stack` / `.page-stack` 改为 Filled Card + 16 间距；`BaseDialog` 改为 28 圆角 / 24 内边距 / `surfaceContainerHigh` / 22-28 标题；`GestureRuleList` 重写为 TS 并改为 56 高行 + 40 高表头 + 常显删除按钮；新增 `styles/_toast.scss` 把 Toast 统一为 Snackbar |
 | 阶段 4：页面落地 | 已完成（2026-11-13） | 第 1 批：`SettingsField` / `SettingsFormGrid` / `SettingsToggleRow` / `ConfigManagement` 改为 MD3 令牌容器；`ApplicationListItem` 重写为 TS 56 高列表行（hover 状态层、常显删除）；`ScopePriorityNotice` 改 `tertiaryContainer`；程序页分类排序列表、排除项页、边缘操作卡片/弹窗、关于更新面板令牌化；清理 `field-card` 等 UnoCSS shortcut。第 2 批：确认、快速查找、帮助、引导、更新、新建范围弹窗全部改用 `BaseDialog` + `AppButton`，搜索框与结果列表按 MD3 重做。第 3 批：设置页轨迹线/手势提示/音量亮度/WebDAV 预览容器与规则弹窗字段令牌化；`src` 内旧别名引用清零，仅保留 `_aliases.scss` 映射与运行时动态变量 |
 | 阶段 5：后端配置扩展 | 已完成（2026-11-13） | `AppearanceUiSettings` 新增 `colorSource` / `seedColor` / `schemeVariant`；`GestureConfigContract` 增加配色来源与变体白名单；Normalizer 校验枚举与六位十六进制种子色；`WebViewRulesPayloadFactory` 下发新字段与 `systemAccent`；新增 `WindowsAccentColor`（DWM 强调色 + 2 秒缓存）；托盘调色板改为从外观配置派生；前端默认值、Normalizer 与 payload 同步保留新字段 |
-| 阶段 6：前端主题系统 | 未开始 | — |
+| 阶段 6：前端主题系统 | 已完成（2026-11-13） | 新增 `theme/scheme.ts`（seed + 变体生成浅/深色板、枚举/hex 归一化、Windows 强调色可用性判断与回退、标题栏 `surface`/`onSurface` 派生）和 `theme/applyScheme.ts`（`<style id="md-scheme">` 双色板注入、localStorage 首屏缓存、只翻转 `data-theme` 切明暗）；删除旧 `useAppearanceTheme.js` 并重写为 TS，侧栏主题按钮改为 `system → light → dark → system` 三态循环；新增 `/settings/theme` 外观页、8 套预设网格、自定义取色 + HEX、系统强调色状态和实时预览；前端 Normalizer 保留运行态 `systemAccent`，payload 发送前删除；标题栏四个颜色字段由前端回写；`_color.scss` 兜底值与引擎输出同步；新增 `scheme.test.ts`，Vitest 通过 `deps.inline` 加载 MCU 0.4.0 |
 | 阶段 7：图标与打磨 | 未开始 | — |
 
 ---
@@ -630,7 +630,7 @@ C# 读取强调色 → rules 消息 appearance.systemAccent
 
 | 依赖 | 版本 | 用途 | 体积 |
 |---|---|---|---|
-| `@material/material-color-utilities` | 最新稳定版 | seed → MD3 角色色（HCT / 动态方案） | 约 40–60KB gzip |
+| `@material/material-color-utilities` | 0.4.0（固定版本） | seed → MD3 角色色（HCT / 动态方案） | 约 40–60KB gzip |
 
 - MIT 许可，纯 JS，无运行时网络请求。
 - 除该包外不新增任何运行时依赖；开发期新增 `typescript@~5.9` 与 `vue-tsc@^3.3` 用于类型检查（见附录 D）。

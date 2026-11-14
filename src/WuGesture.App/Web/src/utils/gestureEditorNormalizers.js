@@ -306,6 +306,8 @@ export function normalizeAppearanceSettings(settings) {
     schemeVariant: ['tonalSpot', 'neutral', 'vibrant', 'expressive', 'monochrome'].includes(schemeVariant)
       ? schemeVariant
       : DEFAULT_UI_SETTINGS.appearance.schemeVariant,
+    // 宿主读取的 Windows 强调色只参与前端配色，不写回配置文件。
+    systemAccent: normalizeSeedColor(settings?.systemAccent, DEFAULT_UI_SETTINGS.appearance.systemAccent),
     lightTitleBarColor: normalizeColor(settings?.lightTitleBarColor, DEFAULT_UI_SETTINGS.appearance.lightTitleBarColor),
     lightTitleBarTextColor: normalizeColor(
       settings?.lightTitleBarTextColor,

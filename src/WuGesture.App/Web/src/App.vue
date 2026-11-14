@@ -24,7 +24,7 @@ const router = useRouter()
 useGestureEditorEventListeners(router)
 const editor = useGestureEditorContext()
 const navigation = useGestureEditorNavigation()
-const { isDarkTheme, toggleTheme } = useAppearanceTheme(editor)
+const { isDarkTheme, themeMode, cycleTheme } = useAppearanceTheme(editor)
 const quickSearch = useQuickSearch()
 const routeOrder = ['global', 'category', 'app', 'edge', 'exclusions', 'settings', 'about']
 const transitionDirection = ref('right')
@@ -143,6 +143,7 @@ watch(
     <div class="app-shell__body">
       <AppSidebar
         :is-dark-theme="isDarkTheme"
+        :theme-mode="themeMode"
         @open-search="quickSearch.open"
         @open-help="helpOpen = true"
         @open-category-dialog="openCategoryDialog"
@@ -151,7 +152,7 @@ watch(
         @open-app-picker="openSidebarAppPicker"
         @open-app-rename="openAppRenameDialog"
         @delete-app="removeSidebarApp"
-        @toggle-theme="toggleTheme"
+        @cycle-theme="cycleTheme"
       />
 
       <main class="app-shell__content">

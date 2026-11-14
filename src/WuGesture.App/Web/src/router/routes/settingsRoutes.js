@@ -1,11 +1,17 @@
 const nestedRouteView = () => import('../../components/layout/NestedRouteView.vue')
 const settingsPage = () => import('../../pages/settings/index.vue')
+const themeSettingsPage = () => import('../../pages/settings/theme/index.vue')
 
 export default {
   path: '/settings',
   component: nestedRouteView,
   children: [
     { path: '', redirect: 'mouse-trail' },
+    {
+      path: 'theme',
+      name: 'settings-theme',
+      component: themeSettingsPage
+    },
     {
       path: 'config',
       name: 'settings-config',

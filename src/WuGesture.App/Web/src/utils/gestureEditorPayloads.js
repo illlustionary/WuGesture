@@ -97,6 +97,8 @@ export function toPayloadEdgeAction(action) {
 
 export function toPayloadUiSettings(settings) {
   const payload = normalizeUiSettings(settings)
+  // 系统强调色由宿主每次读取，只参与前端配色，不写入配置文件。
+  delete payload.appearance.systemAccent
   payload.appBehavior.excludedApplications = payload.appBehavior.excludedApplications.map(application => ({
     name: application.name,
     displayName: application.displayName,

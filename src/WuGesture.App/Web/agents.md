@@ -11,18 +11,18 @@ This repository is a Vite + Vue 3 web frontend for the WuGesture application. It
 - `pnpm-lock.yaml`: locked dependency tree.
 - `pnpm-workspace.yaml`: workspace configuration.
 - `tsconfig.json`: TypeScript / Vue type-check configuration. `allowJs` is on and `checkJs` is off, so existing `.js` files keep working; only `.ts`, `.d.ts` and `.vue` are checked.
-- `vite.config.js`: Vite build and dev server configuration, including `vite-svg-loader` and the `@`/`@resources` path aliases.
+- `vite.config.js`: Vite build and dev server configuration, including `vite-svg-loader`, the `@`/`@resources` path aliases, and the Vitest `server.deps.inline` entry needed by `@material/material-color-utilities` 0.4.0.
 - `src/`: application source code.
 
 ## Source Structure
 
-- `src/main.js`: app bootstrap, router setup, and global style import.
+- `src/main.js`: app bootstrap, router setup, and global style import; it applies the cached MD3 colour scheme before mounting to avoid a first-paint flash.
 - `src/App.vue`: top-level shell with the main navigation, status bar, and global dialogs.
 - `src/env.d.ts`: Vite client types plus `*.svg` / `*.svg?component` module declarations for TypeScript imports.
 - `src/styles.scss`: shared visual styling entry point for the entire app; it only `@use`s the token layer, base styles, shared component classes and the Toast override.
-- `src/styles/tokens/`: MD3 design tokens split into color, typescale, shape, spacing, elevation, motion, state and legacy alias partials. Colors ship with a static `#529EF1` baseline and will be overridden by the runtime theme engine in stage 6.
+- `src/styles/tokens/`: MD3 design tokens split into color, typescale, shape, spacing, elevation, motion, state and legacy alias partials. `_color.scss` ships light/dark role values generated from seed `#529EF1` (Tonal Spot, MCU 0.4.0) as the first-paint fallback; the runtime theme engine overrides them through `<style id="md-scheme">`.
 - `src/styles/_toast.scss`: maps `vue-toastification` to the MD3 Snackbar (`inverseSurface`, 4 radius, 48 min-height, icon colour per type).
-- `src/theme/`: TypeScript contracts for design tokens (`tokens.ts`) and the eight preset seed palettes (`palettes.ts`).
+- `src/theme/`: MD3 theme system: design-token contracts (`tokens.ts`), eight preset seed palettes (`palettes.ts`), the colour engine (`scheme.ts`) and style injection/cache helpers (`applyScheme.ts`). `scheme.test.ts` covers colour normalisation, presets, determinism, system-accent fallback and title-bar derivation.
 - `src/types/`: shared TypeScript contracts for base controls (`ui.ts` holds `SelectOption`, `SelectOptionValue`, `ButtonVariant`, `ButtonSize`, `ChipVariant`).
 - `src/gestureEditor/`: gesture editor domain module, including context, narrow stores, and internal workflow modules for rule editing, scope selection, persistence, and WebView message handling.
 - `src/components/`: reusable UI pieces grouped by responsibility: `sidebar/`, `layout/`, `dialog/`, `form/`, `ui/`, `gesture/`, `scope/`, and `rules/`.
@@ -32,6 +32,7 @@ This repository is a Vite + Vue 3 web frontend for the WuGesture application. It
   - `global/index.vue`: global rule scope page.
   - `category/index.vue`: category rule scope page.
   - `app/index.vue`: application rule scope page.
+  - `settings/theme/index.vue`: appearance settings page (`/settings/theme`) for light/dark mode, palette source, eight presets, custom colour and Windows accent colour, with live preview and debounced persistence.
   - `dev/md3/index.vue`: MD3 design-token preview page, registered only when `import.meta.env.DEV` is true; it never ships in production builds.
 
 ### Base Controls (MD3)
