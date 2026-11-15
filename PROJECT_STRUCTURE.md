@@ -106,11 +106,11 @@ src\WuGesture.App
 - `ApplicationPickerCoordinator.cs`：处理“选择应用程序”“拾取窗口”“打开程序目录”三条 WebView 消息；文件对话框和窗口拾取都使用宿主提供的 owner，窗口拾取的光标颜色按配置主题（未显式指定时读系统偏好）解析，失败统一通过回执回调上报。
 - `UpdateCoordinator.cs`：进程启动时（仅一次）按 `uiSettings.update` 的开关和更新源检查最新发行版，并把结果、下载进度和失败原因转发给设置页/更新弹窗；检查按版本号比较两个源的发行版并取较高者，开始下载前再次确认更新包版本高于当前版本，避免回退安装。下载、解压和启动更新脚本都在后台线程完成，只有需要退出换文件时才回到 UI 线程关闭主窗体。重启时沿用原启动参数并去掉 `--elevated-relaunch` 和上一次的 `--updated`；真正替换成功后由更新脚本追加 `--updated`，回滚重启则不带该参数。配置界面完成首次 `get-status` 前、窗口隐藏/最小化或 WebView2 已释放时先缓存提示（记录 `update-prompt-deferred` 原因），等前端监听器就绪、WebView2 重建并真正还原窗口后再补发（记录 `update-prompt-posted`）。因此后台启动的自动检查结果不会因为“启动时没打开配置窗口”而丢失。
 - `SystemTheme.cs`：读取 Windows 的“应用模式”偏好，供系统标题栏配色、窗口拾取光标和托盘菜单主题共用，避免同一判断分散在多处。
-- `WindowStateStore.cs`：负责配置窗口位置、尺寸和最大化状态的读写、校验与屏幕边界规范化。
+- `WindowStateStore.cs`：负责配置窗口位置、尺寸和最大化状态的读写、校验与屏幕边界规范化。默认/最小尺寸按 DIP 定义（1280×720），通过 `Scale(logical, dpi)` 按 `dpi/96` 换算成物理像素，再用目标显示器工作区夹取；`TryLoad` 按保存坐标所在显示器取工作区，副屏保存的位置不会被拉回主屏。`GetMinimumSize` 返回的尺寸不会超过工作区，避免小屏 + 高缩放下最小尺寸比屏幕还大。
 - `AppIdentity.cs` 集中应用显示名、AppData 子目录、自启动注册表值、单实例 IPC（唤醒/退出）的请求与确认事件名和内部启动参数（`--startup`、`--elevated-relaunch`、`--updated`、`--exit`）；开机自启动和管理员重启会直接调用当前 `WuGesture.exe`。
 - `ConfigStorageContract.cs` 集中本地配置文件名和窗口状态文件名；本地导入/导出只处理主配置文件，不包含窗口状态文件。
 - `WebViewHostContract.cs` 集中 WebView2 虚拟主机、入口 URL、宿主输出目录中的 Web 前端路径片段和 WebView2 profile 目录名，并负责把 profile 目录解析到 `%LocalAppData%\WuGesture\WebView2`。
-- 配置窗口最小尺寸为 1280x720；首次启动会以至少该尺寸居中显示，关闭窗口时会保存窗口位置、大小和最大化状态，并拒绝恢复小于该尺寸（包括 0x0）的无效状态。窗口按设置选择隐藏到托盘、最小化到任务栏或直接退出；标题栏关闭按钮、Alt+F4 和外部 `WM_CLOSE`（鼠标手势“关闭窗口”、自动化工具、任务管理器）走同一套判定，只有设置为“退出应用”或系统关机/`Application.Exit` 才结束进程。隐藏到托盘会在收到关闭信号时直接同步隐藏并释放 WebView2 配置界面、回收浏览器进程，不经过系统最小化，避免 Alt+Tab/任务视图在切换键释放时还原出 WebView2 已释放的空白窗口；托盘恢复时重建 WebView2（若窗口还在屏幕上、WebView2 未释放，则只置顶激活，不再重建）。释放与回收结果会写入 `hidden-to-tray`、`disposed` 和 `browser-process-exited` / `browser-process-reclaimed` 日志；隐藏后被 Shell 再次请求显示时会记录 `hidden-window-rehidden` 并拒绝该请求，因此不会留下空白的配置窗口。通过托盘菜单“退出”始终会真正释放后台手势服务并结束进程。
+- 配置窗口默认/最小尺寸为 1280×720 **DIP**，构造时用 `GetDpiForSystem()`（已创建句柄时用 `DeviceDpi`）换算出物理像素，并在 `OnDpiChanged` 里按新 DPI 和当前显示器工作区刷新 `MinimumSize`；首次启动以该尺寸（必要时夹到工作区）居中显示，关闭窗口时会保存窗口位置、大小和最大化状态，恢复时把小于当前最小尺寸（含 0×0）的历史尺寸提升到最小尺寸而不是拒绝。窗口按设置选择隐藏到托盘、最小化到任务栏或直接退出；标题栏关闭按钮、Alt+F4 和外部 `WM_CLOSE`（鼠标手势“关闭窗口”、自动化工具、任务管理器）走同一套判定，只有设置为“退出应用”或系统关机/`Application.Exit` 才结束进程。隐藏到托盘会在收到关闭信号时直接同步隐藏并释放 WebView2 配置界面、回收浏览器进程，不经过系统最小化，避免 Alt+Tab/任务视图在切换键释放时还原出 WebView2 已释放的空白窗口；托盘恢复时重建 WebView2（若窗口还在屏幕上、WebView2 未释放，则只置顶激活，不再重建）。释放与回收结果会写入 `hidden-to-tray`、`disposed` 和 `browser-process-exited` / `browser-process-reclaimed` 日志；隐藏后被 Shell 再次请求显示时会记录 `hidden-window-rehidden` 并拒绝该请求，因此不会留下空白的配置窗口。通过托盘菜单“退出”始终会真正释放后台手势服务并结束进程。
 - 托盘菜单提供“打开配置”、“暂停 WuGesture”和“退出”；菜单为自绘圆角样式并跟随配置界面主题（浅色/深色/跟随系统），不再使用系统默认灰色下拉框。暂停项会暂停手势识别和边缘操作，但保留后台进程和配置界面。暂停时仅系统托盘图标切换为灰阶图标，并在托盘提示文字中标记“已暂停”，任务栏窗口图标不变。
 
 职责目录：
@@ -343,6 +343,7 @@ tests\WuGesture.App.Tests
 - `CloseRequestPolicy`：标题栏/Alt+F4 与外部 `WM_CLOSE`（手势“关闭窗口”、任务管理器）都视为外部关闭请求，系统关机、`Application.Exit` 和其他系统原因不拦截。
 - `TrayVisibilityPolicy`：关闭到托盘只隐藏一次、关闭过程中不再隐藏；隐藏到托盘后只有在“不是托盘恢复、也不是真正退出”的情况下才拒绝 Shell 的外部显示请求。
 - `TitleBarLayout`：自绘标题栏的按钮排列（关闭/最大化/最小化从右到左）、点击命中、标题可用区域和 DPI 缩放。
+- `WindowStateStore`：DIP→物理像素换算（96/120/144 DPI）、默认尺寸居中、最小尺寸按工作区夹取、越界窗口重新居中、副屏位置保留，以及大于工作区的历史尺寸收缩。
 - `GestureConfigStore`：当前配置保存、旧/损坏配置的备份重置、未来版本保护和旧导入拒绝；保存后不残留临时文件、无效配置不会覆盖原文件。
 - `ConfigurationCoordinator`：编辑器消息到 `GestureConfig` 的全字段映射、缺省分区按空列表处理、`uiSettings` 缺失时保留磁盘上的设置。
 - `ProgramActionTests`：运行程序动作的路径/参数归一化、空路径忽略和非 Shell 启动参数构造。

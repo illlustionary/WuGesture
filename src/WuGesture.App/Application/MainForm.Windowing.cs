@@ -25,6 +25,7 @@ public sealed partial class MainForm
     {
         base.OnDpiChanged(e);
         ApplyTitleBarMetrics();
+        ApplyMinimumWindowSize(e.DeviceDpiNew);
     }
 
     private void ApplyWindowTheme(AppearanceUiSettings appearance)
@@ -162,16 +163,35 @@ public sealed partial class MainForm
         Focus();
     }
 
-    private void ApplyInitialWindowState()
+    private void ApplyInitialWindowState(int dpi)
     {
-        if (windowStateStore.TryLoad(out var bounds, out var maximized))
+        if (windowStateStore.TryLoad(dpi, out var bounds, out var maximized))
         {
             Bounds = bounds;
             startMaximized = maximized;
             return;
         }
 
-        Bounds = windowStateStore.GetDefaultBounds();
+        Bounds = WindowStateStore.GetDefaultBounds(dpi, WindowStateStore.GetPrimaryWorkingArea());
+    }
+
+    private void ApplyMinimumWindowSize(int dpi)
+    {
+        var workingArea = IsHandleCreated
+            ? Screen.FromControl(this)?.WorkingArea ?? WindowStateStore.GetPrimaryWorkingArea()
+            : WindowStateStore.GetPrimaryWorkingArea();
+        MinimumSize = WindowStateStore.GetMinimumSize(dpi, workingArea);
+    }
+
+    private int GetInitialDpi()
+    {
+        if (IsHandleCreated && DeviceDpi > 0)
+        {
+            return DeviceDpi;
+        }
+
+        var dpi = GetDpiForSystem();
+        return dpi > 0 ? dpi : 96;
     }
 
     private void SaveWindowState()
@@ -181,6 +201,9 @@ public sealed partial class MainForm
 
     [DllImport("user32.dll")]
     private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+    [DllImport("user32.dll")]
+    private static extern int GetDpiForSystem();
 
     [DllImport("user32.dll")]
     private static extern bool IsIconic(IntPtr hWnd);

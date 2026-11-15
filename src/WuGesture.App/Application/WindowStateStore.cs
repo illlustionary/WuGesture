@@ -4,10 +4,11 @@ namespace WuGesture.App;
 
 internal sealed class WindowStateStore
 {
-    private const int DefaultWindowWidth = 1280;
-    private const int DefaultWindowHeight = 720;
-    internal const int MinimumWindowWidth = 1280;
-    internal const int MinimumWindowHeight = 720;
+    // Logical sizes are DIPs; the store converts them with the current monitor DPI.
+    internal const int LogicalDefaultWindowWidth = 1280;
+    internal const int LogicalDefaultWindowHeight = 720;
+    internal const int LogicalMinimumWindowWidth = 1280;
+    internal const int LogicalMinimumWindowHeight = 720;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -20,7 +21,28 @@ internal sealed class WindowStateStore
         AppIdentity.AppDataFolderName,
         ConfigStorageContract.WindowStateFileName);
 
-    public bool TryLoad(out Rectangle bounds, out bool maximized)
+    public static int Scale(int logicalPixels, int dpi)
+    {
+        var effectiveDpi = dpi > 0 ? dpi : 96;
+        return (int)Math.Round(logicalPixels * effectiveDpi / 96.0, MidpointRounding.AwayFromZero);
+    }
+
+    // The minimum window size in physical pixels, never larger than the working area.
+    public static Size GetMinimumSize(int dpi, Rectangle workingArea)
+    {
+        var maxWidth = Math.Max(1, workingArea.Width);
+        var maxHeight = Math.Max(1, workingArea.Height);
+        return new Size(
+            Math.Min(Scale(LogicalMinimumWindowWidth, dpi), maxWidth),
+            Math.Min(Scale(LogicalMinimumWindowHeight, dpi), maxHeight));
+    }
+
+    public static Rectangle GetPrimaryWorkingArea()
+    {
+        return Screen.PrimaryScreen?.WorkingArea ?? new Rectangle(0, 0, 1280, 720);
+    }
+
+    public bool TryLoad(int dpi, out Rectangle bounds, out bool maximized)
     {
         bounds = Rectangle.Empty;
         maximized = false;
@@ -38,7 +60,8 @@ internal sealed class WindowStateStore
                 return false;
             }
 
-            bounds = NormalizeBounds(state.Bounds);
+            // Saved bounds are physical pixels; use the monitor they were saved on when it still exists.
+            bounds = NormalizeBounds(state.Bounds, dpi, GetWorkingArea(state.Bounds));
             maximized = state.Maximized;
             return true;
         }
@@ -77,21 +100,22 @@ internal sealed class WindowStateStore
         }
     }
 
-    public Rectangle GetDefaultBounds()
+    public static Rectangle GetDefaultBounds(int dpi, Rectangle workingArea)
     {
-        var workingArea = GetWorkingArea();
-        var width = DefaultWindowWidth;
-        var height = DefaultWindowHeight;
+        var maxWidth = Math.Max(1, workingArea.Width);
+        var maxHeight = Math.Max(1, workingArea.Height);
+        var width = Math.Min(Scale(LogicalDefaultWindowWidth, dpi), maxWidth);
+        var height = Math.Min(Scale(LogicalDefaultWindowHeight, dpi), maxHeight);
         var left = workingArea.Left + Math.Max(0, (workingArea.Width - width) / 2);
         var top = workingArea.Top + Math.Max(0, (workingArea.Height - height) / 2);
         return new Rectangle(left, top, width, height);
     }
 
-    private static Rectangle NormalizeBounds(Rectangle bounds)
+    public static Rectangle NormalizeBounds(Rectangle bounds, int dpi, Rectangle workingArea)
     {
-        var workingArea = GetWorkingArea();
-        var width = Math.Max(MinimumWindowWidth, bounds.Width);
-        var height = Math.Max(MinimumWindowHeight, bounds.Height);
+        var minimum = GetMinimumSize(dpi, workingArea);
+        var width = Math.Min(Math.Max(bounds.Width, minimum.Width), Math.Max(1, workingArea.Width));
+        var height = Math.Min(Math.Max(bounds.Height, minimum.Height), Math.Max(1, workingArea.Height));
         var left = bounds.Left;
         var top = bounds.Top;
 
@@ -108,14 +132,16 @@ internal sealed class WindowStateStore
         return new Rectangle(left, top, width, height);
     }
 
-    private static Rectangle GetWorkingArea()
+    private static Rectangle GetWorkingArea(Rectangle anchor)
     {
-        return Screen.PrimaryScreen?.WorkingArea ?? new Rectangle(0, 0, 1280, 720);
+        return Screen.FromRectangle(anchor)?.WorkingArea
+            ?? Screen.PrimaryScreen?.WorkingArea
+            ?? new Rectangle(0, 0, 1280, 720);
     }
 
     private static bool HasUsableWindowSize(Rectangle bounds)
     {
-        return bounds.Width >= MinimumWindowWidth && bounds.Height >= MinimumWindowHeight;
+        return bounds.Width > 0 && bounds.Height > 0;
     }
 
     private sealed record WindowStateData(int X, int Y, int Width, int Height, bool Maximized)

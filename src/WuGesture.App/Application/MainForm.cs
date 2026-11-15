@@ -85,8 +85,9 @@ public sealed partial class MainForm : Form
         FormBorderStyle = FormBorderStyle.Sizable;
         ApplyWindowTheme(loadedConfig.Config.UiSettings.Appearance);
         StartPosition = FormStartPosition.Manual;
-        MinimumSize = new Size(WindowStateStore.MinimumWindowWidth, WindowStateStore.MinimumWindowHeight);
-        ApplyInitialWindowState();
+        var initialDpi = GetInitialDpi();
+        ApplyMinimumWindowSize(initialDpi);
+        ApplyInitialWindowState(initialDpi);
         Opacity = 0;
         if (hideConfigWindowOnLaunch)
         {
