@@ -88,7 +88,6 @@ public sealed partial class MainForm : Form
         var initialDpi = GetInitialDpi();
         ApplyMinimumWindowSize(initialDpi);
         ApplyInitialWindowState(initialDpi);
-        Opacity = 0;
         if (hideConfigWindowOnLaunch)
         {
             ShowInTaskbar = false;
@@ -158,13 +157,15 @@ public sealed partial class MainForm : Form
 
         if (!hideConfigWindowOnLaunch)
         {
+            // The window is already on screen with the theme-coloured content host as placeholder; attach the
+            // WebView2 host in place. Nothing here may change opacity or taskbar presence: both recreate the
+            // window handle, and a WebView2 controller must not be re-parented under a fresh one.
             await EnsureWebViewAsync();
             if (!CanUseUi())
             {
                 return;
             }
 
-            Opacity = 1;
             BringWindowToFront();
         }
 
@@ -307,7 +308,11 @@ public sealed partial class MainForm : Form
         isEditorPaused = false;
         ApplyGesturePauseState();
         mouseTrailForm?.HideTrail();
-        ShowInTaskbar = true;
+        if (!ShowInTaskbar)
+        {
+            ShowInTaskbar = true;
+        }
+
         MinimizeWindow();
     }
 
@@ -323,11 +328,9 @@ public sealed partial class MainForm : Form
         isHiddenToTray = false;
 
         // The window is already on screen (possibly minimized to the taskbar or restored from it) and still
-        // owns a live WebView: activate it in place. Running the fade-in and WebView rebuild here made a tray
-        // double-click look like the application was closed and reopened, including a title-bar flash.
+        // owns a live WebView: activate it in place without touching window styles.
         if (Visible && webViewHost.IsReady)
         {
-            ShowInTaskbar = true;
             BeginInvokeSafe(() =>
             {
                 BringWindowToFront();
@@ -339,12 +342,28 @@ public sealed partial class MainForm : Form
         isRestoringConfiguration = true;
         try
         {
-            ShowInTaskbar = false;
-            Opacity = 0;
             ApplyWindowTheme(loadedConfig?.Config.UiSettings.Appearance ?? new AppearanceUiSettings());
+
+            // Restore the taskbar button while the window is still hidden and the WebView2 host is released.
+            // The WinForms setter recreates the window handle, which must never happen once a WebView2
+            // controller is parented to it.
+            if (!ShowInTaskbar)
+            {
+                ShowInTaskbar = true;
+            }
+
+            // Show a plain, non-layered window with the theme-coloured content host as placeholder and attach
+            // the WebView2 host afterwards. The old Opacity fade made the window layered (WS_EX_LAYERED);
+            // hosting WebView2 in a layered window is unsupported and, especially after a display-scale
+            // change, forced DWM to recompose the whole desktop (flicker, ghost windows, stale overlay).
             if (!Visible)
             {
                 Show();
+            }
+
+            if (WindowState == FormWindowState.Minimized)
+            {
+                RestoreAndActivateWindow();
             }
 
             await EnsureWebViewAsync();
@@ -352,9 +371,6 @@ public sealed partial class MainForm : Form
             {
                 return;
             }
-
-            ShowInTaskbar = true;
-            Opacity = 1;
 
             // Run after the tray menu or single-instance callback has returned so it cannot reclaim focus, and
             // flush the cached update prompt only once the window is actually restored: while it is still
@@ -376,7 +392,6 @@ public sealed partial class MainForm : Form
         isHiddenToTray = true;
         ShowInTaskbar = false;
         Hide();
-        Opacity = 1;
     }
 
     private void ExitFromTray()
@@ -803,6 +818,7 @@ public sealed partial class MainForm : Form
         mouseTrailForm?.Dispose();
         mouseTrailForm = new MouseTrailForm();
         mouseTrailForm.PresentationFailed += OnMouseTrailPresentationFailed;
+        mouseTrailForm.ScreenGeometryChanged += OnMouseTrailScreenGeometryChanged;
         if (loadedConfig is not null)
         {
             mouseTrailForm.ApplySettings(loadedConfig.Config.UiSettings.MouseTrail);
@@ -856,6 +872,7 @@ public sealed partial class MainForm : Form
         if (!mouseTrailForm.IsDisposed)
         {
             mouseTrailForm.PresentationFailed -= OnMouseTrailPresentationFailed;
+            mouseTrailForm.ScreenGeometryChanged -= OnMouseTrailScreenGeometryChanged;
             mouseTrailForm.Close();
             mouseTrailForm.Dispose();
         }
@@ -882,6 +899,14 @@ public sealed partial class MainForm : Form
     private void OnMouseTrailPresentationFailed(object? sender, EventArgs e)
     {
         ScheduleOverlayRecovery("layered-window-present-failed");
+    }
+
+    private void OnMouseTrailScreenGeometryChanged(object? sender, EventArgs e)
+    {
+        // The overlay covers the whole virtual screen and caches both that rectangle and a DIB sized to it.
+        // On a DPI change only the monitor the overlay sits on reports WM_DPICHANGED, so recover from the
+        // overlay's own notification as well as from the main window.
+        ScheduleOverlayRecovery("overlay-dpi-changed");
     }
 
     private void ScheduleOverlayRecovery(string reason)

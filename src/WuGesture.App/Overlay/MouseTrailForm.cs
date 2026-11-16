@@ -35,6 +35,13 @@ public sealed class MouseTrailForm : Form
 
     public event EventHandler? PresentationFailed;
 
+    /// <summary>
+    /// Raised when Windows reports a new DPI for the overlay. The cached back buffer and the cached
+    /// virtual-screen origin no longer match the desktop at that point; the owner rebuilds the overlay
+    /// instead of trying to resize a layered surface in place.
+    /// </summary>
+    public event EventHandler? ScreenGeometryChanged;
+
     public MouseTrailForm()
     {
         FormBorderStyle = FormBorderStyle.None;
@@ -75,6 +82,12 @@ public sealed class MouseTrailForm : Form
     }
 
     protected override bool ShowWithoutActivation => true;
+
+    protected override void OnDpiChanged(DpiChangedEventArgs e)
+    {
+        base.OnDpiChanged(e);
+        ScreenGeometryChanged?.Invoke(this, EventArgs.Empty);
+    }
 
     protected override void WndProc(ref Message m)
     {

@@ -5,6 +5,12 @@
     <TargetFramework>net10.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
+    <!--
+      PerMonitorV2 让运行时切换显示缩放真正产生 WM_DPICHANGED；SystemAware（默认）下进程只会被 DWM
+      位图拉伸，配置窗口与全屏覆盖层都会错位/残影。ApplicationConfiguration.Initialize() 必须保持为
+      Program.Main 中最先执行的调用，否则 SetHighDpiMode 会在窗口句柄创建后失效。
+    -->
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <ImplicitUsings>enable</ImplicitUsings>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);MSB3277</NoWarn>

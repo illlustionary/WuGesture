@@ -530,7 +530,7 @@ C# 读取强调色 → rules 消息 appearance.systemAccent
 - 图标替换为 24dp 网格 SVG（Apache 2.0，本地文件）。
 - 125% / 150% DPI、深浅色、8 套配色全量走查；宿主窗口尺寸按 DIP 定义，避免高缩放下窗口缩成可用区一角。
 - 对比度、焦点顺序、`prefers-reduced-motion`。
-- 验收：检查清单全绿，产出前后对比截图。
+- 验收：检查清单全绿，产出前后对比截图（归档于 `docs/design/assets/stage7/`）。
 
 **合计约 19 人日（区间 18–23）。**
 
@@ -545,7 +545,8 @@ C# 读取强调色 → rules 消息 appearance.systemAccent
 - 前端：`pnpm format:check`、`pnpm typecheck`、`pnpm test`（Vitest）。
   - 新增：`scheme.ts` 的确定性快照（同 seed 同 variant 生成相同角色色）。
   - 新增：`palettes.ts` 长度与 hex 合法性。
-  - 新增：`contrast.test.ts` 覆盖 8 套预设 × 浅/深 × 18 组 WCAG 2.1 配对（正文 4.5 / 图形 3 / 装饰 1.5），并对已知的浅色装饰分隔线差距做双向校验。
+  - 新增：`contrast.test.ts` 覆盖 8 套预设 × 浅/深 × 18 组 WCAG 2.1 配对（正文 4.5 / 图形 3 / 装饰 1.5），并对已知的浅色装饰分隔线差距做双向校验；同一文件还断言固定 `success` / `warning` 扩展角色（含关于页状态文字与 Snackbar 图标），色值直接读 `_color.scss`。
+  - 新增：`WindowStateStoreTests` 覆盖 DIP→物理像素换算、默认/最小尺寸随 DPI 缩放、工作区夹取与多屏恢复。
   - 新增：`gestureEditorNormalizers` 对新字段的默认值/非法值处理。
 - 后端：`dotnet build`、`dotnet test`、`dotnet format --verify-no-changes`。
   - 新增：`GestureConfigNormalizer` 新字段用例（缺省、非法枚举、非法 hex）。
@@ -561,7 +562,7 @@ C# 读取强调色 → rules 消息 appearance.systemAccent
 | 交互 | hover / focus / pressed / disabled 四态可见；键盘 Tab 顺序合理 |
 | 主题 | 切换后立即生效；重开窗口保留；重启保留；导入导出保留；WebDAV 恢复保留 |
 | 宿主 | 标题栏与页面同色；托盘菜单同色；深色标题栏文字对比度达标 |
-| DPI | 100% / 125% / 150% 无错位、无裁切 |
+| DPI | 100% / 125% / 150% 无错位、无裁切；**运行中**切换缩放后，从托盘打开配置窗口不闪烁、无残留窗口，鼠标轨迹/手势提示/OSD 位置正确 |
 | 性能 | 换色 < 100ms；首屏无闪烁；无滚动卡顿 |
 | 可访问性 | 正文对比度 ≥ 4.5:1；焦点环不被裁切 |
 
@@ -630,7 +631,7 @@ C# 读取强调色 → rules 消息 appearance.systemAccent
 | 阶段 4：页面落地 | 已完成（2026-11-13） | 第 1 批：`SettingsField` / `SettingsFormGrid` / `SettingsToggleRow` / `ConfigManagement` 改为 MD3 令牌容器；`ApplicationListItem` 重写为 TS 56 高列表行（hover 状态层、常显删除）；`ScopePriorityNotice` 改 `tertiaryContainer`；程序页分类排序列表、排除项页、边缘操作卡片/弹窗、关于更新面板令牌化；清理 `field-card` 等 UnoCSS shortcut。第 2 批：确认、快速查找、帮助、引导、更新、新建范围弹窗全部改用 `BaseDialog` + `AppButton`，搜索框与结果列表按 MD3 重做。第 3 批：设置页轨迹线/手势提示/音量亮度/WebDAV 预览容器与规则弹窗字段令牌化；`src` 内旧别名引用清零，仅保留 `_aliases.scss` 映射与运行时动态变量 |
 | 阶段 5：后端配置扩展 | 已完成（2026-11-13） | `AppearanceUiSettings` 新增 `colorSource` / `seedColor` / `schemeVariant`；`GestureConfigContract` 增加配色来源与变体白名单；Normalizer 校验枚举与六位十六进制种子色；`WebViewRulesPayloadFactory` 下发新字段与 `systemAccent`；新增 `WindowsAccentColor`（DWM 强调色 + 2 秒缓存）；托盘调色板改为从外观配置派生；前端默认值、Normalizer 与 payload 同步保留新字段 |
 | 阶段 6：前端主题系统 | 已完成（2026-11-13） | 新增 `theme/scheme.ts`（seed + 变体生成浅/深色板、枚举/hex 归一化、Windows 强调色可用性判断与回退、标题栏 `surface`/`onSurface` 派生）和 `theme/applyScheme.ts`（`<style id="md-scheme">` 双色板注入、localStorage 首屏缓存、只翻转 `data-theme` 切明暗）；删除旧 `useAppearanceTheme.js` 并重写为 TS，侧栏主题按钮改为 `system → light → dark → system` 三态循环；新增 `/settings/theme` 外观页、8 套预设网格、自定义取色 + HEX、系统强调色状态和实时预览；前端 Normalizer 保留运行态 `systemAccent`，payload 发送前删除；标题栏四个颜色字段由前端回写；`_color.scss` 兜底值与引擎输出同步；新增 `scheme.test.ts`，Vitest 通过 `deps.inline` 加载 MCU 0.4.0 |
-| 阶段 7：图标与打磨 | 进行中（2026-11-15） | 图标：修复 `code.svg` / `circle-dashed.svg` 缺 `fill` 导致侧栏「开发」和默认分类图标不可见，`arrow.svg` 非法 `fill=""` 改为 `currentColor`；把 19 个遗留 1024 实心图标全部重绘为 24dp 线性图标（`viewBox 0 0 24 24`、`fill="none"`、`stroke="currentColor"`、`stroke-width 1.8`），并移除 `IconActionButton` 对子图标的 `fill: currentColor` 强制；规则列表 14px 方向箭头单独加粗描边。`AppIcon` 增加 `size`（默认 20）和默认 `aria-hidden`，预设色板不再对填充型 `check` 图标叠加描边。动效：`_motion.scss` 补齐 standard / emphasized 的 accelerate / decelerate 变体，`prefers-reduced-motion` 下把时长令牌归零，并把 `BaseDialog`、`AppSidebar`、`SidebarAppStatus`、`App.vue` 中写死的毫秒换成令牌。无障碍：`BaseDialog` 增加焦点陷阱、初始聚焦和关闭后焦点归还；`QuickSearchDialog` 支持方向键/Enter 和 combobox 语义；`CustomSelect` 焦点固定、选项移出 Tab 序列并补活动项播报；`EdgeActionCard` 补 Space；主题页与色板单选组使用 roving tabindex + 方向键；移除 `AppChip` 的死焦点并支持 `removeLabel`；`AppCheckbox` 与关于页链接的 2px 圆角改为 shape 令牌。对比度：新增 `contrast.test.ts`，8 套预设 × 浅/深 × 18 组配对，正文/图形全部达标，浅色 `outline-variant` / `surface-container`（1.46–1.47，装饰分隔线）登记为已知差距。DPI/窄窗口：规则表在内容区窄于 650px 时改为横向滚动（原先 `overflow:hidden` 会裁掉操作列）；`BaseDialog` 改为正文区滚动 + 底栏固定，矮视口下按钮可达；`outline` 文字色全部改为 `on-surface-variant`，原生输入框与 chip 边界从 `outlineVariant` 提到 `outline`；WebView 初始化时把 `ZoomFactor` 固定为 1.0，避免历史 profile 残留缩放。宿主窗口：`WindowStateStore` 默认/最小尺寸改为 DIP 常量并按 `DeviceDpi/96` 换算，`MainForm` 用 `GetDpiForSystem()` 初始化、`OnDpiChanged` 刷新 `MinimumSize`；默认位置和恢复位置都按保存坐标所在显示器的工作区夹取，多屏保留副屏位置，新增 `WindowStateStoreTests`（14 项）。剩余：125%/150% 人工走查确认、前后对比 HTML 产物归档 |
+| 阶段 7：图标与打磨 | 进行中（2026-11-15） | 图标：修复 `code.svg` / `circle-dashed.svg` 缺 `fill` 导致侧栏「开发」和默认分类图标不可见，`arrow.svg` 非法 `fill=""` 改为 `currentColor`；把 19 个遗留 1024 实心图标全部重绘为 24dp 线性图标（`viewBox 0 0 24 24`、`fill="none"`、`stroke="currentColor"`、`stroke-width 1.8`），并移除 `IconActionButton` 对子图标的 `fill: currentColor` 强制；规则列表 14px 方向箭头单独加粗描边。`AppIcon` 增加 `size`（默认 20）和默认 `aria-hidden`，预设色板不再对填充型 `check` 图标叠加描边。动效：`_motion.scss` 补齐 standard / emphasized 的 accelerate / decelerate 变体，`prefers-reduced-motion` 下把时长令牌归零，并把 `BaseDialog`、`AppSidebar`、`SidebarAppStatus`、`App.vue` 中写死的毫秒换成令牌。无障碍：`BaseDialog` 增加焦点陷阱、初始聚焦和关闭后焦点归还；`QuickSearchDialog` 支持方向键/Enter 和 combobox 语义；`CustomSelect` 焦点固定、选项移出 Tab 序列并补活动项播报；`EdgeActionCard` 补 Space；主题页与色板单选组使用 roving tabindex + 方向键；移除 `AppChip` 的死焦点并支持 `removeLabel`；`AppCheckbox` 与关于页链接的 2px 圆角改为 shape 令牌。对比度：新增 `contrast.test.ts`，8 套预设 × 浅/深 × 18 组配对，正文/图形全部达标，浅色 `outline-variant` / `surface-container`（1.46–1.47，装饰分隔线）登记为已知差距；补测固定 `success` / `warning` 扩展角色后，发现 Snackbar 图标用 `success` / `warning` / `error` 本体色叠在 `inverse-surface` 上仅 1.30–2.05:1，已改为对应的 `*-container` 色调（7.2–10.3:1）。DPI/窄窗口：规则表在内容区窄于 650px 时改为横向滚动（原先 `overflow:hidden` 会裁掉操作列）；`BaseDialog` 改为正文区滚动 + 底栏固定，矮视口下按钮可达；`outline` 文字色全部改为 `on-surface-variant`，原生输入框与 chip 边界从 `outlineVariant` 提到 `outline`；WebView 初始化时把 `ZoomFactor` 固定为 1.0，避免历史 profile 残留缩放。宿主窗口：`WindowStateStore` 默认/最小尺寸改为 DIP 常量并按 `DeviceDpi/96` 换算，`MainForm` 用 `GetDpiForSystem()` 初始化、`OnDpiChanged` 刷新 `MinimumSize`；默认位置和恢复位置都按保存坐标所在显示器的工作区夹取，多屏保留副屏位置，新增 `WindowStateStoreTests`（14 项）。运行时切换显示缩放后的整屏闪烁/窗口残影：根因是进程为 SystemAware（实测 `GetProcessDpiAwareness=1`，缩放变化只由 DWM 位图拉伸），叠加托盘恢复路径的 `Opacity=0→1`（使窗口带 `WS_EX_LAYERED`，而 WebView2 不支持分层父窗口）和 `ShowInTaskbar` 先关后开（会重建窗口句柄，且在 WebView2 存活时发生）。修复：csproj 声明 `ApplicationHighDpiMode=PerMonitorV2`；托盘恢复改为普通窗口 + 主题色占位，WebView2 就绪后置顶，不再改透明度、只在窗口仍隐藏且 WebView2 已释放时补回任务栏按钮；`MainForm.OnDpiChanged` 与覆盖层自身的 `WM_DPICHANGED` 都会触发覆盖层重建（重新采样虚拟屏与 DIB）。前后对比产物已归档到 `docs/design/assets/stage7/`（图标对比、8 套配色走查及复现说明）。剩余：125%/150% 人工走查确认（含运行中切换缩放后从托盘恢复、鼠标轨迹位置） |
 
 ---
 

@@ -51,4 +51,6 @@ MouseHook
 
 WebView2 的浏览器 profile 固定在 `%LocalAppData%\WuGesture\WebView2`，不放在安装目录旁边，因此安装到只读目录或清空输出目录都不会影响配置界面。宿主使用显式 `CoreWebView2Environment`，配置窗口隐藏到托盘时释放控件，并在浏览器进程没有自行退出时将其回收；`ready` / `disposed` 日志会带上浏览器进程号，便于确认后台是否真的不再持有 Chromium 进程。
 
+宿主进程按 Per-Monitor V2 声明 DPI 感知（csproj 的 `ApplicationHighDpiMode`，在 `ApplicationConfiguration.Initialize()` 中生效），运行时修改显示缩放会收到 `WM_DPICHANGED` 并驱动自绘标题栏、最小窗口尺寸和全屏覆盖层重建；如果退回 SystemAware，整个窗口只会被 DWM 位图拉伸，缩放变化后配置窗口和鼠标轨迹覆盖层都会错位。配置窗口恢复时不使用 `Opacity` 淡入：透明度会让窗口带上 `WS_EX_LAYERED`，而 WebView2 不支持在分层窗口中托管。恢复路径改为先显示普通窗口、用主题色内容面板占位，WebView2 就绪后再置顶；任务栏按钮只在窗口仍隐藏且 WebView2 已释放时补回，因为修改 `ShowInTaskbar` 会重建窗口句柄。
+
 前端页面、组件、路由、状态模块与 WebView 消息细节见 [前端项目地图](../src/WuGesture.App/Web/PROJECT_STRUCTURE.md)。桌面端模块和配置契约见 [项目结构](../PROJECT_STRUCTURE.md)。

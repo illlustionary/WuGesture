@@ -26,6 +26,9 @@ public sealed partial class MainForm
         base.OnDpiChanged(e);
         ApplyTitleBarMetrics();
         ApplyMinimumWindowSize(e.DeviceDpiNew);
+        // The full-screen overlay caches the virtual-screen rectangle and a DIB sized to it, so a scale change
+        // leaves it stretched even though the per-monitor metrics above are already up to date.
+        ScheduleOverlayRecovery("dpi-changed");
     }
 
     private void ApplyWindowTheme(AppearanceUiSettings appearance)
