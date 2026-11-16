@@ -1,4 +1,4 @@
-param(
+﻿param(
     [Parameter(Mandatory = $true)]
     [ValidatePattern("^v\d+(\.\d+){1,3}(-[0-9A-Za-z.-]+)?$")]
     [string]$Version,

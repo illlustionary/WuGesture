@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$ResultsDirectory = "artifacts/test-results",
     [double]$MinimumLineRate = 21.0,
     [double]$MinimumBranchRate = 19.0
