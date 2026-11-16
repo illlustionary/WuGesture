@@ -1,25 +1,37 @@
-<script setup>
+<script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 import BaseDialog from '@/components/dialog/BaseDialog.vue'
 
-const props = defineProps({
-  open: { type: Boolean, required: true },
-  title: { type: String, required: true },
-  description: { type: String, default: '' },
-  label: { type: String, required: true },
-  placeholder: { type: String, default: '' },
-  modelValue: { type: String, default: '' }
-})
+const props = withDefaults(
+  defineProps<{
+    open: boolean
+    title: string
+    description?: string
+    label: string
+    placeholder?: string
+    modelValue?: string
+  }>(),
+  {
+    description: '',
+    placeholder: '',
+    modelValue: ''
+  }
+)
 
-const emit = defineEmits(['close', 'confirm', 'update:modelValue'])
+const emit = defineEmits<{
+  close: []
+  confirm: []
+  'update:modelValue': [value: string]
+}>()
+
 const titleId = 'scope-create-dialog-title'
-const inputRef = ref(null)
+const inputRef = ref<HTMLInputElement | null>(null)
 
 const value = computed({
   get() {
     return props.modelValue
   },
-  set(nextValue) {
+  set(nextValue: string) {
     emit('update:modelValue', nextValue)
   }
 })
@@ -36,8 +48,8 @@ watch(
     }
 
     await nextTick()
-    inputRef.value?.focus?.()
-    inputRef.value?.select?.()
+    inputRef.value?.focus()
+    inputRef.value?.select()
   }
 )
 </script>
@@ -51,7 +63,7 @@ watch(
     :show-close="true"
     confirm-text="保存"
     panel-class="scope-create-dialog"
-    @close="$emit('close')"
+    @close="emit('close')"
     @confirm="confirm"
   >
     <label class="scope-create-dialog__field">
@@ -70,13 +82,13 @@ watch(
 <style scoped lang="scss">
 .scope-create-dialog__field {
   display: grid;
-  gap: 6px;
-  margin-top: 10px;
-  color: var(--muted);
-  font-size: 13px;
+  gap: var(--md-sys-spacing-sm);
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--md-sys-typescale-label-large-size);
+  line-height: var(--md-sys-typescale-label-large-line-height);
 }
 
 :deep(.scope-create-dialog) {
-  width: min(480px, 100%);
+  width: min(480px, calc(100vw - 36px));
 }
 </style>

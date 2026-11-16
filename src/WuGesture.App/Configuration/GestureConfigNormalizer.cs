@@ -89,6 +89,9 @@ internal static class GestureConfigNormalizer
         var appearance = settings.Appearance;
         var defaultAppearance = new AppearanceUiSettings();
         appearance.Theme = NormalizeAppearanceTheme(appearance.Theme);
+        appearance.ColorSource = NormalizeAppearanceColorSource(appearance.ColorSource);
+        appearance.SeedColor = NormalizeSeedColor(appearance.SeedColor, defaultAppearance.SeedColor);
+        appearance.SchemeVariant = NormalizeAppearanceSchemeVariant(appearance.SchemeVariant);
         appearance.LightTitleBarColor = NormalizeColor(appearance.LightTitleBarColor, defaultAppearance.LightTitleBarColor);
         appearance.LightTitleBarTextColor = NormalizeColor(appearance.LightTitleBarTextColor, defaultAppearance.LightTitleBarTextColor);
         appearance.DarkTitleBarColor = NormalizeColor(appearance.DarkTitleBarColor, defaultAppearance.DarkTitleBarColor);
@@ -190,6 +193,65 @@ internal static class GestureConfigNormalizer
             GestureConfigContract.AppearanceThemes.Dark
             ? value
             : GestureConfigContract.AppearanceThemes.System;
+    }
+
+    private static string NormalizeAppearanceColorSource(string? value)
+    {
+        return value is
+            GestureConfigContract.AppearanceColorSources.Preset or
+            GestureConfigContract.AppearanceColorSources.Custom or
+            GestureConfigContract.AppearanceColorSources.System
+            ? value
+            : GestureConfigContract.AppearanceColorSources.Preset;
+    }
+
+    private static string NormalizeAppearanceSchemeVariant(string? value)
+    {
+        return value is
+            GestureConfigContract.AppearanceSchemeVariants.TonalSpot or
+            GestureConfigContract.AppearanceSchemeVariants.Neutral or
+            GestureConfigContract.AppearanceSchemeVariants.Vibrant or
+            GestureConfigContract.AppearanceSchemeVariants.Expressive or
+            GestureConfigContract.AppearanceSchemeVariants.Monochrome
+            ? value
+            : GestureConfigContract.AppearanceSchemeVariants.TonalSpot;
+    }
+
+    private static string NormalizeSeedColor(string? value, string fallback)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return fallback;
+        }
+
+        var normalized = value.Trim();
+        if (!normalized.StartsWith('#'))
+        {
+            normalized = $"#{normalized}";
+        }
+
+        if (normalized.Length == 4 &&
+            char.IsAsciiHexDigit(normalized[1]) &&
+            char.IsAsciiHexDigit(normalized[2]) &&
+            char.IsAsciiHexDigit(normalized[3]))
+        {
+            normalized = $"#{normalized[1]}{normalized[1]}{normalized[2]}{normalized[2]}{normalized[3]}{normalized[3]}";
+        }
+
+        if (normalized.Length != 7)
+        {
+            return fallback;
+        }
+
+        for (var index = 1; index < normalized.Length; index++)
+        {
+            if (!char.IsAsciiHexDigit(normalized[index]))
+            {
+                return fallback;
+            }
+        }
+
+        return normalized.ToUpperInvariant();
     }
 
     private static string NormalizeLevelOsdPosition(string? value)

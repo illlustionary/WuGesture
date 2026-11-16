@@ -35,6 +35,10 @@ jobs:
         working-directory: src/WuGesture.App/Web
         run: pnpm format:check
 
+      - name: Type-check frontend
+        working-directory: src/WuGesture.App/Web
+        run: pnpm typecheck
+
       - name: Run frontend tests
         working-directory: src/WuGesture.App/Web
         run: pnpm test

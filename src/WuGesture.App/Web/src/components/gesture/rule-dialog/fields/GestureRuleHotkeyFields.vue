@@ -32,23 +32,23 @@ defineEmits(['record'])
 .gesture-rule-hotkey-fields__record {
   display: inline-flex;
   align-items: center;
-  height: 42px;
-  gap: 8px;
+  height: var(--md-sys-size-button-height);
+  gap: var(--md-sys-spacing-sm);
   overflow: hidden;
   text-align: left;
   white-space: nowrap;
   text-overflow: ellipsis;
   cursor: pointer;
-  color: var(--text);
-  background: var(--panel-solid);
+  color: var(--md-sys-color-on-surface);
+  background: var(--md-sys-color-surface-container-highest);
 
   &:hover {
-    background: var(--interactive-hover-bg);
+    background: var(--md-sys-color-surface-container-high);
   }
 
   &.is-recording {
-    color: var(--recording-text);
-    background: var(--recording-bg);
+    color: var(--md-sys-color-on-tertiary-container);
+    background: var(--md-sys-color-tertiary-container);
   }
 }
 
@@ -56,6 +56,6 @@ defineEmits(['record'])
   width: 18px;
   height: 18px;
   flex: 0 0 auto;
-  color: var(--accent-strong);
+  color: var(--md-sys-color-primary);
 }
 </style>

@@ -32,7 +32,7 @@ internal sealed class TrayMenuController : IDisposable
     private readonly Icon normalTrayIcon;
     private readonly Icon pausedTrayIcon;
     private readonly float dpiScale;
-    private bool? darkThemeApplied;
+    private TrayMenuPalette? appliedPalette;
 
     public TrayMenuController(
         Action openConfiguration,
@@ -85,13 +85,13 @@ internal sealed class TrayMenuController : IDisposable
     {
         var dark = appearance.Theme == GestureConfigContract.AppearanceThemes.Dark ||
             (appearance.Theme == GestureConfigContract.AppearanceThemes.System && SystemTheme.PrefersDarkMode());
-        if (darkThemeApplied == dark)
+        var palette = TrayMenuPalette.FromAppearance(appearance, dark);
+        if (appliedPalette is { } applied && applied == palette)
         {
             return;
         }
 
-        darkThemeApplied = dark;
-        var palette = dark ? TrayMenuPalette.Dark : TrayMenuPalette.Light;
+        appliedPalette = palette;
         trayMenu.BackColor = palette.Background;
         trayMenu.ForeColor = palette.Text;
         trayMenu.Renderer = new TrayMenuRenderer(palette, ItemLeftPadding, ItemRightPadding);

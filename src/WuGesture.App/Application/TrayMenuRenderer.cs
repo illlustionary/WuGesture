@@ -1,10 +1,11 @@
 using System.Drawing.Drawing2D;
+using WuGesture.App.GestureEngine;
 
 namespace WuGesture.App;
 
 /// <summary>
-/// Colours for the notification-area menu. Both variants mirror the web UI palette so the tray menu matches
-/// the configuration window instead of using the stock WinForms gray chrome.
+/// Colours for the notification-area menu. The palette is derived from the configured title-bar colours and
+/// seed colour so the tray menu follows the same scheme as the web UI instead of using stock WinForms grey.
 /// </summary>
 internal readonly record struct TrayMenuPalette(
     Color Background,
@@ -16,25 +17,41 @@ internal readonly record struct TrayMenuPalette(
     Color Accent,
     Color Separator)
 {
-    public static TrayMenuPalette Light { get; } = new(
-        Color.FromArgb(0xFF, 0xFF, 0xFF),
-        Color.FromArgb(0xE2, 0xE7, 0xED),
-        Color.FromArgb(0x16, 0x20, 0x2B),
-        Color.FromArgb(0x8B, 0x95, 0xA3),
-        Color.FromArgb(0xF2, 0xF5, 0xF9),
-        Color.FromArgb(0xE9, 0xEF, 0xF6),
-        Color.FromArgb(0x52, 0x9E, 0xF1),
-        Color.FromArgb(0xEC, 0xF0, 0xF4));
+    public static TrayMenuPalette FromAppearance(AppearanceUiSettings appearance, bool dark)
+    {
+        var defaults = new AppearanceUiSettings();
+        var background = ParseColor(
+            dark ? appearance.DarkTitleBarColor : appearance.LightTitleBarColor,
+            dark ? defaults.DarkTitleBarColor : defaults.LightTitleBarColor);
+        var text = ParseColor(
+            dark ? appearance.DarkTitleBarTextColor : appearance.LightTitleBarTextColor,
+            dark ? defaults.DarkTitleBarTextColor : defaults.LightTitleBarTextColor);
+        var accent = ParseColor(appearance.SeedColor, defaults.SeedColor);
 
-    public static TrayMenuPalette Dark { get; } = new(
-        Color.FromArgb(0x1A, 0x22, 0x2C),
-        Color.FromArgb(0x39, 0x44, 0x51),
-        Color.FromArgb(0xED, 0xF2, 0xF7),
-        Color.FromArgb(0x7F, 0x8C, 0x9B),
-        Color.FromArgb(0x22, 0x2D, 0x38),
-        Color.FromArgb(0x2C, 0x38, 0x47),
-        Color.FromArgb(0x52, 0x9E, 0xF1),
-        Color.FromArgb(0x2A, 0x35, 0x42));
+        return new TrayMenuPalette(
+            background,
+            Blend(background, text, dark ? 0.18 : 0.14),
+            text,
+            Blend(background, text, 0.55),
+            Blend(background, text, dark ? 0.10 : 0.06),
+            Blend(background, text, dark ? 0.18 : 0.12),
+            accent,
+            Blend(background, text, dark ? 0.24 : 0.18));
+    }
+
+    private static Color ParseColor(string? value, string fallback)
+    {
+        return GestureColorParser.Parse(value, GestureColorParser.Parse(fallback, Color.Black));
+    }
+
+    private static Color Blend(Color from, Color to, double amount)
+    {
+        return Color.FromArgb(
+            0xFF,
+            (int)Math.Round(from.R + (to.R - from.R) * amount),
+            (int)Math.Round(from.G + (to.G - from.G) * amount),
+            (int)Math.Round(from.B + (to.B - from.B) * amount));
+    }
 }
 
 /// <summary>

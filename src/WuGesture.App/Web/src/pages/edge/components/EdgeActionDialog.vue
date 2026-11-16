@@ -80,7 +80,7 @@ const actionTypeOptions = ACTION_TYPE_OPTIONS
 .edge-dialog__grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: var(--md-sys-spacing-lg);
 }
 
 :deep(.edge-dialog) {
@@ -89,9 +89,10 @@ const actionTypeOptions = ACTION_TYPE_OPTIONS
 
 .edge-field {
   display: grid;
-  gap: 6px;
-  color: var(--muted);
-  font-size: 13px;
+  gap: var(--md-sys-spacing-xs);
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--md-sys-typescale-label-large-size);
+  line-height: var(--md-sys-typescale-label-large-line-height);
 }
 
 .edge-dialog__enabled {

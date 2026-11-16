@@ -77,6 +77,8 @@ internal sealed class WebViewHost : IDisposable
             coreWebView.NavigationStarting += OnNavigationStarting;
             coreWebView.NewWindowRequested += OnNewWindowRequested;
             ApplyHostSettings(coreWebView.Settings);
+            // 固定 100% 缩放：历史 profile 可能残留非 1.0 的缩放值，而缩放控件已关闭。
+            createdWebView.ZoomFactor = 1.0;
             ConfigureHostMapping(coreWebView);
             AppLogger.Information(
                 "WebViewHost",

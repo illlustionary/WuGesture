@@ -2,7 +2,8 @@
 import CustomSelect from '@/components/form/CustomSelect.vue'
 import BaseInput from '@/components/form/BaseInput.vue'
 import BaseRange from '@/components/form/BaseRange.vue'
-import IconActionButton from '@/components/ui/IconActionButton.vue'
+import AppButton from '@/components/ui/AppButton.vue'
+import AppIcon from '@/components/ui/AppIcon.vue'
 import ToggleCheckbox from '@/components/form/ToggleCheckbox.vue'
 import SettingsField from './SettingsField.vue'
 import SettingsFormGrid from './SettingsFormGrid.vue'
@@ -25,31 +26,14 @@ function commit() {
 
 <template>
   <SettingsSectionCard title="音量/亮度提示">
-    <template #actions>
-      <IconActionButton
-        icon="test"
-        label="测试音量提示"
-        class="secondary-button"
-        color="var(--accent-strong)"
-        @click="emit('preview', 'volume')"
-      />
-      <IconActionButton
-        icon="test"
-        label="测试亮度提示"
-        class="secondary-button"
-        color="var(--accent-strong)"
-        @click="emit('preview', 'brightness')"
-      />
-    </template>
-
-    <div class="field-card">
+    <SettingsToggleRow>
       <ToggleCheckbox
         v-model="draft.levelOsd.enabled"
         label="显示音量/亮度提示"
         note="关闭后调节音量或亮度时不再显示提示窗。"
         @change="commit"
       />
-    </div>
+    </SettingsToggleRow>
 
     <div class="level-osd-preview">
       <div
@@ -251,6 +235,27 @@ function commit() {
         />
       </SettingsField>
     </SettingsFormGrid>
+
+    <template #footer>
+      <AppButton
+        variant="outlined"
+        @click="emit('preview', 'volume')"
+      >
+        <template #leading>
+          <AppIcon name="test" />
+        </template>
+        测试音量提示
+      </AppButton>
+      <AppButton
+        variant="outlined"
+        @click="emit('preview', 'brightness')"
+      >
+        <template #leading>
+          <AppIcon name="test" />
+        </template>
+        测试亮度提示
+      </AppButton>
+    </template>
   </SettingsSectionCard>
 </template>
 
@@ -258,13 +263,19 @@ function commit() {
 .level-osd-preview {
   position: relative;
   min-height: 220px;
-  margin-bottom: 14px;
+  margin-bottom: var(--md-sys-spacing-lg);
+  padding: var(--md-sys-spacing-lg);
   overflow: hidden;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-medium);
   background:
-    linear-gradient(var(--border-muted) 1px, transparent 1px),
-    linear-gradient(90deg, var(--border-muted) 1px, transparent 1px), var(--panel-inset);
+    linear-gradient(color-mix(in srgb, var(--md-sys-color-outline-variant) 60%, transparent) 1px, transparent 1px),
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--md-sys-color-outline-variant) 60%, transparent) 1px,
+      transparent 1px
+    ),
+    var(--md-sys-color-surface-container);
   background-size: 24px 24px;
 }
 
@@ -273,21 +284,21 @@ function commit() {
   display: grid;
   grid-template-rows: 1fr auto auto;
   place-items: center;
-  gap: 8px;
-  padding: 12px;
+  gap: var(--md-sys-spacing-sm);
+  padding: var(--md-sys-spacing-md);
   color: var(--level-osd-text);
   background: var(--level-osd-background);
-  box-shadow: var(--shadow-popover);
+  box-shadow: var(--md-sys-elevation-level2);
   transition:
-    top 160ms ease,
-    right 160ms ease,
-    bottom 160ms ease,
-    left 160ms ease,
-    transform 160ms ease,
-    width 160ms ease,
-    height 160ms ease,
-    border-radius 160ms ease,
-    opacity 160ms ease;
+    top var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard),
+    right var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard),
+    bottom var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard),
+    left var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard),
+    transform var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard),
+    width var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard),
+    height var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard),
+    border-radius var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard),
+    opacity var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
 
   &--center {
     top: 50%;
@@ -296,38 +307,38 @@ function commit() {
   }
 
   &--top-center {
-    top: 10px;
+    top: var(--md-sys-spacing-sm);
     left: 50%;
     transform: translateX(-50%) translate(var(--level-osd-offset-x), var(--level-osd-offset-y));
   }
 
   &--bottom-center {
-    bottom: 10px;
+    bottom: var(--md-sys-spacing-sm);
     left: 50%;
     transform: translateX(-50%) translate(var(--level-osd-offset-x), var(--level-osd-offset-y));
   }
 
   &--top-left {
-    top: 10px;
-    left: 10px;
+    top: var(--md-sys-spacing-sm);
+    left: var(--md-sys-spacing-sm);
     transform: translate(var(--level-osd-offset-x), var(--level-osd-offset-y));
   }
 
   &--top-right {
-    top: 10px;
-    right: 10px;
+    top: var(--md-sys-spacing-sm);
+    right: var(--md-sys-spacing-sm);
     transform: translate(var(--level-osd-offset-x), var(--level-osd-offset-y));
   }
 
   &--bottom-left {
-    bottom: 10px;
-    left: 10px;
+    bottom: var(--md-sys-spacing-sm);
+    left: var(--md-sys-spacing-sm);
     transform: translate(var(--level-osd-offset-x), var(--level-osd-offset-y));
   }
 
   &--bottom-right {
-    right: 10px;
-    bottom: 10px;
+    right: var(--md-sys-spacing-sm);
+    bottom: var(--md-sys-spacing-sm);
     transform: translate(var(--level-osd-offset-x), var(--level-osd-offset-y));
   }
 }
@@ -341,8 +352,8 @@ function commit() {
   span {
     display: block;
     width: 5px;
-    border-radius: var(--radius-pill);
-    background: var(--level-preview-signal);
+    border-radius: var(--md-sys-shape-corner-full);
+    background: var(--md-sys-color-primary);
 
     &:nth-child(1) {
       height: 12px;
@@ -362,7 +373,7 @@ function commit() {
   width: 76%;
   height: 7px;
   overflow: hidden;
-  border-radius: var(--radius-pill);
+  border-radius: var(--md-sys-shape-corner-full);
   background: var(--level-osd-track);
 
   span {

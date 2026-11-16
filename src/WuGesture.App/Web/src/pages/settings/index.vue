@@ -18,6 +18,19 @@ const props = defineProps({
   section: { type: String, default: 'mouse-trail' }
 })
 
+const SECTION_TITLES = {
+  config: '配置管理',
+  'mouse-trail': '鼠标轨迹',
+  'gesture-hint': '手势提示',
+  'level-osd': '音量/亮度提示',
+  sensitivity: '手势灵敏度',
+  'app-behavior': '应用行为',
+  sidebar: '侧栏',
+  update: '更新',
+  webdav: 'WebDAV'
+}
+const pageTitle = computed(() => SECTION_TITLES[props.section] ?? '设置')
+
 const settingsStore = useGestureEditorContext()
 const {
   draft,
@@ -78,7 +91,10 @@ function previewLevelOsd(kind) {
 </script>
 
 <template>
-  <AppShell layout-class="page-shell__grid--single page-shell__grid--settings">
+  <AppShell
+    :title="pageTitle"
+    layout-class="page-shell__grid--single page-shell__grid--settings"
+  >
     <template #right>
       <section class="page-stack">
         <ConfigManagement
@@ -176,19 +192,8 @@ function previewLevelOsd(kind) {
   width: 100%;
   min-height: 44px;
   padding: 4px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  background: var(--panel-control);
-}
-
-:deep(input[type='text']),
-:deep(input[type='url']),
-:deep(input[type='password']) {
-  min-height: 42px;
-  padding: 0 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  background: var(--panel-control);
-  color: var(--text);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-small);
+  background: var(--md-sys-color-surface-container-high);
 }
 </style>

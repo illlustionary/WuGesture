@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import ApplicationListItem from '@/components/scope/ApplicationListItem.vue'
+import AppChip from '@/components/ui/AppChip.vue'
 import IconActionButton from '@/components/ui/IconActionButton.vue'
 
 const props = defineProps({
@@ -133,22 +134,16 @@ function removeArgument(index) {
           v-else
           class="gesture-rule-program-fields__arguments"
         >
-          <span
+          <AppChip
             v-for="(argument, index) in draft.programArguments"
             :key="`${argument}-${index}`"
+            removable
             class="gesture-rule-program-fields__argument"
             :class="{ 'is-removing': removingArguments.has(index) }"
-            tabindex="0"
+            @remove="removeArgument(index)"
           >
-            <span class="gesture-rule-program-fields__argument-text">{{ argument }}</span>
-            <IconActionButton
-              icon="close"
-              label="删除运行参数"
-              :show-tooltip="false"
-              class="gesture-rule-program-fields__argument-remove"
-              @click="removeArgument(index)"
-            />
-          </span>
+            {{ argument }}
+          </AppChip>
         </div>
       </div>
     </section>
@@ -159,20 +154,21 @@ function removeArgument(index) {
 .gesture-rule-program-fields,
 .gesture-rule-program-fields__section {
   display: grid;
-  gap: 8px;
+  gap: var(--md-sys-spacing-sm);
 }
 
 .gesture-rule-program-fields__title {
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 600;
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--md-sys-typescale-label-large-size);
+  line-height: var(--md-sys-typescale-label-large-line-height);
+  font-weight: var(--md-sys-typescale-label-large-weight);
 }
 
 .gesture-rule-program-fields__row {
   display: grid;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--interactive-bg);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-small);
+  background: var(--md-sys-color-surface-container);
 }
 
 .gesture-rule-program-fields__program-row {
@@ -181,14 +177,15 @@ function removeArgument(index) {
 
 .gesture-rule-program-fields__picker-row {
   grid-template-columns: 1fr auto;
-  min-height: 52px;
-  padding: 8px 10px 8px 14px;
+  min-height: var(--md-sys-size-field-height);
+  padding: var(--md-sys-spacing-sm) var(--md-sys-spacing-md) var(--md-sys-spacing-sm) var(--md-sys-spacing-lg);
   align-items: center;
 }
 
 .gesture-rule-program-fields__picker-hint {
-  color: var(--text-subtle);
-  font-size: 13px;
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--md-sys-typescale-body-small-size);
+  line-height: var(--md-sys-typescale-body-small-line-height);
 }
 
 .gesture-rule-program-fields__program {
@@ -198,27 +195,29 @@ function removeArgument(index) {
 .gesture-rule-program-fields__empty {
   display: flex;
   min-height: 64px;
-  padding: 12px 14px;
+  padding: var(--md-sys-spacing-md) var(--md-sys-spacing-lg);
   align-items: center;
-  color: var(--text-subtle);
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--md-sys-typescale-body-medium-size);
+  line-height: var(--md-sys-typescale-body-medium-line-height);
 }
 
 .gesture-rule-program-fields__add-button {
   align-self: center;
-  margin: 0 10px;
+  margin: 0 var(--md-sys-spacing-md);
 }
 
 .gesture-rule-program-fields__argument-row {
-  gap: 12px;
-  min-height: 52px;
-  padding: 8px 10px 8px 14px;
+  gap: var(--md-sys-spacing-md);
+  min-height: var(--md-sys-size-field-height);
+  padding: var(--md-sys-spacing-sm) var(--md-sys-spacing-md) var(--md-sys-spacing-sm) var(--md-sys-spacing-lg);
   align-items: center;
 }
 
 .gesture-rule-program-fields__argument-control {
   flex: 1;
   display: flex;
-  gap: 8px;
+  gap: var(--md-sys-spacing-sm);
   align-items: center;
 }
 
@@ -231,51 +230,40 @@ function removeArgument(index) {
 
 .gesture-rule-program-fields__argument-empty {
   display: grid;
-  gap: 4px;
+  gap: var(--md-sys-spacing-xs);
   min-height: 40px;
-  padding: 2px 0;
-  color: var(--text-subtle);
-  font-size: 12px;
+  padding: var(--md-sys-spacing-xs) 0;
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--md-sys-typescale-body-small-size);
+  line-height: var(--md-sys-typescale-body-small-line-height);
 }
 
 .gesture-rule-program-fields__argument-list {
   display: grid;
-  gap: 8px;
-  min-height: 52px;
-  padding: 12px 14px;
+  gap: var(--md-sys-spacing-sm);
+  min-height: var(--md-sys-size-field-height);
+  padding: var(--md-sys-spacing-md) var(--md-sys-spacing-lg);
   align-content: center;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--interactive-bg);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-small);
+  background: var(--md-sys-color-surface-container);
 }
 
 .gesture-rule-program-fields__arguments {
   display: flex;
   min-height: 34px;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--md-sys-spacing-sm);
 }
 
 .gesture-rule-program-fields__argument {
-  display: inline-flex;
   max-width: 100%;
-  min-height: 32px;
-  padding: 3px 4px 3px 10px;
-  align-items: center;
-  gap: 4px;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  background: var(--interactive-bg);
   transition:
-    opacity 160ms ease,
-    transform 160ms ease,
-    border-color 120ms ease,
-    background-color 120ms ease;
+    opacity var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard),
+    transform var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
 
   &:hover,
   &:focus-within {
-    border-color: var(--accent-strong);
-    background: var(--interactive-hover-bg);
     transform: scale(1.03);
   }
 
@@ -285,20 +273,11 @@ function removeArgument(index) {
   }
 }
 
-.gesture-rule-program-fields__argument-text {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-:deep(.gesture-rule-program-fields__argument-remove) {
-  min-width: 24px;
-  min-height: 24px;
-  color: var(--text-subtle);
+:deep(.gesture-rule-program-fields__argument .app-chip__remove) {
+  color: var(--md-sys-color-on-surface-variant);
 
   &:hover {
-    color: var(--danger);
+    color: var(--md-sys-color-error);
   }
 }
 
@@ -309,7 +288,7 @@ function removeArgument(index) {
 @media (max-width: 560px) {
   .gesture-rule-program-fields__argument-row {
     grid-template-columns: 1fr;
-    gap: 6px;
+    gap: var(--md-sys-spacing-sm);
   }
 }
 </style>

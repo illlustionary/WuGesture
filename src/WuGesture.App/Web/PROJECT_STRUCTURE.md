@@ -15,7 +15,7 @@ src\WuGesture.App\Web
 ├─ package.json
 ├─ pnpm-lock.yaml
 ├─ pnpm-workspace.yaml
-├─ jsconfig.json
+├─ tsconfig.json
 ├─ uno.config.js
 ├─ vite.config.js
 ├─ PROJECT_STRUCTURE.md
@@ -27,12 +27,12 @@ src\WuGesture.App\Web
 
 - `agents.md`：Web 子项目的代理指令。
 - `index.html`：Vite 入口 HTML，页面标题为 `WuGesture`。
-- `package.json`：前端工程依赖与脚本；`format` 和 `format:check` 使用本地 Prettier 按仓库根目录的 `.prettierrc.json` 格式化或校验前端源码，`test` 使用 Vitest 运行前端单元测试。
+- `package.json`：前端工程依赖与脚本；`format` 和 `format:check` 使用本地 Prettier 按仓库根目录的 `.prettierrc.json` 格式化或校验前端源码，`test` 使用 Vitest 运行前端单元测试，`typecheck` 使用 `vue-tsc --noEmit` 做类型检查。
 - `pnpm-lock.yaml`：锁定依赖树。
 - `pnpm-workspace.yaml`：工作区配置，并放行 `@parcel/watcher` 的本地构建脚本，避免非交互环境下依赖安装中断。
-- `jsconfig.json`：配置编辑器路径提示，`@/*` 指向 `src/*`，`@resources/*` 指向桌面宿主的 `Resources/*`。
-- `uno.config.js`：UnoCSS 配置，集中定义页面区块、表单、列表等常用 shortcuts。
-- `vite.config.js`：Vite 构建配置，包含 `vite-svg-loader`、UnoCSS Vite 插件，以及 `@` 到 `src`、`@resources` 到桌面宿主 `Resources` 目录的路径别名。`vite-svg-loader` 的 SVGO 配置覆盖了 `removeViewBox`，保证 24×24 描边图标在按 CSS 缩放到 18px 等尺寸时仍能等比缩放。
+- `tsconfig.json`：TypeScript / Vue 类型检查配置；`allowJs: true` 且 `checkJs: false`，只检查 `src` 下的 `.ts`、`.d.ts` 和 `.vue`，存量 `.js` 与 SFC 不受影响。`@/*` 指向 `src/*`，`@resources/*` 指向桌面宿主的 `Resources/*`。原 `jsconfig.json` 已被该文件取代。
+- `uno.config.js`：UnoCSS 配置，集中定义页面区块、表单、列表等常用 shortcuts；颜色统一映射到 `--md-sys-color-*` 语义令牌，shortcut 里不再出现写死的 rgba 色值。
+- `vite.config.js`：Vite 构建配置，包含 `vite-svg-loader`、UnoCSS Vite 插件，以及 `@` 到 `src`、`@resources` 到桌面宿主 `Resources` 目录的路径别名。`vite-svg-loader` 的 SVGO 配置覆盖了 `removeViewBox`，保证 24×24 描边图标在按 CSS 缩放到 18px 等尺寸时仍能等比缩放。`test.server.deps.inline` 把 `@material/material-color-utilities` 交给 Vite 解析，规避 0.4.0 包内无扩展名相对导入在 Node ESM 下无法加载的问题。`rawSourcePlugin` 提供 `virtual:raw-source?path=<相对路径>&raw` 虚拟模块，按源码文本返回仓库文件，供对比度测试读取 `_color.scss` 的真实令牌（`.scss` 直接 `?raw` 导入会被 CSS 管线接管并返回空字符串）。
 - `PROJECT_STRUCTURE.md`：当前 Web 子项目地图。
 - `node_modules`：本地依赖目录，不纳入源码维护。
 
@@ -42,8 +42,12 @@ src\WuGesture.App\Web
 src
 ├─ main.js
 ├─ App.vue
+├─ env.d.ts
 ├─ router
 ├─ styles.scss
+├─ styles
+├─ theme
+├─ types
 ├─ assets
 ├─ components
 ├─ composables
@@ -54,15 +58,41 @@ src
 └─ pages
 ```
 
-- `src\main.js`：Vue 应用入口，加载全局样式与插件并挂载应用；路由定义集中在 `router` 目录。
+- `src\main.js`：Vue 应用入口，加载全局样式与插件并挂载应用；挂载前调用 `applyCachedScheme()` 用上次生成的色板覆盖静态基线，避免首屏闪回默认蓝。路由定义集中在 `router` 目录。
 - `src\router\index.js`：创建 hash 路由实例。
 - `src\router\routes\index.js`：组合基础页面、作用域、边缘操作和设置路由模块；页面组件和嵌套路由承载组件均通过动态 `import()` 懒加载。
 - `src\router\routes\scopeRoutes.js`：分类和程序动态子路由。
 - `src\router\routes\edgeRoutes.js`：触发角、摩擦边和边缘滚动子路由。
 - `src\router\routes\settingsRoutes.js`：各设置项子路由。
+- `src\env.d.ts`：Vite 客户端类型引用与 `*.svg`、`*.svg?component` 模块声明；后续 TypeScript 文件可直接导入 SVG，无需重复声明。
 - `src\App.vue`：侧栏/页面工作区、路由切换过渡和全局弹窗挂载；窗口标题栏由桌面宿主在 WebView 上方自绘（不进入前端页面），分类/程序侧栏操作和主题状态由组合式函数协调。首次启动引导只在 `state.hostConfigLoaded` 为 true 且 `uiSettings.onboarding.welcomeCompleted` 为 false 时自动弹出，每个会话最多一次，浏览器预览不触发；帮助弹窗由侧栏底部「?」打开。全局弹窗不会随页面卸载，因此 `App.vue` 在路由路径变化时统一关闭应用选择器、手势规则编辑器、快速搜索、帮助弹窗和分类/程序新增重命名弹窗，避免切换页面后残留；欢迎引导和更新弹窗属于全局流程，不受路由切换影响；恢复默认设置的确认弹窗属于设置页，随页面卸载自动关闭。
 - `src\icons\appIcons.js`：本地 SVG 图标的唯一显式注册表；使用文件名作为图标名称，供 `AppIcon` 和业务组件按名称查找。
-- `src\styles.scss`：编辑器全局设计 token、reset、通用按钮、输入框、弹窗和图标样式；常用布局/区块/表单/列表样式优先用 UnoCSS shortcuts，复杂动态样式和组件专属样式放在对应 `.vue` 文件的 scoped SCSS 中。
+- `src\styles.scss`：全局样式入口，只负责按顺序 `@use` 令牌层、基础样式、共用组件类和 Toast 覆盖；新增样式不要直接追加到这个文件。
+- `src\styles\tokens\`：MD3 设计令牌层，按 `_color`、`_typescale`、`_shape`、`_spacing`、`_elevation`、`_motion`、`_state`、`_aliases` 拆分。`_color` 的浅色/深色角色值由 `@material/material-color-utilities` 0.4.0 以 seed `#529EF1` / Tonal Spot 生成，作为首屏兜底；运行时由 `<style id="md-scheme">` 覆盖。`_motion` 提供 standard / emphasized 两族缓动和 short / medium / long 三档时长，并在 `prefers-reduced-motion: reduce` 下把三档时长归零，因此组件过渡必须引用令牌而不是写死毫秒。`_aliases.scss` 把 `--bg`、`--panel`、`--accent` 等旧变量映射到新令牌，保证存量组件零改动。
+- `src\styles\_base.scss`：reset、`:focus-visible` 焦点环、6px 细滚动条、原生输入框/滑块/取色器样式；原生文本/颜色输入使用 `outline` 描边而不是低对比的 `outlineVariant`。
+- `src\styles\_components.scss`：存量页面共用的容器与按钮类。`.section-card` / `.list-stack` 为 Filled Card（12 圆角、`surfaceContainerLow`、1px 描边、无阴影），`.page-stack` 与相邻卡片改用 16 间距；`.section-title` / `.section-actions` 统一分组标题与操作区；`.primary-button` / `.secondary-button` / `.ghost-button` / `.danger-button` / `.keycap` / `.icon-button` / 弹窗外壳和空状态样式均已映射到 MD3。
+- `src\styles\_toast.scss`：把 `vue-toastification` 统一成 MD3 Snackbar：`inverseSurface` 背景、4 圆角、48 最小高度，各类型只给图标着色。图标使用 `success-container` / `warning-container` / `error-container` 而不是 `success` / `warning` / `error` 本体色，因为 Snackbar 背景是 `inverseSurface`（浅色主题为深底、深色主题为浅底），本体色在两种模式下只有约 1.3–2.0:1，容器色可稳定保持 7:1 以上。
+- `src\theme\tokens.ts`：颜色角色、Typescale、形状、间距和动效的类型契约，以及 `colorVar()` 等引用工具；新增令牌时必须与 SCSS 同步。
+- `src\theme\palettes.ts`：8 套预设 seed 色板（蓝/青/绿/紫/粉/橙/红/灰）与默认色 `#529EF1`；保存色值而非索引。
+- `src\theme\scheme.ts`：MD3 配色引擎，封装 `@material/material-color-utilities`，以 seed + 变体生成浅/深两套完整角色色板；负责颜色/枚举归一化、Windows 强调色可用性判断与回退，以及标题栏 `surface` / `onSurface` 派生。`scheme.test.ts` 覆盖确定性、变体和标题栏派生；`contrast.test.ts` 用 WCAG 2.1 公式对 8 套预设 × 浅/深色的正文（≥4.5）、图形（≥3）、装饰（≥1.5）配对做矩阵断言，并对浅色 `outline-variant` / `surface-container` 的 1.46–1.47 已知差距做双向校验；同时通过 `virtual:raw-source` 读取 `_color.scss` 里固定的 `success` / `warning` 扩展角色，断言 `on-*` 配对、关于页状态文字和 Snackbar 图标（`success-container` 等）的对比度。
+- `src\theme\applyScheme.ts`：把生成的色板注入 `<style id="md-scheme">`（同时写入 `:root` 与 `[data-theme='dark']`），用 `localStorage` 缓存首屏色板，并只切换 `data-theme` 完成明暗模式切换。
+- `src\types\ui.ts`：基础控件的共享类型契约（`SelectOption`、`SelectOptionValue`、`ButtonVariant`、`ButtonSize`、`ChipVariant`）。
+
+## MD3 Base Controls
+
+阶段 2 起基础控件独立成套，新代码优先使用组件而不是全局 class：
+
+- `src\components\ui\AppButton.vue`：MD3 按钮，`variant` 支持 `filled` / `tonal` / `outlined` / `text` / `danger`，`size` 支持 `md`（40）/ `sm`（32），`leading` 插槽放 18px 图标。
+- `src\components\ui\AppChip.vue`：高 32、8 圆角的 Chip，支持 `selected` / `disabled` / `removable`（`remove` 事件）。
+- `src\components\ui\AppDivider.vue`：1px `outlineVariant` 分割线，支持 `inset` / `vertical`。
+- `src\components\ui\IconActionButton.vue`：36×36 图标按钮，`icon` / `label` / `tone` / `color` / `showTooltip`；`inheritAttrs: false`，class、`disabled`、`@click` 直接落到内部 `<button>`。
+- `src\components\ui\HoverBubble.vue`：MD3 plain tooltip，`inverseSurface` + 4 圆角、无箭头，延迟 500ms，`pointerenter` 与键盘 `focus-visible` 都会显示；根节点固定为 `.hover-bubble-trigger`。
+- `src\components\form\BaseInput.vue`：Filled Text Field（高 48、顶角 8、聚焦 2px primary 底边），仍是单根 `<input>`；`type=color/range` 交回全局原生样式。
+- `src\components\form\CustomSelect.vue`：Exposed Dropdown，触发器 48、菜单圆角 4、项高 48、选中项 `secondaryContainer` + 勾选；保留 `modelValue` / `value` 双入口、键盘导航和 Teleport。
+- `src\components\form\ToggleCheckbox.vue`：MD3 Switch（轨道 52×32、滑块 24/16），整行可点、Switch 在行尾，保留 `label` / `note` 与 `change` 事件。
+- `src\components\form\BaseRange.vue`：原生 range 包装，保留 `--range-progress` 契约与 `$attrs` 透传（`disabled` 由此生效）。
+- `src\components\form\AppCheckbox.vue`：18×18 MD3 复选框，支持 `indeterminate`。
+- 阶段 2–3 重写的组件统一为 `<script setup lang="ts">`（含 `AppShell`、`AppSidebar`、`GestureRuleList`）；存量 `.js` 逻辑层未迁移。
 
 ## Assets
 
@@ -74,13 +104,13 @@ src\assets
 
 SVG 按使用位置分目录：
 
-- `actions\`：通用操作，包括新增、删除、导入导出、重置、测试、WebDAV 上传下载，以及密码显示/隐藏用的 `eye`、`eye-off`。
+- `actions\`：通用操作，包括新增、删除、导入导出、重置、测试（`test`，播放态圆标）、WebDAV 连接（`link`，链环）、WebDAV 上传下载，以及密码显示/隐藏用的 `eye`、`eye-off`。
 - `category\`：分类显示图标，包括浏览器、代码、媒体和星光。
 - `gesture\`：手势录制与选择图标，包括准星、键盘和录制。
-- `navigation\`：侧栏、搜索和应用状态图标。侧栏导航图标统一为 Lucide 风格（ISC 许可，24×24、`stroke-width` 1.8、路径 `currentColor`），包括 `globe`、`ban`、`folder`、`app-window`、`frame`、`corner-down-right`、`move-horizontal`、`mouse`、`setting`、`database`、`spline`、`message-square`、`monitor`、`gauge`、`toggle-left`、`refresh-cw`、`cloud`、`info`、`sun`、`moon`、`panel-left` 和 `search`；旧版实心图标仅 `briefcase`、`circle-dashed`、`close-alt` 保留给分类默认图标或无图标兜底。
-- `window\`：对话框关闭图标。
+- `navigation\`：侧栏、搜索和应用状态图标。全部图标统一为 24dp 网格的线性风格（`viewBox="0 0 24 24"`、根节点 `fill="none"` + `stroke="currentColor"`、`stroke-width` 1.8、round cap/join），包括 `globe`、`ban`、`folder`、`app-window`、`frame`、`corner-down-right`、`move-horizontal`、`mouse`、`setting`、`database`、`spline`、`message-square`、`monitor`、`gauge`、`toggle-left`、`refresh-cw`、`cloud`、`info`、`sun`、`moon`、`panel-left`、`search`、`briefcase`、`circle-dashed` 和 `close-alt`。
+- `window\`：对话框关闭与标题栏关闭图标。
 
-这些 SVG 只由 `icons\appIcons.js` 通过 `vite-svg-loader` 作为 Vue 组件导入。图标文件名就是对外的图标名称，统一使用小写 kebab-case；路径颜色应使用 `currentColor`，便于按钮和状态样式控制。描边图标依赖根节点 `fill="none"` + `stroke="currentColor"`，侧栏对应容器不能再强制 `fill: currentColor`；分类/程序子项仍在用的实心图标靠路径自身的 `fill="currentColor"` 生效。侧栏每个入口使用语义独立的图标：全局 `globe`、排除项 `ban`、分类 `folder`、程序 `app-window`、边缘操作 `frame`（触发角 `corner-down-right`、摩擦边 `move-horizontal`、边缘滚动 `mouse`）、设置 `setting`（配置 `database`、轨迹线 `spline`、手势提示 `message-square`、音量/亮度提示 `monitor`、手势灵敏度 `gauge`、应用行为 `toggle-left`、更新 `refresh-cw`、WebDAV `cloud`）、关于&更新 `info`，页脚使用 `sun`/`moon`、`search` 和 `panel-left`。
+这些 SVG 只由 `icons\appIcons.js` 通过 `vite-svg-loader` 作为 Vue 组件导入。图标文件名就是对外的图标名称，统一使用小写 kebab-case；路径颜色一律使用 `currentColor`。阶段 7 已把历史上 1024 实心图标全部改写为 24dp 线性图标，因此父容器只需控制 `width`/`height`/`color`，不要再给 `svg` 强制 `fill: currentColor`（会把描边路径填成色块）。`AppIcon` 默认 `size=20`，14px 等小尺寸由组件 CSS 覆盖，个别图标（如规则列表 14px 的方向箭头）可在自身类里加粗 `stroke-width` 保证可辨。侧栏每个入口使用语义独立的图标：全局 `globe`、排除项 `ban`、分类 `folder`、程序 `app-window`、边缘操作 `frame`（触发角 `corner-down-right`、摩擦边 `move-horizontal`、边缘滚动 `mouse`）、设置 `setting`（配置 `database`、轨迹线 `spline`、手势提示 `message-square`、音量/亮度提示 `monitor`、手势灵敏度 `gauge`、应用行为 `toggle-left`、更新 `refresh-cw`、WebDAV `cloud`）、关于&更新 `info`，页脚使用 `sun`/`moon`、`search` 和 `panel-left`。
 
 ## Components
 
@@ -90,12 +120,12 @@ SVG 按使用位置分目录：
 src\components
 ```
 
-- `sidebar\`：侧栏壳和固定导航、分类、程序、边缘操作、设置、关于&更新及底部区域组件。
-- `layout\`：`AppShell.vue` 页面布局壳和 `NestedRouteView.vue` 嵌套路由承载组件。
-- `dialog\`：`BaseDialog.vue`、`ConfirmDialog.vue`、`QuickSearchDialog.vue`、`UpdateDialog.vue`、`WelcomeDialog.vue` 和 `HelpDialog.vue` 等共享对话框；`BaseDialog` 统一遮罩关闭、可选右上关闭按钮、默认操作区和关闭动画，自动保存或即时选择类弹层可复用外壳并关闭默认操作区；`UpdateDialog` 展示版本差异、发行说明、下载进度和失败后的重试/发布页入口，下载中禁止遮罩关闭；`WelcomeDialog` 是首次启动的三屏欢迎引导，`HelpDialog` 收拢快速上手、规则生效顺序、边缘操作和常见问题，并提供「重新观看引导」和文档外链。
+- `sidebar\`：MD3 Navigation Drawer 壳和固定导航、分类、程序、边缘操作、设置、关于&更新及底部区域组件；一级项 48 高、full 圆角，激活态为 `secondaryContainer` 胶囊，子项 40 高。
+- `layout\`：`AppShell.vue` 页面布局壳（56 高页面头 + 标题/描述 + `actions` 插槽 + 24 内边距内容网格）和 `NestedRouteView.vue` 嵌套路由承载组件；页面通过 `title` / `description` 传入页面头内容，不再自己渲染标题。
+- `dialog\`：`BaseDialog.vue`、`ConfirmDialog.vue`、`QuickSearchDialog.vue`、`UpdateDialog.vue`、`WelcomeDialog.vue` 和 `HelpDialog.vue` 等共享对话框；`BaseDialog` 统一为 28 圆角、24 内边距、`surfaceContainerHigh` 面板，标题 22/28，默认操作区使用 `AppButton`，并保留遮罩关闭、可选右上关闭按钮和关闭动画；面板本身不滚动，正文区独立滚动并由底栏固定按钮，保证矮视口（150% DPI / 720p）下操作始终可达。打开时记录并接管焦点（首个可聚焦元素、Tab 循环、嵌套时只有最上层拦截），关闭后把焦点还给触发元素。`QuickSearchDialog` 支持方向键在结果间移动、Enter 选中，并用 combobox/listbox 语义播报当前项；自动保存或即时选择类弹层可复用外壳并关闭默认操作区；`UpdateDialog` 展示版本差异、发行说明、下载进度和失败后的重试/发布页入口，下载中禁止遮罩关闭；`WelcomeDialog` 是首次启动的三屏欢迎引导，`HelpDialog` 收拢快速上手、规则生效顺序、边缘操作和常见问题，并提供「重新观看引导」和文档外链。
 - `form\`：`BaseInput.vue`、`BaseRange.vue`、`CustomSelect.vue` 和 `ToggleCheckbox.vue` 等共享表单控件；`BaseInput` / `BaseRange` 统一原生输入控件的 `v-model` 事件、宽度约束和滑块进度填充，页面只保留各自的配置约束与保存时机。
-- `ui\`：`AppIcon.vue`、`HoverBubble.vue` 和 `IconActionButton.vue` 等基础 UI 控件。
-- `gesture\`：`GestureRuleDialog.vue`、`GestureRuleList.vue` 以及 `gesture\rule-dialog\fields\` 下的规则字段组件；`GestureRuleGestureField.vue` 负责方向手势录制、按住按键、滚轮修饰和触发方式控件，`GestureRuleList.vue` 依次渲染方向箭头与「滚轮」上下修饰。
+- `ui\`：`AppIcon.vue`、`HoverBubble.vue` 和 `IconActionButton.vue` 等基础 UI 控件。`AppIcon` 接受 `name`（图标注册表中的键）和 `size`（默认 20），统一输出 `width`/`height` 并默认 `aria-hidden="true"`，装饰性图标不再需要调用方手写属性；尺寸仍可由外层 CSS 覆盖。自定义交互控件保持键盘等价：`CustomSelect` 的焦点固定在触发按钮、选项移出 Tab 序列；`EdgeActionCard` 支持 Enter/Space；主题页与预设色板的 `role="radiogroup"` 使用 roving tabindex + 方向键/Home/End。
+- `gesture\`：`GestureRuleDialog.vue`、`GestureRuleList.vue` 以及 `gesture\rule-dialog\fields\` 下的规则字段组件；`GestureRuleList.vue` 按 MD3 List 排版（表头 40 高 / 12/16 500，行 56 高，hover 状态层，删除按钮常显），依次渲染方向箭头与「滚轮」上下修饰；内容区窄于 650px（侧栏展开 + 125%/150% DPI）时表格横向滚动，操作列不再被裁掉。`GestureRuleGestureField.vue` 负责方向手势录制、按住按键、滚轮修饰和触发方式控件。规则字段统一使用 `label-large` 标签、48 高控件容器、`surfaceContainer` 底、`outline` 描边和 `tertiaryContainer` 录制态。
 - `scope\`：`ScopeCreateDialog.vue`、`ScopePriorityNotice.vue` 和 `ApplicationListItem.vue` 等作用域配置共享组件；程序项仅路径文本可点击以打开所在文件夹，并以可选操作区支持分类页的移除按钮。
 - `rules\RulesSection.vue`：规则页右侧复用区块，统一标题、说明、操作区和内容面板。
 
@@ -109,7 +139,7 @@ src\components
 src\composables
 ```
 
-- `useAppearanceTheme.js`：配置界面主题解析、系统主题监听、根元素主题属性写入和主题偏好持久化。
+- `useAppearanceTheme.ts`：配置界面主题入口，监听外观配置并生成/注入色板，跟随系统明暗变化，处理侧栏三态切换（跟随系统 → 浅色 → 深色 → 跟随系统），并在配置加载完成后把标题栏四个颜色字段回写保存。
 - `useGestureEditorEventListeners.js`：应用壳注册的事件监听层，订阅手势编辑器通知和导航意图，并分别调用 Toast 与 Vue Router。
 - `useQuickSearch.js`：全局快速搜索的弹层开关、`Ctrl+K` 生命周期与结果直达，协调搜索 store 的 scope 选择、导航层和规则编辑入口。
 - `useSidebarScopeActions.js`：侧栏分类/程序的新建、重命名、删除、应用选择完成后的 scope 选择和导航协调。
@@ -192,10 +222,11 @@ src\pages
   - `edge\composables\useEdgeActionDraft.js`：边缘操作编辑草稿、打开、关闭和保存逻辑。
 - `exclusions\index.vue`：排除项页，用于维护不执行鼠标手势的程序列表，并可对单个排除项禁用边缘操作。
 - `settings\index.vue`：设置子页，通过路由参数只展示配置管理、轨迹线、手势提示、音量/亮度 OSD、灵敏度、应用行为、更新源或 WebDAV 中的一项；本地配置导入、导出和恢复默认统一放在「设置 > 配置」页。
-  - `settings\components\SettingsSectionCard.vue`：设置页大项标题、说明、操作区和内容布局。
+  - `settings\components\SettingsSectionCard.vue`：设置页大项卡片，统一标题、内容、说明和底部操作区；测试、备份、恢复等页级动作放到底部，表单在上、动作在下。
   - `settings\components\ConfigManagement.vue`：配置管理页，分「备份与迁移」（导出、导入）和「恢复默认」两组，说明导入导出的范围并强调不可撤销。
-  - `settings\components\SettingsFormGrid.vue`：设置项双列表单布局。
-  - `settings\components\SettingsField.vue`：设置项卡片。
+  - `settings\components\SettingsFormGrid.vue`：设置项双列表单布局，16 间距，960 以下自动单列。
+  - `settings\components\SettingsField.vue`：设置字段容器，标签在上、控件在下，`surfaceContainer` + 8 圆角 + 12 内边距。
+  - `settings\components\SettingsToggleRow.vue`：设置页开关行容器，复用 `ToggleCheckbox` 自带的 56 高行与 8 圆角状态。
   - `settings\components\MouseTrailSettings.vue`：轨迹线配置，顶部内置轨迹线实时预览。
   - `settings\components\LevelOsdSettings.vue`：音量/亮度 OSD 配置，顶部内置位置、尺寸和圆角实时预览。
   - `settings\components\AppBehaviorSettings.vue`：应用行为配置，包括开机启动、管理员启动、目标窗口模式、全屏禁用开关和关闭按钮行为。
@@ -204,8 +235,12 @@ src\pages
   - `settings\components\GestureHintSettings.vue`：底部提示窗配置，顶部内置提示窗实时预览。
   - `settings\components\GestureSensitivitySettings.vue`：手势灵敏度三档配置。
   - `settings\composables\useUiSettingsDraft.js`：基于 `gestureEditorNormalizers.js` 的共享设置深拷贝创建草稿，负责 debounce 保存、重置和预览样式计算；导入配置前会丢弃未提交的草稿，避免旧值在导入完成后覆盖新配置。
-- `about\index.vue`：侧栏最外层的“关于&更新”页，分「关于」和「更新」两个区块；「关于」展示软件简介、当前版本、更新源和自动检查状态（只读），「更新」提供检查更新按钮、状态提示和“查看更新”入口，修改更新设置需要前往“设置 > 更新”。更新后首次启动会自动切到本页并提示已完成更新及当前版本。
+- `settings\theme\index.vue`：外观设置独立页（`/settings/theme`），提供明暗模式、配色来源（8 套预设 / 自定义取色 + HEX / 跟随 Windows 强调色）、实时预览和 250ms 防抖保存；切换时即时重算色板并同步标题栏颜色。
+  - `settings\theme\components\PalettePresetGrid.vue`：8 套预设色板网格，用 `primary` / `secondary` / `tertiary` / `surfaceContainer` 四色条预览并标出当前选中项。
+  - `settings\theme\components\ThemePreview.vue`：当前色板的窗口、卡片、按钮和角色色块实时预览，按明暗模式切换取值。
+- `about\index.vue`：侧栏最外层的“关于&更新”页，分「关于」和「更新」两个区块；「关于」展示软件简介、GitHub/Gitee 仓库地址链接、当前版本、更新源和自动检查状态（只读），「更新」提供检查更新按钮、状态提示和“查看更新”入口，修改更新设置需要前往“设置 > 更新”。更新后首次启动会自动切到本页并提示已完成更新及当前版本。
   - `about\components\AboutUpdatePanel.vue`：两个区块的具体布局、更新状态文案和来源标注。
+- `dev\md3\index.vue`：仅开发环境注册的 MD3 设计令牌预览页（`#/dev/md3`），展示颜色角色、字体、形状和间距令牌；阶段 1 注入 `--md-sys-*` 变量后自动显示真实取值。生产构建会移除该路由和对应 chunk，不进入发布产物。
 
 ## Routing
 
@@ -217,7 +252,8 @@ src\pages
 - `edge/corner`、`edge/friction`、`edge/wheel`
 - `exclusions`
 - `about`（侧栏最外层的“关于&更新”独立页面）
-- `settings/config`、`settings/mouse-trail`、`settings/gesture-hint`、`settings/level-osd`、`settings/sensitivity`、`settings/app-behavior`、`settings/update`、`settings/webdav`
+- `settings/config`、`settings/theme`、`settings/mouse-trail`、`settings/gesture-hint`、`settings/level-osd`、`settings/sensitivity`、`settings/app-behavior`、`settings/sidebar`、`settings/update`、`settings/webdav`
+- `dev/md3`（仅开发环境；`import.meta.env.DEV` 为 false 时路由和页面 chunk 都不会生成）
 
 页面组件通过动态 `import()` 加载，`router/routes` 下的路由模块只在路由命中时加载对应页面 chunk。
 
@@ -225,7 +261,7 @@ src\pages
 
 ## 当前 UI
 
-界面外壳：窗口控制由桌面宿主自绘的标题栏负责（标题条位于 WebView 上方，属于宿主绘制区域，不进入前端页面）；其下方侧栏顶部的 `SidebarAppStatus` 组件可点击，临时暂停或恢复 WuGesture，并在图标右侧显示名称与程序集版本。侧栏的导航、分类、程序、边缘操作、设置和关于&更新各自使用独立区域组件，页脚控制也独立封装；分类/程序子项动态来自当前配置，边缘操作和设置子项对应独立嵌套路由，关于&更新是与导航同级的最外层入口（`/about`）。侧栏收起状态保存在 `uiSettings.sidebar.collapsed`，重建配置页面后保持不变。收起时热区通过 `v-show` 控制，侧栏自身以固定定位、`visibility`、透明度和鼠标事件状态隐藏；导航分组内容继续参与布局，因此不会压缩滚动高度或重置滚动位置。进入热区后淡入，离开侧栏后淡出。侧栏只有一个滚动区域：导航列（`.app-sidebar__nav`）整体滚动，展开后的分类/程序子项按内容自然撑开，分组内部不再单独滚动。
+界面外壳：窗口控制由桌面宿主自绘的标题栏负责（标题条位于 WebView 上方，属于宿主绘制区域，不进入前端页面）；其下方是 256 宽的 MD3 Navigation Drawer，一级项 48 高、full 圆角，激活态为 `secondaryContainer` 胶囊，子项 40 高。每个页面在内容区顶部保留 56 高页面头，显示标题（22/28）与描述（12/16），页面级操作放在头部右侧。侧栏顶部的 `SidebarAppStatus` 组件可点击，临时暂停或恢复 WuGesture，并在图标右侧显示名称与程序集版本。侧栏的导航、分类、程序、边缘操作、设置和关于&更新各自使用独立区域组件，页脚控制也独立封装；分类/程序子项动态来自当前配置，边缘操作和设置子项对应独立嵌套路由，关于&更新是与导航同级的最外层入口（`/about`）。侧栏收起状态保存在 `uiSettings.sidebar.collapsed`，重建配置页面后保持不变。收起时热区通过 `v-show` 控制，侧栏自身以固定定位、`visibility`、透明度和鼠标事件状态隐藏；导航分组内容继续参与布局，因此不会压缩滚动高度或重置滚动位置。进入热区后淡入，离开侧栏后淡出。侧栏只有一个滚动区域：导航列（`.app-sidebar__nav`）整体滚动，展开后的分类/程序子项按内容自然撑开，分组内部不再单独滚动。页脚主题按钮为三态循环：`system → light → dark → system`，分别显示 `monitor` / `sun` / `moon` 图标并保存对应偏好；完整配色来源和自定义取色在外观设置页。
 
 - `全局` 采用单列表布局，直接编辑整张全局规则表，不显示左侧作用域区域。
 - 页面切换使用方向感过渡：按顶部标签顺序向右切换时新页面从右侧滑入并渐显，向左切换时从左侧滑入并渐显，旧页面会轻微反向淡出；分类和程序子项切换与边缘操作、设置一样先完成路由切换，再由目标页面同步选中作用域，避免过渡中重复更新内容。
@@ -235,12 +271,12 @@ src\pages
 - `边缘操作` 的触发角、摩擦边、边缘滚动分别通过独立子路由展示配置；点击卡片打开独立弹窗编辑启用状态、命令和参数，名称由触发类型、位置与滚轮方向自动生成，关闭弹窗后自动保存。
 - `排除项` 页维护不执行鼠标手势的程序列表；可通过拖动鼠标或浏览 exe 添加程序，也可为单个排除项勾选“同时禁用边缘操作”，列表会展示从 exe 路径动态提取的应用图标。
 - `全局`、`分类` 和 `程序` 规则页会显示共享的作用域优先级提示，明确 `程序 > 分类 > 全局` 以及未命中当前层级时的继承关系。
-- `设置` 的每个配置项通过独立子路由展示；本地导出、本地导入和恢复默认集中到「设置 > 配置」页，侧栏设置分组只保留导航入口。恢复默认会通过确认弹窗二次确认；本地导入在用户选好 JSON 文件后由桌面宿主再次确认覆盖，避免误选文件直接丢失配置。本地导入/导出只处理主配置 JSON，不包含窗口状态。页面中的调整会在输入变化时 debounce 自动保存，并在控件变更结束或离开页面时强制提交最后一次修改；普通自动保存成功不弹出 toast，保存失败仍会提示。本地编辑期间会避免宿主回传覆盖当前滑块值。设置页也包含开机自启动（默认关闭）、以管理员身份打开、关闭按钮行为，以及 WebDAV 地址、账号、密码和远程路径。开机自启动、以管理员身份打开和全屏禁用等布尔项使用共享自定义复选控件，单选下拉使用共享弹层式 `CustomSelect`。临时暂停只由侧栏状态标识和托盘菜单提供，不写入配置文件。轨迹线、音量/亮度 OSD 和底部提示窗预览分别内置在对应独立设置页顶部，音量/亮度 OSD 区块还提供实际桌面测试按钮；手势灵敏度使用宽松、标准、严格三档。WebDAV 区域提供测试、恢复和保存按钮；当前 WebDAV 参数测试成功后，才允许把当前配置保存到远程或从远程恢复本地配置。密码输入框右侧有显示/隐藏按钮，切换时在 `password` 与 `text` 之间切换输入类型，并用 `eye`/`eye-off` 图标和 `aria-label` 同步状态；“更新”页的“启动时自动检查更新”复选卡片与“应用行为”页一致，最多占一行的一半宽度，窄屏下改为整行。
-- `关于&更新` 是侧栏最外层的独立页面，分「关于」和「更新」两个区块：「关于」介绍软件用途，并只读展示当前版本、更新源和是否在启动时自动检查；「更新」提供检查更新按钮、状态提示和“查看更新”入口，确认后才由全局更新弹窗下载、校验并重启安装，弹窗会注明实际使用的更新源以及回退原因。更新源和自动检查开关统一放在“设置 > 更新”中修改。
+- `设置` 的每个配置项通过独立子路由展示；本地导出、本地导入和恢复默认集中到「设置 > 配置」页，侧栏设置分组只保留导航入口。恢复默认会通过确认弹窗二次确认；本地导入在用户选好 JSON 文件后由桌面宿主再次确认覆盖，避免误选文件直接丢失配置。本地导入/导出只处理主配置 JSON，不包含窗口状态。页面中的调整会在输入变化时 debounce 自动保存，并在控件变更结束或离开页面时强制提交最后一次修改；普通自动保存成功不弹出 toast，保存失败仍会提示。本地编辑期间会避免宿主回传覆盖当前滑块值。设置页也包含开机自启动（默认关闭）、以管理员身份打开、关闭按钮行为，以及 WebDAV 地址、账号、密码和远程路径。开机自启动、以管理员身份打开和全屏禁用等布尔项使用共享自定义复选控件，单选下拉使用共享弹层式 `CustomSelect`。临时暂停只由侧栏状态标识和托盘菜单提供，不写入配置文件。轨迹线、音量/亮度 OSD 和底部提示窗预览分别内置在对应独立设置页顶部，音量/亮度 OSD 区块还提供实际桌面测试按钮；三个预览容器统一为 12 圆角、`outlineVariant` 描边和 `surfaceContainer` 底色，内部气泡/线条仍使用运行时动态变量；手势灵敏度使用宽松、标准、严格三档。WebDAV 区域提供测试、恢复和保存按钮；当前 WebDAV 参数测试成功后，才允许把当前配置保存到远程或从远程恢复本地配置。三个操作互斥：任一操作进行中，其余按钮全部禁用，被点击的按钮显示“测试中…”“备份中…”或“恢复中…”，直到宿主回传 `webdav-result` 才恢复可用。密码输入框右侧有显示/隐藏按钮，切换时在 `password` 与 `text` 之间切换输入类型，并用 `eye`/`eye-off` 图标和 `aria-label` 同步状态；“更新”页的“启动时自动检查更新”复选卡片与“应用行为”页一致，最多占一行的一半宽度，窄屏下改为整行。
+- `关于&更新` 是侧栏最外层的独立页面，分「关于」和「更新」两个区块：「关于」介绍软件用途，提供 GitHub 与 Gitee 仓库地址外链，并只读展示当前版本、更新源和是否在启动时自动检查；「更新」提供检查更新按钮、状态提示和“查看更新”入口，确认后才由全局更新弹窗下载、校验并重启安装，弹窗会注明实际使用的更新源以及回退原因。更新源和自动检查开关统一放在“设置 > 更新”中修改。
 - 分类新增通过名称弹窗完成，不再使用左侧内联输入框；分类和程序名称都通过双击列表项后在弹窗里重命名。
 - 分类页、程序页和排除项页添加程序时都会先显示前端弹窗，用户可通过“拖动选择窗口”将鼠标移到目标窗口后松开，或选择“浏览 exe 文件”作为备用方式。
 - 程序列表和详情会展示从 exe 路径动态提取的应用图标；图标通过 WebView 消息传递，不写入配置文件。
-- 规则表列为 `名称`、`手势`、`命令`，删除按钮默认隐藏、在行悬浮时才显示；双击规则行、点击手势列或点击命令列都会打开规则编辑弹窗。
+- 规则表列为 `名称`、`手势`、`命令`，行高 56、表头 12/16 muted，删除按钮常显为行尾图标按钮；双击规则行、点击手势列或点击命令列都会打开规则编辑弹窗。全局与排除项页的“添加”按钮位于页面头右侧，分类与程序页保留分组内的操作。
 - 全局快速搜索会匹配手势规则的名称、手势、命令和作用域，以及分类、程序和排除项；点击规则会打开其编辑弹窗，点击分类、程序和排除项会定位对应项。
 - 添加/编辑手势通过弹窗完成：手势区域始终可以录制方向手势，并可选择按住按键、滚轮修饰（无/上/下）和触发方式（每格连续执行/松开时执行一次）。选择滚轮修饰后，方向手势可以留空表示按住直接滚动；右侧仍可选择命令类型，快捷键命令显示录制按钮，窗口控制命令显示操作下拉框。
 - 添加/编辑手势弹窗打开时会通过 WebView 消息暂停全局手势；手势录制由后端接管，前端只接收最终识别结果。
@@ -277,7 +313,7 @@ src\pages
 后端发送：
 
 - `{ type: "status", status: "running|paused|..." }`
-- `{ type: "rules", appVersion: "v...", rules: [{ scope, mouseButton, pattern, wheelModifier, executeOnWheel, actionName, actionType, ... }], applications: [{ name, displayName, path, categories, icon }, ...], edgeActions: [...], uiSettings: { sidebar: { collapsed }, update: { checkForUpdates, source }, onboarding: { welcomeCompleted }, ... }, ... }`；`wheelModifier` 为 `up`/`down` 时表示方向手势叠加了滚轮修饰，`pattern` 可以为空表示按住直接滚动；`executeOnWheel` 决定每格连续执行还是松键执行一次。`appVersion` 来自程序集版本，仅用于配置界面展示，不写入配置文件；`uiSettings.sidebar.collapsed` 保存侧栏收起状态；`uiSettings.onboarding.welcomeCompleted` 决定是否自动弹出首次引导；`categories` 的顺序决定分类规则冲突时的覆盖顺序，越靠前优先级越高，其中 `uiSettings.appBehavior.excludedApplications` 的运行态消息项会额外带 `icon`，不写入配置文件。
+- `{ type: "rules", appVersion: "v...", rules: [{ scope, mouseButton, pattern, wheelModifier, executeOnWheel, actionName, actionType, ... }], applications: [{ name, displayName, path, categories, icon }, ...], edgeActions: [...], uiSettings: { appearance: { theme, colorSource, seedColor, schemeVariant, systemAccent, ... }, sidebar: { collapsed }, update: { checkForUpdates, source }, onboarding: { welcomeCompleted }, ... }, ... }`；`wheelModifier` 为 `up`/`down` 时表示方向手势叠加了滚轮修饰，`pattern` 可以为空表示按住直接滚动；`executeOnWheel` 决定每格连续执行还是松键执行一次。`appVersion` 来自程序集版本，仅用于配置界面展示，不写入配置文件；`uiSettings.sidebar.collapsed` 保存侧栏收起状态；`uiSettings.onboarding.welcomeCompleted` 决定是否自动弹出首次引导；`categories` 的顺序决定分类规则冲突时的覆盖顺序，越靠前优先级越高，其中 `uiSettings.appBehavior.excludedApplications` 的运行态消息项会额外带 `icon`，不写入配置文件。`uiSettings.appearance.systemAccent` 只出现在宿主下发的消息里，由宿主读取 Windows 强调色，不写入配置文件。
 - `{ type: "application-selected", requestId: "...", name: "...", displayName: "...", path: "...", category: "...", icon: "..." }`
 - `{ type: "gesture-recorded", requestId: "...", button: "right|middle", pattern: ["Down", "Right"] }`
 - `{ type: "hotkey-recorded", requestId: "...", keys: ["Control", "W"] }`
@@ -292,6 +328,15 @@ src\pages
 - `{ type: "update-failed", message }`：下载、校验或启动更新程序失败。
 - `{ type: "update-restarting", message }`：更新程序已启动，应用即将退出重启。
 - `{ type: "update-completed", version, message }`：更新成功后首次启动、Web 界面完成 `get-status` 后由宿主发送一次；前端提示更新成功、关闭更新弹窗并切换到“关于&更新”页。
+
+`uiSettings.appearance` 当前包含：
+
+- `theme`：`system` / `light` / `dark`
+- `colorSource`：`preset`（默认）/ `custom` / `system`
+- `seedColor`：六位十六进制种子色，默认 `#529EF1`
+- `schemeVariant`：调色板变体，默认 `tonalSpot`；当前由预设/配置使用，UI 不单独暴露选择器
+- `systemAccent`：仅运行态字段，宿主每次下发读取到的 Windows 强调色；前端 Normalizer 会保留它，但保存/导入/导出/WebDAV 的 payload 会删除，不写入配置文件
+- `lightTitleBarColor` / `lightTitleBarTextColor` / `darkTitleBarColor` / `darkTitleBarTextColor`：由前端根据当前色板的 `surface` / `onSurface` 回写，宿主据此重绘自绘标题栏和托盘菜单，保证标题栏与页面底色一致
 
 `uiSettings.appBehavior` 当前包含：
 
@@ -360,13 +405,19 @@ src\pages
 
 ## 测试
 
-前端单元测试使用 Vitest，测试文件与被测模块同目录，命名为 `*.test.js`：
+前端单元测试使用 Vitest，测试文件与被测模块同目录，命名为 `*.test.js`（已迁移到 TypeScript 的模块使用 `*.test.ts`）：
 
 ```powershell
 pnpm test
 ```
 
-Vitest 直接复用 `vite.config.js` 的路径别名，不需要额外的测试配置。测试文件与被测模块同目录，当前覆盖 `utils` 下的纯函数：`gestureEditorNormalizers`（枚举回退、数值收敛、作用域解析、排除项进程名归一化和去重、边缘操作合并）、`gestureEditorPayloads`（配置 payload 映射）、`gestureEditorViewModels`（宿主消息到编辑器模型）和 `gestureEditorCollections`（侧栏条目聚合）。`*.test.js` 不参与 `vite build`，也被桌面工程的增量前端构建排除。
+类型检查单独执行，只检查 `src` 下的 `.ts`、`.d.ts` 和 `.vue`，存量 `.js` 不纳入检查：
+
+```powershell
+pnpm typecheck
+```
+
+Vitest 直接复用 `vite.config.js` 的路径别名，不需要额外的测试配置。测试文件与被测模块同目录，当前覆盖 `utils` 下的纯函数：`gestureEditorNormalizers`（枚举回退、数值收敛、作用域解析、排除项进程名归一化和去重、边缘操作合并）、`gestureEditorPayloads`（配置 payload 映射）、`gestureEditorViewModels`（宿主消息到编辑器模型）、`gestureEditorCollections`（侧栏条目聚合）和 `theme/scheme`（颜色归一化、8 套预设、色板确定性、动态强调色回退、标题栏派生）。`*.test.js` / `*.test.ts` 不参与 `vite build`，也被桌面工程的增量前端构建排除。
 
 ## 构建
 
@@ -374,6 +425,7 @@ Vitest 直接复用 `vite.config.js` 的路径别名，不需要额外的测试�
 
 - 正常构建/发布不需要手动执行 `pnpm build`；`WuGesture.App.csproj` 会在 `.NET` 构建前自动调用 `vite build`，源文件未变化时会跳过。
 - 手动 `pnpm build` 只用于单独验证前端，产物落在 `Web\dist`（已被 Git 忽略），不会进入发行包。
+- `pnpm typecheck` 只做类型检查，不产出文件；CI 在格式检查和单元测试之间执行该步骤。
 
 ## 何时更新此文件
 
@@ -384,5 +436,7 @@ Vitest 直接复用 `vite.config.js` 的路径别名，不需要额外的测试�
 - 前端构建配置和输出路径（仅前端侧约定，宿主侧构建见根文档）
 - 前端收发的 WebView 消息（宿主侧处理逻辑见根文档）
 - 前端测试结构、测试命令或测试框架
+- TypeScript 配置、类型检查脚本或 CI 检查步骤
 - 规则编辑器、边缘操作或设置页的核心职责
+- 设计令牌、颜色角色、Typescale、形状/间距/动效令牌或主题类型
 - 图标资产和共享 UI 组件职责

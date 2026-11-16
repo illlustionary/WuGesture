@@ -82,45 +82,50 @@ const emit = defineEmits(['record-hotkey', 'update-operation'])
 </template>
 
 <style scoped lang="scss">
+@use '../../../styles/tokens/state' as *;
+
 .edge-dialog__command {
   display: grid;
-  gap: 12px;
-  margin-top: 12px;
+  gap: var(--md-sys-spacing-lg);
+  margin-top: var(--md-sys-spacing-lg);
 }
 
 .edge-field {
   display: grid;
-  gap: 6px;
-  color: var(--muted);
-  font-size: 13px;
+  gap: var(--md-sys-spacing-xs);
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--md-sys-typescale-label-large-size);
+  line-height: var(--md-sys-typescale-label-large-line-height);
 }
 
 .hotkey-record-button {
+  @include state-layer(currentColor);
+
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--md-sys-spacing-sm);
   overflow: hidden;
+  color: var(--md-sys-color-on-surface);
   text-align: left;
   white-space: nowrap;
   text-overflow: ellipsis;
   cursor: pointer;
-  color: var(--text);
-  background: var(--panel-solid);
+  background: var(--md-sys-color-surface-container-highest);
 
   &__icon {
+    flex: 0 0 auto;
     width: 18px;
     height: 18px;
-    flex: 0 0 auto;
-    color: var(--accent-strong);
-  }
-
-  &:hover {
-    background: var(--interactive-hover-bg);
+    color: var(--md-sys-color-primary);
   }
 
   &.is-recording {
-    color: var(--recording-text);
-    background: var(--recording-bg);
+    color: var(--md-sys-color-on-error-container);
+    background: var(--md-sys-color-error-container);
+  }
+
+  &.is-recording &__icon {
+    color: var(--md-sys-color-on-error-container);
   }
 }
 </style>

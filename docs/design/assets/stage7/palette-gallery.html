@@ -1,0 +1,528 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8" /><title>WuGesture 8 套配色走查</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 28px; background: #eef1f6; font: 14px/1.5 "Segoe UI", system-ui, sans-serif; color: #1b1b1f; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  p.lead { margin: 0 0 24px; color: #5c5f66; font-size: 13px; }
+  h2 { font-size: 14px; margin: 32px 0 10px; color: #3d4148; }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .palette { border-radius: 16px; padding: 16px; background: var(--surf); color: var(--onsurf); }
+  .palette.light { border: 1px solid #d8dce4; }
+  .palette header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 13px; }
+  .palette .dot { width: 12px; height: 12px; border-radius: 50%; border: 1px solid var(--outline); }
+  .palette .meta { color: var(--onsurfv); font-size: 11.5px; }
+  .cols { display: grid; gap: 12px; }
+  .card { border-radius: 12px; padding: 14px; background: var(--scl); border: 1px solid var(--outlinev); }
+  .card.inner { background: var(--scc); }
+  h3 { margin: 0 0 8px; font-size: 15px; }
+  .card p { margin: 0 0 8px; font-size: 12.5px; }
+  .muted { color: var(--onsurfv); }
+  .error { color: var(--err); margin: 8px 0 0; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+  button { border: 0; border-radius: 999px; padding: 7px 14px; font: inherit; font-size: 12px; }
+  .filled { background: var(--p); color: var(--onp); }
+  .tonal { background: var(--sc); color: var(--onsc); }
+  .outlined { background: transparent; color: var(--p); border: 1px solid var(--outline); }
+  .chip { border-radius: 8px; padding: 4px 10px; font-size: 12px; background: var(--sch); color: var(--onsurf); }
+  .chip:first-child { background: var(--sc); color: var(--onsc); }
+  .link { color: var(--p); text-decoration: underline; font-size: 12px; }
+  .field { border-radius: 8px 8px 0 0; background: var(--schh); padding: 8px 10px; border-bottom: 2px solid var(--p); display: grid; gap: 2px; }
+  .field span { font-size: 10.5px; color: var(--p); }
+  .field em { font-style: normal; font-size: 12.5px; }
+  .divider { height: 1px; background: var(--outlinev); margin: 12px 0; }
+  .listrow { display: flex; justify-content: space-between; padding: 7px 0; font-size: 12.5px; border-bottom: 1px solid var(--outlinev); }
+  .listrow:last-of-type { border-bottom: 0; }
+</style></head>
+<body>
+  <h1>阶段 7：8 套配色 × 浅色/深色走查</h1>
+  <p class="lead">每套配色渲染真实组件取样（卡片、按钮、chip、输入框、分隔线、错误文字）。左侧浅色、右侧深色。</p>
+  <h2>WuGesture 蓝（blue）</h2><div class="pair"><section class="palette light" style="--p:#38608F;--onp:#FFFFFF;--pc:#D2E4FF;--onpc:#1D4875;--s:#535F70;--ons:#FFFFFF;--sc:#D7E3F8;--onsc:#3C4858;--err:#BA1A1A;--onerr:#FFFFFF;--errc:#FFDAD6;--onerrc:#93000A;--surf:#F8F9FF;--onsurf:#191C20;--onsurfv:#43474E;--scl:#F2F3FA;--scc:#ECEDF4;--sch:#E7E8EE;--schh:#E1E2E8;--outline:#73777F;--outlinev:#C3C6CF">
+    <header>
+      <span class="dot" style="background:#529EF1"></span>
+      <strong>WuGesture 蓝</strong>
+      <span class="meta">blue · 浅色 · #529EF1</span>
+    </header>
+    <div class="cols">
+      <div class="card">
+        <h3>标题 Title</h3>
+        <p>正文示例：拖动窗口边缘触发手势，或按住侧键画出轨迹。</p>
+        <p class="muted">次要文字：共 12 条规则，3 个分类。</p>
+        <div class="row">
+          <button class="filled">主要操作</button>
+          <button class="tonal">次要操作</button>
+          <button class="outlined">描边</button>
+        </div>
+        <div class="row">
+          <span class="chip">已选中</span>
+          <span class="chip">默认</span>
+          <span class="link">链接文字</span>
+        </div>
+      </div>
+      <div class="card inner">
+        <div class="field"><span>输入框标签</span><em>输入内容</em></div>
+        <div class="divider"></div>
+        <div class="listrow"><span>双击标题栏</span><span class="muted">最大化</span></div>
+        <div class="listrow"><span>右键拖拽</span><span class="muted">打开菜单</span></div>
+        <p class="error">错误提示：端口必须为 1–65535。</p>
+      </div>
+    </div>
+  </section><section class="palette dark" style="--p:#A2C9FE;--onp:#00325A;--pc:#1D4875;--onpc:#D2E4FF;--s:#BBC7DB;--ons:#263141;--sc:#3C4858;--onsc:#D7E3F8;--err:#FFB4AB;--onerr:#690005;--errc:#93000A;--onerrc:#FFDAD6;--surf:#111418;--onsurf:#E1E2E8;--onsurfv:#C3C6CF;--scl:#191C20;--scc:#1D2024;--sch:#272A2F;--schh:#32353A;--outline:#8D9199;--outlinev:#43474E">
+    <header>
+      <span class="dot" style="background:#529EF1"></span>
+      <strong>WuGesture 蓝</strong>
+      <span class="meta">blue · 深色 · #529EF1</span>
+    </header>
+    <div class="cols">
+      <div class="card">
+        <h3>标题 Title</h3>
+        <p>正文示例：拖动窗口边缘触发手势，或按住侧键画出轨迹。</p>
+        <p class="muted">次要文字：共 12 条规则，3 个分类。</p>
+        <div class="row">
+          <button class="filled">主要操作</button>
+          <button class="tonal">次要操作</button>
+          <button class="outlined">描边</button>
+        </div>
+        <div class="row">
+          <span class="chip">已选中</span>
+          <span class="chip">默认</span>
+          <span class="link">链接文字</span>
+        </div>
+      </div>
+      <div class="card inner">
+        <div class="field"><span>输入框标签</span><em>输入内容</em></div>
+        <div class="divider"></div>
+        <div class="listrow"><span>双击标题栏</span><span class="muted">最大化</span></div>
+        <div class="listrow"><span>右键拖拽</span><span class="muted">打开菜单</span></div>
+        <p class="error">错误提示：端口必须为 1–65535。</p>
+      </div>
+    </div>
+  </section></div>
+<h2>青（teal）</h2><div class="pair"><section class="palette light" style="--p:#006A60;--onp:#FFFFFF;--pc:#9EF2E4;--onpc:#005048;--s:#4A635F;--ons:#FFFFFF;--sc:#CCE8E2;--onsc:#334B47;--err:#BA1A1A;--onerr:#FFFFFF;--errc:#FFDAD6;--onerrc:#93000A;--surf:#F4FBF8;--onsurf:#161D1C;--onsurfv:#3F4947;--scl:#EFF5F2;--scc:#E9EFED;--sch:#E3EAE7;--schh:#DDE4E1;--outline:#6F7977;--outlinev:#BEC9C6">
+    <header>
+      <span class="dot" style="background:#009688"></span>
+      <strong>青</strong>
+      <span class="meta">teal · 浅色 · #009688</span>
+    </header>
+    <div class="cols">
+      <div class="card">
+        <h3>标题 Title</h3>
+        <p>正文示例：拖动窗口边缘触发手势，或按住侧键画出轨迹。</p>
+        <p class="muted">次要文字：共 12 条规则，3 个分类。</p>
+        <div class="row">
+          <button class="filled">主要操作</button>
+          <button class="tonal">次要操作</button>
+          <button class="outlined">描边</button>
+        </div>
+        <div class="row">
+          <span class="chip">已选中</span>
+          <span class="chip">默认</span>
+          <span class="link">链接文字</span>
+        </div>
+      </div>
+      <div class="card inner">
+        <div class="field"><span>输入框标签</span><em>输入内容</em></div>
+        <div class="divider"></div>
+        <div class="listrow"><span>双击标题栏</span><span class="muted">最大化</span></div>
+        <div class="listrow"><span>右键拖拽</span><span class="muted">打开菜单</span></div>
+        <p class="error">错误提示：端口必须为 1–65535。</p>
+      </div>
+    </div>
+  </section><section class="palette dark" style="--p:#82D5C8;--onp:#003731;--pc:#005048;--onpc:#9EF2E4;--s:#B1CCC6;--ons:#1C3531;--sc:#334B47;--onsc:#CCE8E2;--err:#FFB4AB;--onerr:#690005;--errc:#93000A;--onerrc:#FFDAD6;--surf:#0E1513;--onsurf:#DDE4E1;--onsurfv:#BEC9C6;--scl:#161D1C;--scc:#1A2120;--sch:#252B2A;--schh:#303635;--outline:#899390;--outlinev:#3F4947">
+    <header>
+      <span class="dot" style="background:#009688"></span>
+      <strong>青</strong>
+      <span class="meta">teal · 深色 · #009688</span>
+    </header>
+    <div class="cols">
+      <div class="card">
+        <h3>标题 Title</h3>
+        <p>正文示例：拖动窗口边缘触发手势，或按住侧键画出轨迹。</p>
+        <p class="muted">次要文字：共 12 条规则，3 个分类。</p>
+        <div class="row">
+          <button class="filled">主要操作</button>
+          <button class="tonal">次要操作</button>
+          <button class="outlined">描边</button>
+        </div>
+        <div class="row">
+          <span class="chip">已选中</span>
+          <span class="chip">默认</span>
+          <span class="link">链接文字</span>
+        </div>
+      </div>
+      <div class="card inner">
+        <div class="field"><span>输入框标签</span><em>输入内容</em></div>
+        <div class="divider"></div>
+        <div class="listrow"><span>双击标题栏</span><span class="muted">最大化</span></div>
+        <div class="listrow"><span>右键拖拽</span><span class="muted">打开菜单</span></div>
+        <p class="error">错误提示：端口必须为 1–65535。</p>
+      </div>
+    </div>
+  </section></div>
+<h2>绿（green）</h2><div class="pair"><section class="palette light" style="--p:#3B6939;--onp:#FFFFFF;--pc:#BCF0B4;--onpc:#235024;--s:#52634F;--ons:#FFFFFF;--sc:#D5E8CF;--onsc:#3B4B38;--err:#BA1A1A;--onerr:#FFFFFF;--errc:#FFDAD6;--onerrc:#93000A;--surf:#F7FBF1;--onsurf:#191D17;--onsurfv:#424940;--scl:#F1F5EC;--scc:#ECEFE6;--sch:#E6E9E0;--schh:#E0E4DB;--outline:#72796F;--outlinev:#C2C9BD">
+    <header>
+      <span class="dot" style="background:#43A047"></span>
+      <strong>绿</strong>
+      <span class="meta">green · 浅色 · #43A047</span>
+    </header>
+    <div class="cols">
+      <div class="card">
+        <h3>标题 Title</h3>
+        <p>正文示例：拖动窗口边缘触发手势，或按住侧键画出轨迹。</p>
+        <p class="muted">次要文字：共 12 条规则，3 个分类。</p>
+        <div class="row">
+          <button class="filled">主要操作</button>
+          <button class="tonal">次要操作</button>
+          <button class="outlined">描边</button>
+        </div>
+        <div class="row">
+          <span class="chip">已选中</span>
+          <span class="chip">默认</span>
+          <span class="link">链接文字</span>
+        </div>
+      </div>
+      <div class="card inner">
+        <div class="field"><span>输入框标签</span><em>输入内容</em></div>
+        <div class="divider"></div>
+        <div class="listrow"><span>双击标题栏</span><span class="muted">最大化</span></div>
+        <div class="listrow"><span>右键拖拽</span><span class="muted">打开菜单</span></div>
+        <p class="error">错误提示：端口必须为 1–65535。</p>
+      </div>
+    </div>
+  </section><section class="palette dark" style="--p:#A1D39A;--onp:#0A390F;--pc:#235024;--onpc:#BCF0B4;--s:#BACCB3;--ons:#253423;--sc:#3B4B38;--onsc:#D5E8CF;--err:#FFB4AB;--onerr:#690005;--errc:#93000A;--onerrc:#FFDAD6;--surf:#10140F;--onsurf:#E0E4DB;--onsurfv:#C2C9BD;--scl:#191D17;--scc:#1D211B;--sch:#272B25;--schh:#323630;--outline:#8C9388;--outlinev:#424940">
+    <header>
+      <span class="dot" style="background:#43A047"></span>
+      <strong>绿</strong>
+      <span class="meta">green · 深色 · #43A047</span>
+    </header>
+    <div class="cols">
+      <div class="card">
+        <h3>标题 Title</h3>
+        <p>正文示例：拖动窗口边缘触发手势，或按住侧键画出轨迹。</p>
+        <p class="muted">次要文字：共 12 条规则，3 个分类。</p>
+        <div class="row">
+          <button class="filled">主要操作</button>
+          <button class="tonal">次要操作</button>
+          <button class="outlined">描边</button>
+        </div>
+        <div class="row">
+          <span class="chip">已选中</span>
+          <span class="chip">默认</span>
+          <span class="link">链接文字</span>
+        </div>
+      </div>
+      <div class="card inner">
+        <div class="field"><span>输入框标签</span><em>输入内容</em></div>
+        <div class="divider"></div>
+        <div class="listrow"><span>双击标题栏</span><span class="muted">最大化</span></div>
+        <div class="listrow"><span>右键拖拽</span><span class="muted">打开菜单</span></div>
+        <p class="error">错误提示：端口必须为 1–65535。</p>
+      </div>
+    </div>
+  </section></div>
+<h2>紫（purple）</h2><div class="pair"><section class="palette light" style="--p:#69548D;--onp:#FFFFFF;--pc:#EBDCFF;--onpc:#503C74;--s:#635B70;--ons:#FFFFFF;--sc:#EADEF7;--onsc:#4B4358;--err:#BA1A1A;--onerr:#FFFFFF;--errc:#FFDAD6;--onerrc:#93000A;--surf:#FEF7FF;--onsurf:#1D1B20;--onsurfv:#49454E;--scl:#F8F1FA;--scc:#F2ECF4;--sch:#EDE6EE;--schh:#E7E0E8;--outline:#7A757F;--outlinev:#CBC4CF">
+    <header>
+      <span class="dot" style="background:#7E57C2"></span>
+      <strong>紫</strong>
+      <span class="meta">purple · 浅色 · #7E57C2</span>
+    </header>
+    <div class="cols">
+      <div class="card">
+        <h3>标题 Title</h3>
+        <p>正文示例：拖动窗口边缘触发手势，或按住侧键画出轨迹。</p>
+        <p class="muted">次要文字：共 12 条规则，3 个分类。</p>
+        <div class="row">
+          <button class="filled">主要操作</button>
+          <button class="tonal">次要操作</button>
+          <button class="outlined">描边</button>
+        </div>
+        <div class="row">
+          <span class="chip">已选中</span>
+          <span class="chip">默认</span>
+          <span class="link">链接文字</span>
+        </div>
+      </div>
+      <div class="card inner">
+        <div class="field"><span>输入框标签</span><em>输入内容</em></div>
+        <div class="divider"></div>
+        <div class="listrow"><span>双击标题栏</span><span class="muted">最大化</span></div>
+        <div class="listrow"><span>右键拖拽</span><span class="muted">打开菜单</span></div>
+        <p class="error">错误提示：端口必须为 1–65535。</p>
+      </div>
+    </div>
+  </section><section class="palette dark" style="--p:#D4BBFC;--onp:#39255C;--pc:#503C74;--onpc:#EBDCFF;--s:#CDC2DB;--ons:#342D40;--sc:#4B4358;--onsc:#EADEF7;--err:#FFB4AB;--onerr:#690005;--errc:#93000A;--onerrc:#FFDAD6;--surf:#151218;--onsurf:#E7E0E8;--onsurfv:#CBC4CF;--scl:#1D1B20;--scc:#211F24;--sch:#2C292F;--schh:#37343A;--outline:#948E99;--outlinev:#49454E">
+    <header>
+      <span class="dot" style="background:#7E57C2"></span>
+      <strong>紫</strong>
+      <span class="meta">purple · 深色 · #7E57C2</span>
+    </header>
+    <div class="cols">
+      <div class="card">
+        <h3>标题 Title</h3>
+        <p>正文示例：拖动窗口边缘触发手势，或按住侧键画出轨迹。</p>
+        <p class="muted">次要文字：共 12 条规则，3 个分类。</p>
+        <div class="row">
+          <button class="filled">主要操作</button>
+          <button class="tonal">次要操作</button>
+          <button class="outlined">描边</button>
+        </div>
+        <div class="row">
+          <span class="chip">已选中</span>
+          <span class="chip">默认</span>
+          <span class="link">链接文字</span>
+        </div>
+      </div>
+      <div class="card inner">
+        <div class="field"><span>输入框标签</span><em>输入内容</em></div>
+        <div class="divider"></div>
+        <div class="listrow"><span>双击标题栏</span><span class="muted">最大化</span></div>
+        <div class="listrow"><span>右键拖拽</span><span class="muted">打开菜单</span></div>
+        <p class="error">错误提示：端口必须为 1–65535。</p>
+      </div>
+    </div>
+  </section></div>
+<h2>粉（pink）</h2><div class="pair"><section class="palette light" style="--p:#8D4A5A;--onp:#FFFFFF;--pc:#FFD9DF;--onpc:#713343;--s:#75565C;--ons:#FFFFFF;--sc:#FFD9DF;--onsc:#5B3F45;--err:#BA1A1A;--onerr:#FFFFFF;--errc:#FFDAD6;--onerrc:#93000A;--surf:#FFF8F7;--onsurf:#22191B;--onsurfv:#524346;--scl:#FFF0F1;--scc:#FBEAEC;--sch:#F5E4E6;--schh:#EFDEE0;--outline:#847375;--outlinev:#D6C2C4">
+    <header>
+      <span class="dot" style="background:#FF7299"></span>
+      <strong>粉</strong>
+      <span class="meta">pink · 浅色 · #FF7299</span>
+    </header>
+    <div class="cols">
+      <div class="card">
+        <h3>标题 Title</h3>
+        <p>正文示例：拖动窗口边缘触发手势，或按住侧键画出轨迹。</p>
+        <p class="muted">次要文字：共 12 条规则，3 个分类。</p>
+        <div class="row">
+          <button class="filled">主要操作</button>
+          <button class="tonal">次要操作</button>
+          <button class="outlined">描边</button>
+        </div>
+        <div class="row">
+          <span class="chip">已选中</span>
+          <span class="chip">默认</span>
+          <span class="link">链接文字</span>
+        </div>
+      </div>
+      <div class="card inner">
+        <div class="field"><span>输入框标签</span><em>输入内容</em></div>
+        <div class="divider"></div>
+        <div class="listrow"><span>双击标题栏</span><span class="muted">最大化</span></div>
+        <div class="listrow"><span>右键拖拽</span><span class="muted">打开菜单</span></div>
+        <p class="error">错误提示：端口必须为 1–65535。</p>
+      </div>
+    </div>
+  </section><section class="palette dark" style="--p:#FFB1C2;--onp:#551D2D;--pc:#713343;--onpc:#FFD9DF;--s:#E4BDC4;--ons:#43292F;--sc:#5B3F45;--onsc:#FFD9DF;--err:#FFB4AB;--onerr:#690005;--errc:#93000A;--onerrc:#FFDAD6;--surf:#191113;--onsurf:#EFDEE0;--onsurfv:#D6C2C4;--scl:#22191B;--scc:#261D1F;--sch:#312829;--schh:#3C3234;--outline:#9E8C8F;--outlinev:#524346">
+    <header>
+      <span class="dot" style="background:#FF7299"></span>
+      <strong>粉</strong>
+      <span class="meta">pink · 深色 · #FF7299</span>
+    </header>
+    <div class="cols">
+      <div class="card">
+        <h3>标题 Title</h3>
+        <p>正文示例：拖动窗口边缘触发手势，或按住侧键画出轨迹。</p>
+        <p class="muted">次要文字：共 12 条规则，3 个分类。</p>
+        <div class="row">
+          <button class="filled">主要操作</button>
+          <button class="tonal">次要操作</button>
+          <button class="outlined">描边</button>
+        </div>
+        <div class="row">
+          <span class="chip">已选中</span>
+          <span class="chip">默认</span>
+          <span class="link">链接文字</span>
+        </div>
+      </div>
+      <div class="card inner">
+        <div class="field"><span>输入框标签</span><em>输入内容</em></div>
+        <div class="divider"></div>
+        <div class="listrow"><span>双击标题栏</span><span class="muted">最大化</span></div>
+        <div class="listrow"><span>右键拖拽</span><span class="muted">打开菜单</span></div>
+        <p class="error">错误提示：端口必须为 1–65535。</p>
+      </div>
+    </div>
+  </section></div>
+<h2>橙（orange）</h2><div class="pair"><section class="palette light" style="--p:#88511D;--onp:#FFFFFF;--pc:#FFDCC2;--onpc:#6B3A05;--s:#745944;--ons:#FFFFFF;--sc:#FFDCC2;--onsc:#5A422E;--err:#BA1A1A;--onerr:#FFFFFF;--errc:#FFDAD6;--onerrc:#93000A;--surf:#FFF8F5;--onsurf:#221A14;--onsurfv:#51443B;--scl:#FFF1E8;--scc:#FBEBE1;--sch:#F5E5DB;--schh:#EFE0D6;--outline:#847469;--outlinev:#D6C3B6">
+    <header>
+      <span class="dot" style="background:#FB8C00"></span>
+      <strong>橙</strong>
+      <span class="meta">orange · 浅色 · #FB8C00</span>
+    </header>
+    <div class="cols">
+      <div class="card">
+        <h3>标题 Title</h3>
+        <p>正文示例：拖动窗口边缘触发手势，或按住侧键画出轨迹。</p>
+        <p class="muted">次要文字：共 12 条规则，3 个分类。</p>
+        <div class="row">
+          <button class="filled">主要操作</button>
+          <button class="tonal">次要操作</button>
+          <button class="outlined">描边</button>
+        </div>
+        <div class="row">
+          <span class="chip">已选中</span>
+          <span class="chip">默认</span>
+          <span class="link">链接文字</span>
+        </div>
+      </div>
+      <div class="card inner">
+        <div class="field"><span>输入框标签</span><em>输入内容</em></div>
+        <div class="divider"></div>
+        <div class="listrow"><span>双击标题栏</span><span class="muted">最大化</span></div>
+        <div class="listrow"><span>右键拖拽</span><span class="muted">打开菜单</span></div>
+        <p class="error">错误提示：端口必须为 1–65535。</p>
+      </div>
+    </div>
+  </section><section class="palette dark" style="--p:#FFB77B;--onp:#4C2700;--pc:#6B3A05;--onpc:#FFDCC2;--s:#E3C0A5;--ons:#412C19;--sc:#5A422E;--onsc:#FFDCC2;--err:#FFB4AB;--onerr:#690005;--errc:#93000A;--onerrc:#FFDAD6;--surf:#19120C;--onsurf:#EFE0D6;--onsurfv:#D6C3B6;--scl:#221A14;--scc:#261E18;--sch:#312822;--schh:#3C332C;--outline:#9E8E82;--outlinev:#51443B">
+    <header>
+      <span class="dot" style="background:#FB8C00"></span>
+      <strong>橙</strong>
+      <span class="meta">orange · 深色 · #FB8C00</span>
+    </header>
+    <div class="cols">
+      <div class="card">
+        <h3>标题 Title</h3>
+        <p>正文示例：拖动窗口边缘触发手势，或按住侧键画出轨迹。</p>
+        <p class="muted">次要文字：共 12 条规则，3 个分类。</p>
+        <div class="row">
+          <button class="filled">主要操作</button>
+          <button class="tonal">次要操作</button>
+          <button class="outlined">描边</button>
+        </div>
+        <div class="row">
+          <span class="chip">已选中</span>
+          <span class="chip">默认</span>
+          <span class="link">链接文字</span>
+        </div>
+      </div>
+      <div class="card inner">
+        <div class="field"><span>输入框标签</span><em>输入内容</em></div>
+        <div class="divider"></div>
+        <div class="listrow"><span>双击标题栏</span><span class="muted">最大化</span></div>
+        <div class="listrow"><span>右键拖拽</span><span class="muted">打开菜单</span></div>
+        <p class="error">错误提示：端口必须为 1–65535。</p>
+      </div>
+    </div>
+  </section></div>
+<h2>红（red）</h2><div class="pair"><section class="palette light" style="--p:#904A44;--onp:#FFFFFF;--pc:#FFDAD6;--onpc:#73332E;--s:#775653;--ons:#FFFFFF;--sc:#FFDAD6;--onsc:#5D3F3C;--err:#BA1A1A;--onerr:#FFFFFF;--errc:#FFDAD6;--onerrc:#93000A;--surf:#FFF8F7;--onsurf:#231918;--onsurfv:#534341;--scl:#FFF0EE;--scc:#FCEAE7;--sch:#F6E4E2;--schh:#F1DEDC;--outline:#857371;--outlinev:#D8C2BF">
+    <header>
+      <span class="dot" style="background:#E53935"></span>
+      <strong>红</strong>
+      <span class="meta">red · 浅色 · #E53935</span>
+    </header>
+    <div class="cols">
+      <div class="card">
+        <h3>标题 Title</h3>
+        <p>正文示例：拖动窗口边缘触发手势，或按住侧键画出轨迹。</p>
+        <p class="muted">次要文字：共 12 条规则，3 个分类。</p>
+        <div class="row">
+          <button class="filled">主要操作</button>
+          <button class="tonal">次要操作</button>
+          <button class="outlined">描边</button>
+        </div>
+        <div class="row">
+          <span class="chip">已选中</span>
+          <span class="chip">默认</span>
+          <span class="link">链接文字</span>
+        </div>
+      </div>
+      <div class="card inner">
+        <div class="field"><span>输入框标签</span><em>输入内容</em></div>
+        <div class="divider"></div>
+        <div class="listrow"><span>双击标题栏</span><span class="muted">最大化</span></div>
+        <div class="listrow"><span>右键拖拽</span><span class="muted">打开菜单</span></div>
+        <p class="error">错误提示：端口必须为 1–65535。</p>
+      </div>
+    </div>
+  </section><section class="palette dark" style="--p:#FFB4AC;--onp:#561E1A;--pc:#73332E;--onpc:#FFDAD6;--s:#E7BDB8;--ons:#442927;--sc:#5D3F3C;--onsc:#FFDAD6;--err:#FFB4AB;--onerr:#690005;--errc:#93000A;--onerrc:#FFDAD6;--surf:#1A1110;--onsurf:#F1DEDC;--onsurfv:#D8C2BF;--scl:#231918;--scc:#271D1C;--sch:#322826;--schh:#3D3231;--outline:#A08C8A;--outlinev:#534341">
+    <header>
+      <span class="dot" style="background:#E53935"></span>
+      <strong>红</strong>
+      <span class="meta">red · 深色 · #E53935</span>
+    </header>
+    <div class="cols">
+      <div class="card">
+        <h3>标题 Title</h3>
+        <p>正文示例：拖动窗口边缘触发手势，或按住侧键画出轨迹。</p>
+        <p class="muted">次要文字：共 12 条规则，3 个分类。</p>
+        <div class="row">
+          <button class="filled">主要操作</button>
+          <button class="tonal">次要操作</button>
+          <button class="outlined">描边</button>
+        </div>
+        <div class="row">
+          <span class="chip">已选中</span>
+          <span class="chip">默认</span>
+          <span class="link">链接文字</span>
+        </div>
+      </div>
+      <div class="card inner">
+        <div class="field"><span>输入框标签</span><em>输入内容</em></div>
+        <div class="divider"></div>
+        <div class="listrow"><span>双击标题栏</span><span class="muted">最大化</span></div>
+        <div class="listrow"><span>右键拖拽</span><span class="muted">打开菜单</span></div>
+        <p class="error">错误提示：端口必须为 1–65535。</p>
+      </div>
+    </div>
+  </section></div>
+<h2>灰（grey）</h2><div class="pair"><section class="palette light" style="--p:#006874;--onp:#FFFFFF;--pc:#9EEFFD;--onpc:#004F58;--s:#4A6267;--ons:#FFFFFF;--sc:#CDE7EC;--onsc:#334B4F;--err:#BA1A1A;--onerr:#FFFFFF;--errc:#FFDAD6;--onerrc:#93000A;--surf:#F5FAFB;--onsurf:#171D1E;--onsurfv:#3F484A;--scl:#EFF5F6;--scc:#E9EFF0;--sch:#E3E9EA;--schh:#DEE3E5;--outline:#6F797A;--outlinev:#BFC8CA">
+    <header>
+      <span class="dot" style="background:#757575"></span>
+      <strong>灰</strong>
+      <span class="meta">grey · 浅色 · #757575</span>
+    </header>
+    <div class="cols">
+      <div class="card">
+        <h3>标题 Title</h3>
+        <p>正文示例：拖动窗口边缘触发手势，或按住侧键画出轨迹。</p>
+        <p class="muted">次要文字：共 12 条规则，3 个分类。</p>
+        <div class="row">
+          <button class="filled">主要操作</button>
+          <button class="tonal">次要操作</button>
+          <button class="outlined">描边</button>
+        </div>
+        <div class="row">
+          <span class="chip">已选中</span>
+          <span class="chip">默认</span>
+          <span class="link">链接文字</span>
+        </div>
+      </div>
+      <div class="card inner">
+        <div class="field"><span>输入框标签</span><em>输入内容</em></div>
+        <div class="divider"></div>
+        <div class="listrow"><span>双击标题栏</span><span class="muted">最大化</span></div>
+        <div class="listrow"><span>右键拖拽</span><span class="muted">打开菜单</span></div>
+        <p class="error">错误提示：端口必须为 1–65535。</p>
+      </div>
+    </div>
+  </section><section class="palette dark" style="--p:#82D3E0;--onp:#00363D;--pc:#004F58;--onpc:#9EEFFD;--s:#B1CBD0;--ons:#1C3438;--sc:#334B4F;--onsc:#CDE7EC;--err:#FFB4AB;--onerr:#690005;--errc:#93000A;--onerrc:#FFDAD6;--surf:#0E1415;--onsurf:#DEE3E5;--onsurfv:#BFC8CA;--scl:#171D1E;--scc:#1B2122;--sch:#252B2C;--schh:#303637;--outline:#899294;--outlinev:#3F484A">
+    <header>
+      <span class="dot" style="background:#757575"></span>
+      <strong>灰</strong>
+      <span class="meta">grey · 深色 · #757575</span>
+    </header>
+    <div class="cols">
+      <div class="card">
+        <h3>标题 Title</h3>
+        <p>正文示例：拖动窗口边缘触发手势，或按住侧键画出轨迹。</p>
+        <p class="muted">次要文字：共 12 条规则，3 个分类。</p>
+        <div class="row">
+          <button class="filled">主要操作</button>
+          <button class="tonal">次要操作</button>
+          <button class="outlined">描边</button>
+        </div>
+        <div class="row">
+          <span class="chip">已选中</span>
+          <span class="chip">默认</span>
+          <span class="link">链接文字</span>
+        </div>
+      </div>
+      <div class="card inner">
+        <div class="field"><span>输入框标签</span><em>输入内容</em></div>
+        <div class="divider"></div>
+        <div class="listrow"><span>双击标题栏</span><span class="muted">最大化</span></div>
+        <div class="listrow"><span>右键拖拽</span><span class="muted">打开菜单</span></div>
+        <p class="error">错误提示：端口必须为 1–65535。</p>
+      </div>
+    </div>
+  </section></div>
+</body></html>

@@ -1,19 +1,45 @@
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue'
+import AppButton from '@/components/ui/AppButton.vue'
 import BaseDialog from './BaseDialog.vue'
 
-const props = defineProps({
-  open: { type: Boolean, required: true },
-  status: { type: String, default: 'idle' },
-  info: { type: Object, default: null },
-  progress: { type: Number, default: 0 },
-  phase: { type: String, default: '' },
-  error: { type: String, default: '' }
-})
+interface UpdateInfo {
+  source?: string
+  preferredSource?: string
+  currentVersion?: string
+  latestVersion?: string
+  publishedAt?: string
+  assetSize?: number
+  notes?: string
+}
 
-const emit = defineEmits(['close', 'update', 'cancel', 'retry', 'open-release-page'])
+const props = withDefaults(
+  defineProps<{
+    open: boolean
+    status?: string
+    info?: UpdateInfo | null
+    progress?: number
+    phase?: string
+    error?: string
+  }>(),
+  {
+    status: 'idle',
+    info: null,
+    progress: 0,
+    phase: '',
+    error: ''
+  }
+)
 
-const phaseLabels = {
+const emit = defineEmits<{
+  close: []
+  update: []
+  cancel: []
+  retry: []
+  'open-release-page': []
+}>()
+
+const phaseLabels: Record<string, string> = {
   downloading: '下载更新包',
   verifying: '校验更新包',
   extracting: '解压更新包',
@@ -120,52 +146,36 @@ const assetSize = computed(() => {
 
     <template #actions>
       <template v-if="status === 'available'">
-        <button
-          type="button"
-          class="update-dialog__action update-dialog__action--secondary"
+        <AppButton
+          variant="text"
           @click="emit('close')"
         >
           稍后
-        </button>
-        <button
-          type="button"
-          class="update-dialog__action update-dialog__action--primary"
-          @click="emit('update')"
-        >
-          立即更新
-        </button>
+        </AppButton>
+        <AppButton @click="emit('update')">立即更新</AppButton>
       </template>
       <template v-else-if="status === 'downloading'">
-        <button
-          type="button"
-          class="update-dialog__action update-dialog__action--secondary"
+        <AppButton
+          variant="text"
           @click="emit('cancel')"
         >
           取消
-        </button>
+        </AppButton>
       </template>
       <template v-else-if="status === 'error'">
-        <button
-          type="button"
-          class="update-dialog__action update-dialog__action--secondary"
+        <AppButton
+          variant="text"
           @click="emit('close')"
         >
           关闭
-        </button>
-        <button
-          type="button"
-          class="update-dialog__action update-dialog__action--secondary"
+        </AppButton>
+        <AppButton
+          variant="outlined"
           @click="emit('open-release-page')"
         >
           打开发布页
-        </button>
-        <button
-          type="button"
-          class="update-dialog__action update-dialog__action--primary"
-          @click="emit('retry')"
-        >
-          重试
-        </button>
+        </AppButton>
+        <AppButton @click="emit('retry')">重试</AppButton>
       </template>
     </template>
   </BaseDialog>
@@ -179,44 +189,46 @@ const assetSize = computed(() => {
 .update-dialog__versions {
   display: flex;
   align-items: center;
-  gap: 10px;
-  color: var(--text);
-  font-size: 15px;
-  font-weight: 600;
+  gap: var(--md-sys-spacing-sm);
+  color: var(--md-sys-color-on-surface);
+  font-size: var(--md-sys-typescale-title-medium-size);
+  line-height: var(--md-sys-typescale-title-medium-line-height);
+  font-weight: var(--md-sys-typescale-title-medium-weight);
 }
 
 .update-dialog__version--latest {
-  color: var(--accent-strong);
+  color: var(--md-sys-color-primary);
 }
 
 .update-dialog__arrow {
-  color: var(--muted);
+  color: var(--md-sys-color-on-surface-variant);
 }
 
 .update-dialog__meta {
-  margin-top: 6px;
-  color: var(--muted);
-  font-size: 12px;
+  margin-top: var(--md-sys-spacing-sm);
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--md-sys-typescale-body-small-size);
+  line-height: var(--md-sys-typescale-body-small-line-height);
 }
 
 .update-dialog__source-note {
-  margin-top: 4px;
-  color: var(--text-subtle);
-  font-size: 12px;
+  margin-top: var(--md-sys-spacing-xs);
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--md-sys-typescale-body-small-size);
   line-height: 1.5;
 }
 
 .update-dialog__notes {
   max-height: 220px;
-  margin-top: 14px;
-  padding: 12px;
+  margin-top: var(--md-sys-spacing-md);
+  padding: var(--md-sys-spacing-md);
   overflow: auto;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md, 10px);
-  background: var(--panel-control);
-  color: var(--text);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-small);
+  background: var(--md-sys-color-surface-container);
+  color: var(--md-sys-color-on-surface);
   font-family: inherit;
-  font-size: 12px;
+  font-size: var(--md-sys-typescale-body-small-size);
   line-height: 1.65;
   white-space: pre-wrap;
   word-break: break-word;
@@ -224,58 +236,27 @@ const assetSize = computed(() => {
 
 .update-dialog__progress {
   display: grid;
-  gap: 8px;
-  margin-top: 16px;
+  gap: var(--md-sys-spacing-sm);
+  margin-top: var(--md-sys-spacing-lg);
 }
 
 .update-dialog__progress-track {
   height: 8px;
   overflow: hidden;
-  border-radius: 999px;
-  background: var(--panel-control);
+  border-radius: var(--md-sys-shape-corner-full);
+  background: var(--md-sys-color-surface-container-highest);
 }
 
 .update-dialog__progress-value {
   height: 100%;
   border-radius: inherit;
-  background: var(--accent-strong);
-  transition: width 180ms ease;
+  background: var(--md-sys-color-primary);
+  transition: width var(--md-sys-motion-duration-medium) var(--md-sys-motion-easing-standard);
 }
 
 .update-dialog__progress-label {
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.update-dialog__action {
-  min-width: 72px;
-  min-height: 34px;
-  padding: 0 14px;
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  font-size: 13px;
-  transition: opacity 120ms ease;
-
-  &:hover,
-  &:focus-visible {
-    opacity: 0.76;
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 2px;
-  }
-
-  &--secondary {
-    border-color: var(--border);
-    background: var(--interactive-bg);
-    color: var(--text);
-  }
-
-  &--primary {
-    background: var(--accent-strong);
-    color: var(--text-inverse);
-  }
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--md-sys-typescale-body-small-size);
+  line-height: var(--md-sys-typescale-body-small-line-height);
 }
 </style>

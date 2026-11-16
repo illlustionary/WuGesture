@@ -1,24 +1,39 @@
-<script setup>
+<script setup lang="ts">
 import { computed, useAttrs } from 'vue'
 import { getRangeProgress } from '@/utils/rangeProgress'
 
-const props = defineProps({
-  modelValue: { type: [String, Number], required: true },
-  min: { type: [String, Number], required: true },
-  max: { type: [String, Number], required: true },
-  step: { type: [String, Number], default: 1 },
-  modelModifiers: { type: Object, default: () => ({}) }
-})
+type RangeValue = string | number
 
-const emit = defineEmits(['update:modelValue', 'input', 'change', 'blur'])
+const props = withDefaults(
+  defineProps<{
+    modelValue: RangeValue
+    min: RangeValue
+    max: RangeValue
+    step?: RangeValue
+    modelModifiers?: Record<string, boolean>
+  }>(),
+  {
+    step: 1,
+    modelModifiers: () => ({})
+  }
+)
+
+const emit = defineEmits<{
+  'update:modelValue': [value: RangeValue]
+  input: [event: Event]
+  change: [event: Event]
+  blur: [event: FocusEvent]
+}>()
+
 const attrs = useAttrs()
 const rangeStyle = computed(() => ({
   '--range-progress': getRangeProgress(props.modelValue, props.min, props.max)
 }))
 
-function update(event) {
-  const numericValue = event.target.valueAsNumber
-  emit('update:modelValue', props.modelModifiers.number ? numericValue : event.target.value)
+function update(event: Event) {
+  const target = event.target as HTMLInputElement
+  const numericValue = target.valueAsNumber
+  emit('update:modelValue', props.modelModifiers.number ? numericValue : target.value)
   emit('input', event)
 }
 </script>
@@ -42,5 +57,10 @@ function update(event) {
 <style scoped lang="scss">
 .base-range {
   width: 100%;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: not-allowed;
+  }
 }
 </style>

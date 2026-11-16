@@ -1,0 +1,36 @@
+// MD3 状态层。透明度的数值集中在这里，组件通过 @include 使用。
+:root {
+  --md-sys-state-hover-opacity: 0.08;
+  --md-sys-state-focus-opacity: 0.1;
+  --md-sys-state-pressed-opacity: 0.1;
+  --md-sys-state-dragged-opacity: 0.16;
+  --md-sys-state-disabled-content-opacity: 0.38;
+  --md-sys-state-disabled-container-opacity: 0.12;
+}
+
+@mixin state-layer($color: var(--md-sys-color-on-surface)) {
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: $color;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
+  }
+
+  &:hover::after {
+    opacity: var(--md-sys-state-hover-opacity);
+  }
+
+  &:focus-visible::after {
+    opacity: var(--md-sys-state-focus-opacity);
+  }
+
+  &:active::after {
+    opacity: var(--md-sys-state-pressed-opacity);
+  }
+}

@@ -11,7 +11,11 @@ function checkForUpdate() {
 </script>
 
 <template>
-  <AppShell layout-class="page-shell__grid--single">
+  <AppShell
+    title="关于"
+    description="版本、更新源与应用信息"
+    layout-class="page-shell__grid--single"
+  >
     <template #right>
       <section class="page-stack">
         <AboutUpdatePanel

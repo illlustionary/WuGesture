@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import BaseInput from '@/components/form/BaseInput.vue'
-import IconActionButton from '@/components/ui/IconActionButton.vue'
+import AppButton from '@/components/ui/AppButton.vue'
 import AppIcon from '@/components/ui/AppIcon.vue'
 import SettingsField from './SettingsField.vue'
 import SettingsFormGrid from './SettingsFormGrid.vue'
@@ -40,34 +40,6 @@ const webDavTestState = computed(() => {
         : '备份或恢复前，请先测试当前 WebDAV 配置。测试可能会创建尚不存在的远程目录。'
     "
   >
-    <template #actions>
-      <IconActionButton
-        icon="test"
-        :label="testing ? '测试中...' : '测试连接'"
-        class="secondary-button webdav-test-button"
-        :class="`webdav-test-button--${webDavTestState}`"
-        color="var(--accent-strong)"
-        :disabled="testing"
-        @click="emit('test')"
-      />
-      <IconActionButton
-        icon="cloud-upload"
-        label="备份"
-        class="primary-button webdav-action-button"
-        :color="ready ? 'var(--accent-strong)' : 'var(--muted)'"
-        :disabled="!ready || testing"
-        @click="emit('save')"
-      />
-      <IconActionButton
-        icon="cloud-download"
-        label="恢复"
-        class="secondary-button webdav-action-button"
-        :color="ready ? 'var(--accent-strong)' : 'var(--muted)'"
-        :disabled="!ready || testing"
-        @click="emit('restore')"
-      />
-    </template>
-
     <SettingsFormGrid>
       <SettingsField label="地址">
         <BaseInput
@@ -125,6 +97,41 @@ const webDavTestState = computed(() => {
         </div>
       </SettingsField>
     </SettingsFormGrid>
+
+    <template #footer>
+      <AppButton
+        variant="outlined"
+        class="webdav-test-button"
+        :class="`webdav-test-button--${webDavTestState}`"
+        :disabled="testing"
+        @click="emit('test')"
+      >
+        <template #leading>
+          <AppIcon name="link" />
+        </template>
+        {{ testing ? '测试中…' : '测试连接' }}
+      </AppButton>
+      <AppButton
+        variant="filled"
+        :disabled="!ready || testing"
+        @click="emit('save')"
+      >
+        <template #leading>
+          <AppIcon name="cloud-upload" />
+        </template>
+        备份
+      </AppButton>
+      <AppButton
+        variant="outlined"
+        :disabled="!ready || testing"
+        @click="emit('restore')"
+      >
+        <template #leading>
+          <AppIcon name="cloud-download" />
+        </template>
+        恢复
+      </AppButton>
+    </template>
   </SettingsSectionCard>
 </template>
 
@@ -141,30 +148,30 @@ const webDavTestState = computed(() => {
 
 .webdav-password__toggle {
   position: absolute;
-  right: 4px;
+  right: var(--md-sys-spacing-xs);
   display: inline-grid;
   place-items: center;
   width: 34px;
   height: 34px;
   padding: 0;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--md-sys-shape-corner-small);
   background: transparent;
-  color: var(--muted);
+  color: var(--md-sys-color-on-surface-variant);
   cursor: pointer;
   transition:
-    color 120ms ease,
-    background-color 120ms ease;
+    color var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard),
+    background-color var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
 
   &:hover {
-    color: var(--text);
-    background: var(--interactive-hover-bg);
+    color: var(--md-sys-color-on-surface);
+    background: var(--md-sys-color-surface-container-high);
   }
 
   &:focus-visible {
     outline: none;
-    color: var(--text);
-    box-shadow: 0 0 0 3px var(--focus-ring);
+    color: var(--md-sys-color-on-surface);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--md-sys-color-primary) 24%, transparent);
   }
 
   :deep(svg) {
@@ -174,24 +181,11 @@ const webDavTestState = computed(() => {
   }
 }
 
-:deep(button:disabled) {
-  cursor: not-allowed;
-  box-shadow: none;
+.webdav-test-button.webdav-test-button--success {
+  border-color: var(--md-sys-color-success);
 }
 
-:deep(.webdav-test-button--success) {
-  border-color: var(--success-border);
-}
-
-:deep(.webdav-test-button--error) {
-  border-color: var(--danger-border);
-}
-
-:deep(.webdav-action-button) {
-  opacity: 0.48;
-}
-
-:deep(.webdav-action-button:not(:disabled)) {
-  opacity: 1;
+.webdav-test-button.webdav-test-button--error {
+  border-color: var(--md-sys-color-error);
 }
 </style>

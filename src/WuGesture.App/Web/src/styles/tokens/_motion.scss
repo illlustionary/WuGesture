@@ -1,0 +1,25 @@
+// MD3 动效令牌。
+:root {
+  // 标准缓动：状态层、悬停、颜色过渡等通用场景。
+  --md-sys-motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+  --md-sys-motion-easing-standard-decelerate: cubic-bezier(0, 0, 0, 1);
+  --md-sys-motion-easing-standard-accelerate: cubic-bezier(0.3, 0, 1, 1);
+
+  // 强调缓动：弹窗、侧栏等有存在感的转场。
+  --md-sys-motion-easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --md-sys-motion-easing-emphasized-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --md-sys-motion-easing-emphasized-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15);
+
+  --md-sys-motion-duration-short: 100ms;
+  --md-sys-motion-duration-medium: 200ms;
+  --md-sys-motion-duration-long: 300ms;
+}
+
+// 用户要求减少动效时把令牌时长归零，所有基于令牌的过渡立即完成。
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --md-sys-motion-duration-short: 0ms;
+    --md-sys-motion-duration-medium: 0ms;
+    --md-sys-motion-duration-long: 0ms;
+  }
+}

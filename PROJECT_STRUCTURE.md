@@ -33,6 +33,8 @@ D:\Desktop\WuGesture
 │     └─ test.yml
 ├─ docs
 │  ├─ architecture.md
+│  ├─ design
+│  │  └─ md3-redesign-plan.md
 │  └─ releasing.md
 ├─ PROJECT_STRUCTURE.md
 ├─ WuGesture.slnx
@@ -56,6 +58,7 @@ D:\Desktop\WuGesture
 - `README.md`：面向用户的功能介绍、安装与快速上手、配置路径、常见问题，以及从源码构建、项目结构和发行流程概览。
 - `docs\architecture.md`：面向开发者的架构说明和 WebView2 集成概览。
 - `docs\releasing.md`：面向维护者的本地发布和自动发行流程。
+- `docs\design\md3-redesign-plan.md`：配置界面 Material Design 3 重构与多主题/动态配色的实施计划书（目标、令牌、组件规范、配置扩展、阶段与验收）。
 - `docs\images\`：README 使用的演示 GIF 与界面截图（统一浅色主题、含标题栏的整窗截图）。
 - `PROJECT_STRUCTURE.md`：本项目地图。
 - `AGENTS.md`：后续会话的代理指令。
@@ -301,7 +304,7 @@ Web 前端有独立项目地图：
 src\WuGesture.App\Web\PROJECT_STRUCTURE.md
 ```
 
-根文档只记录桌面宿主和 Web 子项目之间的集成关系；页面、路由、组件、图标、前端状态模块和 WebView 消息细节以 Web 子项目文档为准。
+根文档只记录桌面宿主和 Web 子项目之间的集成关系；页面、路由、组件、图标、前端状态模块、WebView 消息细节、TypeScript 类型检查（`pnpm typecheck`）和仅开发环境注册的 `#/dev/md3` 设计令牌预览页以 Web 子项目文档为准。
 
 宿主集成：
 
@@ -393,7 +396,7 @@ dotnet test WuGesture.slnx --collect:"XPlat Code Coverage" --results-directory a
 
 持续集成：
 
-- `.github\workflows\test.yml` 是共享的测试流程：安装前端依赖、检查 Prettier 格式、运行前端 Vitest 测试、用 `dotnet build -warnaserror` 构建（分析器警告即失败）、用 `dotnet format --verify-no-changes` 检查 C# 格式、运行带覆盖率的测试，再用 `scripts\check-coverage.ps1` 校验覆盖率下限并上传报告。
+- `.github\workflows\test.yml` 是共享的测试流程：安装前端依赖、检查 Prettier 格式、运行前端 TypeScript 类型检查（`pnpm typecheck`）、运行前端 Vitest 测试、用 `dotnet build -warnaserror` 构建（分析器警告即失败）、用 `dotnet format --verify-no-changes` 检查 C# 格式、运行带覆盖率的测试，再用 `scripts\check-coverage.ps1` 校验覆盖率下限并上传报告。
 - `.github\workflows\ci.yml` 在推送到 `main`、提交 PR 或手动触发时调用 `test.yml`，用于日常反馈。
 - `.github\workflows\release.yml` 在 `v*` 标签上先调用 `test.yml`，测试失败时不会打包、不会创建 Release；失败后需要修复代码、删除标签并重新打标签。
 - `.github\dependabot.yml` 每周分组检查 NuGet、前端 npm 和 GitHub Actions 的依赖更新；依赖 PR 会走同一套测试流程。

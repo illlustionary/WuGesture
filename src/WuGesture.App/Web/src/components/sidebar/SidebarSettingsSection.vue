@@ -12,6 +12,7 @@ const route = useRoute()
 const expanded = ref(false)
 const isActive = computed(() => route.path.startsWith('/settings'))
 const items = [
+  { to: '/settings/theme', label: '外观', icon: 'sparkle' },
   { to: '/settings/config', label: '配置', icon: 'database' },
   { to: '/settings/mouse-trail', label: '轨迹线', icon: 'spline' },
   { to: '/settings/gesture-hint', label: '手势提示', icon: 'message-square' },

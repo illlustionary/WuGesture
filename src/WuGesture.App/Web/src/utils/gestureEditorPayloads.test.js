@@ -195,6 +195,23 @@ describe('toPayloadUiSettings', () => {
       welcomeCompleted: true
     })
   })
+
+  it('配色字段写回配置时保留并归一化', () => {
+    const payload = toPayloadUiSettings({
+      appearance: {
+        theme: 'dark',
+        colorSource: 'CUSTOM',
+        seedColor: '009688',
+        schemeVariant: 'vibrant'
+      }
+    })
+
+    expect(payload.appearance).toMatchObject({
+      colorSource: 'custom',
+      seedColor: '#009688',
+      schemeVariant: 'vibrant'
+    })
+  })
 })
 
 describe('buildConfigPayload', () => {

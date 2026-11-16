@@ -1,24 +1,27 @@
-<script setup>
+<script setup lang="ts">
 import BaseDialog from './BaseDialog.vue'
 
-defineProps({
-  open: { type: Boolean, required: true },
-  title: { type: String, required: true },
-  message: { type: String, default: '' },
-  confirmText: { type: String, default: '确认' },
-  cancelText: { type: String, default: '取消' },
-  tone: {
-    type: String,
-    default: 'danger',
-    validator: value => ['danger', 'primary'].includes(value)
+withDefaults(
+  defineProps<{
+    open: boolean
+    title: string
+    message?: string
+    confirmText?: string
+    cancelText?: string
+    tone?: 'danger' | 'primary'
+  }>(),
+  {
+    message: '',
+    confirmText: '确认',
+    cancelText: '取消',
+    tone: 'danger'
   }
-})
+)
 
-const emit = defineEmits(['close', 'confirm'])
-
-function confirm() {
-  emit('confirm')
-}
+const emit = defineEmits<{
+  close: []
+  confirm: []
+}>()
 </script>
 
 <template>
@@ -32,7 +35,7 @@ function confirm() {
     :confirm-tone="tone"
     panel-class="confirm-dialog"
     @close="emit('close')"
-    @confirm="confirm"
+    @confirm="emit('confirm')"
   >
     <div
       v-if="message || $slots.default"
@@ -49,8 +52,8 @@ function confirm() {
 }
 
 .confirm-dialog__body {
-  color: var(--muted);
-  font-size: 13px;
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--md-sys-typescale-body-medium-size);
   line-height: 1.55;
 }
 </style>

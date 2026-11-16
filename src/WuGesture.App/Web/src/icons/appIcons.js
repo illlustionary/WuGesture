@@ -1,10 +1,12 @@
 import AddIcon from '@/assets/actions/add.svg'
 import CloudDownloadIcon from '@/assets/actions/cloud-download.svg'
 import CloudUploadIcon from '@/assets/actions/cloud-upload.svg'
+import CheckIcon from '@/assets/actions/check.svg'
 import DeleteIcon from '@/assets/actions/delete.svg'
 import DownloadIcon from '@/assets/actions/download.svg'
 import EyeIcon from '@/assets/actions/eye.svg'
 import EyeOffIcon from '@/assets/actions/eye-off.svg'
+import LinkIcon from '@/assets/actions/link.svg'
 import ResetIcon from '@/assets/actions/reset.svg'
 import TestIcon from '@/assets/actions/test.svg'
 import UploadIcon from '@/assets/actions/upload.svg'
@@ -47,10 +49,12 @@ export const appIcons = Object.freeze({
   add: AddIcon,
   'cloud-download': CloudDownloadIcon,
   'cloud-upload': CloudUploadIcon,
+  check: CheckIcon,
   delete: DeleteIcon,
   download: DownloadIcon,
   eye: EyeIcon,
   'eye-off': EyeOffIcon,
+  link: LinkIcon,
   reset: ResetIcon,
   test: TestIcon,
   upload: UploadIcon,

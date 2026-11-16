@@ -2,6 +2,7 @@
 import SettingsField from './SettingsField.vue'
 import SettingsFormGrid from './SettingsFormGrid.vue'
 import SettingsSectionCard from './SettingsSectionCard.vue'
+import SettingsToggleRow from './SettingsToggleRow.vue'
 import BaseInput from '@/components/form/BaseInput.vue'
 import BaseRange from '@/components/form/BaseRange.vue'
 import ToggleCheckbox from '@/components/form/ToggleCheckbox.vue'
@@ -22,14 +23,14 @@ function commit() {
 
 <template>
   <SettingsSectionCard title="轨迹线">
-    <div class="field-card">
+    <SettingsToggleRow>
       <ToggleCheckbox
         v-model="draft.mouseTrail.enabled"
         label="显示轨迹线"
         note="关闭后不再绘制手势拖动路径。"
         @change="commit"
       />
-    </div>
+    </SettingsToggleRow>
 
     <div
       class="mouse-trail-preview"
@@ -119,13 +120,13 @@ function commit() {
 <style scoped lang="scss">
 .mouse-trail-preview {
   display: grid;
-  gap: 18px;
+  gap: var(--md-sys-spacing-lg);
   min-height: 150px;
-  margin-bottom: 14px;
-  padding: 24px;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  background: var(--panel-inset);
+  margin-bottom: var(--md-sys-spacing-lg);
+  padding: var(--md-sys-spacing-xl);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-medium);
+  background: var(--md-sys-color-surface-container);
 }
 
 .mouse-trail-preview__row {
@@ -139,11 +140,11 @@ function commit() {
   align-items: center;
   min-height: 28px;
   flex-basis: 80px;
-  padding: 0 10px;
-  border-radius: var(--radius-pill);
-  color: var(--text-preview);
+  padding: 0 var(--md-sys-spacing-md);
+  border-radius: var(--md-sys-shape-corner-full);
+  color: var(--md-sys-color-on-surface);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
 
   &--inactive {
     background: var(--trail-inactive-color);
@@ -157,7 +158,7 @@ function commit() {
 
 .mouse-trail-preview__path {
   height: 0;
-  border-radius: var(--radius-pill);
+  border-radius: var(--md-sys-shape-corner-full);
 
   &--inactive {
     width: 72%;

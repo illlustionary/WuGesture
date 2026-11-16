@@ -1,0 +1,27 @@
+// 4dp 网格间距与桌面密度（密度 -1）。
+$spacing: (
+  'xs': 4px,
+  'sm': 8px,
+  'md': 12px,
+  'lg': 16px,
+  'xl': 24px,
+  '2xl': 32px,
+  '3xl': 48px
+);
+
+:root {
+  @each $step, $value in $spacing {
+    --md-sys-spacing-#{$step}: #{$value};
+  }
+
+  /* 组件尺寸基线 */
+  --md-sys-size-button-height: 40px;
+  --md-sys-size-icon-button: 40px;
+  --md-sys-size-field-height: 48px;
+  --md-sys-size-row-single: 56px;
+  --md-sys-size-row-double: 72px;
+  --md-sys-size-sidebar-item: 48px;
+  --md-sys-size-chip: 32px;
+  --md-sys-size-sidebar-width: 256px;
+  --md-sys-size-page-padding: 32px;
+}

@@ -24,7 +24,7 @@ const router = useRouter()
 useGestureEditorEventListeners(router)
 const editor = useGestureEditorContext()
 const navigation = useGestureEditorNavigation()
-const { isDarkTheme, toggleTheme } = useAppearanceTheme(editor)
+const { isDarkTheme, themeMode, cycleTheme } = useAppearanceTheme(editor)
 const quickSearch = useQuickSearch()
 const routeOrder = ['global', 'category', 'app', 'edge', 'exclusions', 'settings', 'about']
 const transitionDirection = ref('right')
@@ -143,6 +143,7 @@ watch(
     <div class="app-shell__body">
       <AppSidebar
         :is-dark-theme="isDarkTheme"
+        :theme-mode="themeMode"
         @open-search="quickSearch.open"
         @open-help="helpOpen = true"
         @open-category-dialog="openCategoryDialog"
@@ -151,7 +152,7 @@ watch(
         @open-app-picker="openSidebarAppPicker"
         @open-app-rename="openAppRenameDialog"
         @delete-app="removeSidebarApp"
-        @toggle-theme="toggleTheme"
+        @cycle-theme="cycleTheme"
       />
 
       <main class="app-shell__content">
@@ -327,11 +328,8 @@ watch(
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
-  scrollbar-width: none;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
+  /* 预留滚动条槽位，滚动条出现/消失时内容不横向跳动。 */
+  scrollbar-gutter: stable;
 }
 
 .route-transition-frame {
@@ -353,8 +351,8 @@ watch(
   position: relative;
   z-index: 1;
   transition:
-    opacity 190ms ease,
-    transform 190ms ease;
+    opacity var(--md-sys-motion-duration-medium) var(--md-sys-motion-easing-emphasized-decelerate),
+    transform var(--md-sys-motion-duration-medium) var(--md-sys-motion-easing-emphasized-decelerate);
 }
 
 .route-slide-right-leave-active,
@@ -365,8 +363,8 @@ watch(
   width: 100%;
   pointer-events: none;
   transition:
-    opacity 140ms ease,
-    transform 140ms ease;
+    opacity var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard),
+    transform var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
 }
 
 .route-slide-right-enter-from {
@@ -401,38 +399,39 @@ watch(
 .picker-option {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--md-sys-spacing-md);
   width: 100%;
-  padding: 16px;
+  padding: var(--md-sys-spacing-lg);
   text-align: left;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border);
-  background: var(--interactive-bg);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-medium);
+  background: var(--md-sys-color-surface-container);
   transition:
-    background-color 120ms ease,
-    border-color 120ms ease;
+    background-color var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard),
+    border-color var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
 
   &:hover {
-    border-color: var(--border-strong);
-    background: var(--interactive-hover-bg);
+    border-color: var(--md-sys-color-outline);
+    background: var(--md-sys-color-surface-container-high);
   }
 
   &__icon {
+    flex: 0 0 auto;
     width: 24px;
     height: 24px;
-    flex: 0 0 auto;
-    color: var(--accent-strong);
+    color: var(--md-sys-color-primary);
   }
 
   &__text {
     display: grid;
-    gap: 4px;
+    gap: var(--md-sys-spacing-xs);
     min-width: 0;
   }
 
   &__text > span {
-    color: var(--muted);
-    font-size: 13px;
+    color: var(--md-sys-color-on-surface-variant);
+    font-size: var(--md-sys-typescale-body-medium-size);
+    line-height: var(--md-sys-typescale-body-medium-line-height);
   }
 }
 

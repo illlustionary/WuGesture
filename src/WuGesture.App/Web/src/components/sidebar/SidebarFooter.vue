@@ -1,16 +1,35 @@
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue'
 import AppIcon from '@/components/ui/AppIcon.vue'
 import HoverBubble from '@/components/ui/HoverBubble.vue'
+import type { ThemeMode } from '@/theme/scheme'
 
-const props = defineProps({
-  isCollapsed: { type: Boolean, default: false },
-  isDarkTheme: { type: Boolean, default: false }
-})
+const props = withDefaults(
+  defineProps<{
+    isCollapsed?: boolean
+    themeMode?: ThemeMode
+  }>(),
+  {
+    isCollapsed: false,
+    themeMode: 'system'
+  }
+)
 
-const emit = defineEmits(['open-help', 'open-search', 'toggle-theme', 'toggle-sidebar'])
+const emit = defineEmits<{
+  'open-help': []
+  'open-search': []
+  'cycle-theme': []
+  'toggle-sidebar': []
+}>()
+
+const THEME_LABELS: Record<ThemeMode, { icon: string; label: string }> = {
+  system: { icon: 'monitor', label: '跟随系统（点击切换到浅色）' },
+  light: { icon: 'sun', label: '浅色（点击切换到深色）' },
+  dark: { icon: 'moon', label: '深色（点击切换到跟随系统）' }
+}
+
 const collapseLabel = computed(() => (props.isCollapsed ? '展开侧栏' : '收起侧栏'))
-const themeLabel = computed(() => (props.isDarkTheme ? '切换到浅色模式' : '切换到深色模式'))
+const themeState = computed(() => THEME_LABELS[props.themeMode] ?? THEME_LABELS.system)
 </script>
 
 <template>
@@ -26,22 +45,15 @@ const themeLabel = computed(() => (props.isDarkTheme ? '切换到浅色模式' :
           ?
         </button></HoverBubble
       >
-      <HoverBubble :text="themeLabel">
+      <HoverBubble :text="themeState.label">
         <button
           type="button"
           class="app-sidebar__theme"
-          :aria-label="themeLabel"
-          :aria-pressed="isDarkTheme"
-          @click="emit('toggle-theme')"
+          :aria-label="themeState.label"
+          @click="emit('cycle-theme')"
         >
           <AppIcon
-            v-if="isDarkTheme"
-            name="sun"
-            aria-hidden="true"
-          />
-          <AppIcon
-            v-else
-            name="moon"
+            :name="themeState.icon"
             aria-hidden="true"
           />
         </button>

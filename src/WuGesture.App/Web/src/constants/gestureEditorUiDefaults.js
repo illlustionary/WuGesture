@@ -12,6 +12,11 @@ import {
 export const DEFAULT_UI_SETTINGS = {
   appearance: {
     theme: 'dark',
+    colorSource: 'preset',
+    seedColor: '#529EF1',
+    schemeVariant: 'tonalSpot',
+    // 仅运行时存在：宿主下发的 Windows 强调色，不写入配置文件。
+    systemAccent: '',
     lightTitleBarColor: '#FFFFFF',
     lightTitleBarTextColor: '#16202B',
     darkTitleBarColor: '#1B222B',

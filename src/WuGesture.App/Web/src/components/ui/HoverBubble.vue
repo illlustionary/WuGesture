@@ -1,35 +1,28 @@
-<script setup>
+<script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 
-const props = defineProps({
-  text: {
-    type: String,
-    required: true
-  },
-  delay: {
-    type: Number,
-    default: 500
-  },
-  offset: {
-    type: Number,
-    default: 12
-  },
-  maxWidth: {
-    type: Number,
-    default: 320
-  },
-  disabled: {
-    type: Boolean,
-    default: false
+const props = withDefaults(
+  defineProps<{
+    text: string
+    delay?: number
+    offset?: number
+    maxWidth?: number
+    disabled?: boolean
+  }>(),
+  {
+    delay: 500,
+    offset: 12,
+    maxWidth: 320,
+    disabled: false
   }
-})
+)
 
-const triggerRef = ref(null)
-const bubbleRef = ref(null)
+const triggerRef = ref<HTMLElement | null>(null)
+const bubbleRef = ref<HTMLElement | null>(null)
 const isHovered = ref(false)
 const isOpen = ref(false)
 const bubbleVisible = ref(false)
-const bubbleStyle = ref({
+const bubbleStyle = ref<Record<string, string>>({
   top: '0px',
   left: '0px'
 })
@@ -39,7 +32,7 @@ let updateFrame = 0
 let listenersAttached = false
 
 const tooltipId = `hover-bubble-${Math.random().toString(36).slice(2, 10)}`
-const bubblePlacement = ref('top')
+const bubblePlacement = ref<'top' | 'bottom'>('top')
 const bubbleMaxWidth = computed(() => `${props.maxWidth}px`)
 
 function clearOpenTimer() {
@@ -94,7 +87,7 @@ function updateBubblePosition() {
   const margin = 10
 
   let top = triggerRect.top - bubbleRect.height - gap
-  let placement = 'top'
+  let placement: 'top' | 'bottom' = 'top'
 
   if (top < margin) {
     top = triggerRect.bottom + gap
@@ -119,8 +112,7 @@ function updateBubblePosition() {
   bubbleStyle.value = {
     top: `${Math.round(top)}px`,
     left: `${Math.round(left)}px`,
-    maxWidth: `min(${bubbleMaxWidth.value}, calc(100vw - 20px))`,
-    '--hover-bubble-arrow-left': `${Math.round(Math.max(18, Math.min(triggerCenter - left, bubbleRect.width - 18)))}px`
+    maxWidth: `min(${bubbleMaxWidth.value}, calc(100vw - 20px))`
   }
   bubbleVisible.value = true
 }
@@ -147,6 +139,29 @@ function queueOpen() {
   isHovered.value = true
   clearOpenTimer()
   openTimer = window.setTimeout(openBubble, props.delay)
+}
+
+/** 键盘聚焦时立即显示，保证 Tab 浏览也能读到提示。 */
+function openOnFocus() {
+  if (props.disabled || !props.text?.trim() || !isFocusVisible(triggerRef.value)) {
+    return
+  }
+
+  isHovered.value = true
+  clearOpenTimer()
+  openBubble()
+}
+
+function isFocusVisible(element: HTMLElement | null) {
+  if (!element) {
+    return false
+  }
+
+  try {
+    return element.matches(':focus-visible')
+  } catch {
+    return false
+  }
 }
 
 watch(
@@ -183,6 +198,8 @@ onBeforeUnmount(() => {
     :aria-describedby="isOpen ? tooltipId : undefined"
     @pointerenter="queueOpen"
     @pointerleave="hideBubble"
+    @focusin="openOnFocus"
+    @focusout="hideBubble"
   >
     <slot>{{ text }}</slot>
 
@@ -214,53 +231,32 @@ onBeforeUnmount(() => {
   position: fixed;
   z-index: 40;
   display: inline-flex;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background-color: var(--panel-solid);
-  box-shadow: var(--shadow-popover);
-  color: var(--text);
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.45;
+  padding: 5px 8px;
+  border-radius: var(--md-sys-shape-corner-extra-small);
+  background-color: var(--md-sys-color-inverse-surface);
+  box-shadow: var(--md-sys-elevation-level2);
+  color: var(--md-sys-color-inverse-on-surface);
+  font-size: var(--md-sys-typescale-body-small-size);
+  line-height: var(--md-sys-typescale-body-small-line-height);
+  font-weight: var(--md-sys-typescale-body-small-weight);
   white-space: normal;
   word-break: break-word;
   pointer-events: none;
   transform: translateY(-3px);
   transition:
-    opacity 120ms ease,
-    transform 120ms ease;
+    opacity var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard),
+    transform var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
   opacity: 0;
   visibility: hidden;
 
-  &::after {
-    content: '';
-    position: absolute;
-    left: var(--hover-bubble-arrow-left, 24px);
-    width: 10px;
-    height: 10px;
-    background: inherit;
-    border-left: 1px solid var(--border);
-    border-top: 1px solid var(--border);
-    transform: translateX(-50%) rotate(45deg);
-  }
-
   &[data-placement='bottom'] {
     transform: translateY(3px);
-  }
-
-  &[data-placement='bottom']::after {
-    top: -5px;
-  }
-
-  &[data-placement='top']::after {
-    bottom: -5px;
-    transform: translateX(-50%) rotate(225deg);
   }
 }
 
 .hover-bubble.is-visible {
   visibility: visible;
   opacity: 1;
+  transform: translateY(0);
 }
 </style>
