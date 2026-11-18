@@ -161,6 +161,7 @@ public sealed class GestureConfigNormalizerTests
     {
         var config = new GestureConfig();
         config.UiSettings.AppBehavior.CloseButtonBehavior = "unknown";
+        config.UiSettings.AppBehavior.StartMode = "sometimes";
         config.UiSettings.AppBehavior.TargetWindowMode = "somewhere";
         config.UiSettings.Appearance.Theme = "neon";
         config.UiSettings.Update.Source = "GitHub";
@@ -170,6 +171,9 @@ public sealed class GestureConfigNormalizerTests
         Assert.Equal(
             GestureConfigContract.CloseButtonBehaviors.MinimizeToTray,
             config.UiSettings.AppBehavior.CloseButtonBehavior);
+        Assert.Equal(
+            GestureConfigContract.AppStartModes.Normal,
+            config.UiSettings.AppBehavior.StartMode);
         Assert.Equal(
             GestureConfigContract.WindowTargetModes.StartWindow,
             config.UiSettings.AppBehavior.TargetWindowMode);

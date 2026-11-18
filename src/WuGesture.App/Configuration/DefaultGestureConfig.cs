@@ -63,7 +63,7 @@ public static class DefaultGestureConfig
             {
                 LaunchAtStartup = false,
                 ShowConfigWindowOnLaunch = true,
-                RunAsAdministrator = false,
+                StartMode = GestureConfigContract.AppStartModes.Normal,
                 CloseButtonBehavior = GestureConfigContract.CloseButtonBehaviors.MinimizeToTray,
                 TargetWindowMode = GestureConfigContract.WindowTargetModes.StartWindow,
                 DisableGesturesInFullscreen = false,

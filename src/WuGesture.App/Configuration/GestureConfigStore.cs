@@ -325,12 +325,35 @@ public sealed class GestureConfigStore
     {
         var source = JsonNode.Parse(json) as JsonObject
             ?? throw new JsonException("配置根节点不是对象。");
+        MigrateLegacyAppBehavior(source);
         var defaults = JsonSerializer.SerializeToNode(DefaultGestureConfig.Create(), JsonOptions)
             ?? throw new InvalidOperationException("无法创建默认配置。");
         var merged = MergeWithDefaults(defaults, source);
         var config = merged.Deserialize<GestureConfig>(JsonOptions)
             ?? throw new JsonException("配置内容为空。");
         return GestureConfigNormalizer.Normalize(config);
+    }
+
+    /// <summary>
+    /// The app behavior used to store a single <c>runAsAdministrator</c> flag. It is now a three-state
+    /// <c>startMode</c>; translate the old flag before the default merge drops the unknown property.
+    /// </summary>
+    private static void MigrateLegacyAppBehavior(JsonObject root)
+    {
+        if (root["uiSettings"] is not JsonObject uiSettings ||
+            uiSettings["appBehavior"] is not JsonObject appBehavior ||
+            appBehavior.ContainsKey("startMode"))
+        {
+            return;
+        }
+
+        var runAsAdministrator = appBehavior["runAsAdministrator"] is JsonValue value &&
+            value.TryGetValue<bool>(out var enabled) &&
+            enabled;
+
+        appBehavior["startMode"] = runAsAdministrator
+            ? GestureConfigContract.AppStartModes.Admin
+            : GestureConfigContract.AppStartModes.Normal;
     }
 
     private static JsonNode MergeWithDefaults(JsonNode defaults, JsonNode? source)

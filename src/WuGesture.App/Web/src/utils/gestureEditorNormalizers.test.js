@@ -6,6 +6,7 @@ import {
   isSameApplicationIdentity,
   normalizeActionType,
   normalizeAmount,
+  normalizeAppBehaviorSettings,
   normalizeAppearanceSettings,
   normalizeBrightnessOperation,
   normalizeEdgeAction,
@@ -157,6 +158,13 @@ describe('界面设置规范化', () => {
     expect(normalizeAppearanceSettings({ seedColor: '5af' }).seedColor).toBe('#55AAFF')
     expect(normalizeAppearanceSettings({ seedColor: '#12345' }).seedColor).toBe('#529EF1')
     expect(normalizeAppearanceSettings({ seedColor: '#GGGGGG' }).seedColor).toBe('#529EF1')
+  })
+
+  it('启动模式只接受白名单，旧布尔字段迁移为管理员启动', () => {
+    expect(normalizeAppBehaviorSettings({ startMode: 'skip-uac' }).startMode).toBe('skip-uac')
+    expect(normalizeAppBehaviorSettings({ startMode: 'ujustu' }).startMode).toBe('normal')
+    expect(normalizeAppBehaviorSettings({}).startMode).toBe('normal')
+    expect(normalizeAppBehaviorSettings({ runAsAdministrator: true }).startMode).toBe('admin')
   })
 
   it('排除项去除空白、忽略空项并按路径去重', () => {

@@ -181,7 +181,7 @@ src\gestureEditor
 src\constants
 ```
 
-- `gestureEditorOptions.js`：手势编辑器使用的契约常量和 UI 选项，包括 scope、鼠标按键、滚轮修饰（无/上/下）、触发方式（连续/单次）、动作类型、操作名、边缘触发、关闭行为、更新源、WebView 消息类型、方向符号和选项 label。
+- `gestureEditorOptions.js`：手势编辑器使用的契约常量和 UI 选项，包括 scope、鼠标按键、滚轮修饰（无/上/下）、触发方式（连续/单次）、动作类型、操作名、边缘触发、关闭行为、启动模式（`normal` / `admin` / `skip-uac`）、更新源、WebView 消息类型、方向符号和选项 label。
 - `gestureEditorUiDefaults.js`：UI 设置和边缘操作的前端默认模板；不包含手势、分类或具体程序示例。
 - `gestureEditorBrowserPreviewData.js`：仅供未连接桌面宿主时的浏览器预览使用，提供示例全局/分类规则和程序。
 - `gestureEditorLimits.js`：手势编辑器输入限制常量，供表单控件和归一化逻辑共用。
@@ -230,7 +230,7 @@ src\pages
   - `settings\components\SettingsToggleRow.vue`：设置页开关行容器，复用 `ToggleCheckbox` 自带的 56 高行与 8 圆角状态。
   - `settings\components\MouseTrailSettings.vue`：轨迹线配置，顶部内置轨迹线实时预览。
   - `settings\components\LevelOsdSettings.vue`：音量/亮度 OSD 配置，顶部内置位置、尺寸和圆角实时预览。
-  - `settings\components\AppBehaviorSettings.vue`：应用行为配置，包括开机启动、管理员启动、目标窗口模式、全屏禁用开关和关闭按钮行为。
+  - `settings\components\AppBehaviorSettings.vue`：应用行为配置，包括开机启动、启动模式（普通 / 管理员 / 跳过 UAC，含提权风险提示）、目标窗口模式、全屏禁用开关和关闭按钮行为。
   - `settings\components\WebDavSettings.vue`：WebDAV 配置、测试、恢复和保存操作。
   - `settings\components\UpdateSettings.vue`：更新源下拉框和启动时自动检查开关，是更新相关设置的唯一编辑入口。
   - `settings\components\GestureHintSettings.vue`：底部提示窗配置，顶部内置提示窗实时预览。
@@ -272,7 +272,7 @@ src\pages
 - `边缘操作` 的触发角、摩擦边、边缘滚动分别通过独立子路由展示配置；点击卡片打开独立弹窗编辑启用状态、命令和参数，名称由触发类型、位置与滚轮方向自动生成，关闭弹窗后自动保存。
 - `排除项` 页维护不执行鼠标手势的程序列表；可通过拖动鼠标或浏览 exe 添加程序，也可为单个排除项勾选“同时禁用边缘操作”，列表会展示从 exe 路径动态提取的应用图标。
 - `全局`、`分类` 和 `程序` 规则页会显示共享的作用域优先级提示，明确 `程序 > 分类 > 全局` 以及未命中当前层级时的继承关系。
-- `设置` 的每个配置项通过独立子路由展示；本地导出、本地导入和恢复默认集中到「设置 > 配置」页，侧栏设置分组只保留导航入口。恢复默认会通过确认弹窗二次确认；本地导入在用户选好 JSON 文件后由桌面宿主再次确认覆盖，避免误选文件直接丢失配置。本地导入/导出只处理主配置 JSON，不包含窗口状态。页面中的调整会在输入变化时 debounce 自动保存，并在控件变更结束或离开页面时强制提交最后一次修改；普通自动保存成功不弹出 toast，保存失败仍会提示。本地编辑期间会避免宿主回传覆盖当前滑块值。设置页也包含开机自启动（默认关闭）、以管理员身份打开、关闭按钮行为，以及 WebDAV 地址、账号、密码和远程路径。开机自启动、以管理员身份打开和全屏禁用等布尔项使用共享自定义复选控件，单选下拉使用共享弹层式 `CustomSelect`。临时暂停只由侧栏状态标识和托盘菜单提供，不写入配置文件。轨迹线、音量/亮度 OSD 和底部提示窗预览分别内置在对应独立设置页顶部，音量/亮度 OSD 区块还提供实际桌面测试按钮；三个预览容器统一为 12 圆角、`outlineVariant` 描边和 `surfaceContainer` 底色，内部气泡/线条仍使用运行时动态变量；手势灵敏度使用宽松、标准、严格三档。WebDAV 区域提供测试、恢复和保存按钮；当前 WebDAV 参数测试成功后，才允许把当前配置保存到远程或从远程恢复本地配置。三个操作互斥：任一操作进行中，其余按钮全部禁用，被点击的按钮显示“测试中…”“备份中…”或“恢复中…”，直到宿主回传 `webdav-result` 才恢复可用。密码输入框右侧有显示/隐藏按钮，切换时在 `password` 与 `text` 之间切换输入类型，并用 `eye`/`eye-off` 图标和 `aria-label` 同步状态；“更新”页的“启动时自动检查更新”复选卡片与“应用行为”页一致，最多占一行的一半宽度，窄屏下改为整行。
+- `设置` 的每个配置项通过独立子路由展示；本地导出、本地导入和恢复默认集中到「设置 > 配置」页，侧栏设置分组只保留导航入口。恢复默认会通过确认弹窗二次确认；本地导入在用户选好 JSON 文件后由桌面宿主再次确认覆盖，避免误选文件直接丢失配置。本地导入/导出只处理主配置 JSON，不包含窗口状态。页面中的调整会在输入变化时 debounce 自动保存，并在控件变更结束或离开页面时强制提交最后一次修改；普通自动保存成功不弹出 toast，保存失败仍会提示。本地编辑期间会避免宿主回传覆盖当前滑块值。设置页也包含开机自启动（默认关闭）、启动模式（普通 / 管理员 / 跳过 UAC）、关闭按钮行为，以及 WebDAV 地址、账号、密码和远程路径。开机自启动、全屏禁用等布尔项使用共享自定义复选控件，单选下拉（含启动模式）使用共享弹层式 `CustomSelect`。临时暂停只由侧栏状态标识和托盘菜单提供，不写入配置文件。轨迹线、音量/亮度 OSD 和底部提示窗预览分别内置在对应独立设置页顶部，音量/亮度 OSD 区块还提供实际桌面测试按钮；三个预览容器统一为 12 圆角、`outlineVariant` 描边和 `surfaceContainer` 底色，内部气泡/线条仍使用运行时动态变量；手势灵敏度使用宽松、标准、严格三档。WebDAV 区域提供测试、恢复和保存按钮；当前 WebDAV 参数测试成功后，才允许把当前配置保存到远程或从远程恢复本地配置。三个操作互斥：任一操作进行中，其余按钮全部禁用，被点击的按钮显示“测试中…”“备份中…”或“恢复中…”，直到宿主回传 `webdav-result` 才恢复可用。密码输入框右侧有显示/隐藏按钮，切换时在 `password` 与 `text` 之间切换输入类型，并用 `eye`/`eye-off` 图标和 `aria-label` 同步状态；“更新”页的“启动时自动检查更新”复选卡片与“应用行为”页一致，最多占一行的一半宽度，窄屏下改为整行。
 - `关于&更新` 是侧栏最外层的独立页面，分「关于」和「更新」两个区块：「关于」介绍软件用途，提供 GitHub 与 Gitee 仓库地址外链，并只读展示当前版本、更新源和是否在启动时自动检查；「更新」提供检查更新按钮、状态提示和“查看更新”入口，确认后才由全局更新弹窗下载、校验并重启安装，弹窗会注明实际使用的更新源以及回退原因。更新源和自动检查开关统一放在“设置 > 更新”中修改。
 - 分类新增通过名称弹窗完成，不再使用左侧内联输入框；分类和程序名称都通过双击列表项后在弹窗里重命名。
 - 分类页、程序页和排除项页添加程序时都会先显示前端弹窗，用户可通过“拖动选择窗口”将鼠标移到目标窗口后松开，或选择“浏览 exe 文件”作为备用方式。
@@ -343,7 +343,7 @@ src\pages
 `uiSettings.appBehavior` 当前包含：
 
 - `launchAtStartup`
-- `runAsAdministrator`
+- `startMode`：`normal`（默认）/ `admin` / `skip-uac`；旧 payload 缺少该字段但带 `runAsAdministrator: true` 时归一化为 `admin`
 - `closeButtonBehavior`
 - `targetWindowMode`：`start-window`（默认，手势按下位置所在的顶层窗口）或 `current-window`（动作执行时的活动窗口）
 - `excludedApplications: [{ name, displayName, path, disableEdgeActions }]`
@@ -419,7 +419,7 @@ pnpm test
 pnpm typecheck
 ```
 
-Vitest 直接复用 `vite.config.js` 的路径别名，不需要额外的测试配置。测试文件与被测模块同目录，当前覆盖 `utils` 下的纯函数：`gestureEditorNormalizers`（枚举回退、数值收敛、作用域解析、排除项进程名归一化和去重、边缘操作合并）、`gestureEditorPayloads`（配置 payload 映射）、`gestureEditorViewModels`（宿主消息到编辑器模型）、`gestureEditorCollections`（侧栏条目聚合）和 `theme/scheme`（颜色归一化、8 套预设、色板确定性、动态强调色回退、标题栏派生）。`*.test.js` / `*.test.ts` 不参与 `vite build`，也被桌面工程的增量前端构建排除。
+Vitest 直接复用 `vite.config.js` 的路径别名，不需要额外的测试配置。测试文件与被测模块同目录，当前覆盖 `utils` 下的纯函数：`gestureEditorNormalizers`（枚举回退、数值收敛、作用域解析、排除项进程名归一化和去重、边缘操作合并、启动模式白名单与旧 `runAsAdministrator` 迁移）、`gestureEditorPayloads`（配置 payload 映射）、`gestureEditorViewModels`（宿主消息到编辑器模型）、`gestureEditorCollections`（侧栏条目聚合）和 `theme/scheme`（颜色归一化、8 套预设、色板确定性、动态强调色回退、标题栏派生）。`*.test.js` / `*.test.ts` 不参与 `vite build`，也被桌面工程的增量前端构建排除。
 
 ## 构建
 

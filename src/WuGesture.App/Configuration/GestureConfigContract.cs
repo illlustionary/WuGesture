@@ -78,6 +78,17 @@ public static class GestureConfigContract
         public const string CurrentWindow = "current-window";
     }
 
+    /// <summary>
+    /// How the app obtains administrator rights at startup. <see cref="SkipUac"/> relies on a
+    /// "highest privileges" scheduled task, so it only prompts for UAC when the task is registered.
+    /// </summary>
+    public static class AppStartModes
+    {
+        public const string Normal = "normal";
+        public const string Admin = "admin";
+        public const string SkipUac = "skip-uac";
+    }
+
     public static class AppearanceThemes
     {
         public const string System = "system";

@@ -1,5 +1,6 @@
 import {
   ACTION_TYPES,
+  APP_START_MODES,
   CLOSE_BUTTON_BEHAVIORS,
   EDGE_LOCATIONS,
   EDGE_TRIGGER_TYPES,
@@ -73,7 +74,7 @@ export const DEFAULT_UI_SETTINGS = {
   appBehavior: {
     launchAtStartup: false,
     showConfigWindowOnLaunch: true,
-    runAsAdministrator: false,
+    startMode: APP_START_MODES.normal,
     disableGesturesInFullscreen: false,
     disableGesturesOnDesktop: false,
     disableEdgeActionsInFullscreen: false,

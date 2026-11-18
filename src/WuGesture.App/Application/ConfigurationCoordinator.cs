@@ -19,6 +19,7 @@ internal sealed class ConfigurationCoordinator
     private readonly Action<bool, string, string> postConfigResult;
     private readonly Action<string, bool, string> postWebDavResult;
     private readonly Func<IWin32Window?> getDialogOwner;
+    private string? appliedStartMode;
 
     public ConfigurationCoordinator(
         Func<LoadedGestureConfig?> getConfig,
@@ -39,16 +40,80 @@ internal sealed class ConfigurationCoordinator
     /// <summary>Loads (or creates) the local configuration during startup.</summary>
     public LoadedGestureConfig Load()
     {
-        return configStore.LoadOrCreate();
+        var loaded = configStore.LoadOrCreate();
+        appliedStartMode = loaded.Config.UiSettings.AppBehavior.StartMode;
+        return loaded;
+    }
+
+    /// <summary>
+    /// Applies a configuration that is already persisted. Switching to or away from the "skip UAC"
+    /// start mode also registers or removes the scheduled task, which is the only step that may prompt
+    /// for administrator rights. A failure there is reported but never blocks the rest of the config.
+    /// </summary>
+    private string? ApplyConfig(LoadedGestureConfig loaded)
+    {
+        var nextStartMode = loaded.Config.UiSettings.AppBehavior.StartMode;
+        string? taskFailure = null;
+        try
+        {
+            SyncScheduledTask(appliedStartMode, nextStartMode);
+        }
+        catch (InvalidOperationException exception)
+        {
+            taskFailure = exception.Message;
+            AppLogger.Warning(
+                "ConfigurationCoordinator",
+                "start-mode-sync-failed",
+                exception.Message,
+                exception);
+        }
+
+        appliedStartMode = nextStartMode;
+        applyConfig(loaded);
+        return taskFailure;
+    }
+
+    private void PostConfigApplied(string successMessage, string? taskFailure, string operation)
+    {
+        postConfigResult(
+            taskFailure is null,
+            taskFailure is null
+                ? successMessage
+                : $"{successMessage.TrimEnd('。')}，但启动模式未能生效：{taskFailure}",
+            operation);
+    }
+
+    private static void SyncScheduledTask(string? previous, string next)
+    {
+        if (previous == next)
+        {
+            return;
+        }
+
+        if (next == GestureConfigContract.AppStartModes.SkipUac)
+        {
+            if (!ScheduledTaskLauncher.TryRegister(out var failure))
+            {
+                throw new InvalidOperationException($"无法创建以最高权限启动的计划任务：{failure}");
+            }
+
+            return;
+        }
+
+        if (previous == GestureConfigContract.AppStartModes.SkipUac &&
+            !ScheduledTaskLauncher.TryUnregister(out var removeFailure))
+        {
+            throw new InvalidOperationException($"无法删除以最高权限启动的计划任务：{removeFailure}");
+        }
     }
 
     public void Save(string json)
     {
         try
         {
-            applyConfig(configStore.SaveAndLoad(ReadConfig(json)));
+            var taskFailure = ApplyConfig(configStore.SaveAndLoad(ReadConfig(json)));
             postRules();
-            postConfigResult(true, "配置已保存。", "save");
+            PostConfigApplied("配置已保存。", taskFailure, "save");
         }
         catch (Exception exception)
         {
@@ -60,9 +125,9 @@ internal sealed class ConfigurationCoordinator
     {
         try
         {
-            applyConfig(configStore.LoadOrCreate());
+            var taskFailure = ApplyConfig(configStore.LoadOrCreate());
             postRules();
-            postConfigResult(true, "本地配置已重新加载。", "reload");
+            PostConfigApplied("本地配置已重新加载。", taskFailure, "reload");
         }
         catch (Exception exception)
         {
@@ -74,9 +139,9 @@ internal sealed class ConfigurationCoordinator
     {
         try
         {
-            applyConfig(configStore.ResetToDefaults());
+            var taskFailure = ApplyConfig(configStore.ResetToDefaults());
             postRules();
-            postConfigResult(true, "默认配置已恢复。", "reset");
+            PostConfigApplied("默认配置已恢复。", taskFailure, "reset");
         }
         catch (Exception exception)
         {
@@ -89,7 +154,7 @@ internal sealed class ConfigurationCoordinator
         try
         {
             var saved = configStore.SaveAndLoad(ReadConfig(json));
-            applyConfig(saved);
+            var taskFailure = ApplyConfig(saved);
 
             using var dialog = new SaveFileDialog
             {
@@ -108,7 +173,7 @@ internal sealed class ConfigurationCoordinator
 
             File.WriteAllText(dialog.FileName, BuildExportDocument(File.ReadAllText(saved.FilePath)));
             postRules();
-            postConfigResult(true, "配置已导出（不含 WebDAV 口令）。", "export");
+            PostConfigApplied("配置已导出（不含 WebDAV 口令）。", taskFailure, "export");
         }
         catch (Exception exception)
         {
@@ -145,9 +210,9 @@ internal sealed class ConfigurationCoordinator
                 return;
             }
 
-            applyConfig(configStore.SaveJsonAndLoad(File.ReadAllText(dialog.FileName)));
+            var taskFailure = ApplyConfig(configStore.SaveJsonAndLoad(File.ReadAllText(dialog.FileName)));
             postRules();
-            postConfigResult(true, "配置已导入。", "import");
+            PostConfigApplied("配置已导入。", taskFailure, "import");
         }
         catch (Exception exception)
         {
@@ -176,12 +241,19 @@ internal sealed class ConfigurationCoordinator
         try
         {
             var saved = configStore.SaveAndLoad(ReadConfig(json));
-            applyConfig(saved);
+            var taskFailure = ApplyConfig(saved);
             localConfigSaved = true;
             await webDavConfigSyncService.UploadAsync(saved.FilePath, saved.Config.UiSettings.WebDav);
 
             postRules();
-            postWebDavResult("save", true, "当前配置已备份到 WebDAV。");
+            if (taskFailure is null)
+            {
+                postWebDavResult("save", true, "当前配置已备份到 WebDAV。");
+            }
+            else
+            {
+                postWebDavResult("save", false, $"当前配置已备份到 WebDAV，但启动模式未能生效：{taskFailure}");
+            }
         }
         catch (Exception exception)
         {
@@ -200,10 +272,17 @@ internal sealed class ConfigurationCoordinator
         {
             var settings = ReadWebDavSettings(json);
             var downloadedJson = await webDavConfigSyncService.DownloadAsync(settings);
-            applyConfig(configStore.SaveJsonAndLoad(downloadedJson, settings));
+            var taskFailure = ApplyConfig(configStore.SaveJsonAndLoad(downloadedJson, settings));
 
             postRules();
-            postWebDavResult("restore", true, "已从 WebDAV 恢复本地配置。");
+            if (taskFailure is null)
+            {
+                postWebDavResult("restore", true, "已从 WebDAV 恢复本地配置。");
+            }
+            else
+            {
+                postWebDavResult("restore", false, $"已从 WebDAV 恢复本地配置，但启动模式未能生效：{taskFailure}");
+            }
         }
         catch (Exception exception)
         {

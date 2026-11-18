@@ -42,6 +42,50 @@ public sealed class GestureConfigStoreTests
     }
 
     [Fact]
+    public void LoadOrCreate_MigratesLegacyRunAsAdministratorToStartMode()
+    {
+        using var directory = new TemporaryDirectory();
+        var path = Path.Combine(directory.Path, "gestures.json");
+        File.WriteAllText(
+            path,
+            "{\"schemaVersion\":1,\"uiSettings\":{\"appBehavior\":{\"runAsAdministrator\":true}}}");
+
+        var store = new GestureConfigStore(path);
+        var loaded = store.LoadOrCreate();
+
+        Assert.Equal(
+            GestureConfigContract.AppStartModes.Admin,
+            loaded.Config.UiSettings.AppBehavior.StartMode);
+
+        // The legacy flag must disappear from the rewritten file so it cannot override the new field.
+        store.Save(loaded.Config);
+        using var document = JsonDocument.Parse(File.ReadAllText(path));
+        var appBehavior = document.RootElement
+            .GetProperty("uiSettings")
+            .GetProperty("appBehavior");
+        Assert.Equal(
+            GestureConfigContract.AppStartModes.Admin,
+            appBehavior.GetProperty("startMode").GetString());
+        Assert.False(appBehavior.TryGetProperty("runAsAdministrator", out _));
+    }
+
+    [Fact]
+    public void LoadOrCreate_PrefersExplicitStartModeOverLegacyRunAsAdministrator()
+    {
+        using var directory = new TemporaryDirectory();
+        var path = Path.Combine(directory.Path, "gestures.json");
+        File.WriteAllText(
+            path,
+            "{\"schemaVersion\":1,\"uiSettings\":{\"appBehavior\":{\"runAsAdministrator\":true,\"startMode\":\"skip-uac\"}}}");
+
+        var loaded = new GestureConfigStore(path).LoadOrCreate();
+
+        Assert.Equal(
+            GestureConfigContract.AppStartModes.SkipUac,
+            loaded.Config.UiSettings.AppBehavior.StartMode);
+    }
+
+    [Fact]
     public void LoadOrCreate_BackupsCorruptConfigAndWritesCurrentDefaults()
     {
         using var directory = new TemporaryDirectory();

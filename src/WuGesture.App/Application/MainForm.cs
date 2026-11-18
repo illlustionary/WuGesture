@@ -13,6 +13,7 @@ public sealed partial class MainForm : Form
     private readonly WindowStateStore windowStateStore = new();
     private readonly bool startHiddenToTray;
     private readonly bool isUpdateRestart;
+    private readonly bool isScheduledLaunch;
     private readonly WebViewHost webViewHost;
     private readonly TrayMenuController trayMenuController;
     private readonly ElevationLauncher elevationLauncher;
@@ -39,10 +40,11 @@ public sealed partial class MainForm : Form
     private string? configWarning;
     private int overlayRecoveryScheduled;
 
-    public MainForm(bool startHiddenToTray = false, bool isUpdateRestart = false)
+    public MainForm(bool startHiddenToTray = false, bool isUpdateRestart = false, bool isScheduledLaunch = false)
     {
         this.startHiddenToTray = startHiddenToTray;
         this.isUpdateRestart = isUpdateRestart;
+        this.isScheduledLaunch = isScheduledLaunch;
         ConfigureTitleBarPainting();
         var contentHost = CreateContentHost();
         ApplyTitleBarMetrics();
@@ -81,7 +83,7 @@ public sealed partial class MainForm : Form
         // see that the new version is installed, regardless of the auto-start and window settings.
         hideConfigWindowOnLaunch = !isUpdateRestart && (startHiddenToTray ||
             !loadedConfig.Config.UiSettings.AppBehavior.ShowConfigWindowOnLaunch);
-        elevationLauncher = new ElevationLauncher(startHiddenToTray, hideConfigWindowOnLaunch, isUpdateRestart, RequestClose);
+        elevationLauncher = new ElevationLauncher(startHiddenToTray, hideConfigWindowOnLaunch, isUpdateRestart, isScheduledLaunch, RequestClose);
         Text = AppIdentity.DisplayName;
         Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? SystemIcons.Application;
         FormBorderStyle = FormBorderStyle.Sizable;

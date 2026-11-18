@@ -86,6 +86,12 @@ export const WINDOW_TARGET_MODES = {
   currentWindow: 'current-window'
 }
 
+export const APP_START_MODES = {
+  normal: 'normal',
+  admin: 'admin',
+  skipUac: 'skip-uac'
+}
+
 export const UPDATE_SOURCES = {
   gitee: 'gitee',
   github: 'github'
@@ -204,6 +210,12 @@ export const CLOSE_BUTTON_BEHAVIOR_OPTIONS = [
 export const WINDOW_TARGET_MODE_OPTIONS = [
   { value: WINDOW_TARGET_MODES.startWindow, label: '起始窗口' },
   { value: WINDOW_TARGET_MODES.currentWindow, label: '当前窗口' }
+]
+
+export const APP_START_MODE_OPTIONS = [
+  { value: APP_START_MODES.normal, label: '普通启动' },
+  { value: APP_START_MODES.admin, label: '管理员启动' },
+  { value: APP_START_MODES.skipUac, label: '跳过 UAC 管理员启动' }
 ]
 
 export const UPDATE_SOURCE_OPTIONS = [

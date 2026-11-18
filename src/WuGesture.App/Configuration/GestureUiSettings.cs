@@ -57,7 +57,7 @@ public sealed class AppBehaviorUiSettings
 
     public bool ShowConfigWindowOnLaunch { get; set; } = true;
 
-    public bool RunAsAdministrator { get; set; }
+    public string StartMode { get; set; } = GestureConfigContract.AppStartModes.Normal;
 
     public string CloseButtonBehavior { get; set; } = GestureConfigContract.CloseButtonBehaviors.MinimizeToTray;
 

@@ -16,6 +16,13 @@ internal static class AppIdentity
     public const string UpdateRestartArgument = "--updated";
     // Closes the running instance without a UI or elevation prompt.
     public const string ExitArgument = "--exit";
+    // Set as the scheduled task action: the instance knows it was started with an elevated token.
+    public const string ScheduledLaunchArgument = "--scheduled-launch";
+    // Elevated helper modes that register or remove the scheduled task, then exit.
+    public const string CreateScheduledTaskArgument = "--task-create";
+    public const string DeleteScheduledTaskArgument = "--task-delete";
+    // Hidden helper that waits for a process to exit and then runs the scheduled task.
+    public const string TaskHandoverArgument = "--task-handover";
 
     public static string GetLaunchExecutablePath()
     {

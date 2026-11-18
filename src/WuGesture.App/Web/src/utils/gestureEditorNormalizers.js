@@ -1,5 +1,6 @@
 import {
   ACTION_TYPES,
+  APP_START_MODES,
   BRIGHTNESS_OPERATIONS,
   CLOSE_BUTTON_BEHAVIORS,
   EDGE_LOCATIONS,
@@ -276,7 +277,9 @@ export function normalizeAppBehaviorSettings(settings) {
     showConfigWindowOnLaunch: Boolean(
       settings?.showConfigWindowOnLaunch ?? DEFAULT_UI_SETTINGS.appBehavior.showConfigWindowOnLaunch
     ),
-    runAsAdministrator: Boolean(settings?.runAsAdministrator ?? DEFAULT_UI_SETTINGS.appBehavior.runAsAdministrator),
+    startMode: normalizeAppStartMode(
+      settings?.startMode ?? (settings?.runAsAdministrator ? APP_START_MODES.admin : undefined)
+    ),
     disableGesturesInFullscreen: Boolean(
       settings?.disableGesturesInFullscreen ?? DEFAULT_UI_SETTINGS.appBehavior.disableGesturesInFullscreen
     ),
@@ -394,6 +397,11 @@ export function normalizeUpdateSettings(settings) {
     checkForUpdates: Boolean(settings?.checkForUpdates ?? DEFAULT_UI_SETTINGS.update.checkForUpdates),
     source: Object.values(UPDATE_SOURCES).includes(source) ? source : DEFAULT_UI_SETTINGS.update.source
   }
+}
+
+export function normalizeAppStartMode(value) {
+  const normalized = String(value ?? '').trim()
+  return Object.values(APP_START_MODES).includes(normalized) ? normalized : DEFAULT_UI_SETTINGS.appBehavior.startMode
 }
 
 export function normalizeCloseButtonBehavior(value) {

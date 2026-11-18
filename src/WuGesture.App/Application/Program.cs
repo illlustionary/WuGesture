@@ -12,16 +12,29 @@ static class Program
     {
         AppLogger.Initialize();
         RegisterUnhandledExceptionLogging();
+        if (TryRunScheduledTaskHelper(args))
+        {
+            return;
+        }
+
         var isElevatedRelaunch = args.Any(arg =>
             string.Equals(arg, AppIdentity.ElevatedRelaunchArgument, StringComparison.OrdinalIgnoreCase));
+        var isScheduledLaunch = args.Any(arg =>
+            string.Equals(arg, AppIdentity.ScheduledLaunchArgument, StringComparison.OrdinalIgnoreCase));
+        // The task action cannot carry arguments, so the relaunching instance leaves the startup flags
+        // in a marker file instead.
+        var handoff = isScheduledLaunch ? StartupHandoff.Consume() : StartupHandoffFlags.None;
         var isStartupLaunch = args.Any(arg =>
-            string.Equals(arg, AppIdentity.StartupLaunchArgument, StringComparison.OrdinalIgnoreCase));
+            string.Equals(arg, AppIdentity.StartupLaunchArgument, StringComparison.OrdinalIgnoreCase)) ||
+            (handoff & StartupHandoffFlags.HiddenToTray) != 0;
         var isUpdateRestart = args.Any(arg =>
-            string.Equals(arg, AppIdentity.UpdateRestartArgument, StringComparison.OrdinalIgnoreCase));
+            string.Equals(arg, AppIdentity.UpdateRestartArgument, StringComparison.OrdinalIgnoreCase)) ||
+            (handoff & StartupHandoffFlags.UpdateRestart) != 0;
         var isExitRequest = args.Any(arg =>
             string.Equals(arg, AppIdentity.ExitArgument, StringComparison.OrdinalIgnoreCase));
         using var mutex = new Mutex(initiallyOwned: false, AppIdentity.SingleInstanceMutexName);
-        var ownsMutex = mutex.WaitOne(isElevatedRelaunch ? TimeSpan.FromSeconds(15) : TimeSpan.Zero);
+        var ownsMutex = mutex.WaitOne(
+            isElevatedRelaunch || isScheduledLaunch ? TimeSpan.FromSeconds(15) : TimeSpan.Zero);
         if (!ownsMutex)
         {
             if (isExitRequest)
@@ -49,7 +62,7 @@ static class Program
 
         try
         {
-            AppLogger.Information("Program", "started", $"Startup launch: {isStartupLaunch}; elevated relaunch: {isElevatedRelaunch}; update restart: {isUpdateRestart}.");
+            AppLogger.Information("Program", "started", $"Startup launch: {isStartupLaunch}; elevated relaunch: {isElevatedRelaunch}; scheduled launch: {isScheduledLaunch}; update restart: {isUpdateRestart}.");
             ApplicationConfiguration.Initialize();
             if (!EnsureWebView2RuntimeAvailable())
             {
@@ -76,7 +89,7 @@ static class Program
             MainForm form;
             try
             {
-                form = new MainForm(isStartupLaunch && !isUpdateRestart, isUpdateRestart);
+                form = new MainForm(isStartupLaunch && !isUpdateRestart, isUpdateRestart, isScheduledLaunch);
             }
             catch (GestureConfigLoadException exception)
             {
@@ -133,6 +146,57 @@ static class Program
             AppLogger.Shutdown(TimeSpan.FromSeconds(2));
             mutex.ReleaseMutex();
         }
+    }
+
+    /// <summary>
+    /// Runs the short-lived helper modes used by <see cref="ScheduledTaskLauncher"/>: register or remove
+    /// the scheduled task with an elevated token, or hand over to the task after the old instance exits.
+    /// These modes never create a window, read the configuration or touch the single-instance mutex.
+    /// </summary>
+    private static bool TryRunScheduledTaskHelper(string[] args)
+    {
+        if (HasArgument(args, AppIdentity.CreateScheduledTaskArgument))
+        {
+            var succeeded = ScheduledTaskLauncher.Create(AppIdentity.GetLaunchExecutablePath(), out var failure);
+            if (!succeeded)
+            {
+                AppLogger.Warning("Program", "scheduled-task-create-helper-failed", failure);
+            }
+
+            AppLogger.Shutdown(TimeSpan.FromSeconds(1));
+            Environment.Exit(succeeded ? 0 : 1);
+        }
+
+        if (HasArgument(args, AppIdentity.DeleteScheduledTaskArgument))
+        {
+            var succeeded = ScheduledTaskLauncher.Delete(out var failure);
+            if (!succeeded)
+            {
+                AppLogger.Warning("Program", "scheduled-task-delete-helper-failed", failure);
+            }
+
+            AppLogger.Shutdown(TimeSpan.FromSeconds(1));
+            Environment.Exit(succeeded ? 0 : 1);
+        }
+
+        var handoverIndex = Array.FindIndex(
+            args,
+            arg => string.Equals(arg, AppIdentity.TaskHandoverArgument, StringComparison.OrdinalIgnoreCase));
+        if (handoverIndex >= 0 &&
+            handoverIndex + 1 < args.Length &&
+            int.TryParse(args[handoverIndex + 1], out var processId))
+        {
+            var exitCode = ScheduledTaskLauncher.HandleHandover(processId);
+            AppLogger.Shutdown(TimeSpan.FromSeconds(1));
+            Environment.Exit(exitCode);
+        }
+
+        return false;
+    }
+
+    private static bool HasArgument(string[] args, string expected)
+    {
+        return args.Any(arg => string.Equals(arg, expected, StringComparison.OrdinalIgnoreCase));
     }
 
     private static void RegisterUnhandledExceptionLogging()

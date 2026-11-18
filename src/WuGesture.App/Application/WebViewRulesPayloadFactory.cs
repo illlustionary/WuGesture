@@ -137,7 +137,7 @@ internal static class WebViewRulesPayloadFactory
             {
                 launchAtStartup = uiSettings.AppBehavior.LaunchAtStartup,
                 showConfigWindowOnLaunch = uiSettings.AppBehavior.ShowConfigWindowOnLaunch,
-                runAsAdministrator = uiSettings.AppBehavior.RunAsAdministrator,
+                startMode = uiSettings.AppBehavior.StartMode,
                 closeButtonBehavior = uiSettings.AppBehavior.CloseButtonBehavior,
                 targetWindowMode = uiSettings.AppBehavior.TargetWindowMode,
                 disableGesturesInFullscreen = uiSettings.AppBehavior.DisableGesturesInFullscreen,

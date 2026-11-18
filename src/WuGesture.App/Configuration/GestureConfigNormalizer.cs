@@ -147,6 +147,7 @@ internal static class GestureConfigNormalizer
         gestureSensitivity.Percent = ClampInteger(gestureSensitivity.Percent, 0, 200);
 
         var appBehavior = settings.AppBehavior;
+        appBehavior.StartMode = NormalizeStartMode(appBehavior.StartMode);
         appBehavior.CloseButtonBehavior = NormalizeCloseButtonBehavior(appBehavior.CloseButtonBehavior);
         appBehavior.TargetWindowMode = NormalizeWindowTargetMode(appBehavior.TargetWindowMode);
         appBehavior.ExcludedApplications = NormalizeExcludedApplications(appBehavior.ExcludedApplications);
@@ -166,6 +167,16 @@ internal static class GestureConfigNormalizer
         return string.Equals(value, GestureConfigContract.UpdateSources.GitHub, StringComparison.OrdinalIgnoreCase)
             ? GestureConfigContract.UpdateSources.GitHub
             : GestureConfigContract.UpdateSources.Gitee;
+    }
+
+    private static string NormalizeStartMode(string? value)
+    {
+        return value switch
+        {
+            GestureConfigContract.AppStartModes.Admin => GestureConfigContract.AppStartModes.Admin,
+            GestureConfigContract.AppStartModes.SkipUac => GestureConfigContract.AppStartModes.SkipUac,
+            _ => GestureConfigContract.AppStartModes.Normal
+        };
     }
 
     private static string NormalizeCloseButtonBehavior(string? value)
