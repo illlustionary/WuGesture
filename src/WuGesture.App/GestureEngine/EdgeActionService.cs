@@ -250,6 +250,9 @@ public sealed class EdgeActionService : IDisposable
 
         if (IsAnyMouseButtonPressed())
         {
+            // A held button belongs to a gesture (or to the target app). Edge wheel actions must not fire
+            // at the same time, otherwise one scroll triggers two different behaviours.
+            wheelActionsBlocked = true;
             activeCorner = EdgeLocation.None;
             activeFrictionEdge = EdgeLocation.None;
             frictionTracker.Reset();

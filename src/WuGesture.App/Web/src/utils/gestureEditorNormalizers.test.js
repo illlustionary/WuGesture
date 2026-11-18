@@ -142,7 +142,7 @@ describe('界面设置规范化', () => {
 
   it('主题大小写不敏感，未知值回退到默认主题', () => {
     expect(normalizeAppearanceSettings({ theme: 'DARK' }).theme).toBe('dark')
-    expect(normalizeAppearanceSettings({ theme: 'neon' }).theme).toBe('dark')
+    expect(normalizeAppearanceSettings({ theme: 'neon' }).theme).toBe('system')
   })
 
   it('配色来源与变体只接受白名单，未知值回退默认', () => {

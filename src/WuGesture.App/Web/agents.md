@@ -10,7 +10,7 @@ This repository is a Vite + Vue 3 web frontend for the WuGesture application. It
 - `package.json`: project metadata, scripts, and dependencies (`dev`, `build`, `test`, `typecheck`, `format`).
 - `pnpm-lock.yaml`: locked dependency tree.
 - `pnpm-workspace.yaml`: workspace configuration.
-- `tsconfig.json`: TypeScript / Vue type-check configuration. `allowJs` is on and `checkJs` is off, so existing `.js` files keep working; only `.ts`, `.d.ts` and `.vue` are checked.
+- `tsconfig.json`: TypeScript / Vue type-check configuration. `allowJs` is on and `checkJs` is off, so existing `.js` files keep working; only `.ts`, `.d.ts` and `.vue` are checked. `tsconfig.checkjs.json` extends it with `checkJs: true` for the `src/constants` and `src/utils` `.js` files only (phase one of the rollout); `pnpm typecheck` runs both projects.
 - `vite.config.js`: Vite build and dev server configuration, including `vite-svg-loader`, the `@`/`@resources` path aliases, and the Vitest `server.deps.inline` entry needed by `@material/material-color-utilities` 0.4.0.
 - `src/`: application source code.
 

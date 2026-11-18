@@ -6,8 +6,9 @@ internal static class AudioController
 {
     private static readonly Guid ClsidMmDeviceEnumerator = new("BCDE0395-E52F-467C-8E3D-C4579291692E");
     private static readonly Guid IidIAudioEndpointVolume = new("5CDF2C82-841E-4546-9722-0CF74078229A");
+    private const int RetryDelayMilliseconds = 2000;
     private static IMMDeviceEnumerator? enumerator;
-    private static bool? available;
+    private static long retryAfterTick;
 
     private const int ERender = 0;
     private const int EMultimedia = 1;
@@ -103,7 +104,7 @@ internal static class AudioController
     private static bool TryGetEndpoint(out IAudioEndpointVolume endpoint)
     {
         endpoint = null!;
-        if (available == false)
+        if (Environment.TickCount64 < Volatile.Read(ref retryAfterTick))
         {
             return false;
         }
@@ -115,7 +116,7 @@ internal static class AudioController
                 var type = Type.GetTypeFromCLSID(ClsidMmDeviceEnumerator);
                 if (type is null)
                 {
-                    available = false;
+                    MarkUnavailable();
                     return false;
                 }
 
@@ -125,7 +126,7 @@ internal static class AudioController
             var hr = enumerator.GetDefaultAudioEndpoint(ERender, EMultimedia, out var device);
             if (hr < 0 || device is null)
             {
-                available = false;
+                MarkUnavailable();
                 return false;
             }
 
@@ -134,19 +135,26 @@ internal static class AudioController
             Marshal.ReleaseComObject(device);
             if (hr < 0 || volume is null)
             {
-                available = false;
+                MarkUnavailable();
                 return false;
             }
 
             endpoint = (IAudioEndpointVolume)volume;
-            available = true;
+            Volatile.Write(ref retryAfterTick, 0);
             return true;
         }
         catch
         {
-            available = false;
+            // A missing default device (Bluetooth disconnect, audio service restart) is transient. Retry
+            // later instead of disabling every volume action for the rest of the process lifetime.
+            MarkUnavailable();
             return false;
         }
+    }
+
+    private static void MarkUnavailable()
+    {
+        Volatile.Write(ref retryAfterTick, Environment.TickCount64 + RetryDelayMilliseconds);
     }
 
     [ComImport]

@@ -26,4 +26,17 @@ public sealed class GestureParserWorkerTests
         Assert.True(completed.Wait(TimeSpan.FromSeconds(2)));
         Assert.Equal(["start", "move", "end"], executionOrder);
     }
+
+    [Fact]
+    public void AFailedActionDoesNotStopLaterActions()
+    {
+        var completed = new CountdownEvent(1);
+        using var worker = new GestureParserWorker();
+
+        worker.Start();
+        worker.Enqueue(() => throw new InvalidOperationException("boom"));
+        worker.Enqueue(() => completed.Signal());
+
+        Assert.True(completed.Wait(TimeSpan.FromSeconds(2)));
+    }
 }

@@ -1,0 +1,8 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "checkJs": true,
+    "noImplicitAny": false
+  },
+  "include": ["src/env.d.ts", "src/constants/**/*.js", "src/utils/**/*.js"]
+}

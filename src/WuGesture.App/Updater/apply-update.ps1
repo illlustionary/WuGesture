@@ -125,19 +125,41 @@ try {
     }
 
     $startedAt = (Get-Date).AddSeconds(-2)
-    $null = Start-WuGesture $exePath $updatedArguments
+    $startedProcess = Start-WuGesture $exePath $updatedArguments
 
-    Start-Sleep -Seconds 3
-    # The app may exit and relaunch itself through UAC when "run as administrator" is enabled, so look for
-    # any WuGesture process started by this update instead of only the original process handle.
-    $running = @(Get-Process -Name "WuGesture" -ErrorAction SilentlyContinue | Where-Object {
-            try {
-                $_.StartTime -ge $startedAt
-            } catch {
-                $true
+    # Wait with a real budget instead of a fixed 3 seconds: slow disks and antivirus scans can delay the first
+    # process well past that, and with "run as administrator" the launched process exits and relaunches itself
+    # through UAC. Check the launched PID first, then fall back to any WuGesture instance started by this update.
+    $deadline = (Get-Date).AddSeconds(30)
+    $running = $false
+    while ((Get-Date) -lt $deadline) {
+        try {
+            if ($startedProcess -and -not $startedProcess.HasExited) {
+                $running = $true
+                break
             }
-        })
-    if ($running.Count -eq 0) {
+        } catch {
+        }
+
+        try {
+            $candidates = @(Get-Process -Name "WuGesture" -ErrorAction SilentlyContinue | Where-Object {
+                    try {
+                        $_.StartTime -ge $startedAt
+                    } catch {
+                        $true
+                    }
+                })
+            if ($candidates.Count -gt 0) {
+                $running = $true
+                break
+            }
+        } catch {
+        }
+
+        Start-Sleep -Milliseconds 500
+    }
+
+    if (-not $running) {
         throw "The updated application did not start."
     }
 

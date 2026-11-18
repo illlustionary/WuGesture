@@ -24,8 +24,10 @@ jobs:
         with:
           node-version: 22
 
-      - name: Enable pnpm
-        run: corepack enable
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 12.18.0
 
       - name: Install frontend dependencies
         working-directory: src/WuGesture.App/Web
@@ -55,7 +57,7 @@ jobs:
 
       - name: Check coverage floor
         shell: pwsh
-        run: ./scripts/check-coverage.ps1
+        run: ./scripts/check-coverage.ps1 -MinimumLineRate 23 -MinimumBranchRate 21
 
       - name: Upload test results
         if: always()

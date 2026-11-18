@@ -28,6 +28,7 @@ export function useGestureEditorNotifications({ state }) {
 
   return {
     show,
-    showConfigResult
+    showConfigResult,
+    showToast
   }
 }

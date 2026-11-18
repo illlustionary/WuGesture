@@ -87,12 +87,6 @@ internal sealed class UpdateService
                     bestRelease = release;
                     bestVersion = releaseVersion;
                 }
-
-                // The preferred mirror already offers something newer, so the other mirror cannot win.
-                if (bestVersion > currentVersion)
-                {
-                    break;
-                }
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -623,33 +617,42 @@ internal sealed class UpdateService
         string packagePath,
         CancellationToken cancellationToken)
     {
+        var expectedHash = ParseChecksumFromNotes(release.Notes, release.Asset.Name);
+        if (string.IsNullOrWhiteSpace(expectedHash))
+        {
+            TryDeleteFile(packagePath);
+            const string message = "发行说明未提供更新包的 SHA256 校验值，已取消安装。";
+            AppLogger.Warning("UpdateService", "checksum-missing", message);
+            throw new InvalidDataException(message);
+        }
+
         try
         {
-            var expectedHash = ParseChecksumFromNotes(release.Notes, release.Asset.Name);
-            if (string.IsNullOrWhiteSpace(expectedHash))
-            {
-                AppLogger.Warning(
-                    "UpdateService",
-                    "checksum-missing",
-                    $"The release notes do not declare a SHA256 checksum for {release.Asset.Name}.");
-                return;
-            }
-
             await using var stream = File.OpenRead(packagePath);
             var actualHash = Convert.ToHexString(await SHA256.HashDataAsync(stream, cancellationToken).ConfigureAwait(false));
             if (!string.Equals(expectedHash, actualHash, StringComparison.OrdinalIgnoreCase))
             {
-                TryDeleteFile(packagePath);
                 throw new InvalidDataException("更新包完整性校验失败（SHA256 不匹配）。");
             }
         }
-        catch (Exception exception) when (exception is not OperationCanceledException and not InvalidDataException)
+        catch (OperationCanceledException)
         {
+            throw;
+        }
+        catch (InvalidDataException)
+        {
+            TryDeleteFile(packagePath);
+            throw;
+        }
+        catch (Exception exception)
+        {
+            TryDeleteFile(packagePath);
             AppLogger.Warning(
                 "UpdateService",
                 "checksum-verification-failed",
                 "Unable to verify the downloaded update package checksum.",
                 exception);
+            throw new InvalidDataException($"无法校验更新包完整性：{exception.Message}", exception);
         }
     }
 

@@ -18,6 +18,7 @@ import {
   normalizeUiSettings
 } from '@/utils/gestureEditorNormalizers'
 import { getActionLabel, getEdgeActionLabel, getGestureMnemonic } from '@/utils/gestureEditorFormatters'
+import { createMessageDeduplicator, formatActionFailureMessage } from '@/utils/gestureEditorRuntimeMessages'
 import {
   collectAppItems as collectAppItemsFromState,
   collectCategoryItems as collectCategoryItemsFromState
@@ -89,6 +90,9 @@ let autoSaveTimer = 0
 const notifications = useGestureEditorNotifications({
   state
 })
+
+// 运行时动作失败只弹提示，不写入配置状态栏；同一动作的错误在 5 秒内只提示一次。
+const shouldShowActionFailure = createMessageDeduplicator()
 
 const webView = useGestureEditorWebViewBridge({ notifications })
 
@@ -354,6 +358,8 @@ function initialize() {
     state.statusState = 'idle'
     state.configPath = '内置默认规则'
     replaceConfig(PREVIEW_RULES, PREVIEW_APPLICATIONS, [], DEFAULT_UI_SETTINGS)
+    // 浏览器预览没有宿主，预览数据就是最终配置；标记为已加载，主题/引导等依赖它的逻辑才有机会执行。
+    state.hostConfigLoaded = true
     return
   }
 
@@ -415,6 +421,17 @@ function handleMessage(message) {
 
   if (message.type === WEBVIEW_MESSAGE_TYPES.hotkeyRecorded) {
     applyRecordedHotkey(message)
+    return
+  }
+
+  if (
+    message.type === WEBVIEW_MESSAGE_TYPES.gestureActionFailed ||
+    message.type === WEBVIEW_MESSAGE_TYPES.edgeActionFailed
+  ) {
+    const text = formatActionFailureMessage(message.action, message.error)
+    if (shouldShowActionFailure(text)) {
+      notifications.showToast(text, 'error')
+    }
     return
   }
 

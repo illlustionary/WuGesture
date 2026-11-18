@@ -35,6 +35,7 @@ D:\Desktop\WuGesture
 │  ├─ architecture.md
 │  ├─ design
 │  │  └─ md3-redesign-plan.md
+│  ├─ review-findings.md
 │  └─ releasing.md
 ├─ PROJECT_STRUCTURE.md
 ├─ WuGesture.slnx
@@ -58,6 +59,7 @@ D:\Desktop\WuGesture
 - `README.md`：面向用户的功能介绍、安装与快速上手、配置路径、常见问题，以及从源码构建、项目结构和发行流程概览。
 - `docs\architecture.md`：面向开发者的架构说明和 WebView2 集成概览。
 - `docs\releasing.md`：面向维护者的本地发布和自动发行流程。
+- `docs\review-findings.md`：2026-11-17 全项目审查的问题跟踪表，记录分级、状态、待决策项和修复顺序；修复时同步更新状态。
 - `docs\design\md3-redesign-plan.md`：配置界面 Material Design 3 重构与多主题/动态配色的实施计划书（目标、令牌、组件规范、配置扩展、阶段与验收）。
 - `docs\design\assets\stage7\`：阶段 7 的静态走查产物——`icon-compare.html`（19 个图标新旧对比 × 14/16/18/20/24px × 浅/深）、`palette-gallery.html`（8 套配色 × 浅/深组件取样）和复现说明。
 - `docs\images\`：README 使用的演示 GIF 与界面截图（统一浅色主题、含标题栏的整窗截图）。
@@ -87,7 +89,7 @@ src\WuGesture.App
 
 启动流程：
 
-- `Program.cs` 会在 .NET Host 成功启动后检查 WebView2 Runtime，缺少时显示官方下载引导；随后通过命名互斥体保证单实例运行。再次启动时不会创建第二个实例，而是先将前台切换权限授予已运行实例，再通知它在 UI 线程弹出并激活配置窗口，且等待该 UI 操作通过命名自动重置事件确认或超时后才退出。已有且可见的配置窗口收到单实例唤醒时，会临时关联当前前台线程的输入队列后激活，并在完成后立即解除关联；没有配置窗口时则保持普通启动与恢复流程，避免使用短暂置顶造成焦点回退。开机自启动会带 `--startup` 内部参数，始终只启动后台服务并驻留托盘，不打开配置窗口；普通启动是否显示配置窗口由应用行为设置控制，默认显示。更新替换成功后的重启会带 `--updated` 内部参数，此时无论开机自启动还是“启动时显示配置窗口”如何设置，都会显示配置窗口，并在 Web 界面就绪后通知前端切到“关于&更新”页，让用户确认新版本已经装好。带 `--exit` 内部参数启动时不会创建任何界面，而是通过命名事件请求已运行实例走正常退出流程（收起托盘、释放 WebView2）；这条路径在读取配置和提权重启之前就返回，所以普通权限进程也能关闭以管理员身份运行的实例，请求方会等待目标实例确认或超时后退出。
+- `Program.cs` 会在 .NET Host 成功启动后检查 WebView2 Runtime，缺少时显示官方下载引导；随后通过命名互斥体保证单实例运行。配置不可读取、配置目录不可写或配置版本高于当前支持版本时，会在创建主窗口前弹出说明并退出，其他启动异常也会记录日志并提示。再次启动时不会创建第二个实例，而是先将前台切换权限授予已运行实例，再通知它在 UI 线程弹出并激活配置窗口，且等待该 UI 操作通过命名自动重置事件确认或超时后才退出。已有且可见的配置窗口收到单实例唤醒时，会临时关联当前前台线程的输入队列后激活，并在完成后立即解除关联；没有配置窗口时则保持普通启动与恢复流程，避免使用短暂置顶造成焦点回退。开机自启动会带 `--startup` 内部参数，始终只启动后台服务并驻留托盘，不打开配置窗口；普通启动是否显示配置窗口由应用行为设置控制，默认显示。更新替换成功后的重启会带 `--updated` 内部参数，此时无论开机自启动还是“启动时显示配置窗口”如何设置，都会显示配置窗口，并在 Web 界面就绪后通知前端切到“关于&更新”页，让用户确认新版本已经装好。带 `--exit` 内部参数启动时不会创建任何界面，而是通过命名事件请求已运行实例走正常退出流程（收起托盘、释放 WebView2）；这条路径在读取配置和提权重启之前就返回，所以普通权限进程也能关闭以管理员身份运行的实例，请求方会等待目标实例确认或超时后退出。
 - `MainForm.cs` 会在首次显示前加载配置并决定是否后台启动，以避免后台启动时短暂绘制主窗口；普通启动会在 WebView2 的首次导航完成后显示配置窗口。窗口仍在屏幕上（普通显示或最小化到任务栏）且 WebView2 仍然存活时，托盘恢复和单实例唤醒只做置顶激活：不切换透明度、不改任务栏按钮、不重建 WebView2，因此双击托盘不会出现“关闭再打开”的闪烁；只有窗口已隐藏到托盘、WebView2 已释放时，才会先显示普通（非分层）窗体、用主题色内容面板占位，再在可见窗口中挂载 WebView2，就绪后置顶激活；恢复路径不再改 `Opacity`（否则窗口带 `WS_EX_LAYERED`，而 WebView2 不支持在分层窗口中托管），也不再把 `ShowInTaskbar` 先关后开（该属性会重建窗口句柄，必须在 WebView2 宿主存活之前完成）。窗口真正还原（托盘恢复回调或 `Resize` 退出最小化）时会补发启动期间缓存的更新提示，因此后台启动、排期检查先于打开配置窗口的更新弹窗不会丢失。后台启动则继续隐藏。更新重启（`--updated`）会忽略隐藏启动和“启动时显示配置窗口”设置，先显示配置窗口，并在首次 `get-status` 之后发送一次 `update-completed` 消息，前端据此打开“关于&更新”页并提示已更新到的版本。关闭到托盘会在收到关闭信号时直接同步隐藏窗体并释放 WebView2，不再先最小化：Alt+Tab/任务视图打开时，最小化会让窗体留在切换器的窗口快照里，释放切换键后 Shell 可能在 WebView2 已释放的情况下把它还原成一个空白的配置窗口。窗口进入托盘隐藏状态后，任何来自 Shell 的外部显示请求（`WM_SHOWWINDOW`）都会被拒绝并在消息队列中再次隐藏，避免留下空白窗口；只有托盘恢复/单实例唤醒路径会先清除隐藏标记，再重建 WebView2 并显示窗口。最小化到任务栏则保留现有配置窗口。主窗口使用宿主自绘的标题栏（`MainForm.Chrome.cs`）：`WM_NCCALCSIZE` 只把客户区向上扩展到盖住系统标题栏，保留原生左右/下缩放边框和窗口阴影，标题条直接绘制在窗体客户区而不是子控件里，因此拖动、双击最大化、Aero Snap、系统菜单和 Windows 11 最大化按钮的贴靠布局仍由系统处理。标题条显示应用图标和 `WuGesture`，右侧自绘最小化/最大化/关闭按钮，活动/非活动状态和悬停都有对应配色；这三个按钮只负责绘制和 `WM_NCHITTEST` 命中（返回 `HTMINBUTTON`/`HTMAXBUTTON`/`HTCLOSE`），按下时只记录按下的按钮并捕获鼠标，真正的动作在 `WM_NCLBUTTONUP`/`WM_LBUTTONUP` 时执行，且必须与按下的按钮一致：因此鼠标按下不触发，按住后移出按钮再释放也不触发，只有在该按钮上释放才执行；颜色与文字色取自 `uiSettings.appearance` 的 `lightTitleBarColor`/`darkTitleBarColor` 等字段（前端按当前色板的 `surface` / `onSurface` 回写），所以 Windows 10 与 Windows 11 表现一致（旧的 `DWMWA_CAPTION_COLOR` 方案只在 Windows 11 生效，Windows 10 会退回系统白条）。窗口句柄创建和托盘恢复前都会从 `gestures.json` 的 `uiSettings.appearance` 解析当前应用主题，同时设置窗体底色、标题条配色，并在 WebView2 导航前设置相同的默认底色与浅深主题标记。该文件负责生命周期、配置/服务装配、应用行为和 WebView 业务消息，托盘图标、提权重启、消息路由、配置保存/重载/导入导出/WebDAV 同步以及应用选择/窗口拾取/打开程序目录分别委托给 `TrayMenuController`、`ElevationLauncher`、`WebMessageRouter`、`ConfigurationCoordinator` 和 `ApplicationPickerCoordinator`，也会把配置里的 `uiSettings` 应用到轨迹窗、提示窗和应用行为，并在任一覆盖层启用时预热透明轨迹窗；显示设置变化、系统恢复或透明层原生呈现失败时，会在 UI 线程重建覆盖层资源。主窗口和托盘显示名为 `WuGesture`。开启“以管理员身份打开”时，`MainForm` 会在服务启动前用 `runas` 重启自身并以新实例接管；用户在 UAC 提示中取消或提权启动失败时不会降级为普通权限运行，而是提示原因后直接退出，开机自启动的后台实例则只记录日志并退出，不弹出阻塞登录的对话框。
 - `MainForm.Windowing.cs`：`MainForm` 的窗口状态持久化、系统原生最小化/还原、主题色解析和单实例唤醒时的前置激活；缩放边框、贴靠和窗口阴影仍由 Windows 提供。
 - `MainForm.Chrome.cs`：自绘标题栏的窗口消息处理和绘制（`WM_NCCALCSIZE`、`WM_NCHITTEST`、`WM_NCMOUSEMOVE`、`WM_NCMOUSELEAVE`、`WM_NCLBUTTONDOWN`、`WM_NCACTIVATE`），负责图标/标题/最小化/最大化/关闭按钮、悬停与活动状态配色、顶部缩放热区和 Windows 11 窗口边框配色。标题条画在窗体客户区内，不使用子控件，以便系统继续处理拖动、贴靠和双击最大化。窗体开启 `OptimizedDoubleBuffer` + `AllPaintingInWmPaint`，整条标题条一次离屏合成后再提交，避免“先擦背景、再画图标/标题/按钮”之间被系统合成出空白标题条（WebView2 占用消息循环时表现为整条标题栏闪烁）；悬停变化只失效悬停切换涉及的两个按钮矩形，并在 `WM_NCMOUSEMOVE` 里请求 `WM_NCMOUSELEAVE`，让鼠标离开窗口后悬停高亮能可靠复位。
@@ -103,7 +105,7 @@ src\WuGesture.App
 - `TrayMenuController.cs`：持有通知区图标、右键菜单和暂停图标（用 `DestroyIcon` 释放临时 HICON），对外只暴露“打开配置 / 暂停 / 退出”三个动作、`SetPaused` 和 `ApplyAppearance`，`MainForm` 不再直接操作托盘资源。暂停图标由 `CreatePausedIcon` 在内存中生成：用 `ColorMatrix` 按亮度权重灰度化后整体压暗到 `PausedIconBrightness`（0.75），连白色圆环一起变灰，保证 16 px 托盘尺寸下也能明显看出已暂停；正常帧仍取 `Icon.ExtractAssociatedIcon` 的应用图标。右键菜单使用 `TrayMenuRenderer` 自绘、按主配置 `uiSettings.appearance`（含 `system` 解析）切换浅/深配色，并用 `seedColor` 作为强调色，在 `Opened`/`SizeChanged` 时用圆角 `Region` 裁剪窗外形；菜单字号、内边距和分隔线高度都按主屏 DPI 缩放，暂停项用强调色圆点代替默认勾选框。
 - `TrayMenuRenderer.cs`：托盘右键菜单的 `ToolStripRenderer` 实现，集中维护与 Web 配置界面一致的浅色/深色 `TrayMenuPalette`；绘制圆角边框、悬停/按下圆角行、扁平分隔线和暂停项的强调色圆点，并隐藏默认勾选框。菜单文字不依赖 ToolStrip 的默认文本矩形（它会忽略项内边距），而是按行高垂直居中、按左侧内边距重新绘制；分隔线使用项内局部坐标绘制，圆角路径同时供 `TrayMenuController` 裁剪菜单区域。
 - `ElevationLauncher.cs`：封装 `runas` 提权重启、UAC 取消/失败提示和“提权后本进程必须退出”的判定，`MainForm` 只负责在服务启动前调用它。
-- `ConfigurationCoordinator.cs`：所有“替换本地配置”的入口——保存、重载、恢复默认、本地导入/导出、WebDAV 测试/备份/恢复；由 `MainForm` 提供当前配置、应用回调、WebView 回执和对话框 owner，避免主窗体重复拼装 `GestureConfig` 并各自处理异常。本地导入在用户选好 JSON 文件后弹出覆盖确认（默认选中“否”），取消或拒绝都不会改动配置。
+- `ConfigurationCoordinator.cs`：所有“替换本地配置”的入口——保存、重载、恢复默认、本地导入/导出、WebDAV 测试/备份/恢复；由 `MainForm` 提供当前配置、应用回调、WebView 回执和对话框 owner，避免主窗体重复拼装 `GestureConfig` 并各自处理异常。本地导入在用户选好 JSON 文件后弹出覆盖确认（默认选中“否”），取消或拒绝都不会改动配置。导出时写出口令为空的 `uiSettings.webDav.password`，本地配置和 WebDAV 备份仍保留凭据。
 - `ApplicationPickerCoordinator.cs`：处理“选择应用程序”“拾取窗口”“打开程序目录”三条 WebView 消息；文件对话框和窗口拾取都使用宿主提供的 owner，窗口拾取的光标颜色按配置主题（未显式指定时读系统偏好）解析，失败统一通过回执回调上报。
 - `UpdateCoordinator.cs`：进程启动时（仅一次）按 `uiSettings.update` 的开关和更新源检查最新发行版，并把结果、下载进度和失败原因转发给设置页/更新弹窗；检查按版本号比较两个源的发行版并取较高者，开始下载前再次确认更新包版本高于当前版本，避免回退安装。下载、解压和启动更新脚本都在后台线程完成，只有需要退出换文件时才回到 UI 线程关闭主窗体。重启时沿用原启动参数并去掉 `--elevated-relaunch` 和上一次的 `--updated`；真正替换成功后由更新脚本追加 `--updated`，回滚重启则不带该参数。配置界面完成首次 `get-status` 前、窗口隐藏/最小化或 WebView2 已释放时先缓存提示（记录 `update-prompt-deferred` 原因），等前端监听器就绪、WebView2 重建并真正还原窗口后再补发（记录 `update-prompt-posted`）。因此后台启动的自动检查结果不会因为“启动时没打开配置窗口”而丢失。
 - `SystemTheme.cs`：读取 Windows 的“应用模式”偏好，供系统标题栏配色、窗口拾取光标和托盘菜单主题共用，避免同一判断分散在多处。
@@ -141,12 +143,12 @@ src\WuGesture.App\GestureEngine
 关键文件：
 
 - `MouseHook.cs`：低级全局鼠标钩子；在独立的高优先级后台消息线程中安装和接收回调，服务层再按需要把 UI 工作投递回 WinForms 线程，避免前台窗口/WebView 消息阻塞全局输入 hook 链；回调耗时超过 10ms 时按每秒最多一条记录 `slow-hook-callback` 警告，用于发现重新引入的阻塞调用。
-- `KeyboardShortcutRecorder.cs`：低级键盘 hook，用于配置界面录制快捷键并吞掉录制期间的原生键盘事件。
-- `GestureService.cs`：接入右键、中键和滚轮低级 hook，协调会话、识别器、匹配器和执行器，并向 UI 发送事件；手势捕获门控交给 `GestureCaptureGate` 的后台快照，hook 线程只在快照缺失、过期或窗口不匹配时回退到一次同步判定；跟踪中的轨迹进度只保留尚未处理的最新一帧，避免快速移动堆积 WinForms UI 队列，松键和最终识别事件仍按原顺序投递；命中手势会先完成提示，再将快捷键、窗口控制和运行程序动作顺序投递到后台队列，避免动作执行阻塞桌面反馈；`start-window` 的目标前置和快捷键注入在同一个后台任务中完成，音量/亮度继续在原线程执行；快捷键动作注入前会确认目标应用窗口已在前台，必要时尝试激活并等待约 150ms，仍失败则记录 `hotkey-target-not-foreground` 并跳过，避免按键落入错误窗口；也支持录制会话，把识别结果回传给前端。滚轮事件在按住手势键且该按键存在任意滚轮修饰规则时被吞掉，按 120 的物理刻度累计；每一格把滚轮上/下作为修饰符与当前识别出的方向路径一起匹配，匹配后冻结方向路径，连续规则立即执行、单次规则在松键时执行，单次事件最多触发 5 格。
+- `KeyboardShortcutRecorder.cs`：低级键盘 hook，用于配置界面录制快捷键并吞掉录制期间的原生键盘事件；录制完成、取消或释放时立即卸载 hook，下次开始录制才重新安装，避免录制过一次后全系统按键都要经过 UI 线程。
+- `GestureService.cs`：接入右键、中键和滚轮低级 hook，协调会话、识别器、匹配器和执行器，并向 UI 发送事件；手势捕获门控交给 `GestureCaptureGate` 的后台快照，hook 线程只在快照缺失、过期或窗口不匹配时回退到一次同步判定；跟踪中的轨迹进度只保留尚未处理的最新一帧，避免快速移动堆积 WinForms UI 队列，松键和最终识别事件仍按原顺序投递；命中手势会先完成提示，再将快捷键、窗口控制和运行程序动作顺序投递到后台队列，避免动作执行阻塞桌面反馈；`start-window` 的目标前置和快捷键注入在同一个后台任务中完成，音量/亮度继续在原线程执行；快捷键动作注入前会确认目标应用窗口已在前台，必要时尝试激活并等待约 150ms，仍失败则记录 `hotkey-target-not-foreground` 并跳过，避免按键落入错误窗口；也支持录制会话，把识别结果回传给前端。滚轮事件在按住手势键且该按键存在任意滚轮修饰规则时被吞掉，按 120 的物理刻度累计；每一格把滚轮上/下作为修饰符与当前识别出的方向路径一起匹配，匹配后冻结方向路径，连续规则立即执行、单次规则在松键时执行，单次事件最多触发 5 格。手势起始因排除项或全屏拦截而提前返回时会复位滚轮捕获，避免按住手势键滚动时输入被吞掉。
 - `GestureStartDiagnostics.cs`：异步记录诊断启动标记、每次手势起始分段耗时、首条有效移动到轨迹首帧提交的分段耗时，以及命中规则后从松键到 UI 反馈和动作完成的分段耗时；日志位于 `%LocalAppData%\WuGesture\diagnostics\gesture-start-latency.log`，单文件达到 1MB 时保留上一份轮转日志，主日志写入失败时会把错误写入 `%TEMP%\WuGesture-gesture-diagnostics-error.log`。
 - `GestureSession.cs`：保存单次手势的 `Tracking -> Completing -> Idle` 生命周期、会话编号、轨迹和预览/进度缓存。松键后会先固化旧会话的 UI/动作快照并立即回到 `Idle`，因此下一笔不等待最终覆盖层收尾；旧会话的视觉回调会在已有更新会话时被丢弃。跟踪中收到任意新的手势按键按下时仍会先取消旧会话，再以新按下开始下一笔，且会吞掉被取消旧按键迟到的抬起事件。只要会话消费过滚轮就把 `HasWheelActivity` 置位，松键时据此跳过一次“小位移重放点击”的回退。
 - `GestureFeedbackCoordinator.cs`：订阅手势 UI 事件，在 UI 线程按会话编号过滤陈旧更新，负责轨迹/提示覆盖层及手势相关 WebView 消息；`MainForm` 仅提供配置和宿主资源回调。
-- `EdgeActionService.cs`：在独立后台线程按约 16ms 轮询真实光标位置，并监听滚轮，负责暂停/排除/全屏门控、触发顺序和动作筛选；轮询线程会刷新滚轮专用的门控状态快照，因此低级滚轮 hook 回调只做快照读取、边缘规则命中和同步吞键，命中的动作由独立串行工作队列执行，避免前台进程/全屏查询、WinForms UI 队列或安全软件介入拖住全局滚轮链。轮询已完全移出 UI 线程，命中的动作仍通过 `Post` 回到 UI 线程执行；任意鼠标键按住时会立即跳过排除和全屏判断，避免与手势起始竞争；摩擦边会排除角落区域，按沿边方向的反向位移计数并在触发后防重复，滚轮边命中时会吞掉原始滚轮事件。光标位置改用带返回值检查的 `GetCursorPos`：锁屏、UAC 或唤醒过渡期间该调用会失败，而 `Cursor.Position` 会静默返回 `(0, 0)`（正好是左上角），曾经因此每次唤醒都误触发左上角动作；休眠恢复后还会额外忽略 2 秒光标采样，等输入桌面稳定。
+- `EdgeActionService.cs`：在独立后台线程按约 16ms 轮询真实光标位置，并监听滚轮，负责暂停/排除/全屏门控、触发顺序和动作筛选；轮询线程会刷新滚轮专用的门控状态快照，因此低级滚轮 hook 回调只做快照读取、边缘规则命中和同步吞键，命中的动作由独立串行工作队列执行，避免前台进程/全屏查询、WinForms UI 队列或安全软件介入拖住全局滚轮链。轮询已完全移出 UI 线程，命中的动作仍通过 `Post` 回到 UI 线程执行；任意鼠标键按住时会立即跳过排除和全屏判断并同时禁用边缘滚轮动作，避免与手势起始竞争、也避免一次滚动同时触发手势滚轮和边缘滚轮；摩擦边会排除角落区域，按沿边方向的反向位移计数并在触发后防重复，滚轮边命中时会吞掉原始滚轮事件。光标位置改用带返回值检查的 `GetCursorPos`：锁屏、UAC 或唤醒过渡期间该调用会失败，而 `Cursor.Position` 会静默返回 `(0, 0)`（正好是左上角），曾经因此每次唤醒都误触发左上角动作；休眠恢复后还会额外忽略 2 秒光标采样，等输入桌面稳定。
 - `EdgeHitTester.cs`：集中四角、普通边缘和摩擦边的屏幕几何命中计算，并提供到边距离计算；保留屏幕遍历和边界优先级。
 - `FrictionTracker.cs`：维护单次摩擦边的位移方向、计数、触发后冷却和超时重置状态。
 - `EdgeActionConfigNormalizer.cs`：将当前版本的边缘动作配置规范为运行时所需形态。
@@ -167,7 +169,7 @@ src\WuGesture.App\GestureEngine
 - `WindowControlTargetPolicy.cs`：判断窗口能否接收窗口控制和手势前置激活。只放行真正的应用窗口：先取顶层窗口，拒绝隐藏或已被 DWM 遮蔽（其他虚拟桌面、挂起 UWP）的窗口，再沿属主链用桌面分类器和 Shell UI 规则排除任务栏、任务视图、Alt+Tab 切换器、开始菜单、搜索、Shell 弹层以及 Shell 宿主进程的窗口。
 - `ShellUiWindowHeuristics.cs`：Shell UI 窗口判定的纯函数部分——维护 Shell 窗口类清单（任务栏、任务视图、Alt+Tab 切换器、开始菜单、搜索、桌面外壳等）、Shell 宿主进程清单（explorer、ShellExperienceHost、StartMenuExperienceHost、SearchUI、TextInputHost、SiHost 等）、允许接收窗口控制的 explorer 文件夹窗口类清单，以及可见/未遮蔽窗口判定，便于单元测试。
 - `DesktopSurfaceWalker.cs`：桌面外壳判定的纯函数部分——沿父窗口/属主窗口向上查找并去重，限制最多遍历 32 个关联窗口，各 Win32 查询由调用方传入。
-- `AudioController.cs`：通过 Windows Core Audio API 读取和设置系统主音量、静音状态。
+- `AudioController.cs`：通过 Windows Core Audio API 读取和设置系统主音量、静音状态；没有默认音频设备或 COM 激活失败时只暂停 2 秒，之后自动重试，蓝牙耳机重连或音频服务恢复后无需重启应用。
 - `BrightnessController.cs`：通过 DDC/CI、WMI、Gamma 三段回退读取和设置显示亮度。
 - `BrightnessAdjustmentQueue.cs`：把亮度调节放到后台串行队列执行，并合并连续滚轮输入，避免 DDC/CI 等慢调用阻塞鼠标钩子或主 UI。
 - `LevelOsdOverlay.cs`：音量和亮度 OSD 的线程安全请求入口，把手势、边缘操作和后台亮度队列的显示请求投递到主 UI 线程。
@@ -175,7 +177,7 @@ src\WuGesture.App\GestureEngine
 - `MouseInput.cs`：当移动距离太小，不足以构成手势时，重放一次普通右键或中键。
 - `GestureInputCapture.cs`：在钩子回调内同步决定捕获/吞键，维护暂停、录制和迟到抬键状态，并把路径事件无等待交给解析器；捕获门控优先读取 `GestureCaptureGate` 快照。滚轮捕获只在按住手势键、未暂停/录制且该按键配置了至少一条滚轮修饰规则时启用；会话消费过滚轮后还会在结束后短时吞掉残留滚轮，避免快捷键触发后的滚动泄漏到目标程序。
 - `GestureCaptureGate.cs`：在独立后台线程按 32ms 刷新"当前窗口是否禁止手势"的不可变快照（窗口句柄 + 是否拦截 + 时间戳，200ms 过期），内容包含排除项、桌面禁用和全屏判定；低级 hook 按下时只比较窗口句柄并读取布尔值，快照缺失、过期或窗口不匹配时才回退到一次同步判定，从而把 hook 线程与窗口/进程查询解耦。读取光标位置时会检查 `GetCursorPos` 的返回值，失败（锁屏、UAC、唤醒过渡）时保留上一份快照，避免把零坐标当成桌面窗口。刷新异常按每 10 秒最多一条记录 `refresh-failed`。
-- `GestureParserWorker.cs`：独立最高优先级解析线程的 FIFO 工作队列；合并未处理的移动事件，并保证松键事件前先处理最后一个移动点。
+- `GestureParserWorker.cs`：独立最高优先级解析线程的 FIFO 工作队列；合并未处理的移动事件，并保证松键事件前先处理最后一个移动点。每个队列动作单独捕获异常并记录，线程意外退出后会在下一次入队时自动重建，避免单次异常让整条手势流水线永久失效。
 - `GestureDirection.cs`：8 方向枚举。
 - `GestureWheelDirection.cs`：滚轮修饰方向枚举（`Up` / `Down`）。
 - `GestureRule.cs`：运行时规则以及快捷键、窗口、音量、亮度和程序动作模型；`WheelModifier` 非空时表示该规则需要方向路径 + 滚轮修饰共同匹配，`ExecuteOnWheel` 控制每格连续执行还是松键执行一次。
@@ -236,14 +238,14 @@ src\WuGesture.App\Configuration
 
 - `GestureConfig.cs`：JSON DTO；`categories` 独立保存空分类，避免以空手势规则作为分类占位。
 - `GestureConfigContract.cs`：配置和运行时共享的字符串契约常量，包括 scope、鼠标按键、动作类型、操作名、边缘触发类型/位置、边缘滚轮方向和关闭按钮行为。
-- `GestureConfigStore.cs`：加载、保存、重置默认配置，并处理本地/WebDAV 配置的 JSON 读写与 `LoadedGestureConfig` 组装；缺少或过旧版本的配置会先备份（本地配置）再按当前默认值补全可读取字段并保存为当前版本，损坏配置才重置；未来版本始终拒绝覆盖。保存采用原子写入：先写同目录的 `gestures.json.tmp` 并刷盘，再用 `File.Replace` 一步替换（不支持替换的文件系统回退到覆盖移动），任何失败路径都会清理临时文件，断电或崩溃不会留下被截断的配置。
+- `GestureConfigStore.cs`：加载、保存、重置默认配置，并处理本地/WebDAV 配置的 JSON 读写与 `LoadedGestureConfig` 组装；缺少或过旧版本的配置会先备份（本地配置）再按当前默认值补全可读取字段并保存为当前版本，损坏配置才重置；未来版本始终拒绝覆盖。无法读取配置、配置目录不可写或未来版本配置会抛出 `GestureConfigLoadException`，由 `Program` 向用户显示原因后退出；备份失败时保留原文件并以内存配置继续运行，通过 `LoadedGestureConfig.Warning` 交给窗口提示。保存采用原子写入：先写同目录的 `gestures.json.tmp` 并刷盘，再用 `File.Replace` 一步替换（不支持替换的文件系统回退到覆盖移动），任何失败路径都会清理临时文件，断电或崩溃不会留下被截断的配置。
 - `GestureConfigNormalizer.cs`：集中当前配置 schema 的空值补全、UI 设置范围校验和排除项规范化；后端仍是配置校验的最终权威。
 - `ApplicationIdentityNormalizer.cs`：集中可执行文件名/进程名的规范化，供配置、排除项和应用分类匹配复用。
 - `ConfigStorageContract.cs`：配置文件名和窗口状态文件名常量。
 - `GestureConfigMapper.cs`：把配置 DTO 映射为运行时 `GestureRule`。
 - `DefaultGestureConfig.cs`：当前用户配置快照的安全默认值，包含全局规则、空分类/应用归属、UI/应用行为和边缘操作；WebDAV 凭据不写入默认配置。
 - `DefaultGestureRules.cs`：默认全局规则。
-- `WebDavConfigSyncService.cs`：WebDAV 配置备份/恢复服务，负责测试连接、上传本地完整配置、下载远端配置并按远程路径规则创建目录。
+- `WebDavConfigSyncService.cs`：WebDAV 配置备份/恢复服务，负责测试连接、上传本地完整配置、下载远端配置并按远程路径规则创建目录。远程路径只有以 `.json` 结尾时才按文件名处理，其余按目录追加 `gestures.json`，并拒绝包含 `..` 的路径；设置页对明文 `http://` 显示传输警告。
 - `WebDavProtocolContract.cs`：WebDAV 协议方法、请求头、认证 scheme、媒体类型和超时常量。
 - `WebViewMessageTypes.cs`：桌面宿主侧 WebView 入站/出站消息类型常量。
 - `rules` 消息和保存请求会携带独立 `categories` 列表，空分类无需依赖手势规则或程序归属即可保留。
@@ -272,7 +274,7 @@ src\WuGesture.App\Configuration
 - `uiSettings.levelOsd`：音量/亮度 OSD 设置，包含 `enabled`、`displayDurationMs`、`fadeDurationMs`、`backgroundColor`、`backgroundOpacity`、`textColor`、`trackColor`、`volumeColor`、`brightnessColor`、`width`、`height`、`cornerRadius`、`position`、`offsetX` 和 `offsetY`；OSD 由全虚拟桌面透明覆盖层绘制，不再创建独立窗体；当前支持相对于鼠标所在屏幕工作区的居中、上/下居中和四角位置预设，`fadeDurationMs` 为 0 时立即消失。
 - `uiSettings.gestureSensitivity`：手势灵敏度配置，包含 `percent`，范围 0-200，默认 110；100 对应标准手感，数值越高越容易识别短距离手势。
 - `uiSettings.appBehavior`：应用行为设置，包含 `launchAtStartup`、`showConfigWindowOnLaunch`、`runAsAdministrator`、`closeButtonBehavior`、`targetWindowMode`、`disableGesturesInFullscreen`、`disableGesturesOnDesktop`、`disableEdgeActionsInFullscreen` 和 `excludedApplications`；`launchAtStartup` 默认关闭，用户主动开启后才写入自启动项。`showConfigWindowOnLaunch` 默认开启，控制普通启动时是否显示配置窗口，关闭后仅后台驻留并可从托盘打开，开机自启动始终后台运行。`runAsAdministrator` 开启后会在服务启动前以管理员权限重启，UAC 被拒绝或提权失败时应用不启动并直接退出，普通启动会先提示原因，后台启动只记录日志。关闭按钮行为支持 `minimize-to-tray`、`minimize-to-taskbar`、`exit`。`targetWindowMode` 支持默认的 `start-window` 和 `current-window`。全屏禁用开关默认关闭，分别停止手势识别和边缘操作。排除项包含 `name`、`displayName`、`path` 和 `disableEdgeActions`；命中的程序不执行鼠标手势，勾选 `disableEdgeActions` 时也会禁用边缘操作。临时暂停只由托盘菜单和配置界面侧栏状态标识控制，不写入配置。
-- `uiSettings.webDav`：WebDAV 备份设置，包含 `address`、`userName`、`password` 和 `remotePath`。设置页可把当前完整配置导出到本地 JSON，或从本地 JSON 导入并覆盖主配置文件；本地导入/导出不包含窗口状态。设置页也可测试 WebDAV 连接；测试当前配置成功后，才允许把当前完整配置保存到 WebDAV，或从 WebDAV 下载配置并覆盖本地配置；恢复后会刷新规则匹配、边缘操作、应用行为和 UI 设置。
+- `uiSettings.webDav`：WebDAV 备份设置，包含 `address`、`userName`、`password` 和 `remotePath`。设置页可把当前完整配置导出到本地 JSON，或从本地 JSON 导入并覆盖主配置文件；本地导入/导出不包含窗口状态。导出的 JSON 会清空 `webDav.password`，本地配置和 WebDAV 备份仍保留口令。设置页也可测试 WebDAV 连接；测试当前配置成功后，才允许把当前完整配置保存到 WebDAV，或从 WebDAV 下载配置并覆盖本地配置；恢复后会刷新规则匹配、边缘操作、应用行为和 UI 设置。地址使用明文 `http://` 时设置页会显示传输警告；远程路径只有以 `.json` 结尾才按文件名处理，否则按目录追加 `gestures.json`。
 - `uiSettings.update`：更新设置，包含 `checkForUpdates`（默认 `true`）和 `source`（`gitee` 或 `github`，默认 `gitee`），编辑入口在“设置 > 更新”；侧栏最外层的“关于&更新”页只读展示当前取值并提供检查更新按钮。进程启动时只自动检查一次；关闭开关后手动检查仍可用。Gitee 是默认源，国内访问更稳定；检查时会比较两个源的版本号并取较高者，因此任一源落后都不会造成回退安装，两个源都不可用时才报告失败。更新包下载到 `%LocalAppData%\WuGesture\updates\<版本>`，校验通过后由独立的 PowerShell 脚本在当前进程退出后替换安装目录并重启，替换日志写入 `%LocalAppData%\WuGesture\logs\update-*.log`。
 - `uiSettings.onboarding`：首次启动引导设置，当前包含 `welcomeCompleted`（默认 `false`）。前端在收到宿主 `rules` 消息后才判断，避免默认值先触发弹窗；完成或跳过后写回 `true` 并随主配置保存，因此导入/导出和 WebDAV 恢复会一并带上该状态，恢复默认设置后会重新弹出。侧栏底部「?」打开的帮助弹窗提供「重新观看引导」，只重开弹窗、不清除标记。
 
@@ -310,8 +312,9 @@ src\WuGesture.App\Web\PROJECT_STRUCTURE.md
 宿主集成：
 
 - 配置界面由 WebView2 承载：桌面宿主通过虚拟主机 `https://gesture.wu.philosophy/` 加载宿主输出目录中的 `Web`；窗口使用宿主自绘标题栏（`MainForm.Chrome.cs`），标题为 `WuGesture`。界面结构、侧栏和页面交互见 Web 子项目文档。
-- 前端主题引擎（`Web/src/theme/scheme.ts`）以 seed 生成浅/深两套 MD3 角色色板并注入 `<style id="md-scheme">`，首屏使用 `localStorage` 缓存；切换明暗只翻转 `data-theme`，切换配色只替换样式文本。前端在配置加载后把标题栏四个颜色字段回写为色板的 `surface` / `onSurface`，宿主保存配置时同步更新标题栏、WebView 默认底色和托盘菜单。
+- 前端主题引擎（`Web/src/theme/scheme.ts`）以 seed 生成浅/深两套 MD3 角色色板并注入 `<style id="md-scheme">`，首屏使用 `localStorage` 缓存（色板和明暗模式分开缓存），挂载前先套用上次的模式，避免深色配置首屏闪白；宿主配置到达前不按默认值改写 `data-theme`。切换明暗只翻转 `data-theme`，切换配色只替换样式文本。前端在配置加载后把标题栏四个颜色字段回写为色板的 `surface` / `onSurface`，宿主保存配置时同步更新标题栏、WebView 默认底色和托盘菜单。
 - 宿主下发的 `rules` WebView 消息包含程序集 `appVersion`、配置、规则、程序、边缘操作和 UI 设置；运行态程序和排除项会附带应用图标，外观设置还会附带仅运行态的 `systemAccent`。
+- 运行时动作失败通过 `gesture-action-failed` / `edge-action-failed` 通知前端（携带动作名和错误信息），前端用 Snackbar 提示并对同一错误做 5 秒去重，不再静默丢弃。
 - 更新流程使用独立消息：前端发送 `check-update`、`start-update`、`cancel-update`、`open-update-page`，宿主回传 `update-available`、`update-none`、`update-error`、`update-progress`、`update-failed`、`update-restarting`、`update-completed`；具体字段见 Web 子项目文档。
 - `WuGesture.App.csproj` 在 `.NET` 构建前自动执行 `pnpm exec vite build --outDir <宿主输出目录>\Web`；Vite 会清空该最终输出目录，源码 `Web` 目录不会被覆盖。普通构建输出到 `$(OutputPath)\Web`，`dotnet publish -o` 输出到实际 `$(PublishDir)\Web`，不生成或复制中间 `dist` 目录。
 - 前端构建是增量的：`WebFrontendSource` 收集 `Web` 目录下除 `node_modules`、`*.md` 和 `*.test.js` 之外的所有文件，作为 `BuildWebFrontend` 目标的 `Inputs`，输出为宿主 `Web\index.html`；源文件都不比 `index.html` 新时 MSBuild 直接跳过整个 `vite build`（只改 C# 的构建不会再跑前端）。测试文件不进入前端产物，也不会触发前端重建。Vite 会对资源名做哈希，任何真实前端改动都会重写 `index.html`，因此这个比较不会漏构建。
@@ -399,7 +402,7 @@ dotnet test WuGesture.slnx --collect:"XPlat Code Coverage" --results-directory a
 
 持续集成：
 
-- `.github\workflows\test.yml` 是共享的测试流程：安装前端依赖、检查 Prettier 格式、运行前端 TypeScript 类型检查（`pnpm typecheck`）、运行前端 Vitest 测试、用 `dotnet build -warnaserror` 构建（分析器警告即失败）、用 `dotnet format --verify-no-changes` 检查 C# 格式、运行带覆盖率的测试，再用 `scripts\check-coverage.ps1` 校验覆盖率下限并上传报告。
+- `.github\workflows\test.yml` 是共享的测试流程：用 `pnpm/action-setup` 固定 pnpm 版本、安装前端依赖、检查 Prettier 格式、运行前端 TypeScript 类型检查（`pnpm typecheck`，含 `constants`/`utils` 的 JS 检查）、运行前端 Vitest 测试、用 `dotnet build -warnaserror` 构建（分析器警告即失败）、用 `dotnet format --verify-no-changes` 检查 C# 格式、运行带覆盖率的测试，再用 `scripts\check-coverage.ps1` 校验覆盖率下限（23% 行 / 21% 分支）并上传报告。
 - `.github\workflows\ci.yml` 在推送到 `main`、提交 PR 或手动触发时调用 `test.yml`，用于日常反馈。
 - `.github\workflows\release.yml` 在 `v*` 标签上先调用 `test.yml`，测试失败时不会打包、不会创建 Release；失败后需要修复代码、删除标签并重新打标签。
 - `.github\dependabot.yml` 每周分组检查 NuGet、前端 npm 和 GitHub Actions 的依赖更新；依赖 PR 会走同一套测试流程。
@@ -417,8 +420,8 @@ dotnet test WuGesture.slnx --collect:"XPlat Code Coverage" --results-directory a
 自动发行：
 
 - `scripts\publish-app.ps1`：发布应用目录的通用步骤，负责关闭运行实例、执行 `dotnet publish`、校验直接构建到输出目录的 Web 前端产物，并复制 `WebView2Loader.dll`；它会将同一个应用目录同时传给 `dotnet publish -o` 和 MSBuild `OutputPath`，避免常规编译产物落到其他目录。
-- `scripts\verify-package.ps1`：校验发行 ZIP 的完整性——必需文件（`WuGesture.exe`、`Web\index.html`、`WebView2Loader.dll`、WebView2 程序集等）齐全、`Web\index.html` 引用的哈希资源都存在、没有混入 `node_modules` 或 `*.test.js`，并核对 `WuGesture.exe` 文件版本与标签版本一致。`package-release.ps1` 打包后会自动调用它，校验失败时不会继续发布。
-- `scripts\check-coverage.ps1`：读取最新一份 `coverage.cobertura.xml`，校验行/分支覆盖率不低于脚本内的下限（行 21%、分支 19%），供 CI 阻止覆盖率回退；可用 `-MinimumLineRate` / `-MinimumBranchRate` 临时覆盖。
+- `scripts\verify-package.ps1`：校验发行 ZIP 的完整性——必需文件（`WuGesture.exe`、`Web\index.html`、`WebView2Loader.dll`、WebView2 程序集等）齐全、`Web\index.html` 引用的哈希资源都存在、没有混入 `node_modules` 或 `*.test.*` / `*.spec.*`，并核对 `WuGesture.exe` 文件版本与标签版本一致。`package-release.ps1` 打包后会自动调用它，校验失败时不会继续发布。
+- `scripts\check-coverage.ps1`：校验行/分支覆盖率不低于脚本内的下限（行 23%、分支 21%），只比较最新一批（10 分钟窗口）的 `coverage.cobertura.xml`，同批次每份报告都必须达标，供 CI 阻止覆盖率回退；可用 `-MinimumLineRate` / `-MinimumBranchRate` 临时覆盖。
 - `scripts\package-debug.ps1`：无需参数，调用 `publish-app.ps1` 生成 Debug `win-x64` 发布目录和 `WuGesture-debug-windows-x64.zip`。
 - `scripts\package-release.ps1`：基于已创建的 `v*` Git 标签生成 framework-dependent `win-x64` 发布目录、版本化 ZIP 包和从相邻标签之间提交整理的 `RELEASE_NOTES.md`；ZIP 内的根目录固定为 `WuGesture`，而 ZIP 文件名保留版本号，ZIP 的 SHA256 以 `SHA256 (<ZIP 文件名>): <哈希>` 一行写入更新说明末尾，应用内更新直接读取发行说明校验，不再下载单独的校验文件。发行包不包含 .NET，缺少 .NET 10 Desktop Runtime 时由 .NET Host 显示系统安装提示。
 - `.github\workflows\release.yml`：GitHub 收到 `v*` 标签后先运行共享测试流程 `test.yml`，通过后才构建发行包、创建 GitHub Release 并只上传 ZIP；已存在发行版时会覆盖附件并同步刷新更新说明，保证说明里的 SHA256 与新 ZIP 一致。配置 `GITEE_REPOSITORY` 和 `GITEE_TOKEN` secrets 后，会镜像 `main` 和标签到 Gitee，并将相同的附件和更新说明发布至 Gitee。

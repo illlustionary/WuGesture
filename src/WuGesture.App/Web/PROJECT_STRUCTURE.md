@@ -31,6 +31,7 @@ src\WuGesture.App\Web
 - `pnpm-lock.yaml`：锁定依赖树。
 - `pnpm-workspace.yaml`：工作区配置，并放行 `@parcel/watcher` 的本地构建脚本，避免非交互环境下依赖安装中断。
 - `tsconfig.json`：TypeScript / Vue 类型检查配置；`allowJs: true` 且 `checkJs: false`，只检查 `src` 下的 `.ts`、`.d.ts` 和 `.vue`，存量 `.js` 与 SFC 不受影响。`@/*` 指向 `src/*`，`@resources/*` 指向桌面宿主的 `Resources/*`。原 `jsconfig.json` 已被该文件取代。
+- `tsconfig.checkjs.json`：分阶段开启的 JS 类型检查配置，继承 `tsconfig.json`，第一阶段的 `include` 只包含 `src\constants` 与 `src\utils` 的 `.js`（`checkJs: true`，并关闭 `noImplicitAny` 以避免存量代码大量隐式 any 报错）；`pnpm typecheck` 会依次运行两份配置，后续可把 `gestureEditor` 等目录加入 `include`。
 - `uno.config.js`：UnoCSS 配置，集中定义页面区块、表单、列表等常用 shortcuts；颜色统一映射到 `--md-sys-color-*` 语义令牌，shortcut 里不再出现写死的 rgba 色值。
 - `vite.config.js`：Vite 构建配置，包含 `vite-svg-loader`、UnoCSS Vite 插件，以及 `@` 到 `src`、`@resources` 到桌面宿主 `Resources` 目录的路径别名。`vite-svg-loader` 的 SVGO 配置覆盖了 `removeViewBox`，保证 24×24 描边图标在按 CSS 缩放到 18px 等尺寸时仍能等比缩放。`test.server.deps.inline` 把 `@material/material-color-utilities` 交给 Vite 解析，规避 0.4.0 包内无扩展名相对导入在 Node ESM 下无法加载的问题。`rawSourcePlugin` 提供 `virtual:raw-source?path=<相对路径>&raw` 虚拟模块，按源码文本返回仓库文件，供对比度测试读取 `_color.scss` 的真实令牌（`.scss` 直接 `?raw` 导入会被 CSS 管线接管并返回空字符串）。
 - `PROJECT_STRUCTURE.md`：当前 Web 子项目地图。
@@ -75,7 +76,7 @@ src
 - `src\theme\tokens.ts`：颜色角色、Typescale、形状、间距和动效的类型契约，以及 `colorVar()` 等引用工具；新增令牌时必须与 SCSS 同步。
 - `src\theme\palettes.ts`：8 套预设 seed 色板（蓝/青/绿/紫/粉/橙/红/灰）与默认色 `#529EF1`；保存色值而非索引。
 - `src\theme\scheme.ts`：MD3 配色引擎，封装 `@material/material-color-utilities`，以 seed + 变体生成浅/深两套完整角色色板；负责颜色/枚举归一化、Windows 强调色可用性判断与回退，以及标题栏 `surface` / `onSurface` 派生。`scheme.test.ts` 覆盖确定性、变体和标题栏派生；`contrast.test.ts` 用 WCAG 2.1 公式对 8 套预设 × 浅/深色的正文（≥4.5）、图形（≥3）、装饰（≥1.5）配对做矩阵断言，并对浅色 `outline-variant` / `surface-container` 的 1.46–1.47 已知差距做双向校验；同时通过 `virtual:raw-source` 读取 `_color.scss` 里固定的 `success` / `warning` 扩展角色，断言 `on-*` 配对、关于页状态文字和 Snackbar 图标（`success-container` 等）的对比度。
-- `src\theme\applyScheme.ts`：把生成的色板注入 `<style id="md-scheme">`（同时写入 `:root` 与 `[data-theme='dark']`），用 `localStorage` 缓存首屏色板，并只切换 `data-theme` 完成明暗模式切换。
+- `src\theme\applyScheme.ts`：把生成的色板注入 `<style id="md-scheme">`（同时写入 `:root` 与 `[data-theme='dark']`），用 `localStorage` 缓存首屏色板和明暗模式（两个独立键），挂载前先套用上次模式；之后只切换 `data-theme` 完成明暗模式切换。
 - `src\types\ui.ts`：基础控件的共享类型契约（`SelectOption`、`SelectOptionValue`、`ButtonVariant`、`ButtonSize`、`ChipVariant`）。
 
 ## MD3 Base Controls
@@ -139,7 +140,7 @@ src\components
 src\composables
 ```
 
-- `useAppearanceTheme.ts`：配置界面主题入口，监听外观配置并生成/注入色板，跟随系统明暗变化，处理侧栏三态切换（跟随系统 → 浅色 → 深色 → 跟随系统），并在配置加载完成后把标题栏四个颜色字段回写保存。
+- `useAppearanceTheme.ts`：配置界面主题入口，监听外观配置并生成/注入色板，跟随系统明暗变化，处理侧栏三态切换（跟随系统 → 浅色 → 深色 → 跟随系统），并在配置加载完成后把标题栏四个颜色字段回写保存；宿主配置到达前不按默认值写入 `data-theme`，避免浅色配置首帧先被深色默认值覆盖。
 - `useGestureEditorEventListeners.js`：应用壳注册的事件监听层，订阅手势编辑器通知和导航意图，并分别调用 Toast 与 Vue Router。
 - `useQuickSearch.js`：全局快速搜索的弹层开关、`Ctrl+K` 生命周期与结果直达，协调搜索 store 的 scope 选择、导航层和规则编辑入口。
 - `useSidebarScopeActions.js`：侧栏分类/程序的新建、重命名、删除、应用选择完成后的 scope 选择和导航协调。
@@ -290,6 +291,7 @@ src\pages
 - `"get-status"`
 - `{ type: "select-application", requestId: "...", category: "..." }`
 - `{ type: "pick-application-window", requestId: "...", category: "..." }`
+- `{ type: "open-application-folder", path: "C:\\...\\app.exe" }`：在资源管理器中打开程序所在目录（程序存在时选中文件）。
 - `{ type: "start-gesture-recording", requestId: "..." }`
 - `{ type: "stop-gesture-recording" }`
 - `{ type: "set-gesture-paused", paused: true/false }`：仅控制规则编辑/录制期间的临时暂停。
@@ -314,11 +316,11 @@ src\pages
 
 - `{ type: "status", status: "running|paused|..." }`
 - `{ type: "rules", appVersion: "v...", rules: [{ scope, mouseButton, pattern, wheelModifier, executeOnWheel, actionName, actionType, ... }], applications: [{ name, displayName, path, categories, icon }, ...], edgeActions: [...], uiSettings: { appearance: { theme, colorSource, seedColor, schemeVariant, systemAccent, ... }, sidebar: { collapsed }, update: { checkForUpdates, source }, onboarding: { welcomeCompleted }, ... }, ... }`；`wheelModifier` 为 `up`/`down` 时表示方向手势叠加了滚轮修饰，`pattern` 可以为空表示按住直接滚动；`executeOnWheel` 决定每格连续执行还是松键执行一次。`appVersion` 来自程序集版本，仅用于配置界面展示，不写入配置文件；`uiSettings.sidebar.collapsed` 保存侧栏收起状态；`uiSettings.onboarding.welcomeCompleted` 决定是否自动弹出首次引导；`categories` 的顺序决定分类规则冲突时的覆盖顺序，越靠前优先级越高，其中 `uiSettings.appBehavior.excludedApplications` 的运行态消息项会额外带 `icon`，不写入配置文件。`uiSettings.appearance.systemAccent` 只出现在宿主下发的消息里，由宿主读取 Windows 强调色，不写入配置文件。
-- `{ type: "application-selected", requestId: "...", name: "...", displayName: "...", path: "...", category: "...", icon: "..." }`
+- `{ type: "application-selected", requestId: "...", name: "...", displayName: "...", path: "...", category: "...", icon: "..." }`：用户取消选择或窗口拾取被取消时也会回传同样的消息，`name` / `path` 为空，前端据此清理待处理请求。
 - `{ type: "gesture-recorded", requestId: "...", button: "right|middle", pattern: ["Down", "Right"] }`
 - `{ type: "hotkey-recorded", requestId: "...", keys: ["Control", "W"] }`
-- `{ type: "gesture-action-failed", ... }`
-- `{ type: "edge-action-failed", ... }`
+- `{ type: "gesture-action-failed", pattern: ["Down", "Right"], action: "动作名", error: "..." }`：手势动作执行失败；前端用 Snackbar 提示，同一错误 5 秒内只提示一次。
+- `{ type: "edge-action-failed", action: "动作名", error: "..." }`：边缘动作执行失败；提示方式同手势动作失败。
 - `{ type: "config-result", operation: "save|export|import|reload|reset|action", success: true|false, message: "..." }`；`save` 成功只更新内部状态，其余明确操作结果显示 toast，任意失败均显示错误 toast。
 - `{ type: "webdav-result", operation: "test|save|restore", success: true/false, message: "..." }`
 - `{ type: "update-available", currentVersion, latestVersion, source, preferredSource, notes, publishedAt, htmlUrl, assetName, assetSize, manual }`：发现新版本；`source` 是实际提供发行版的源，`preferredSource` 是设置里选择的源，两者不同表示已自动回退；`manual` 为 `false` 时表示启动自动检查。

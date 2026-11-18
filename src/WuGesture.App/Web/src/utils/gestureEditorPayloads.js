@@ -99,12 +99,15 @@ export function toPayloadUiSettings(settings) {
   const payload = normalizeUiSettings(settings)
   // 系统强调色由宿主每次读取，只参与前端配色，不写入配置文件。
   delete payload.appearance.systemAccent
-  payload.appBehavior.excludedApplications = payload.appBehavior.excludedApplications.map(application => ({
-    name: application.name,
-    displayName: application.displayName,
-    path: application.path,
-    disableEdgeActions: application.disableEdgeActions
-  }))
+  // 排除项图标同样是宿主的运行态信息；保存时只写身份字段。
+  payload.appBehavior.excludedApplications = /** @type {any} */ (
+    payload.appBehavior.excludedApplications.map(application => ({
+      name: application.name,
+      displayName: application.displayName,
+      path: application.path,
+      disableEdgeActions: application.disableEdgeActions
+    }))
+  )
   return payload
 }
 

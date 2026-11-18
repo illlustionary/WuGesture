@@ -92,7 +92,7 @@ export function useGestureRuleEditor({
     const executeOnWheel = hasWheelModifier && Boolean(draft.executeOnWheel)
     const actionType = normalizeActionType(draft.actionType)
 
-    if (pattern.length === 0 && !hasWheelModifier && !allowIncomplete) {
+    if (pattern.length === 0 && !hasWheelModifier) {
       state.gestureRecognitionMessage = '请先录制方向手势，或选择滚轮修饰。'
       return false
     }
@@ -176,6 +176,11 @@ export function useGestureRuleEditor({
   }
 
   function removeRule(id) {
+    if (state.rules.length <= 1) {
+      setMessage('至少保留一条手势规则；如需停用，请修改该规则的动作。', 'error')
+      return
+    }
+
     state.rules = state.rules.filter(rule => rule.id !== id)
     ensureSelection(SCOPE_KINDS.category)
     ensureSelection(SCOPE_KINDS.app)
@@ -229,7 +234,6 @@ export function useGestureRuleEditor({
     const requestId = createRequestId()
     state.gestureRecordingActive = true
     state.gestureRecordingRequestId = requestId
-    state.gestureDraft.patternText = ''
     state.gestureRecognitionMessage = '录制中，再点一次停止。按住右键或中键绘制手势。'
     webView.postSilent({
       type: WEBVIEW_MESSAGE_TYPES.startGestureRecording,
@@ -309,8 +313,6 @@ export function useGestureRuleEditor({
     }
 
     const pattern = Array.isArray(message.pattern) ? message.pattern.filter(Boolean) : []
-    state.gestureDraft.patternText = toPatternText(pattern)
-    state.gestureDraft.mouseButton = normalizeMouseButton(message.button)
     state.gestureRecordingActive = false
     state.gestureRecordingRequestId = ''
 
@@ -318,6 +320,9 @@ export function useGestureRuleEditor({
       state.gestureRecognitionMessage = '未识别到有效手势。'
       return
     }
+
+    state.gestureDraft.patternText = toPatternText(pattern)
+    state.gestureDraft.mouseButton = normalizeMouseButton(message.button)
 
     if (
       findDuplicateGestureRule({

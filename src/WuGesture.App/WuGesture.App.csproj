@@ -49,7 +49,7 @@
 
   <ItemGroup>
     <!-- Any file in the Vite project counts as an input for the incremental frontend build. -->
-    <WebFrontendSource Include="Web\**\*" Exclude="Web\node_modules\**\*;Web\*.md;Web\**\*.test.js" />
+    <WebFrontendSource Include="Web\**\*" Exclude="Web\node_modules\**\*;Web\*.md;Web\**\*.md;Web\**\*.test.*;Web\**\*.spec.*" />
   </ItemGroup>
 
   <ItemGroup>

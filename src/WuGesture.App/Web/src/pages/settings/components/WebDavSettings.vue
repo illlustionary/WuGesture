@@ -18,6 +18,7 @@ const emit = defineEmits(['queue-persist', 'flush-persist', 'test', 'restore', '
 
 const showPassword = ref(false)
 const busy = computed(() => Boolean(props.operation))
+const insecureAddress = computed(() => /^http:\/\//i.test(String(props.draft.webDav?.address ?? '').trim()))
 
 const webDavTestState = computed(() => {
   if (props.ready && props.testState === 'success') {
@@ -98,6 +99,14 @@ const webDavTestState = computed(() => {
         </div>
       </SettingsField>
     </SettingsFormGrid>
+
+    <p
+      v-if="insecureAddress"
+      class="webdav-insecure"
+      role="status"
+    >
+      当前地址使用明文 http，账号和密码可能在网络中被截获。建议改用 https。
+    </p>
 
     <template #footer>
       <AppButton
@@ -188,5 +197,15 @@ const webDavTestState = computed(() => {
 
 .webdav-test-button.webdav-test-button--error {
   border-color: var(--md-sys-color-error);
+}
+
+.webdav-insecure {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--md-sys-shape-corner-small);
+  background: color-mix(in srgb, var(--md-sys-color-error) 10%, transparent);
+  color: var(--md-sys-color-error);
+  font-size: var(--md-sys-typescale-body-small-size);
+  line-height: var(--md-sys-typescale-body-small-line-height);
 }
 </style>

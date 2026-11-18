@@ -260,7 +260,7 @@ internal sealed class WebViewHost : IDisposable
 
         try
         {
-            Process.Start(new ProcessStartInfo
+            using var browser = Process.Start(new ProcessStartInfo
             {
                 FileName = uri.AbsoluteUri,
                 UseShellExecute = true

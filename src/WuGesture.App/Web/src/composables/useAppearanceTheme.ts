@@ -141,7 +141,18 @@ export function useAppearanceTheme(editor: AppearanceEditor) {
     }
   )
 
-  watch(isDarkTheme, isDark => setThemeMode(isDark), { immediate: true })
+  // 宿主配置到达前 state 里只是默认值；此时写 `data-theme` 会把「深色默认值」画到浅色配置上。
+  watch(
+    () => [isDarkTheme.value, editor.state.hostConfigLoaded] as const,
+    ([isDark, configLoaded]) => {
+      if (!configLoaded) {
+        return
+      }
+
+      setThemeMode(isDark)
+    },
+    { immediate: true }
+  )
 
   systemThemeQuery.addEventListener('change', updateSystemTheme)
 

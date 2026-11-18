@@ -38,11 +38,13 @@ internal sealed class ApplicationPickerCoordinator
             if (result == DialogResult.Abort)
             {
                 postConfigResult(false, picker.ErrorMessage, "pick-application-window");
+                PostApplicationCancelled(message);
                 return;
             }
 
             if (result != DialogResult.OK || picker.PickedApplication is null)
             {
+                PostApplicationCancelled(message);
                 return;
             }
 
@@ -74,6 +76,7 @@ internal sealed class ApplicationPickerCoordinator
 
             if (dialog.ShowDialog(getDialogOwner()) != DialogResult.OK)
             {
+                PostApplicationCancelled(message);
                 return;
             }
 
@@ -107,7 +110,7 @@ internal sealed class ApplicationPickerCoordinator
             // "C:\Program Files\App" is split into two arguments and the wrong location opens.
             // When the executable is still there, /select opens the folder with the file selected.
             var hasFile = File.Exists(path);
-            _ = Process.Start(new ProcessStartInfo
+            using var explorer = Process.Start(new ProcessStartInfo
             {
                 FileName = "explorer.exe",
                 UseShellExecute = true,
@@ -137,6 +140,12 @@ internal sealed class ApplicationPickerCoordinator
         return isDarkTheme
             ? Color.FromArgb(0xED, 0xF2, 0xF7)
             : Color.FromArgb(0x16, 0x20, 0x2B);
+    }
+
+    private void PostApplicationCancelled(SelectApplicationWebMessage? message)
+    {
+        // 取消也要回执，否则前端的 pendingRequestIds 会永久残留，后续选择无法清理。
+        PostApplicationSelected(message?.RequestId ?? "", "", "", "", message?.Category ?? "");
     }
 
     private void PostApplicationSelected(string requestId, string name, string displayName, string path, string category)

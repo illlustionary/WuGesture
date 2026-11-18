@@ -32,11 +32,32 @@ public sealed class GestureConfigStore
         if (!File.Exists(ConfigPath))
         {
             var defaultConfig = DefaultGestureConfig.Create();
-            Save(defaultConfig);
+            try
+            {
+                Save(defaultConfig);
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+                throw new GestureConfigLoadException(
+                    $"无法在 {Path.GetDirectoryName(ConfigPath)} 创建配置文件。请检查目录写入权限或磁盘空间后重试。",
+                    exception);
+            }
+
             return new LoadedGestureConfig(ConfigPath, defaultConfig, GestureConfigMapper.ToRules(defaultConfig));
         }
 
-        var json = File.ReadAllText(ConfigPath);
+        string json;
+        try
+        {
+            json = File.ReadAllText(ConfigPath);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            throw new GestureConfigLoadException(
+                $"无法读取配置文件 {ConfigPath}。请确认文件未被占用且当前用户有读取权限。",
+                exception);
+        }
+
         if (!TryReadSchemaVersion(json, out var schemaVersion, out var invalidReason))
         {
             return BackupAndReset(invalidReason);
@@ -44,7 +65,7 @@ public sealed class GestureConfigStore
 
         if (schemaVersion is > GestureConfigContract.Schema.CurrentVersion)
         {
-            throw new InvalidOperationException(
+            throw new GestureConfigLoadException(
                 $"配置版本 {schemaVersion} 高于当前支持版本 {GestureConfigContract.Schema.CurrentVersion}，请使用较新版本打开后再导出。");
         }
 
@@ -63,14 +84,26 @@ public sealed class GestureConfigStore
             return BackupAndMigrate(config, invalidReason);
         }
 
+        string? warning = null;
         if (config.Rules.Count == 0)
         {
             var defaultConfig = DefaultGestureConfig.Create();
             config.Rules = defaultConfig.Rules;
-            Save(config);
+            try
+            {
+                Save(config);
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+                warning = $"无法写入默认规则：{exception.Message}。本次运行使用内存中的默认规则。";
+                AppLogger.Warning("GestureConfigStore", "save-failed", warning, exception);
+            }
         }
 
-        return new LoadedGestureConfig(ConfigPath, config, GestureConfigMapper.ToRules(config));
+        return new LoadedGestureConfig(ConfigPath, config, GestureConfigMapper.ToRules(config))
+        {
+            Warning = warning
+        };
     }
 
     public LoadedGestureConfig SaveAndLoad(GestureConfig config)
@@ -175,30 +208,82 @@ public sealed class GestureConfigStore
 
     private LoadedGestureConfig BackupAndReset(string reason)
     {
-        var backupPath = CreateBackupPath();
-        File.Copy(ConfigPath, backupPath);
-
         var defaultConfig = DefaultGestureConfig.Create();
-        Save(defaultConfig);
+        if (!TryCreateBackup(out var backupPath, out var warning))
+        {
+            return new LoadedGestureConfig(ConfigPath, defaultConfig, GestureConfigMapper.ToRules(defaultConfig))
+            {
+                Warning = warning
+            };
+        }
+
+        try
+        {
+            Save(defaultConfig);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            warning = $"默认配置无法写入：{exception.Message}。原配置已备份为 {Path.GetFileName(backupPath)}。";
+            AppLogger.Warning("GestureConfigStore", "save-failed", warning, exception);
+        }
+
         AppLogger.Warning(
             "GestureConfigStore",
             "UnsupportedConfigReset",
             $"{reason}，已备份为 {Path.GetFileName(backupPath)} 并重置为默认配置。");
-        return new LoadedGestureConfig(ConfigPath, defaultConfig, GestureConfigMapper.ToRules(defaultConfig));
+        return new LoadedGestureConfig(ConfigPath, defaultConfig, GestureConfigMapper.ToRules(defaultConfig))
+        {
+            Warning = warning
+        };
     }
 
     private LoadedGestureConfig BackupAndMigrate(GestureConfig config, string reason)
     {
-        var backupPath = CreateBackupPath();
-        File.Copy(ConfigPath, backupPath);
-
         config.SchemaVersion = GestureConfigContract.Schema.CurrentVersion;
-        Save(config);
+        if (!TryCreateBackup(out var backupPath, out var warning))
+        {
+            return new LoadedGestureConfig(ConfigPath, config, GestureConfigMapper.ToRules(config))
+            {
+                Warning = warning
+            };
+        }
+
+        try
+        {
+            Save(config);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            warning = $"迁移后的配置无法写入：{exception.Message}。原配置已备份为 {Path.GetFileName(backupPath)}。";
+            AppLogger.Warning("GestureConfigStore", "save-failed", warning, exception);
+        }
+
         AppLogger.Information(
             "GestureConfigStore",
             "LegacyConfigMigrated",
             $"{reason}，已备份为 {Path.GetFileName(backupPath)} 并自动迁移到当前配置版本。");
-        return new LoadedGestureConfig(ConfigPath, config, GestureConfigMapper.ToRules(config));
+        return new LoadedGestureConfig(ConfigPath, config, GestureConfigMapper.ToRules(config))
+        {
+            Warning = warning
+        };
+    }
+
+    private bool TryCreateBackup(out string backupPath, out string? warning)
+    {
+        backupPath = "";
+        warning = null;
+        try
+        {
+            backupPath = CreateBackupPath();
+            File.Copy(ConfigPath, backupPath);
+            return true;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            warning = $"无法备份原配置：{exception.Message}。原文件保持不变，本次运行使用内存中的配置。";
+            AppLogger.Warning("GestureConfigStore", "backup-failed", warning, exception);
+            return false;
+        }
     }
 
     private static bool TryReadSchemaVersion(string json, out int? schemaVersion, out string reason)

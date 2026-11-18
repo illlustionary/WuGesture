@@ -32,9 +32,10 @@ export function useGestureEditorApplicationPicker({
     }
 
     const requestId = createRequestId()
+    const category = state.applicationPickerCategory
     pendingRequestIds.add(requestId)
     closeApplicationPickerState()
-    webView.post({ type, requestId, category: '' })
+    webView.post({ type, requestId, category })
   }
 
   function takeSelectedApplication(message) {

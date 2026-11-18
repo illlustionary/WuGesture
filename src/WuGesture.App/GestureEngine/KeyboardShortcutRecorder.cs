@@ -51,6 +51,13 @@ public sealed class KeyboardShortcutRecorder : IDisposable
         requestId = "";
         pressedKeys.Clear();
         recordedKeys.Clear();
+        // The hook is installed on the UI thread; leaving it installed after recording makes every
+        // keystroke in the system pass through this window's message loop.
+        if (hookId != IntPtr.Zero)
+        {
+            UnhookWindowsHookEx(hookId);
+            hookId = IntPtr.Zero;
+        }
     }
 
     public void Dispose()
@@ -62,12 +69,6 @@ public sealed class KeyboardShortcutRecorder : IDisposable
 
         disposed = true;
         Stop();
-        if (hookId != IntPtr.Zero)
-        {
-            UnhookWindowsHookEx(hookId);
-            hookId = IntPtr.Zero;
-        }
-
         GC.SuppressFinalize(this);
     }
 

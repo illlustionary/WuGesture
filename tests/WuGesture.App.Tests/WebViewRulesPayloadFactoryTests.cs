@@ -179,7 +179,7 @@ public sealed class WebViewRulesPayloadFactoryTests
             config,
             GestureConfigMapper.ToRules(config));
 
-        using var document = JsonDocument.Parse(WebViewRulesPayloadFactory.Create(loadedConfig));
+        using var document = JsonDocument.Parse(WebViewRulesPayloadFactory.Create(loadedConfig, "#123456"));
         var appearance = document.RootElement
             .GetProperty("uiSettings")
             .GetProperty("appearance");
@@ -191,7 +191,7 @@ public sealed class WebViewRulesPayloadFactoryTests
         Assert.Equal(
             GestureConfigContract.AppearanceSchemeVariants.Vibrant,
             appearance.GetProperty("schemeVariant").GetString());
-        Assert.Equal(WindowsAccentColor.Read(), appearance.GetProperty("systemAccent").GetString());
+        Assert.Equal("#123456", appearance.GetProperty("systemAccent").GetString());
     }
 
     [Fact]

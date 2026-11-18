@@ -34,17 +34,16 @@ public sealed partial class MainForm
     private void ApplyWindowTheme(AppearanceUiSettings appearance)
     {
         trayMenuController?.ApplyAppearance(appearance);
-        if (!TryResolveWindowThemeColors(appearance, out var captionColor, out var textColor, out var useDarkPalette))
-        {
-            return;
-        }
+        ResolveWindowThemeColors(appearance, out var captionColor, out var textColor, out var useDarkPalette);
 
+        // Each colour falls back independently, so one malformed field cannot leave the whole window with the
+        // white first-paint background.
         BackColor = captionColor;
         webViewHost.SetInitialAppearance(captionColor, useDarkPalette);
         ApplyTitleBarTheme(captionColor, textColor, useDarkPalette);
     }
 
-    private static bool TryResolveWindowThemeColors(
+    private static void ResolveWindowThemeColors(
         AppearanceUiSettings appearance,
         out Color captionColor,
         out Color textColor,
@@ -52,13 +51,14 @@ public sealed partial class MainForm
     {
         useDarkPalette = appearance.Theme == GestureConfigContract.AppearanceThemes.Dark ||
             (appearance.Theme == GestureConfigContract.AppearanceThemes.System && SystemTheme.PrefersDarkMode());
+        var captionFallback = useDarkPalette ? Color.FromArgb(0x1B, 0x22, 0x2B) : Color.FromArgb(0xFF, 0xFF, 0xFF);
+        var textFallback = useDarkPalette ? Color.FromArgb(0xED, 0xF2, 0xF7) : Color.FromArgb(0x16, 0x20, 0x2B);
         captionColor = GestureColorParser.Parse(
             useDarkPalette ? appearance.DarkTitleBarColor : appearance.LightTitleBarColor,
-            Color.Empty);
+            captionFallback);
         textColor = GestureColorParser.Parse(
             useDarkPalette ? appearance.DarkTitleBarTextColor : appearance.LightTitleBarTextColor,
-            Color.Empty);
-        return !captionColor.IsEmpty && !textColor.IsEmpty;
+            textFallback);
     }
 
     private void OnSystemUserPreferenceChanged(object sender, UserPreferenceChangedEventArgs e)

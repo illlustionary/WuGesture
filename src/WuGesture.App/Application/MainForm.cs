@@ -36,6 +36,7 @@ public sealed partial class MainForm : Form
     private bool isEditorPaused;
     private bool hasWebUiLoaded;
     private bool hasPostedUpdateCompleted;
+    private string? configWarning;
     private int overlayRecoveryScheduled;
 
     public MainForm(bool startHiddenToTray = false, bool isUpdateRestart = false)
@@ -74,6 +75,7 @@ public sealed partial class MainForm : Form
             HandleStatusRequest,
             exception => PostConfigResult(false, $"处理配置请求失败：{exception.Message}"));
         loadedConfig = configurationCoordinator.Load();
+        configWarning = loadedConfig.Warning;
         AppLogger.Information("MainForm", "config-loaded", "Loaded the local gesture configuration.");
         // The first launch after an update always opens the settings window on the About page so the user can
         // see that the new version is installed, regardless of the auto-start and window settings.
@@ -123,6 +125,24 @@ public sealed partial class MainForm : Form
 
     private async void OnLoad(object? sender, EventArgs e)
     {
+        try
+        {
+            await InitializeServicesAsync();
+        }
+        catch (Exception exception)
+        {
+            // async void: an unhandled exception here would terminate the process with no UI at all.
+            AppLogger.Error(
+                "MainForm",
+                "initialization-failed",
+                "The application could not finish starting its services.",
+                exception);
+            HandleInitializationFailure(exception);
+        }
+    }
+
+    private async Task InitializeServicesAsync()
+    {
         AppLogger.Information("MainForm", "initializing", $"Initializing services. Hidden startup: {hideConfigWindowOnLaunch}.");
         var config = loadedConfig ??= configurationCoordinator.Load();
         if (hideConfigWindowOnLaunch)
@@ -143,6 +163,8 @@ public sealed partial class MainForm : Form
         {
             return;
         }
+
+        ShowConfigWarningIfNeeded();
 
         scopeContextProvider = new ConfiguredScopeContextProvider(config.Config.Applications);
         gestureService = new GestureService(new GestureMatcher(config.Rules), scopeContextProvider);
@@ -198,6 +220,66 @@ public sealed partial class MainForm : Form
         updateCoordinator.StartAutoCheck();
     }
 
+    private void HandleInitializationFailure(Exception exception)
+    {
+        foreach (var stop in new Action[]
+                 {
+                     () => gestureService?.Stop(),
+                     () => edgeActionService?.Stop()
+                 })
+        {
+            try
+            {
+                stop();
+            }
+            catch (Exception cleanupException)
+            {
+                AppLogger.Warning(
+                    "MainForm",
+                    "initialization-cleanup-failed",
+                    "Stopping a partially started service failed.",
+                    cleanupException);
+            }
+        }
+
+        if (!CanUseUi())
+        {
+            return;
+        }
+
+        // Background startup has no window to own a dialog; the tray icon stays available and the log has the details.
+        if (hideConfigWindowOnLaunch)
+        {
+            return;
+        }
+
+        MessageBox.Show(
+            this,
+            $"WuGesture 启动服务失败：{exception.Message}\n\n请查看日志，或重启 WuGesture 后重试。",
+            AppIdentity.DisplayName,
+            MessageBoxButtons.OK,
+            MessageBoxIcon.Error);
+    }
+
+    private void ShowConfigWarningIfNeeded()
+    {
+        if (string.IsNullOrWhiteSpace(configWarning))
+        {
+            return;
+        }
+
+        var warning = configWarning;
+        configWarning = null;
+        AppLogger.Warning("MainForm", "config-warning", warning);
+        if (hideConfigWindowOnLaunch)
+        {
+            // Background startup must not stop on a modal dialog; the warning stays in the log.
+            return;
+        }
+
+        MessageBox.Show(warning, AppIdentity.DisplayName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+    }
+
     private void OnFormClosing(object? sender, FormClosingEventArgs e)
     {
         if (CloseRequestPolicy.IsCloseRequest(e.CloseReason) && HandleConfiguredUserClose())
@@ -211,11 +293,59 @@ public sealed partial class MainForm : Form
         SaveWindowState();
         hotkeyRecorder.Stop();
         gestureFeedbackCoordinator?.Dispose();
-        gestureService?.Dispose();
-        edgeActionService?.Dispose();
+        DisposeGestureServices();
         hotkeyRecorder.Dispose();
         DisposeMouseTrailForm();
         DisposeWebView();
+    }
+
+    /// <summary>
+    /// Stops the gesture hooks and edge-action poller in parallel with a shared budget. Disposing them one by
+    /// one on the UI thread could block the close for around ten seconds in the worst case (each join has its
+    /// own timeout); the remaining background threads are not user visible and end with the process.
+    /// </summary>
+    private void DisposeGestureServices()
+    {
+        var tasks = new[]
+        {
+            Task.Run(() =>
+            {
+                try
+                {
+                    gestureService?.Dispose();
+                }
+                catch (Exception exception)
+                {
+                    AppLogger.Warning("MainForm", "gesture-dispose-failed", "Disposing the gesture service failed.", exception);
+                }
+            }),
+            Task.Run(() =>
+            {
+                try
+                {
+                    edgeActionService?.Dispose();
+                }
+                catch (Exception exception)
+                {
+                    AppLogger.Warning("MainForm", "edge-dispose-failed", "Disposing the edge action service failed.", exception);
+                }
+            })
+        };
+
+        try
+        {
+            if (!Task.WaitAll(tasks, TimeSpan.FromSeconds(3)))
+            {
+                AppLogger.Warning(
+                    "MainForm",
+                    "dispose-timeout",
+                    "Gesture services did not stop within the shutdown budget; the process exits without waiting further.");
+            }
+        }
+        catch (Exception exception)
+        {
+            AppLogger.Warning("MainForm", "dispose-failed", "Disposing gesture services failed.", exception);
+        }
     }
 
     private void OnResize(object? sender, EventArgs e)

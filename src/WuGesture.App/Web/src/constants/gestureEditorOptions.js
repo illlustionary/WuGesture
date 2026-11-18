@@ -131,6 +131,8 @@ export const WEBVIEW_MESSAGE_TYPES = {
   webDavResult: 'webdav-result',
   applicationSelected: 'application-selected',
   gestureRecorded: 'gesture-recorded',
+  gestureActionFailed: 'gesture-action-failed',
+  edgeActionFailed: 'edge-action-failed',
   hotkeyRecorded: 'hotkey-recorded',
   updateAvailable: 'update-available',
   updateNone: 'update-none',

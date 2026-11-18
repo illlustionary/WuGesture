@@ -39,7 +39,7 @@ try {
         throw "发行包缺少必需文件: $($missing -join ', ')"
     }
 
-    $forbidden = @($entryNames | Where-Object { $_ -like "*/node_modules/*" -or $_ -like "*.test.js" })
+    $forbidden = @($entryNames | Where-Object { $_ -like "*/node_modules/*" -or $_ -like "*.test.*" -or $_ -like "*.spec.*" })
     if ($forbidden.Count -gt 0) {
         throw "发行包包含前端测试或依赖文件: $($forbidden -join ', ')"
     }

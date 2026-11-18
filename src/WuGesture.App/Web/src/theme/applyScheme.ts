@@ -23,6 +23,9 @@ export const SCHEME_STYLE_ID = 'md-scheme'
 
 export const SCHEME_CACHE_KEY = 'wugesture.md3.scheme.v1'
 
+// 首屏的明暗模式单独缓存：色板缓存只保存颜色，模式决定用哪一套。
+export const THEME_CACHE_KEY = 'wugesture.md3.theme.v1'
+
 const CACHE_VERSION = 1
 
 const DARK_QUERY = '(prefers-color-scheme: dark)'
@@ -77,6 +80,7 @@ export function applyScheme(input: AppearanceInput): AppliedAppearance {
 
 /** 应用挂载前调用：用缓存色板覆盖 SCSS 基线，`rules` 消息到达后再校正。 */
 export function applyCachedScheme(): AppliedAppearance | null {
+  applyCachedThemeMode()
   const cached = readSchemeCache()
   if (!cached) {
     return null
@@ -88,7 +92,27 @@ export function applyCachedScheme(): AppliedAppearance | null {
 
 /** 切换 `data-theme`，浅/深色板已经同时注入，无需重新计算。 */
 export function setThemeMode(isDark: boolean): void {
+  if (typeof document === 'undefined') {
+    return
+  }
+
   document.documentElement.dataset.theme = isDark ? 'dark' : 'light'
+  writeThemeCache(isDark)
+}
+
+/** 应用挂载前调用：按上次使用的模式设置 `data-theme`，避免深色配置首屏闪白。 */
+export function applyCachedThemeMode(): void {
+  // 宿主会在文档创建时先注入配置对应的主题；那里的值比本地缓存更权威，不要覆盖。
+  if (document.documentElement.dataset.theme) {
+    return
+  }
+
+  const cached = readThemeCache()
+  if (cached === null) {
+    return
+  }
+
+  document.documentElement.dataset.theme = cached ? 'dark' : 'light'
 }
 
 /** 解析当前模式实际应为浅色还是深色；`system` 跟随 WebView 的 `prefers-color-scheme`。 */
@@ -146,6 +170,31 @@ function writeSchemeCache(applied: AppliedAppearance): void {
   } catch {
     // 隐私模式或存储空间不足时缓存失败不影响当前页面配色。
   }
+}
+
+function writeThemeCache(isDark: boolean): void {
+  try {
+    window.localStorage.setItem(THEME_CACHE_KEY, isDark ? 'dark' : 'light')
+  } catch {
+    // 隐私模式或存储空间不足时缓存失败不影响当前页面主题。
+  }
+}
+
+function readThemeCache(): boolean | null {
+  try {
+    const value = window.localStorage.getItem(THEME_CACHE_KEY)
+    if (value === 'dark') {
+      return true
+    }
+
+    if (value === 'light') {
+      return false
+    }
+  } catch {
+    return null
+  }
+
+  return null
 }
 
 function readSchemeCache(): AppliedAppearance | null {

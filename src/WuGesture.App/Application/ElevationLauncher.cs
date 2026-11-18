@@ -45,7 +45,7 @@ internal sealed class ElevationLauncher
                 isUpdateRestart ? AppIdentity.UpdateRestartArgument : null
             };
 
-            Process.Start(new ProcessStartInfo
+            using var elevated = Process.Start(new ProcessStartInfo
             {
                 FileName = AppIdentity.GetLaunchExecutablePath(),
                 Arguments = string.Join(' ', arguments.Where(argument => argument is not null)),

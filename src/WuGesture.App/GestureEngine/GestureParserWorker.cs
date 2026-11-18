@@ -20,13 +20,7 @@ internal sealed class GestureParserWorker : IDisposable
             }
 
             stopRequested = false;
-            thread = new Thread(ThreadMain)
-            {
-                IsBackground = true,
-                Priority = ThreadPriority.Highest,
-                Name = "WuGesture Parser"
-            };
-            thread.Start();
+            EnsureWorkerLocked();
         }
     }
 
@@ -39,6 +33,7 @@ internal sealed class GestureParserWorker : IDisposable
                 return;
             }
 
+            EnsureWorkerLocked();
             queue.Enqueue(action);
             Monitor.Pulse(queueLock);
         }
@@ -53,6 +48,7 @@ internal sealed class GestureParserWorker : IDisposable
                 return;
             }
 
+            EnsureWorkerLocked();
             latestMove = action;
             Monitor.Pulse(queueLock);
         }
@@ -67,6 +63,7 @@ internal sealed class GestureParserWorker : IDisposable
                 return;
             }
 
+            EnsureWorkerLocked();
             if (latestMove is not null)
             {
                 queue.Enqueue(latestMove);
@@ -76,6 +73,22 @@ internal sealed class GestureParserWorker : IDisposable
             queue.Enqueue(action);
             Monitor.Pulse(queueLock);
         }
+    }
+
+    private void EnsureWorkerLocked()
+    {
+        if (thread is not null)
+        {
+            return;
+        }
+
+        thread = new Thread(ThreadMain)
+        {
+            IsBackground = true,
+            Priority = ThreadPriority.Highest,
+            Name = "WuGesture Parser"
+        };
+        thread.Start();
     }
 
     public void Dispose()
@@ -110,7 +123,23 @@ internal sealed class GestureParserWorker : IDisposable
         {
             while (TakeNext() is { } action)
             {
-                action();
+                try
+                {
+                    action();
+                }
+                catch (Exception exception)
+                {
+                    // A single bad event (config reload race, malformed rule, unexpected input) must not
+                    // stop the whole gesture pipeline for the rest of the process lifetime.
+                    if (!disposed)
+                    {
+                        AppLogger.Error(
+                            "GestureParserWorker",
+                            "action-failed",
+                            "A queued gesture parser action failed; the parser keeps running.",
+                            exception);
+                    }
+                }
             }
         }
         catch (Exception exception)
@@ -120,7 +149,7 @@ internal sealed class GestureParserWorker : IDisposable
                 AppLogger.Error(
                     "GestureParserWorker",
                     "thread-failed",
-                    "The dedicated gesture parser stopped unexpectedly.",
+                    "The dedicated gesture parser stopped unexpectedly and will be restarted on demand.",
                     exception);
             }
         }
@@ -128,10 +157,21 @@ internal sealed class GestureParserWorker : IDisposable
         {
             lock (queueLock)
             {
-                thread = null;
-                stopRequested = true;
-                queue.Clear();
-                latestMove = null;
+                if (ReferenceEquals(thread, Thread.CurrentThread))
+                {
+                    thread = null;
+                }
+
+                if (disposed || stopRequested)
+                {
+                    queue.Clear();
+                    latestMove = null;
+                }
+                else if (queue.Count > 0 || latestMove is not null)
+                {
+                    // Work arrived while the worker was stopping; keep the pipeline alive.
+                    EnsureWorkerLocked();
+                }
             }
         }
     }

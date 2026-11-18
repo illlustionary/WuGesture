@@ -429,6 +429,9 @@ public sealed class GestureService : IDisposable
                 isExcluded,
                 isFullscreen,
                 fullscreenChecked);
+            // The button-down already armed wheel capture; this gesture is excluded, so release the wheel
+            // back to the target app instead of silently swallowing the next scroll.
+            inputCapture.SetWheelCaptureAllowed(false);
             return;
         }
 

@@ -1,3 +1,5 @@
+using WuGesture.App.GestureEngine;
+
 namespace WuGesture.App;
 
 static class Program
@@ -71,7 +73,37 @@ static class Program
                 mode: EventResetMode.AutoReset,
                 name: AppIdentity.ExitRequestedCompletedEventName);
             // An update restart must always show the settings window, even for auto-start instances.
-            using var form = new MainForm(isStartupLaunch && !isUpdateRestart, isUpdateRestart);
+            MainForm form;
+            try
+            {
+                form = new MainForm(isStartupLaunch && !isUpdateRestart, isUpdateRestart);
+            }
+            catch (GestureConfigLoadException exception)
+            {
+                AppLogger.Error(
+                    "Program",
+                    "config-unavailable",
+                    "The configuration cannot be loaded, so the application will not start.",
+                    exception);
+                MessageBox.Show(
+                    exception.Message,
+                    AppIdentity.DisplayName,
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+                return;
+            }
+            catch (Exception exception)
+            {
+                AppLogger.Error("Program", "startup-failed", "The application failed during startup.", exception);
+                MessageBox.Show(
+                    $"WuGesture 启动失败：{exception.Message}",
+                    AppIdentity.DisplayName,
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+                return;
+            }
+
+            using var formScope = form;
             using var listenerCancellation = new CancellationTokenSource();
             var listener = Task.Run(() => ListenForExistingInstanceRequests(
                 showExistingInstanceEvent,

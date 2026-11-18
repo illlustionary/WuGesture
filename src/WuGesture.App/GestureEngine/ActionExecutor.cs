@@ -221,7 +221,7 @@ public sealed class ActionExecutor
         }
 
         var startInfo = CreateProgramStartInfo(action);
-        _ = Process.Start(startInfo) ?? throw new InvalidOperationException("Failed to start program.");
+        using var process = Process.Start(startInfo) ?? throw new InvalidOperationException("Failed to start program.");
     }
 
     internal static ProcessStartInfo CreateProgramStartInfo(ProgramAction action)

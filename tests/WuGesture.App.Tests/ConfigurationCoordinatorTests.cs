@@ -1,3 +1,4 @@
+using System.Text.Json;
 using WuGesture.App.GestureEngine;
 
 namespace WuGesture.App.Tests;
@@ -74,5 +75,35 @@ public sealed class ConfigurationCoordinatorTests
 
         Assert.NotNull(config.UiSettings);
         Assert.NotNull(config.UiSettings.AppBehavior);
+    }
+
+    [Fact]
+    public void BuildExportDocument_RemovesTheWebDavPassword()
+    {
+        const string json = """
+            {
+              "schemaVersion": 1,
+              "uiSettings": {
+                "webDav": { "address": "https://dav.example.com/", "userName": "wu", "password": "secret" },
+                "update": { "checkForUpdates": true }
+              }
+            }
+            """;
+
+        var exported = ConfigurationCoordinator.BuildExportDocument(json);
+
+        using var document = JsonDocument.Parse(exported);
+        var webDav = document.RootElement.GetProperty("uiSettings").GetProperty("webDav");
+        Assert.Equal("", webDav.GetProperty("password").GetString());
+        Assert.Equal("wu", webDav.GetProperty("userName").GetString());
+        Assert.True(document.RootElement.GetProperty("uiSettings").GetProperty("update").GetProperty("checkForUpdates").GetBoolean());
+    }
+
+    [Fact]
+    public void BuildExportDocument_LeavesMalformedJsonUntouched()
+    {
+        const string json = "{not json";
+
+        Assert.Equal(json, ConfigurationCoordinator.BuildExportDocument(json));
     }
 }

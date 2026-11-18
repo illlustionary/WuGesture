@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using WuGesture.App.GestureEngine;
 
 namespace WuGesture.App;
@@ -105,9 +106,9 @@ internal sealed class ConfigurationCoordinator
                 return;
             }
 
-            File.WriteAllText(dialog.FileName, File.ReadAllText(saved.FilePath));
+            File.WriteAllText(dialog.FileName, BuildExportDocument(File.ReadAllText(saved.FilePath)));
             postRules();
-            postConfigResult(true, "配置已导出。", "export");
+            postConfigResult(true, "配置已导出（不含 WebDAV 口令）。", "export");
         }
         catch (Exception exception)
         {
@@ -239,5 +240,32 @@ internal sealed class ConfigurationCoordinator
         return message?.UiSettings?.WebDav ??
             getConfig()?.Config.UiSettings.WebDav ??
             new WebDavUiSettings();
+    }
+
+    /// <summary>
+    /// Exported files must not contain the WebDAV password: exports are often copied to shared folders or
+    /// attached to bug reports. The local configuration keeps the credential.
+    /// </summary>
+    internal static string BuildExportDocument(string json)
+    {
+        try
+        {
+            if (JsonNode.Parse(json) is not JsonObject root)
+            {
+                return json;
+            }
+
+            if (root["uiSettings"] is JsonObject uiSettings &&
+                uiSettings["webDav"] is JsonObject webDav)
+            {
+                webDav["password"] = "";
+            }
+
+            return root.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+        }
+        catch (JsonException)
+        {
+            return json;
+        }
     }
 }

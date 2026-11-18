@@ -11,7 +11,7 @@ import {
 
 export const DEFAULT_UI_SETTINGS = {
   appearance: {
-    theme: 'dark',
+    theme: 'system',
     colorSource: 'preset',
     seedColor: '#529EF1',
     schemeVariant: 'tonalSpot',

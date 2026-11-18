@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text.Json;
 using WuGesture.App.GestureEngine;
 
@@ -5,14 +6,20 @@ namespace WuGesture.App;
 
 internal static class WebViewRulesPayloadFactory
 {
-    public static string Create(LoadedGestureConfig loadedConfig)
+    private const int PathProbeTtlMilliseconds = 3000;
+    private const int MaxPathProbes = 256;
+    private static readonly ConcurrentDictionary<string, PathProbe> PathProbes = new(StringComparer.OrdinalIgnoreCase);
+
+    public static string Create(LoadedGestureConfig loadedConfig, string? systemAccent = null)
     {
         return JsonSerializer.Serialize(new
         {
             type = WebViewMessageTypes.Rules,
             appVersion = AppIdentity.GetDisplayVersion(),
             configPath = loadedConfig.FilePath,
-            uiSettings = CreateUiSettingsPayload(loadedConfig.Config.UiSettings),
+            uiSettings = CreateUiSettingsPayload(
+                loadedConfig.Config.UiSettings,
+                systemAccent ?? WindowsAccentColor.Read()),
             rules = loadedConfig.Config.Rules.Select(rule => new
             {
                 scope = rule.Scope,
@@ -28,8 +35,8 @@ internal static class WebViewRulesPayloadFactory
                 path = rule.Action.Path,
                 arguments = rule.Action.Arguments,
                 programName = Path.GetFileNameWithoutExtension(rule.Action.Path),
-                programIcon = ApplicationIconDataUrl.FromExecutable(rule.Action.Path),
-                programMissing = !string.IsNullOrWhiteSpace(rule.Action.Path) && !File.Exists(rule.Action.Path)
+                programIcon = ProgramIcon(rule.Action.Path),
+                programMissing = !string.IsNullOrWhiteSpace(rule.Action.Path) && !ProgramPathExists(rule.Action.Path)
             }).ToArray(),
             edgeActions = loadedConfig.Config.EdgeActions.Select(action => new
             {
@@ -52,13 +59,56 @@ internal static class WebViewRulesPayloadFactory
                 displayName = application.DisplayName,
                 path = application.Path,
                 categories = application.Categories,
-                icon = ApplicationIconDataUrl.FromExecutable(application.Path)
+                icon = ProgramIcon(application.Path)
             }).ToArray(),
             categories = loadedConfig.Config.Categories
         });
     }
 
-    private static object CreateUiSettingsPayload(GestureUiSettings uiSettings)
+    /// <summary>
+    /// <see cref="File.Exists"/> and icon extraction are synchronous probes; on a network share they can take
+    /// long enough to stall the UI thread during save/reload. Probe results are cached for a few seconds, and a
+    /// missing file skips icon extraction entirely.
+    /// </summary>
+    private static bool ProgramPathExists(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return false;
+        }
+
+        var now = Environment.TickCount64;
+        if (PathProbes.TryGetValue(path, out var cached) &&
+            now - cached.CheckedAtTick < PathProbeTtlMilliseconds)
+        {
+            return cached.Exists;
+        }
+
+        bool exists;
+        try
+        {
+            exists = File.Exists(path);
+        }
+        catch
+        {
+            exists = false;
+        }
+
+        if (PathProbes.Count >= MaxPathProbes)
+        {
+            PathProbes.Clear();
+        }
+
+        PathProbes[path] = new PathProbe(exists, now);
+        return exists;
+    }
+
+    private static string ProgramIcon(string path) =>
+        ProgramPathExists(path) ? ApplicationIconDataUrl.FromExecutable(path) : "";
+
+    private readonly record struct PathProbe(bool Exists, long CheckedAtTick);
+
+    private static object CreateUiSettingsPayload(GestureUiSettings uiSettings, string systemAccent)
     {
         return new
         {
@@ -68,7 +118,7 @@ internal static class WebViewRulesPayloadFactory
                 colorSource = uiSettings.Appearance.ColorSource,
                 seedColor = uiSettings.Appearance.SeedColor,
                 schemeVariant = uiSettings.Appearance.SchemeVariant,
-                systemAccent = WindowsAccentColor.Read(),
+                systemAccent,
                 lightTitleBarColor = uiSettings.Appearance.LightTitleBarColor,
                 lightTitleBarTextColor = uiSettings.Appearance.LightTitleBarTextColor,
                 darkTitleBarColor = uiSettings.Appearance.DarkTitleBarColor,
@@ -99,7 +149,7 @@ internal static class WebViewRulesPayloadFactory
                     displayName = application.DisplayName,
                     path = application.Path,
                     disableEdgeActions = application.DisableEdgeActions,
-                    icon = ApplicationIconDataUrl.FromExecutable(application.Path)
+                    icon = ProgramIcon(application.Path)
                 }).ToArray()
             },
             webDav = uiSettings.WebDav,

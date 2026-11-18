@@ -81,6 +81,11 @@ public sealed class WebDavConfigSyncService
         }
 
         var remotePath = (settings.RemotePath ?? "").Trim().Replace('\\', '/').TrimStart('/');
+        if (remotePath.Split('/', StringSplitOptions.RemoveEmptyEntries).Any(segment => segment == ".."))
+        {
+            throw new InvalidOperationException("WebDAV 远程路径不能包含 ..");
+        }
+
         if (string.IsNullOrWhiteSpace(remotePath))
         {
             remotePath = ConfigStorageContract.ConfigFileName;
@@ -89,8 +94,10 @@ public sealed class WebDavConfigSyncService
         {
             remotePath += ConfigStorageContract.ConfigFileName;
         }
-        else if (!Path.HasExtension(remotePath))
+        else if (!remotePath.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
         {
+            // Only an explicit .json path is treated as a file name. Directory names may contain dots
+            // (for example "backup.v1"), which Path.HasExtension used to misclassify as files.
             remotePath += "/" + ConfigStorageContract.ConfigFileName;
         }
 

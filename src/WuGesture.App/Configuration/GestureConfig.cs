@@ -85,4 +85,11 @@ public sealed class EdgeActionConfig
 public sealed record LoadedGestureConfig(
     string FilePath,
     GestureConfig Config,
-    IReadOnlyList<GestureRule> Rules);
+    IReadOnlyList<GestureRule> Rules)
+{
+    /// <summary>
+    /// A user-facing warning produced while loading (for example a failed backup that forced an in-memory
+    /// fallback). Null when the configuration was loaded and persisted normally.
+    /// </summary>
+    public string? Warning { get; init; }
+}

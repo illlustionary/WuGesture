@@ -65,7 +65,7 @@ public sealed class GestureConfigStoreTests
         const string futureJson = "{\"schemaVersion\":2,\"rules\":[]}";
         File.WriteAllText(path, futureJson);
 
-        var exception = Assert.Throws<InvalidOperationException>(() => new GestureConfigStore(path).LoadOrCreate());
+        var exception = Assert.Throws<GestureConfigLoadException>(() => new GestureConfigStore(path).LoadOrCreate());
 
         Assert.Contains("高于当前支持版本", exception.Message);
         Assert.Equal(futureJson, File.ReadAllText(path));

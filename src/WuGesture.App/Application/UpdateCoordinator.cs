@@ -58,7 +58,19 @@ internal sealed class UpdateCoordinator : IDisposable
         }
 
         autoCheckStarted = true;
-        UpdateService.CleanupStaleFiles();
+        // Deleting leftover update directories touches the disk; do it in the background even when automatic
+        // checks are disabled, and decide the setting first so the UI thread never waits for the cleanup.
+        _ = Task.Run(() =>
+        {
+            try
+            {
+                UpdateService.CleanupStaleFiles();
+            }
+            catch (Exception exception)
+            {
+                AppLogger.Warning("UpdateCoordinator", "cleanup-failed", "Cleaning up stale update files failed.", exception);
+            }
+        });
         if (getSettings()?.CheckForUpdates != true)
         {
             AppLogger.Information("UpdateCoordinator", "auto-check-disabled", "Automatic update checks are disabled in the settings.");
@@ -109,6 +121,7 @@ internal sealed class UpdateCoordinator : IDisposable
         isApplying = true;
         var release = availableRelease;
         var cancellation = new CancellationTokenSource();
+        var token = cancellation.Token;
         downloadCancellation?.Dispose();
         downloadCancellation = cancellation;
         _ = Task.Run(async () =>
@@ -117,10 +130,10 @@ internal sealed class UpdateCoordinator : IDisposable
             {
                 var progress = new Progress<UpdateProgress>(value => dispatch(() => PostProgress(value)));
                 var packagePath = await updateService
-                    .DownloadAsync(release, progress, cancellation.Token)
+                    .DownloadAsync(release, progress, token)
                     .ConfigureAwait(false);
                 var stagingAppRoot = await updateService
-                    .PrepareAsync(packagePath, release.Version, progress, cancellation.Token)
+                    .PrepareAsync(packagePath, release.Version, progress, token)
                     .ConfigureAwait(false);
                 var elevated = !updateService.CanReplaceInstallDirectory();
                 if (elevated)
@@ -128,6 +141,9 @@ internal sealed class UpdateCoordinator : IDisposable
                     dispatch(() => PostProgress(new UpdateProgress("elevating", 100, 0, 0)));
                 }
 
+                // The user may have pressed cancel after preparation finished; never replace the
+                // installation once the operation has been cancelled.
+                token.ThrowIfCancellationRequested();
                 updateService.StartApply(stagingAppRoot, release.Version, BuildLaunchArguments(), elevated);
                 dispatch(() =>
                 {
@@ -136,7 +152,7 @@ internal sealed class UpdateCoordinator : IDisposable
                     exitForUpdate();
                 });
             }
-            catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+            catch (OperationCanceledException) when (token.IsCancellationRequested)
             {
                 // The user pressed cancel in the dialog; the frontend has already reset to "available".
                 AppLogger.Information("UpdateCoordinator", "update-cancelled", "The update was cancelled before it was applied.");
@@ -189,7 +205,7 @@ internal sealed class UpdateCoordinator : IDisposable
 
         try
         {
-            Process.Start(new ProcessStartInfo
+            using var browser = Process.Start(new ProcessStartInfo
             {
                 FileName = url,
                 UseShellExecute = true
