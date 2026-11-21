@@ -9,9 +9,12 @@ namespace WuGesture.App;
 /// WebDAV backup/restore. The form supplies the current config, the "apply" step and the WebView replies,
 /// so this type stays free of window lifecycle concerns.
 /// </summary>
-internal sealed class ConfigurationCoordinator
+internal sealed class ConfigurationCoordinator : IDisposable
 {
+    private static readonly TimeSpan PendingWriteTimeout = TimeSpan.FromSeconds(5);
+
     private readonly GestureConfigStore configStore = new();
+    private readonly ConfigWriteScheduler writeScheduler;
     private readonly WebDavConfigSyncService webDavConfigSyncService = new();
     private readonly Func<LoadedGestureConfig?> getConfig;
     private readonly Action<LoadedGestureConfig> applyConfig;
@@ -20,6 +23,7 @@ internal sealed class ConfigurationCoordinator
     private readonly Action<string, bool, string> postWebDavResult;
     private readonly Func<IWin32Window?> getDialogOwner;
     private string? appliedStartMode;
+    private string? pendingTaskFailure;
 
     public ConfigurationCoordinator(
         Func<LoadedGestureConfig?> getConfig,
@@ -27,7 +31,8 @@ internal sealed class ConfigurationCoordinator
         Action postRules,
         Action<bool, string, string> postConfigResult,
         Action<string, bool, string> postWebDavResult,
-        Func<IWin32Window?> getDialogOwner)
+        Func<IWin32Window?> getDialogOwner,
+        Action<Action>? dispatch = null)
     {
         this.getConfig = getConfig;
         this.applyConfig = applyConfig;
@@ -35,6 +40,10 @@ internal sealed class ConfigurationCoordinator
         this.postConfigResult = postConfigResult;
         this.postWebDavResult = postWebDavResult;
         this.getDialogOwner = getDialogOwner;
+        writeScheduler = new ConfigWriteScheduler(
+            configStore,
+            dispatch ?? (action => action()),
+            OnConfigWriteCompleted);
     }
 
     /// <summary>Loads (or creates) the local configuration during startup.</summary>
@@ -111,9 +120,9 @@ internal sealed class ConfigurationCoordinator
     {
         try
         {
-            var taskFailure = ApplyConfig(configStore.SaveAndLoad(ReadConfig(json)));
-            postRules();
-            PostConfigApplied("配置已保存。", taskFailure, "save");
+            var loaded = configStore.Prepare(ReadConfig(json));
+            Interlocked.Exchange(ref pendingTaskFailure, ApplyConfig(loaded));
+            writeScheduler.Enqueue(loaded.Config);
         }
         catch (Exception exception)
         {
@@ -121,10 +130,52 @@ internal sealed class ConfigurationCoordinator
         }
     }
 
+    /// <summary>
+    /// Runs on the UI thread after the background writer finished. A save no longer echoes the whole
+    /// configuration back to the editor: the editor is the source of the data, so re-sending every rule and
+    /// application icon only forced a full state replacement (and a full list re-render) after each edit.
+    /// </summary>
+    private void OnConfigWriteCompleted(bool success, string error)
+    {
+        var taskFailure = Interlocked.Exchange(ref pendingTaskFailure, null);
+
+        if (!success)
+        {
+            postConfigResult(false, $"保存配置失败：{error}", "save");
+            return;
+        }
+
+        postConfigResult(
+            taskFailure is null,
+            taskFailure is null
+                ? "配置已保存。"
+                : $"配置已保存，但启动模式未能生效：{taskFailure}",
+            "save");
+    }
+
+    /// <summary>
+    /// Waits for the queued save to reach the disk before an operation reads or replaces the file.
+    /// </summary>
+    private bool TryFlushPendingWrites(string operation)
+    {
+        if (writeScheduler.Flush(PendingWriteTimeout))
+        {
+            return true;
+        }
+
+        postConfigResult(false, "上一个保存仍在写入磁盘，请稍后重试。", operation);
+        return false;
+    }
+
     public void Reload()
     {
         try
         {
+            if (!TryFlushPendingWrites("reload"))
+            {
+                return;
+            }
+
             var taskFailure = ApplyConfig(configStore.LoadOrCreate());
             postRules();
             PostConfigApplied("本地配置已重新加载。", taskFailure, "reload");
@@ -139,6 +190,11 @@ internal sealed class ConfigurationCoordinator
     {
         try
         {
+            if (!TryFlushPendingWrites("reset"))
+            {
+                return;
+            }
+
             var taskFailure = ApplyConfig(configStore.ResetToDefaults());
             postRules();
             PostConfigApplied("默认配置已恢复。", taskFailure, "reset");
@@ -153,6 +209,11 @@ internal sealed class ConfigurationCoordinator
     {
         try
         {
+            if (!TryFlushPendingWrites("export"))
+            {
+                return;
+            }
+
             var saved = configStore.SaveAndLoad(ReadConfig(json));
             var taskFailure = ApplyConfig(saved);
 
@@ -210,6 +271,11 @@ internal sealed class ConfigurationCoordinator
                 return;
             }
 
+            if (!TryFlushPendingWrites("import"))
+            {
+                return;
+            }
+
             var taskFailure = ApplyConfig(configStore.SaveJsonAndLoad(File.ReadAllText(dialog.FileName)));
             postRules();
             PostConfigApplied("配置已导入。", taskFailure, "import");
@@ -240,6 +306,12 @@ internal sealed class ConfigurationCoordinator
 
         try
         {
+            if (!writeScheduler.Flush(PendingWriteTimeout))
+            {
+                postWebDavResult("save", false, "上一个保存仍在写入磁盘，请稍后重试。");
+                return;
+            }
+
             var saved = configStore.SaveAndLoad(ReadConfig(json));
             var taskFailure = ApplyConfig(saved);
             localConfigSaved = true;
@@ -272,6 +344,12 @@ internal sealed class ConfigurationCoordinator
         {
             var settings = ReadWebDavSettings(json);
             var downloadedJson = await webDavConfigSyncService.DownloadAsync(settings);
+            if (!writeScheduler.Flush(PendingWriteTimeout))
+            {
+                postWebDavResult("restore", false, "上一个保存仍在写入磁盘，请稍后重试。");
+                return;
+            }
+
             var taskFailure = ApplyConfig(configStore.SaveJsonAndLoad(downloadedJson, settings));
 
             postRules();
@@ -319,6 +397,14 @@ internal sealed class ConfigurationCoordinator
         return message?.UiSettings?.WebDav ??
             getConfig()?.Config.UiSettings.WebDav ??
             new WebDavUiSettings();
+    }
+
+    /// <summary>
+    /// Flushes the background writer before the process exits, so the last edit is never dropped.
+    /// </summary>
+    public void Dispose()
+    {
+        writeScheduler.Dispose();
     }
 
     /// <summary>

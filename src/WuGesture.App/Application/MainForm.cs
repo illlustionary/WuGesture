@@ -35,6 +35,7 @@ public sealed partial class MainForm : Form
     private bool isHiddenToTray;
     private bool isUserPaused;
     private bool isEditorPaused;
+    private bool? appliedLaunchAtStartup;
     private bool hasWebUiLoaded;
     private bool hasPostedUpdateCompleted;
     private string? configWarning;
@@ -59,7 +60,8 @@ public sealed partial class MainForm : Form
             PostRules,
             PostConfigResult,
             PostWebDavResult,
-            () => this);
+            () => this,
+            BeginInvokeSafe);
         applicationPickerCoordinator = new ApplicationPickerCoordinator(
             () => loadedConfig,
             TryPostWebMessage,
@@ -115,6 +117,9 @@ public sealed partial class MainForm : Form
             trayMenuController.Dispose();
             DisposeTitleBarFonts();
             DisposeWebView();
+            // Flush the background config writer before the process can exit, otherwise the last edit that
+            // was still queued when the window closed would be lost.
+            configurationCoordinator.Dispose();
             updateCoordinator.Dispose();
             LevelOsdOverlay.Reset();
             gestureFeedbackCoordinator?.Dispose();
@@ -588,10 +593,20 @@ public sealed partial class MainForm : Form
 
     private void ApplyAppBehaviorSettings(AppBehaviorUiSettings settings)
     {
-        ApplyStartupRegistration(settings.LaunchAtStartup);
+        // Autosave runs on every edit, but rewriting the Run key on each one is a pointless registry write
+        // (and triggers shell change notifications). Only touch it when the setting actually changed.
+        if (appliedLaunchAtStartup == settings.LaunchAtStartup)
+        {
+            return;
+        }
+
+        if (ApplyStartupRegistration(settings.LaunchAtStartup))
+        {
+            appliedLaunchAtStartup = settings.LaunchAtStartup;
+        }
     }
 
-    private static void ApplyStartupRegistration(bool enabled)
+    private static bool ApplyStartupRegistration(bool enabled)
     {
         try
         {
@@ -599,7 +614,7 @@ public sealed partial class MainForm : Form
                 Registry.CurrentUser.CreateSubKey(StartupRegistryPath, writable: true);
             if (key is null)
             {
-                return;
+                return false;
             }
 
             if (enabled)
@@ -610,9 +625,12 @@ public sealed partial class MainForm : Form
             {
                 key.DeleteValue(AppIdentity.StartupRegistryValueName, throwOnMissingValue: false);
             }
+
+            return true;
         }
         catch
         {
+            return false;
         }
     }
 
@@ -963,7 +981,15 @@ public sealed partial class MainForm : Form
 
     private void ApplyUiSettings(GestureUiSettings uiSettings)
     {
-        ApplyWindowTheme(uiSettings.Appearance);
+        // Autosave runs on every edit. Re-applying an unchanged theme resets the DWM caption colours and the
+        // title bar repaint for no reason, so compare first.
+        var appearanceSignature = AppearanceSignature(uiSettings.Appearance);
+        if (!string.Equals(appearanceSignature, appliedAppearanceSignature, StringComparison.Ordinal))
+        {
+            appliedAppearanceSignature = appearanceSignature;
+            ApplyWindowTheme(uiSettings.Appearance);
+        }
+
         gestureService?.ApplyGestureSensitivity(uiSettings.GestureSensitivity);
         var hasEnabledOverlay = HasEnabledOverlay(uiSettings);
         if (mouseTrailForm is not null || hasEnabledOverlay)

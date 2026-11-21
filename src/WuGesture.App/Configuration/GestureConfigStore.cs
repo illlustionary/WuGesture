@@ -106,7 +106,12 @@ public sealed class GestureConfigStore
         };
     }
 
-    public LoadedGestureConfig SaveAndLoad(GestureConfig config)
+    /// <summary>
+    /// Validates and normalises a configuration in memory without touching the file system. The caller can
+    /// apply it to the running app immediately and hand it to <see cref="ConfigWriteScheduler"/>, so the
+    /// flush-to-disk part of a save never runs on the UI thread.
+    /// </summary>
+    public LoadedGestureConfig Prepare(GestureConfig config)
     {
         EnsureCurrentSchema(config);
         config = GestureConfigNormalizer.Normalize(config);
@@ -116,8 +121,14 @@ public sealed class GestureConfigStore
             throw new InvalidOperationException("规则配置无效，未保存。");
         }
 
-        Save(config);
         return new LoadedGestureConfig(ConfigPath, config, rules);
+    }
+
+    public LoadedGestureConfig SaveAndLoad(GestureConfig config)
+    {
+        var loaded = Prepare(config);
+        Save(loaded.Config);
+        return loaded;
     }
 
     public LoadedGestureConfig SaveJsonAndLoad(string json, WebDavUiSettings? fallbackWebDavSettings = null)

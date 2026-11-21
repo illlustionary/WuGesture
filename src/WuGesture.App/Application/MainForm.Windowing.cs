@@ -11,6 +11,8 @@ public sealed partial class MainForm
     private const int SwMinimize = 6;
     private const int SwRestore = 9;
 
+    private string? appliedAppearanceSignature;
+
     protected override void OnHandleCreated(EventArgs e)
     {
         base.OnHandleCreated(e);
@@ -41,6 +43,25 @@ public sealed partial class MainForm
         BackColor = captionColor;
         webViewHost.SetInitialAppearance(captionColor, useDarkPalette);
         ApplyTitleBarTheme(captionColor, textColor, useDarkPalette);
+    }
+
+    /// <summary>
+    /// Captures every input <see cref="ApplyWindowTheme"/> reads, including the resolved Windows light/dark
+    /// preference, so callers can skip an identical re-application while still reacting to a real change.
+    /// </summary>
+    private static string AppearanceSignature(AppearanceUiSettings appearance)
+    {
+        return string.Join(
+            '\u001f',
+            appearance.Theme,
+            appearance.ColorSource,
+            appearance.SeedColor,
+            appearance.SchemeVariant,
+            appearance.LightTitleBarColor,
+            appearance.LightTitleBarTextColor,
+            appearance.DarkTitleBarColor,
+            appearance.DarkTitleBarTextColor,
+            SystemTheme.PrefersDarkMode() ? "dark" : "light");
     }
 
     private static void ResolveWindowThemeColors(
