@@ -28,6 +28,7 @@ withDefaults(
 <style scoped lang="scss">
 .settings-field {
   display: grid;
+  align-content: start;
   gap: var(--md-sys-spacing-sm);
   padding: var(--md-sys-spacing-md);
   border-radius: var(--md-sys-shape-corner-small);
