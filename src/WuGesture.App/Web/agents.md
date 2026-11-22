@@ -22,7 +22,7 @@ This repository is a Vite + Vue 3 web frontend for the WuGesture application. It
 - `src/styles.scss`: shared visual styling entry point for the entire app; it only `@use`s the token layer, base styles, shared component classes and the Toast override.
 - `src/styles/tokens/`: MD3 design tokens split into color, typescale, shape, spacing, elevation, motion, state and legacy alias partials. `_color.scss` ships light/dark role values generated from seed `#529EF1` (Tonal Spot, MCU 0.4.0) as the first-paint fallback; the runtime theme engine overrides them through `<style id="md-scheme">`.
 - `src/styles/_toast.scss`: maps `vue-toastification` to the MD3 Snackbar (`inverseSurface`, 4 radius, 48 min-height, icon colour per type).
-- `src/theme/`: MD3 theme system: design-token contracts (`tokens.ts`), eight preset seed palettes (`palettes.ts`), the colour engine (`scheme.ts`) and style injection/cache helpers (`applyScheme.ts`). `scheme.test.ts` covers colour normalisation, presets, determinism, system-accent fallback and title-bar derivation; `contrast.test.ts` asserts WCAG 2.1 contrast for every preset in light and dark, including a two-way-checked record of the known light-theme decorative divider gap, and checks the fixed `success` / `warning` extended roles (read from `_color.scss` through the `virtual:raw-source` test module) used by the about page and Snackbar icons.
+- `src/theme/`: MD3 theme system: design-token contracts (`tokens.ts`), eight preset seed palettes (`palettes.ts`), the colour engine (`scheme.ts`) and style injection/cache helpers (`applyScheme.ts`, whose `applyScheme(input, { cache: false })` skips the `localStorage` write for per-frame previews). `scheme.test.ts` covers colour normalisation, presets, determinism, system-accent fallback and title-bar derivation; `contrast.test.ts` asserts WCAG 2.1 contrast for every preset in light and dark, including a two-way-checked record of the known light-theme decorative divider gap, and checks the fixed `success` / `warning` extended roles (read from `_color.scss` through the `virtual:raw-source` test module) used by the about page and Snackbar icons.
 - `src/types/`: shared TypeScript contracts for base controls (`ui.ts` holds `SelectOption`, `SelectOptionValue`, `ButtonVariant`, `ButtonSize`, `ChipVariant`).
 - `src/gestureEditor/`: gesture editor domain module, including context, narrow stores, and internal workflow modules for rule editing, scope selection, persistence, and WebView message handling.
 - `src/components/`: reusable UI pieces grouped by responsibility: `sidebar/`, `layout/`, `dialog/`, `form/`, `ui/`, `gesture/`, `scope/`, and `rules/`.
@@ -32,7 +32,7 @@ This repository is a Vite + Vue 3 web frontend for the WuGesture application. It
   - `global/index.vue`: global rule scope page.
   - `category/index.vue`: category rule scope page.
   - `app/index.vue`: application rule scope page.
-  - `settings/theme/index.vue`: appearance settings page (`/settings/theme`) for light/dark mode, palette source, eight presets, custom colour and Windows accent colour, with live preview and debounced persistence.
+  - `settings/theme/index.vue`: appearance settings page (`/settings/theme`) for light/dark mode, palette source, eight presets, custom colour and Windows accent colour, with live preview and debounced persistence. The colour picker's `input` events only update the draft; one `requestAnimationFrame` per frame regenerates the scheme without rewriting the cache, and closing the picker (`change`) writes the cache and persists once.
   - `dev/md3/index.vue`: MD3 design-token preview page, registered only when `import.meta.env.DEV` is true; it never ships in production builds.
 
 ### Base Controls (MD3)
@@ -64,6 +64,7 @@ Stage 3 rebuilt the page shell, navigation drawer and list containers.
 ## Functional Areas
 
 - Routing is hash-based and exposes the `global`, `category`, `app` rule scopes, plus `edge/*`, `exclusions`, `settings/*` and `about`.
+- `src/App.vue` keys the `RouterView` transition frame by route name instead of `fullPath`, so same-name parameter/query changes (`/category/:name`, `/app/:name`, `/exclusions?selected=`) only update page state through the pages' own watchers, while cross-page navigation still remounts and plays the slide transition.
 - `src/gestureEditor/context/gestureEditorContext.js` is the main coordination layer for:
   - loading and saving rules,
   - tracking selected scope and application/category state,

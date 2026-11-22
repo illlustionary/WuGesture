@@ -76,7 +76,7 @@ src
 - `src\theme\tokens.ts`：颜色角色、Typescale、形状、间距和动效的类型契约，以及 `colorVar()` 等引用工具；新增令牌时必须与 SCSS 同步。
 - `src\theme\palettes.ts`：8 套预设 seed 色板（蓝/青/绿/紫/粉/橙/红/灰）与默认色 `#529EF1`；保存色值而非索引。
 - `src\theme\scheme.ts`：MD3 配色引擎，封装 `@material/material-color-utilities`，以 seed + 变体生成浅/深两套完整角色色板；负责颜色/枚举归一化、Windows 强调色可用性判断与回退，以及标题栏 `surface` / `onSurface` 派生。`scheme.test.ts` 覆盖确定性、变体和标题栏派生；`contrast.test.ts` 用 WCAG 2.1 公式对 8 套预设 × 浅/深色的正文（≥4.5）、图形（≥3）、装饰（≥1.5）配对做矩阵断言，并对浅色 `outline-variant` / `surface-container` 的 1.46–1.47 已知差距做双向校验；同时通过 `virtual:raw-source` 读取 `_color.scss` 里固定的 `success` / `warning` 扩展角色，断言 `on-*` 配对、关于页状态文字和 Snackbar 图标（`success-container` 等）的对比度。
-- `src\theme\applyScheme.ts`：把生成的色板注入 `<style id="md-scheme">`（同时写入 `:root` 与 `[data-theme='dark']`），用 `localStorage` 缓存首屏色板和明暗模式（两个独立键），挂载前先套用上次模式；之后只切换 `data-theme` 完成明暗模式切换。
+- `src\theme\applyScheme.ts`：把生成的色板注入 `<style id="md-scheme">`（同时写入 `:root` 与 `[data-theme='dark']`），用 `localStorage` 缓存首屏色板和明暗模式（两个独立键），挂载前先套用上次模式；之后只切换 `data-theme` 完成明暗模式切换。`applyScheme(input, { cache: false })` 供取色器逐帧预览使用，只替换样式文本、不写缓存；`setThemeMode` 在 `data-theme` 已经是目标值时直接返回，避免拖动时重复写属性和缓存。
 - `src\types\ui.ts`：基础控件的共享类型契约（`SelectOption`、`SelectOptionValue`、`ButtonVariant`、`ButtonSize`、`ChipVariant`）。
 
 ## MD3 Base Controls
@@ -226,7 +226,7 @@ src\pages
   - `settings\components\SettingsSectionCard.vue`：设置页大项卡片，统一标题、内容、说明和底部操作区；测试、备份、恢复等页级动作放到底部，表单在上、动作在下。
   - `settings\components\ConfigManagement.vue`：配置管理页，分「备份与迁移」（导出、导入）和「恢复默认」两组，说明导入导出的范围并强调不可撤销。
   - `settings\components\SettingsFormGrid.vue`：设置项双列表单布局，16 间距，960 以下自动单列。
-  - `settings\components\SettingsField.vue`：设置字段容器，标签在上、控件在下，`surfaceContainer` + 8 圆角 + 12 内边距。
+  - `settings\components\SettingsField.vue`：设置字段容器，标签在上、控件在下，`surfaceContainer` + 8 圆角 + 12 内边距；内部 `align-content: start`，同一行里某个字段的说明文字把格子撑高时，标签和控件仍从顶部排列，不会把控件挤到比相邻设置项更低的位置。
   - `settings\components\SettingsToggleRow.vue`：设置页开关行容器，复用 `ToggleCheckbox` 自带的 56 高行与 8 圆角状态。
   - `settings\components\MouseTrailSettings.vue`：轨迹线配置，顶部内置轨迹线实时预览。
   - `settings\components\LevelOsdSettings.vue`：音量/亮度 OSD 配置，顶部内置位置、尺寸和圆角实时预览。
@@ -236,7 +236,7 @@ src\pages
   - `settings\components\GestureHintSettings.vue`：底部提示窗配置，顶部内置提示窗实时预览。
   - `settings\components\GestureSensitivitySettings.vue`：手势灵敏度三档配置。
   - `settings\composables\useUiSettingsDraft.js`：基于 `gestureEditorNormalizers.js` 的共享设置深拷贝创建草稿，负责 debounce 保存、重置和预览样式计算；导入配置前会丢弃未提交的草稿，避免旧值在导入完成后覆盖新配置。
-- `settings\theme\index.vue`：外观设置独立页（`/settings/theme`），提供明暗模式、配色来源（8 套预设 / 自定义取色 + HEX / 跟随 Windows 强调色）、实时预览和 250ms 防抖保存；切换时即时重算色板并同步标题栏颜色。
+- `settings\theme\index.vue`：外观设置独立页（`/settings/theme`），提供明暗模式、配色来源（8 套预设 / 自定义取色 + HEX / 跟随 Windows 强调色）、实时预览和 250ms 防抖保存；切换时即时重算色板并同步标题栏颜色。自定义取色器的 `input` 事件只更新草稿，由 `requestAnimationFrame` 合并成每帧最多一次色板重算（拖动期间不写 `localStorage` 缓存），取色器关闭（`change`）时再补写缓存并持久化；已应用过的草稿签名不会重复计算。
   - `settings\theme\components\PalettePresetGrid.vue`：8 套预设色板网格，用 `primary` / `secondary` / `tertiary` / `surfaceContainer` 四色条预览并标出当前选中项。
   - `settings\theme\components\ThemePreview.vue`：当前色板的窗口、卡片、按钮和角色色块实时预览，按明暗模式切换取值。
 - `about\index.vue`：侧栏最外层的“关于&更新”页，分「关于」和「更新」两个区块；「关于」展示软件简介、GitHub/Gitee 仓库地址链接、当前版本、更新源和自动检查状态（只读），「更新」提供检查更新按钮、状态提示和“查看更新”入口，修改更新设置需要前往“设置 > 更新”。更新后首次启动会自动切到本页并提示已完成更新及当前版本。
@@ -265,7 +265,7 @@ src\pages
 界面外壳：窗口控制由桌面宿主自绘的标题栏负责（标题条位于 WebView 上方，属于宿主绘制区域，不进入前端页面）；其下方是 256 宽的 MD3 Navigation Drawer，一级项 48 高、full 圆角，激活态为 `secondaryContainer` 胶囊，子项 40 高。每个页面在内容区顶部保留 56 高页面头，显示标题（22/28）与描述（12/16），页面级操作放在头部右侧。侧栏顶部的 `SidebarAppStatus` 组件可点击，临时暂停或恢复 WuGesture，并在图标右侧显示名称与程序集版本。侧栏的导航、分类、程序、边缘操作、设置和关于&更新各自使用独立区域组件，页脚控制也独立封装；分类/程序子项动态来自当前配置，边缘操作和设置子项对应独立嵌套路由，关于&更新是与导航同级的最外层入口（`/about`）。侧栏收起状态保存在 `uiSettings.sidebar.collapsed`，重建配置页面后保持不变。收起时热区通过 `v-show` 控制，侧栏自身以固定定位、`visibility`、透明度和鼠标事件状态隐藏；导航分组内容继续参与布局，因此不会压缩滚动高度或重置滚动位置。进入热区后淡入，离开侧栏后淡出。侧栏只有一个滚动区域：导航列（`.app-sidebar__nav`）整体滚动，展开后的分类/程序子项按内容自然撑开，分组内部不再单独滚动。页脚主题按钮为三态循环：`system → light → dark → system`，分别显示 `monitor` / `sun` / `moon` 图标并保存对应偏好；完整配色来源和自定义取色在外观设置页。
 
 - `全局` 采用单列表布局，直接编辑整张全局规则表，不显示左侧作用域区域。
-- 页面切换使用方向感过渡：按顶部标签顺序向右切换时新页面从右侧滑入并渐显，向左切换时从左侧滑入并渐显，旧页面会轻微反向淡出；分类和程序子项切换与边缘操作、设置一样先完成路由切换，再由目标页面同步选中作用域，避免过渡中重复更新内容。
+- 页面切换使用方向感过渡：按顶部标签顺序向右切换时新页面从右侧滑入并渐显，向左切换时从左侧滑入并渐显，旧页面会轻微反向淡出；分类和程序子项切换与边缘操作、设置一样先完成路由切换，再由目标页面同步选中作用域，避免过渡中重复更新内容。`RouterView` 的过渡容器以路由名（`route.name`，无名时退回 `path`）作为 key，而不是 `fullPath`：同名路由只有参数或查询变化时（如 `/category/:name`、`/app/:name`、`/exclusions?selected=`）不再卸载重建页面，改由页面自身的 `watch` 更新选中项；只有跨页面切换才重建并播放滑动过渡。
 - `分类` 和 `程序` 使用全局多级侧栏管理动态作用域，页面主体只展示当前分类/程序内容，不再重复显示内部作用域列表。
 - `分类` 页右侧包含“应用程序”和“手势列表”两个区块；程序可同时加入多个分类，分类关联顺序决定相同手势的覆盖顺序，越靠前的分类优先级越高。
 - `程序` 页顶部展示共享程序项，随后展示关联分类排序和手势列表；关联分类越靠上优先级越高，可通过拖拽或上移、下移调整同手势冲突时的覆盖顺序，程序规则仍按 app 作用域单独维护。

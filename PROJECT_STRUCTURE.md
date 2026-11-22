@@ -317,7 +317,7 @@ src\WuGesture.App\Web\PROJECT_STRUCTURE.md
 宿主集成：
 
 - 配置界面由 WebView2 承载：桌面宿主通过虚拟主机 `https://gesture.wu.philosophy/` 加载宿主输出目录中的 `Web`；窗口使用宿主自绘标题栏（`MainForm.Chrome.cs`），标题为 `WuGesture`。界面结构、侧栏和页面交互见 Web 子项目文档。
-- 前端主题引擎（`Web/src/theme/scheme.ts`）以 seed 生成浅/深两套 MD3 角色色板并注入 `<style id="md-scheme">`，首屏使用 `localStorage` 缓存（色板和明暗模式分开缓存），挂载前先套用上次的模式，避免深色配置首屏闪白；宿主配置到达前不按默认值改写 `data-theme`。切换明暗只翻转 `data-theme`，切换配色只替换样式文本。前端在配置加载后把标题栏四个颜色字段回写为色板的 `surface` / `onSurface`，宿主保存配置时同步更新标题栏、WebView 默认底色和托盘菜单。
+- 前端主题引擎（`Web/src/theme/scheme.ts`）以 seed 生成浅/深两套 MD3 角色色板并注入 `<style id="md-scheme">`，首屏使用 `localStorage` 缓存（色板和明暗模式分开缓存），挂载前先套用上次的模式，避免深色配置首屏闪白；宿主配置到达前不按默认值改写 `data-theme`。切换明暗只翻转 `data-theme`，切换配色只替换样式文本。自定义取色器的 `input` 事件只更新草稿，每帧最多重算一次色板且不写缓存，关闭取色器时才补写缓存并持久化。前端在配置加载后把标题栏四个颜色字段回写为色板的 `surface` / `onSurface`，宿主保存配置时同步更新标题栏、WebView 默认底色和托盘菜单。
 - 宿主下发的 `rules` WebView 消息包含程序集 `appVersion`、配置、规则、程序、边缘操作和 UI 设置；运行态程序和排除项会附带应用图标，外观设置还会附带仅运行态的 `systemAccent`。
 - 运行时动作失败通过 `gesture-action-failed` / `edge-action-failed` 通知前端（携带动作名和错误信息），前端用 Snackbar 提示并对同一错误做 5 秒去重，不再静默丢弃。
 - 更新流程使用独立消息：前端发送 `check-update`、`start-update`、`cancel-update`、`open-update-page`，宿主回传 `update-available`、`update-none`、`update-error`、`update-progress`、`update-failed`、`update-restarting`、`update-completed`；具体字段见 Web 子项目文档。

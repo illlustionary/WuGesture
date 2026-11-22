@@ -55,6 +55,9 @@ const isDark = computed(() => isDarkForMode(draft.appearance.theme))
 const systemAccent = computed(() => String(draft.appearance.systemAccent ?? '').trim())
 const themeRowRef = ref<HTMLElement | null>(null)
 const sourceRowRef = ref<HTMLElement | null>(null)
+let appearanceFrame = 0
+let appliedSignature = ''
+let colorDragging = false
 
 const systemMessage = computed(() => {
   if (!systemAccent.value) {
@@ -68,16 +71,58 @@ const systemMessage = computed(() => {
   return `正在使用 Windows 强调色 ${systemAccent.value}。`
 })
 
+/** 影响色板的字段签名：宿主回灌草稿或用户操作后，用它判断是否需要重算。 */
+function appearanceSignature() {
+  return [
+    draft.appearance.theme,
+    draft.appearance.colorSource,
+    draft.appearance.seedColor,
+    draft.appearance.schemeVariant,
+    draft.appearance.systemAccent
+  ].join('\u0000')
+}
+
 /** 立即预览：生成色板、写入样式、同步标题栏配色和明暗模式。 */
-function applyAppearance() {
-  const next = applyScheme(draft.appearance)
+function applyAppearance(options: { cache?: boolean } = {}) {
+  const next = applyScheme(draft.appearance, options)
   applied.value = next
   Object.assign(draft.appearance, next.titleBar)
   hexInput.value = String(draft.appearance.seedColor ?? DEFAULT_SEED_COLOR)
   setThemeMode(isDarkForMode(draft.appearance.theme))
+  appliedSignature = appearanceSignature()
+}
+
+/**
+ * 取色器拖动时每个 input 事件都会改种子色。把它们合并到下一帧执行一次：每个事件都重算 66 个 HCT
+ * 角色、整体替换 `<style>` 文本并写 localStorage，会让主线程持续满载。
+ */
+function scheduleAppearance() {
+  if (appearanceFrame) {
+    return
+  }
+
+  appearanceFrame = window.requestAnimationFrame(() => {
+    appearanceFrame = 0
+    if (appearanceSignature() === appliedSignature) {
+      // 已经由 saveAppearance() 同步应用过，不再重复计算。
+      return
+    }
+    applyAppearance({ cache: !colorDragging })
+  })
+}
+
+function cancelScheduledAppearance() {
+  if (!appearanceFrame) {
+    return
+  }
+
+  window.cancelAnimationFrame(appearanceFrame)
+  appearanceFrame = 0
 }
 
 function saveAppearance() {
+  colorDragging = false
+  cancelScheduledAppearance()
   applyAppearance()
   queuePersistDraft()
   flushPersistDraft()
@@ -146,10 +191,16 @@ function handleSourceKeydown(event: KeyboardEvent, index: number) {
 }
 
 function onColorInput(event: Event) {
+  colorDragging = true
   draft.appearance.colorSource = 'custom'
   draft.appearance.seedColor = normalizeHexColor((event.target as HTMLInputElement).value)
-  applyAppearance()
   queuePersistDraft()
+}
+
+/** 取色器关闭时落一次最终值：补写缓存并立即持久化。 */
+function onColorChange() {
+  colorDragging = false
+  saveAppearance()
 }
 
 function commitHexColor() {
@@ -173,7 +224,7 @@ watch(
     draft.appearance.schemeVariant,
     draft.appearance.systemAccent
   ],
-  () => applyAppearance(),
+  () => scheduleAppearance(),
   { immediate: true }
 )
 </script>
@@ -263,7 +314,7 @@ watch(
               :value="draft.appearance.seedColor"
               aria-label="自定义种子色"
               @input="onColorInput"
-              @change="flushPersistDraft"
+              @change="onColorChange"
             />
             <SettingsField
               label="HEX 颜色"

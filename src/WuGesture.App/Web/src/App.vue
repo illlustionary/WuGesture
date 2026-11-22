@@ -160,7 +160,7 @@ watch(
           <div class="route-transition-frame">
             <Transition :name="routeTransitionName">
               <div
-                :key="viewRoute.fullPath"
+                :key="String(viewRoute.name ?? viewRoute.path)"
                 class="app-route-view"
               >
                 <component :is="Component" />

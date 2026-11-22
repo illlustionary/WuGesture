@@ -70,11 +70,16 @@ export function resolveAppearance(input: AppearanceInput): AppliedAppearance {
   }
 }
 
-/** 计算并立即应用色板，同时写入首屏缓存。 */
-export function applyScheme(input: AppearanceInput): AppliedAppearance {
+/** 计算并立即应用色板；`cache: false` 时跳过 localStorage，供取色器拖动时的逐帧预览使用。 */
+export function applyScheme(
+  input: AppearanceInput,
+  options: { cache?: boolean } = {}
+): AppliedAppearance {
   const applied = resolveAppearance(input)
   writeSchemeStyle(applied)
-  writeSchemeCache(applied)
+  if (options.cache !== false) {
+    writeSchemeCache(applied)
+  }
   return applied
 }
 
@@ -96,7 +101,13 @@ export function setThemeMode(isDark: boolean): void {
     return
   }
 
-  document.documentElement.dataset.theme = isDark ? 'dark' : 'light'
+  const next = isDark ? 'dark' : 'light'
+  if (document.documentElement.dataset.theme === next) {
+    // 取色器拖动时每个 input 都会走到这里，重复写 dataset 和 localStorage 没有意义。
+    return
+  }
+
+  document.documentElement.dataset.theme = next
   writeThemeCache(isDark)
 }
 
