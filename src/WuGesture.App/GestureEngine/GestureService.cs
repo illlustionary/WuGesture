@@ -965,16 +965,32 @@ public sealed class GestureService : IDisposable
                     // Shortcut injection is delivered to whichever window owns the foreground
                     // queue. If activation was denied (foreground lock, another app stealing
                     // focus), sending anyway would type into the wrong window or nowhere at all,
-                    // so give the target a short chance to become foreground and skip otherwise.
-                    if (pendingAction.Rule.Action is HotkeyAction &&
-                        !EnsureHotkeyTargetForeground(pendingAction.TargetWindow))
+                    // so give the target a short chance to become foreground. A minimized UWP
+                    // frame or a shell surface cannot be replaced at all, so that is detected
+                    // without waiting. When activation is impossible, a single-key action is
+                    // posted straight to the target window instead of being dropped.
+                    if (pendingAction.Rule.Action is HotkeyAction hotkey &&
+                        !EnsureHotkeyTargetForeground(pendingAction.TargetWindow, out var foregroundOutcome))
                     {
-                        outcome = "hotkey-target-not-foreground";
-                        AppLogger.Warning(
-                            "GestureService",
-                            "hotkey-target-not-foreground",
-                            $"Skipped hotkey action '{pendingAction.Rule.ActionName}' for session {pendingAction.SessionId}: target window 0x{pendingAction.TargetWindow.ToInt64():X} did not become foreground.");
-                        continue;
+                        var reason = HotkeyDeliveryPolicy.Describe(foregroundOutcome);
+                        if (ActionExecutor.TryPostHotkeyToTarget(hotkey, pendingAction.TargetWindow))
+                        {
+                            outcome = "hotkey-posted-to-target";
+                            AppLogger.Information(
+                                "GestureService",
+                                "hotkey-posted-to-target",
+                                $"Posted hotkey action '{pendingAction.Rule.ActionName}' for session {pendingAction.SessionId} to target window 0x{pendingAction.TargetWindow.ToInt64():X} ({reason}).");
+                            continue;
+                        }
+                        else
+                        {
+                            outcome = "hotkey-target-not-foreground";
+                            AppLogger.Warning(
+                                "GestureService",
+                                "hotkey-target-not-foreground",
+                                $"Skipped hotkey action '{pendingAction.Rule.ActionName}' for session {pendingAction.SessionId}: target window 0x{pendingAction.TargetWindow.ToInt64():X} did not become foreground ({reason}).");
+                            continue;
+                        }
                     }
 
                     actionExecutor.Execute(pendingAction.Rule, pendingAction.TargetWindow);
@@ -1044,18 +1060,29 @@ public sealed class GestureService : IDisposable
     /// Makes sure a hotkey action is injected into the intended window. The check only applies to
     /// real application windows: shell surfaces and unresolved targets keep the previous
     /// best-effort behavior. Returns false when the target could not be brought to the foreground
-    /// within the short grace period.
+    /// within the short grace period (or cannot be brought forward at all).
     /// </summary>
-    internal static bool EnsureHotkeyTargetForeground(IntPtr window)
+    internal static bool EnsureHotkeyTargetForeground(IntPtr window, out HotkeyForegroundOutcome outcome)
     {
         if (window == IntPtr.Zero || !WindowControlTargetPolicy.IsWindowControlTarget(window))
         {
+            outcome = HotkeyForegroundOutcome.NotApplicable;
             return true;
         }
 
         if (IsForegroundWindow(window))
         {
+            outcome = HotkeyForegroundOutcome.AlreadyForeground;
             return true;
+        }
+
+        if (HasUnrecoverableForeground())
+        {
+            // A minimized foreground window (UWP ApplicationFrameHost frames stay foreground after
+            // SW_MINIMIZE) or a shell surface (taskbar, task view, ForegroundStaging) cannot be
+            // replaced by a background process. Skip the grace period and let the caller fall back.
+            outcome = HotkeyForegroundOutcome.ForegroundUnrecoverable;
+            return false;
         }
 
         SetForegroundWindow(window);
@@ -1064,13 +1091,45 @@ public sealed class GestureService : IDisposable
         {
             if (IsForegroundWindow(window))
             {
+                outcome = HotkeyForegroundOutcome.Activated;
                 return true;
             }
 
             Thread.Sleep(HotkeyForegroundPollMilliseconds);
         }
 
-        return IsForegroundWindow(window);
+        outcome = IsForegroundWindow(window)
+            ? HotkeyForegroundOutcome.Activated
+            : HotkeyForegroundOutcome.ActivationDenied;
+        return outcome == HotkeyForegroundOutcome.Activated;
+    }
+
+    private static bool HasUnrecoverableForeground()
+    {
+        var foreground = GetForegroundWindow();
+        if (foreground == IntPtr.Zero)
+        {
+            // No foreground window means the system allows SetForegroundWindow, keep trying.
+            return false;
+        }
+
+        return HotkeyDeliveryPolicy.IsForegroundUnrecoverable(
+            IsIconic(foreground),
+            ShellUiWindowHeuristics.IsShellUiWindow(GetWindowClassName(foreground), GetWindowProcessName(foreground)));
+    }
+
+    private static string GetWindowClassName(IntPtr window)
+    {
+        var buffer = new char[256];
+        var length = GetClassName(window, buffer, buffer.Length);
+        return length > 0 ? new string(buffer, 0, length) : string.Empty;
+    }
+
+    private static string GetWindowProcessName(IntPtr window)
+    {
+        return WindowProcessCache.TryGet(window, includeExecutablePath: false, out var info)
+            ? info.ProcessName
+            : string.Empty;
     }
 
     private static bool IsForegroundWindow(IntPtr window)
@@ -1382,6 +1441,12 @@ public sealed class GestureService : IDisposable
 
     [DllImport("user32.dll")]
     private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
+
+    [DllImport("user32.dll")]
+    private static extern bool IsIconic(IntPtr hWnd);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern int GetClassName(IntPtr hWnd, char[] lpClassName, int nMaxCount);
 
     private const uint GetAncestorRoot = 2;
 }

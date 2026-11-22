@@ -23,6 +23,9 @@ public sealed class ActionExecutor
     private const uint SwpNoMove = 0x0002;
     private const uint SwpNoActivate = 0x0010;
     private const int WmClose = 0x0010;
+    private const int WmKeyDown = 0x0100;
+    private const int WmKeyUp = 0x0101;
+    private const uint GetAncestorRoot = 2;
     private static readonly IntPtr HwndTopMost = new(-1);
     private static readonly IntPtr HwndNoTopMost = new(-2);
 
@@ -118,6 +121,65 @@ public sealed class ActionExecutor
         throw new Win32Exception(
             lastError,
             $"Failed to send keyboard input for {keyNames} ({sent}/{batch.Length} events inserted, Win32 error {lastError}: {DescribeError(lastError)}).");
+    }
+
+    /// <summary>
+    /// 前台激活失败时的降级投递：把单个无修饰键的按键直接投递给目标窗口，不依赖前台状态。
+    /// 仅用于 Escape、Enter、方向键这类单键；组合键仍由调用方跳过，避免按键落入错误窗口。
+    /// </summary>
+    internal static bool TryPostHotkeyToTarget(HotkeyAction action, IntPtr targetWindow)
+    {
+        if (!HotkeyDeliveryPolicy.CanPostToTarget(action) ||
+            targetWindow == IntPtr.Zero ||
+            !IsWindow(targetWindow))
+        {
+            return false;
+        }
+
+        var key = action.Keys[0];
+        var scanCode = ResolveScanCode(key, ResolveKeyboardLayout(targetWindow));
+        var messageWindow = ResolveKeyMessageWindow(targetWindow);
+        var virtualKey = (IntPtr)(int)key;
+        var keyDown = new IntPtr(HotkeyDeliveryPolicy.BuildKeyMessageLParam(
+            scanCode.Code,
+            scanCode.IsExtended,
+            keyUp: false));
+        if (!PostMessage(messageWindow, WmKeyDown, virtualKey, keyDown))
+        {
+            return false;
+        }
+
+        // The key-down already reached the target; a failed key-up must not turn the whole
+        // delivery into "skipped", otherwise diagnostics would hide the partial delivery.
+        var keyUp = new IntPtr(HotkeyDeliveryPolicy.BuildKeyMessageLParam(
+            scanCode.Code,
+            scanCode.IsExtended,
+            keyUp: true));
+        _ = PostMessage(messageWindow, WmKeyUp, virtualKey, keyUp);
+        return true;
+    }
+
+    /// <summary>
+    /// 键盘消息应投递给目标窗口线程的焦点窗口（例如 Win32 应用的输入框），只有焦点窗口
+    /// 属于目标顶层窗口时才使用它，避免把按键投到同进程的其他窗口。
+    /// </summary>
+    private static IntPtr ResolveKeyMessageWindow(IntPtr targetWindow)
+    {
+        var threadId = GetWindowThreadProcessId(targetWindow, out _);
+        if (threadId == 0)
+        {
+            return targetWindow;
+        }
+
+        var info = new GuiThreadInfo { Size = Marshal.SizeOf<GuiThreadInfo>() };
+        if (!GetGUIThreadInfo(threadId, ref info) || info.FocusWindow == IntPtr.Zero)
+        {
+            return targetWindow;
+        }
+
+        return GetAncestor(info.FocusWindow, GetAncestorRoot) == targetWindow
+            ? info.FocusWindow
+            : targetWindow;
     }
 
     private static string DescribeError(int errorCode)
@@ -366,6 +428,12 @@ public sealed class ActionExecutor
     [DllImport("user32.dll")]
     private static extern bool PostMessage(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);
 
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetAncestor(IntPtr hWnd, uint gaFlags);
+
+    [DllImport("user32.dll")]
+    private static extern bool GetGUIThreadInfo(uint idThread, ref GuiThreadInfo info);
+
     [DllImport("user32.dll", SetLastError = true)]
     private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
 
@@ -421,6 +489,29 @@ public sealed class ActionExecutor
         public uint Flags;
         public uint Time;
         public IntPtr ExtraInfo;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct GuiThreadInfo
+    {
+        public int Size;
+        public uint Flags;
+        public IntPtr ActiveWindow;
+        public IntPtr FocusWindow;
+        public IntPtr CaptureWindow;
+        public IntPtr MenuOwnerWindow;
+        public IntPtr MoveSizeWindow;
+        public IntPtr CaretWindow;
+        public CaretRect CaretRectangle;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct CaretRect
+    {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
     }
 
     [StructLayout(LayoutKind.Sequential)]
