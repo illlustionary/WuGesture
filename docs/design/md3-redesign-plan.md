@@ -66,7 +66,7 @@
 ### 2.3 宿主硬约束
 
 1. 标题栏为 WinForms 自绘（40 逻辑像素、按钮 46px、缩放边 4px），前端无法替换为 MD3 Top App Bar。
-2. WebView2 仅允许 `https://gesture.wu.philosophy`，Release 关闭 DevTools / 缩放 / 右键菜单 / 浏览器快捷键。
+2. WebView2 仅允许 `https://appassets.wugesture.invalid`，Release 关闭 DevTools / 缩放 / 右键菜单 / 浏览器快捷键。
 3. 不能依赖远程字体或 CDN。
 4. 最小窗口 1280×720，内容区约 1042px。
 5. 配置以 C# DTO 为准，未知字段保存时会被丢弃。

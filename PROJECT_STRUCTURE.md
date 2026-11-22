@@ -97,7 +97,7 @@ src\WuGesture.App
 - `CloseRequestPolicy.cs`：判断 `FormClosing` 的原因是否属于外部关闭请求。WinForms 只把标题栏按钮和 Alt+F4 报为 `UserClosing`，其他 `WM_CLOSE`（鼠标手势“关闭窗口”、自动化工具、任务管理器）都报为 `TaskManagerClosing`；两者都按关闭按钮行为处理，系统关机和 `Application.Exit` 仍然真正退出。
 - `TrayVisibilityPolicy.cs`：判断关闭到托盘时的隐藏时机，以及窗口隐藏到托盘后是否应拒绝 Alt+Tab、任务视图等 Shell 发来的外部显示请求；两个判定都做成纯函数，避免“关闭后又弹出一个没有 WebView2 的空窗口”。
 - `AppLogger.cs`：应用级结构化 JSONL 日志。`Program.cs` 会在入口初始化它，以记录启动/退出、单实例 IPC（包括第二个实例的转发失败）、WebView2 Runtime 版本和未处理异常；配置操作、WebView 宿主及动作失败也会记录。日志异步批量写入 `%LocalAppData%\WuGesture\logs\application-YYYYMMDD.log`，单文件达到 2MB 时保留一份 `.previous` 轮转日志，保留最近 7 天；队列满时会生成丢弃标记，写入失败时回退到 `%TEMP%\WuGesture-application-log-error.log`。日志不记录配置 JSON、WebDAV 凭据或 WebView 消息正文。
-- `WebViewHost.cs`：负责 WebView2 控件的创建、销毁、虚拟主机映射、导航和消息事件订阅；导航前使用宿主提供的默认底色和浅深主题标记，避免配置窗口重建时客户端区域按白色首帧绘制；入站消息仍同步交由 `MainForm` 的业务处理器执行，宿主不存在时出站消息直接丢弃。只有 `https://gesture.wu.philosophy` 下的页面可以投递消息：入站消息会校验 `Source`，离开该主机的导航一律取消并交给默认浏览器，新窗口请求也只做外部打开；控件同时关闭外部拖放，避免把文件或链接拖进窗口后导航到其他来源。WebView2 使用显式创建的 `CoreWebView2Environment`，profile 固定放在 `%LocalAppData%\WuGesture\WebView2`（不再放在 exe 旁边，安装目录可能只读、发布脚本也会清空输出目录）；`ready`/`disposed` 日志会记录浏览器进程号，释放后 3 秒内仍未退出的浏览器进程会被回收，保证关闭到托盘后不残留 Chromium 进程；Release 构建关闭 DevTools、默认右键菜单、浏览器快捷键和缩放，避免配置界面被误刷新或缩放。
+- `WebViewHost.cs`：负责 WebView2 控件的创建、销毁、虚拟主机映射、导航和消息事件订阅；导航前使用宿主提供的默认底色和浅深主题标记，避免配置窗口重建时客户端区域按白色首帧绘制；入站消息仍同步交由 `MainForm` 的业务处理器执行，宿主不存在时出站消息直接丢弃。只有 `https://appassets.wugesture.invalid` 下的页面可以投递消息：入站消息会校验 `Source`（虚拟主机名固定落在 RFC 6761 保留的 `.invalid` 下，第三方永远无法注册同名站点；映射若意外缺失，导航只会失败而不会落到外部站点），离开该主机的导航一律取消并交给默认浏览器，新窗口请求也只做外部打开；控件同时关闭外部拖放，避免把文件或链接拖进窗口后导航到其他来源。WebView2 使用显式创建的 `CoreWebView2Environment`，profile 固定放在 `%LocalAppData%\WuGesture\WebView2`（不再放在 exe 旁边，安装目录可能只读、发布脚本也会清空输出目录）；`ready`/`disposed` 日志会记录浏览器进程号，释放后 3 秒内仍未退出的浏览器进程会被回收，保证关闭到托盘后不残留 Chromium 进程；Release 构建关闭 DevTools、默认右键菜单、浏览器快捷键和缩放，避免配置界面被误刷新或缩放。
 - `WebViewMessageDtos.cs`：集中 WebView 入站消息 DTO，并提供所有处理器共用的 `WebMessageJson.Options`（大小写不敏感），避免宿主和协调器各自维护一份序列化设置。
 - `WebViewRulesPayloadFactory.cs`：把已加载的手势配置转换为 WebView `rules` 消息 payload；其中 `appVersion` 提供程序集版本给配置界面，`uiSettings.appearance` 将明暗模式、配色来源、种子色、调色板变体和运行态 `systemAccent`（宿主读取的 Windows 强调色）传给前端，`uiSettings.onboarding` 下发首次引导完成标记，应用程序和排除项的运行态消息项会补充应用图标 PNG data URL。
 - `ApplicationIconDataUrl.cs`：从可执行文件提取图标并转换为 WebView 可用的 PNG data URL；按可执行文件路径 + 文件长度 + 最后写入时间缓存结果（最多 128 项，溢出整体清空），避免每次 `rules` payload 都重新解码所有已配置程序和排除项的图标。
@@ -316,7 +316,7 @@ src\WuGesture.App\Web\PROJECT_STRUCTURE.md
 
 宿主集成：
 
-- 配置界面由 WebView2 承载：桌面宿主通过虚拟主机 `https://gesture.wu.philosophy/` 加载宿主输出目录中的 `Web`；窗口使用宿主自绘标题栏（`MainForm.Chrome.cs`），标题为 `WuGesture`。界面结构、侧栏和页面交互见 Web 子项目文档。
+- 配置界面由 WebView2 承载：桌面宿主通过虚拟主机 `https://appassets.wugesture.invalid/` 加载宿主输出目录中的 `Web`；窗口使用宿主自绘标题栏（`MainForm.Chrome.cs`），标题为 `WuGesture`。界面结构、侧栏和页面交互见 Web 子项目文档。
 - 前端主题引擎（`Web/src/theme/scheme.ts`）以 seed 生成浅/深两套 MD3 角色色板并注入 `<style id="md-scheme">`，首屏使用 `localStorage` 缓存（色板和明暗模式分开缓存），挂载前先套用上次的模式，避免深色配置首屏闪白；宿主配置到达前不按默认值改写 `data-theme`。切换明暗只翻转 `data-theme`，切换配色只替换样式文本。自定义取色器的 `input` 事件只更新草稿，每帧最多重算一次色板且不写缓存，关闭取色器时才补写缓存并持久化。前端在配置加载后把标题栏四个颜色字段回写为色板的 `surface` / `onSurface`，宿主保存配置时同步更新标题栏、WebView 默认底色和托盘菜单。
 - 宿主下发的 `rules` WebView 消息包含程序集 `appVersion`、配置、规则、程序、边缘操作和 UI 设置；运行态程序和排除项会附带应用图标，外观设置还会附带仅运行态的 `systemAccent`。
 - 运行时动作失败通过 `gesture-action-failed` / `edge-action-failed` 通知前端（携带动作名和错误信息），前端用 Snackbar 提示并对同一错误做 5 秒去重，不再静默丢弃。
@@ -346,7 +346,7 @@ tests\WuGesture.App.Tests
 - `EdgeHitTester`：多屏坐标、边缘优先级、摩擦边角落排除和到边距离计算。
 - `AppLogWriter`：异步 JSONL 写入、轮转、保留和队列溢出标记。
 - `WebViewRulesPayloadFactory`：`rules` 消息的配置映射、应用图标和应用版本字段。
-- `WebViewHost`：入站消息来源只接受映射的配置主机（`https://gesture.wu.philosophy`），拒绝其他主机、http、file/about 和空来源。
+- `WebViewHost`：入站消息来源只接受映射的配置主机（`https://appassets.wugesture.invalid`），拒绝其他主机、http、file/about 和空来源。
 - `UpdateCoordinator`：更新提示在窗口最小化或 WebView 未就绪时延迟并在恢复后只提示一次；重启命令行参数按 Windows 规则加引号，保留含空格和引号的参数。
 - `WebMessageRouter`：按类型分发、状态查询字符串、未知类型忽略、坏 JSON 与处理器异常被兜底且不影响后续消息。
 - `CloseRequestPolicy`：标题栏/Alt+F4 与外部 `WM_CLOSE`（手势“关闭窗口”、任务管理器）都视为外部关闭请求，系统关机、`Application.Exit` 和其他系统原因不拦截。
