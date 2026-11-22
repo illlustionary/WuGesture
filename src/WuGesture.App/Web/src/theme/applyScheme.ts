@@ -71,10 +71,7 @@ export function resolveAppearance(input: AppearanceInput): AppliedAppearance {
 }
 
 /** 计算并立即应用色板；`cache: false` 时跳过 localStorage，供取色器拖动时的逐帧预览使用。 */
-export function applyScheme(
-  input: AppearanceInput,
-  options: { cache?: boolean } = {}
-): AppliedAppearance {
+export function applyScheme(input: AppearanceInput, options: { cache?: boolean } = {}): AppliedAppearance {
   const applied = resolveAppearance(input)
   writeSchemeStyle(applied)
   if (options.cache !== false) {
