@@ -166,7 +166,6 @@ public sealed class GestureInputCaptureTests
     public void ShouldCaptureWheel_OnlyWhileHeldAndAllowed()
     {
         var capture = new GestureInputCapture(_ => true);
-        capture.SetWheelCaptureButtons(rightButtonEnabled: true, middleButtonEnabled: true);
         Assert.False(capture.ShouldCaptureWheel());
 
         capture.HandleButtonDown(At(0, 0), GestureInputButton.Right);
@@ -181,24 +180,22 @@ public sealed class GestureInputCaptureTests
     }
 
     [Fact]
-    public void ShouldCaptureWheel_RequiresWheelRulesForTheHeldButton()
+    public void ShouldCaptureWheel_ConsumesWheelForEitherHeldButtonWithoutWheelRules()
     {
         var capture = new GestureInputCapture(_ => true);
-        capture.SetWheelCaptureButtons(rightButtonEnabled: true, middleButtonEnabled: false);
 
         capture.HandleButtonDown(At(0, 0), GestureInputButton.Right);
         Assert.True(capture.ShouldCaptureWheel());
         capture.HandleButtonUp(At(0, 0), GestureInputButton.Right);
 
         capture.HandleButtonDown(At(0, 0), GestureInputButton.Middle);
-        Assert.False(capture.ShouldCaptureWheel());
+        Assert.True(capture.ShouldCaptureWheel());
     }
 
     [Fact]
     public void ShouldCaptureWheel_IsDisabledWhileRecording()
     {
         var capture = new GestureInputCapture(_ => true);
-        capture.SetWheelCaptureButtons(rightButtonEnabled: true, middleButtonEnabled: true);
         capture.SetRecordingRequest("recording-1");
         capture.HandleButtonDown(At(0, 0), GestureInputButton.Right);
 
@@ -212,7 +209,6 @@ public sealed class GestureInputCaptureTests
     public void ShouldCaptureWheel_IsDisabledWhenPaused()
     {
         var capture = new GestureInputCapture(_ => true);
-        capture.SetWheelCaptureButtons(rightButtonEnabled: true, middleButtonEnabled: true);
         capture.HandleButtonDown(At(0, 0), GestureInputButton.Right);
 
         capture.SetPaused(true);

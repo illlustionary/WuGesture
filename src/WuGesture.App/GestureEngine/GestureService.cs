@@ -96,24 +96,12 @@ public sealed class GestureService : IDisposable
         inputCapture.GestureStarted += OnGestureStarted;
         inputCapture.GestureMoved += OnGestureMoved;
         inputCapture.GestureEnded += OnGestureEnded;
-        ApplyWheelCaptureButtons();
     }
 
     public void UpdateMatcher(GestureMatcher newMatcher)
     {
-        // Keep the hook-thread capture decision in step with the matcher the parser will use.
-        EnqueueParserAction(service =>
-        {
-            service.matcher = newMatcher;
-            service.ApplyWheelCaptureButtons();
-        });
-    }
-
-    private void ApplyWheelCaptureButtons()
-    {
-        inputCapture.SetWheelCaptureButtons(
-            matcher.HasWheelRules(GestureMouseButton.Right),
-            matcher.HasWheelRules(GestureMouseButton.Middle));
+        // Keep the parser-side matcher in step with configuration reloads.
+        EnqueueParserAction(service => service.matcher = newMatcher);
     }
 
     private sealed record GestureStartInput(

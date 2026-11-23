@@ -87,18 +87,6 @@ public sealed class GestureMatcherTests
         Assert.Null(matcher.Match([]));
     }
 
-    [Fact]
-    public void HasWheelRules_TracksWheelModifiersPerMouseButton()
-    {
-        var directionRule = CreateRule("global", "Direction");
-        var rightWheel = CreateWheelRule("global", "Right wheel", UpPattern, GestureWheelDirection.Up);
-        var matcher = new GestureMatcher([directionRule, rightWheel]);
-
-        Assert.True(matcher.HasWheelRules(GestureMouseButton.Right));
-        Assert.False(matcher.HasWheelRules(GestureMouseButton.Middle));
-        Assert.False(new GestureMatcher([directionRule]).HasWheelRules(GestureMouseButton.Right));
-    }
-
     private static GestureRule CreateWheelRule(
         string scope,
         string actionName,

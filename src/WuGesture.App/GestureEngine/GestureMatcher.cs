@@ -93,15 +93,6 @@ public sealed class GestureMatcher
 
     public IReadOnlyList<GestureRule> Rules => rules;
 
-    /// <summary>
-    /// Used to decide whether wheel input should be swallowed while the given button is held.
-    /// Without any wheel-modifier rule the wheel must keep reaching the target application.
-    /// </summary>
-    public bool HasWheelRules(GestureMouseButton button)
-    {
-        return rules.Any(rule => rule.MouseButton == button && rule.WheelModifier is not null);
-    }
-
     private static bool TryGetScopePriority(string scope, GestureScopeContext context, out int priority)
     {
         priority = int.MinValue;

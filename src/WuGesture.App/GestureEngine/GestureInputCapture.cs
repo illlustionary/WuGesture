@@ -16,8 +16,6 @@ internal sealed class GestureInputCapture
     private readonly Func<Point, bool> canCaptureNormalGesture;
     private GestureInputButton activeButton;
     private GestureInputButton suppressedReleaseButton;
-    private bool wheelEnabledForRightButton;
-    private bool wheelEnabledForMiddleButton;
     private bool wheelCaptureAllowed;
     private long suppressWheelUntilTick;
     private bool isPaused;
@@ -67,10 +65,10 @@ internal sealed class GestureInputCapture
     }
 
     /// <summary>
-    /// True while a held gesture button may consume wheel notches. The parser turns this off
-    /// when the session ends; wheel capture also stays disabled while no wheel-modifier rule
-    /// is configured for the held button, so users who never configure wheel gestures keep
-    /// their normal scroll behavior.
+    /// True while a held gesture button may consume wheel notches. Like WGestures, any wheel
+    /// input during a held gesture belongs to the gesture and must not scroll the target
+    /// application, even when no wheel-modifier rule is configured. The parser turns this off
+    /// when the session ends or never starts (excluded app, fullscreen, recording, pause).
     /// </summary>
     public void SetWheelCaptureAllowed(bool allowed)
     {
@@ -80,32 +78,15 @@ internal sealed class GestureInputCapture
         }
     }
 
-    public void SetWheelCaptureButtons(bool rightButtonEnabled, bool middleButtonEnabled)
-    {
-        lock (stateLock)
-        {
-            wheelEnabledForRightButton = rightButtonEnabled;
-            wheelEnabledForMiddleButton = middleButtonEnabled;
-        }
-    }
-
     public bool ShouldCaptureWheel()
     {
         lock (stateLock)
         {
-            var isEnabledForActiveButton = activeButton switch
-            {
-                GestureInputButton.Right => wheelEnabledForRightButton,
-                GestureInputButton.Middle => wheelEnabledForMiddleButton,
-                _ => false
-            };
-
             return !disposed &&
                    !isPaused &&
                    recordingRequestId is null &&
                    activeButton != GestureInputButton.None &&
-                   wheelCaptureAllowed &&
-                   isEnabledForActiveButton;
+                   wheelCaptureAllowed;
         }
     }
 
