@@ -46,7 +46,6 @@ public sealed class GestureService : IDisposable
     private int wheelAccumulator;
     private IReadOnlyList<GestureDirection>? wheelLockedPattern;
     private GestureRule? wheelReleaseRule;
-    private string? lastWheelActionName;
     private bool captureDisableGesturesInFullscreen;
     private bool captureDisableGesturesOnDesktop;
     private long nextSessionId;
@@ -553,19 +552,17 @@ public sealed class GestureService : IDisposable
             wheelLockedPattern = pattern.ToArray();
         }
 
-        var raiseFeedback = lastWheelActionName != rule.ActionName;
-        lastWheelActionName = rule.ActionName;
-        if (raiseFeedback)
-        {
-            ShowWheelPreview(sessionId, pattern, rule);
-        }
+        // The preview owns the visible hint while a wheel modifier is active; it follows the
+        // current wheel direction and stays on screen for the rest of the session.
+        ShowWheelPreview(sessionId, pattern, rule);
 
         if (rule.ExecuteOnWheel)
         {
             // Continuous mode: every notch executes immediately and releasing the button does
-            // not execute again.
+            // not execute again. Like WGestures, executing a wheel action must not end the
+            // visual session, so the trail and hint stay visible while the user keeps scrolling.
             wheelReleaseRule = null;
-            ExecuteWheelAction(sessionId, session.Snapshot(), pattern, rule, gestureContext, direction, raiseFeedback);
+            ExecuteWheelAction(sessionId, session.Snapshot(), pattern, rule, gestureContext, direction, raiseRecognized: false);
             return;
         }
 
@@ -579,21 +576,12 @@ public sealed class GestureService : IDisposable
         IReadOnlyList<GestureDirection> pattern,
         GestureRule rule)
     {
-        if (rule.ActionName == session.PreviewActionName)
+        if (!session.TryBeginPreview(sessionId, rule.ActionName))
         {
             return;
         }
 
-        var path = session.Snapshot();
-        session.PreviewActionName = rule.ActionName;
-        session.PreviewSessionId = sessionId;
-        Post(() =>
-        {
-            if (!disposed)
-            {
-                GesturePreviewMatched?.Invoke(this, new GestureRecognizedEventArgs(sessionId, path, pattern, rule.ActionName));
-            }
-        });
+        PostPreview(sessionId, session.Snapshot(), pattern, rule.ActionName);
     }
 
     private void ExecuteWheelAction(
@@ -679,7 +667,6 @@ public sealed class GestureService : IDisposable
         wheelAccumulator = 0;
         wheelLockedPattern = null;
         wheelReleaseRule = null;
-        lastWheelActionName = null;
     }
 
     private void EnqueueParserAction(Action<GestureService> action)
@@ -1167,12 +1154,14 @@ public sealed class GestureService : IDisposable
         var path = session.Snapshot();
         RaiseProgress(session.Id, path, pattern, true, ToPublicButton(activeMouseButton), sourceTimestamp: sourceTimestamp);
 
-        // While a wheel modifier is active the preview is owned by HandleWheelNotch; a plain
-        // direction preview would incorrectly ignore the modifier.
-        if (!session.HasWheelActivity)
+        if (session.HasWheelActivity)
         {
-            RaisePreviewMatch(session.Id, path, pattern, activeGestureContext.ScopeContext, ToPublicButton(activeMouseButton));
+            // A plain direction preview would ignore the wheel modifier; the hint name is owned
+            // by HandleWheelNotch, and GestureFeedbackCoordinator moves that hint with the trail.
+            return;
         }
+
+        RaisePreviewMatch(session.Id, path, pattern, activeGestureContext.ScopeContext, ToPublicButton(activeMouseButton));
     }
 
     private void RaisePreviewMatch(
@@ -1189,18 +1178,25 @@ public sealed class GestureService : IDisposable
             return;
         }
 
-        if (rule.ActionName == session.PreviewActionName)
+        if (!session.TryBeginPreview(sessionId, rule.ActionName))
         {
             return;
         }
 
-        session.PreviewActionName = rule.ActionName;
-        session.PreviewSessionId = sessionId;
+        PostPreview(sessionId, path, pattern, rule.ActionName);
+    }
+
+    private void PostPreview(
+        long sessionId,
+        IReadOnlyList<Point> path,
+        IReadOnlyList<GestureDirection> pattern,
+        string actionName)
+    {
         Post(() =>
         {
             if (!disposed)
             {
-                GesturePreviewMatched?.Invoke(this, new GestureRecognizedEventArgs(sessionId, path, pattern, rule.ActionName));
+                GesturePreviewMatched?.Invoke(this, new GestureRecognizedEventArgs(sessionId, path, pattern, actionName));
             }
         });
     }
@@ -1247,7 +1243,8 @@ public sealed class GestureService : IDisposable
             pattern,
             isCurrentlyTracking,
             button,
-            sourceTimestamp);
+            sourceTimestamp,
+            session.HasWheelActivity);
         if (isCurrentlyTracking && !force)
         {
             Volatile.Write(ref pendingTrackingProgress, progress);

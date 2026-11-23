@@ -101,4 +101,21 @@ internal sealed class GestureSession
         PreviewSessionId = 0;
         return previewSessionId;
     }
+
+    /// <summary>
+    /// Starts a preview for the given rule. Returns false while the same rule is already the
+    /// visible preview, so repeated wheel notches and move updates do not re-render an
+    /// unchanged hint; clearing the preview makes the same rule show up again.
+    /// </summary>
+    public bool TryBeginPreview(long sessionId, string actionName)
+    {
+        if (PreviewActionName == actionName)
+        {
+            return false;
+        }
+
+        PreviewActionName = actionName;
+        PreviewSessionId = sessionId;
+        return true;
+    }
 }

@@ -15,6 +15,7 @@ internal sealed class GestureFeedbackCoordinator : IDisposable
     private readonly Func<bool> canUseUi;
     private long latestSessionId;
     private long latestFirstTrailFrameSessionId;
+    private string? currentPreviewHintName;
     private bool disposed;
 
     public GestureFeedbackCoordinator(
@@ -67,6 +68,7 @@ internal sealed class GestureFeedbackCoordinator : IDisposable
                 return;
             }
 
+            currentPreviewHintName = e.ActionName;
             var settings = getUiSettings();
             if (IsEnabled(settings?.MouseTrail.Enabled))
             {
@@ -89,6 +91,7 @@ internal sealed class GestureFeedbackCoordinator : IDisposable
                 return;
             }
 
+            currentPreviewHintName = null;
             var settings = getUiSettings();
             if (IsEnabled(settings?.MouseTrail.Enabled))
             {
@@ -195,6 +198,14 @@ internal sealed class GestureFeedbackCoordinator : IDisposable
                         callbackStartedAt,
                         timing);
                 }
+            }
+
+            // While a wheel modifier is active the hint is already on screen and must not be
+            // re-selected from the plain direction; just follow the latest path end so the
+            // bubble stays attached to the trail while the user keeps moving and scrolling.
+            if (e.HasWheelModifier && isHintEnabled && currentPreviewHintName is { } hintName)
+            {
+                ensureMouseTrailForm().ShowGestureHint(hintName, e.Path[^1], autoHide: false);
             }
         });
     }

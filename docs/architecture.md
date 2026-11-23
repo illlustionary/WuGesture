@@ -17,7 +17,7 @@ MouseHook
 -> MouseTrailForm / WebView 状态
 ```
 
-`GestureService` 跟踪右键或中键轨迹，`GestureRecognizer` 将轨迹转换为 8 方向模式，`GestureMatcher` 按当前前台窗口的作用域选择规则，`ActionExecutor` 执行命中的动作。滚轮不是独立手势，而是按住手势键时叠加的修饰符：先用方向手势选中规则，再继续按住滚动滚轮，滚轮上/下与当前方向路径一起精确匹配；方向为空 + 滚轮修饰表示按住直接滚动。滚轮事件按 120 的物理刻度累计，`ExecuteOnWheel = true` 时每格立即执行一次，`false` 时滚轮只用于选择规则、松开按键时执行一次。只有当前按键存在滚轮修饰规则时才参与规则匹配；按住手势键期间滚轮一律被吞掉（与 WGestures 一致），不会滚动目标应用，而暂停和录制期间滚轮仍照常传递。
+`GestureService` 跟踪右键或中键轨迹，`GestureRecognizer` 将轨迹转换为 8 方向模式，`GestureMatcher` 按当前前台窗口的作用域选择规则，`ActionExecutor` 执行命中的动作。滚轮不是独立手势，而是按住手势键时叠加的修饰符：先用方向手势选中规则，再继续按住滚动滚轮，滚轮上/下与当前方向路径一起精确匹配；方向为空 + 滚轮修饰表示按住直接滚动。滚轮事件按 120 的物理刻度累计，`ExecuteOnWheel = true` 时每格立即执行一次，`false` 时滚轮只用于选择规则、松开按键时执行一次。按住手势键滚动期间，连续规则执行动作不会结束轨迹和提示，提示会随滚轮方向切换并跟随轨迹末端。只有当前按键存在滚轮修饰规则时才参与规则匹配；按住手势键期间滚轮一律被吞掉（与 WGestures 一致），不会滚动目标应用，而暂停和录制期间滚轮仍照常传递。
 
 性能约束：钩子回调、手势解析线程和 16ms 边缘轮询都属于延迟敏感路径，任何对"外部进程"的查询都可能被安全软件的自防卫机制拖慢。窗口所属进程的身份统一由 `WindowProcessCache` 提供（1 秒短期缓存），底层用 `OpenProcess` + `QueryFullProcessImageNameW` 读取，不枚举模块也不访问 `Process.MainModule`。实测在卡巴斯基 UI 进程上，`MainModule` 单次约 700ms，而 `QueryFullProcessImageNameW` 约 0.15ms；钩子回调超过 10ms 或进程查询超过 50ms 都会写入应用日志以便发现回归。为避免同类问题影响输入链，手势捕获门控和边缘操作轮询都不在各自的触发线程上做查询：`GestureCaptureGate` 在后台线程按 32ms 发布"当前窗口是否禁止手势"的快照，hook 只读快照；`EdgeActionService` 的 16ms 轮询也运行在独立后台线程，UI 线程只接收已命中的动作。
 

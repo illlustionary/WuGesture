@@ -10,7 +10,8 @@ public sealed class GestureProgressEventArgs : EventArgs
         IReadOnlyList<GestureDirection> pattern,
         bool isTracking,
         GestureMouseButton button,
-        long? sourceTimestamp = null)
+        long? sourceTimestamp = null,
+        bool hasWheelModifier = false)
     {
         SessionId = sessionId;
         Path = path;
@@ -18,6 +19,7 @@ public sealed class GestureProgressEventArgs : EventArgs
         IsTracking = isTracking;
         Button = button;
         SourceTimestamp = sourceTimestamp;
+        HasWheelModifier = hasWheelModifier;
     }
 
     public long SessionId { get; }
@@ -31,4 +33,10 @@ public sealed class GestureProgressEventArgs : EventArgs
     public GestureMouseButton Button { get; }
 
     public long? SourceTimestamp { get; }
+
+    /// <summary>
+    /// True when the current session already consumed a wheel notch. The overlay uses this to
+    /// keep the wheel hint attached to the latest path end without re-selecting the rule.
+    /// </summary>
+    public bool HasWheelModifier { get; }
 }

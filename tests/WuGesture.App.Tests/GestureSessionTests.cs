@@ -111,4 +111,21 @@ public sealed class GestureSessionTests
         Assert.Null(session.PreviewActionName);
         Assert.Equal(0, session.PreviewSessionId);
     }
+
+    [Fact]
+    public void TryBeginPreview_SkipsAnUnchangedPreviewAndRestartsAfterClear()
+    {
+        var session = new GestureSession();
+        session.Start(5, new Point(0, 0));
+
+        Assert.True(session.TryBeginPreview(5, "音量+"));
+        Assert.Equal("音量+", session.PreviewActionName);
+        Assert.Equal(5, session.PreviewSessionId);
+        Assert.False(session.TryBeginPreview(5, "音量+"));
+
+        Assert.True(session.TryBeginPreview(5, "音量-"));
+
+        session.ClearPreview();
+        Assert.True(session.TryBeginPreview(5, "音量+"));
+    }
 }
