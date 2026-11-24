@@ -104,7 +104,7 @@ internal static class WebViewRulesPayloadFactory
     }
 
     private static string ProgramIcon(string path) =>
-        ProgramPathExists(path) ? ApplicationIconDataUrl.FromExecutable(path) : "";
+        ProgramPathExists(path) ? ApplicationIconDataUrl.FromPath(path) : "";
 
     private readonly record struct PathProbe(bool Exists, long CheckedAtTick);
 

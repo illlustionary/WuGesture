@@ -177,7 +177,7 @@ watch(
         overlay.applicationPickerTarget === 'exclusion'
           ? '添加排除项'
           : overlay.applicationPickerTarget === 'program'
-            ? '选择程序'
+            ? '选择文件或程序'
             : '添加程序'
       "
       title-id="application-picker-title"
@@ -215,7 +215,7 @@ watch(
             aria-hidden="true"
           />
           <span class="picker-option__text">
-            <strong>浏览 exe 文件</strong>
+            <strong>浏览文件或程序</strong>
             <span>使用文件资源管理器选择</span>
           </span>
         </button>

@@ -53,4 +53,28 @@ public sealed class ProgramActionTests
         Assert.Equal("C:\\Tools", startInfo.WorkingDirectory);
         Assert.Equal(["--profile-directory=Default", "https://example.com/a b"], startInfo.ArgumentList);
     }
+
+    [Fact]
+    public void CreateProgramStartInfo_OpensDocumentsThroughTheShell()
+    {
+        var startInfo = ActionExecutor.CreateProgramStartInfo(new ProgramAction(
+            "C:\\Docs\\report.docx",
+            []));
+
+        Assert.True(startInfo.UseShellExecute);
+        Assert.Equal("C:\\Docs\\report.docx", startInfo.FileName);
+        Assert.Equal("C:\\Docs", startInfo.WorkingDirectory);
+        Assert.Equal("", startInfo.Arguments);
+    }
+
+    [Fact]
+    public void CreateProgramStartInfo_QuotesShellArgumentsContainingSpaces()
+    {
+        var startInfo = ActionExecutor.CreateProgramStartInfo(new ProgramAction(
+            "C:\\Tools\\run.bat",
+            ["--name", "a b", "\"quoted\""]));
+
+        Assert.True(startInfo.UseShellExecute);
+        Assert.Equal("--name \"a b\" \"\\\"quoted\\\"\"", startInfo.Arguments);
+    }
 }

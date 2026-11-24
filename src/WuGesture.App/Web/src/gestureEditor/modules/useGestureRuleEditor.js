@@ -420,7 +420,7 @@ export function useGestureRuleEditor({
     }
 
     if (normalizeActionType(source?.actionType) === ACTION_TYPES.program) {
-      return source?.programName || '运行程序'
+      return source?.programName || '打开文件或程序'
     }
 
     return String(getActionLabel(source) || getGestureMnemonic(source)).trim()

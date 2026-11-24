@@ -68,8 +68,8 @@ internal sealed class ApplicationPickerCoordinator
             var message = JsonSerializer.Deserialize<SelectApplicationWebMessage>(json, WebMessageJson.Options);
             using var dialog = new OpenFileDialog
             {
-                Title = "选择应用程序",
-                Filter = "应用程序 (*.exe)|*.exe|所有文件 (*.*)|*.*",
+                Title = "选择要打开的程序或文件",
+                Filter = "程序或文件 (*.exe;*.com;*.bat;*.cmd;*.lnk;*.ps1)|*.exe;*.com;*.bat;*.cmd;*.lnk;*.ps1|所有文件 (*.*)|*.*",
                 CheckFileExists = true,
                 Multiselect = false
             };
@@ -158,7 +158,7 @@ internal sealed class ApplicationPickerCoordinator
             displayName,
             path,
             category,
-            icon = ApplicationIconDataUrl.FromExecutable(path)
+            icon = ApplicationIconDataUrl.FromPath(path)
         }));
     }
 }

@@ -198,7 +198,7 @@ export const ACTION_TYPE_OPTIONS = [
   { value: ACTION_TYPES.window, label: '窗口控制' },
   { value: ACTION_TYPES.volume, label: '音量控制' },
   { value: ACTION_TYPES.brightness, label: '亮度控制' },
-  { value: ACTION_TYPES.program, label: '运行程序' }
+  { value: ACTION_TYPES.program, label: '打开文件/程序' }
 ]
 
 export const CLOSE_BUTTON_BEHAVIOR_OPTIONS = [

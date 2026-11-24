@@ -568,7 +568,7 @@ function addSelectedApplication(message) {
     setSelectedName(SCOPE_KINDS.category, scopedApplication.categories.at(-1))
   }
 
-  notifications.show('已添加程序。', 'success')
+  notifications.show('已添加文件或程序。', 'success')
   scheduleSaveRules()
 }
 

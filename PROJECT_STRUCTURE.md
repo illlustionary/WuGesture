@@ -12,7 +12,7 @@
 - WebView2 前端负责配置界面，当前是独立的 Vue3 + Vite 工程，构建产物由桌面宿主加载。
 - 手势使用 8 个方向。
 - 手势类型包含方向手势和滚轮修饰：按住右键/中键先绘制方向手势，再继续按住滚动滚轮，可把滚轮上/下作为修饰符匹配另一套规则；方向为空时也可直接按住滚动。滚轮规则可选择每格连续执行或松开按键时执行一次；使用过滚轮的会话不会再重放右键/中键点击；按住手势键期间滚轮一律由手势吞掉，不会滚动目标应用，只有配置了对应滚轮修饰规则时才进一步参与规则匹配。
-- 动作当前支持快捷键、窗口控制、音量控制、亮度控制和运行程序；快捷键通过 `SendInput` 执行，窗口控制通过 Win32 窗口 API 执行，音量通过 Core Audio API 执行并带按键回退，静音状态下执行音量增减会先取消静音，亮度通过 DDC/CI、WMI、Gamma 三段回退执行。运行程序以非 Shell 方式在后台队列启动所选 `.exe`，参数按配置顺序传入。
+- 动作当前支持快捷键、窗口控制、音量控制、亮度控制和运行程序；快捷键通过 `SendInput` 执行，窗口控制通过 Win32 窗口 API 执行，音量通过 Core Audio API 执行并带按键回退，静音状态下执行音量增减会先取消静音，亮度通过 DDC/CI、WMI、Gamma 三段回退执行。程序动作在后台队列启动或打开所选文件：`.exe`/`.com` 直接启动，其他类型（文档、快捷方式、批处理、脚本）交给 Shell 用默认关联程序打开，参数按配置顺序传入。
 - 规则当前支持 `global`、`category` 和 `app` 作用域；程序可按关联顺序归属多个分类，分类同手势时越靠前的关联优先级越高，`app` 规则仍高于分类和全局规则。
 - 边缘操作是独立的全局配置，支持触发角、摩擦边和边缘滚动。
 - UI 设置里的轨迹线、手势提示和音量/亮度 OSD 都支持单独关闭，运行时会按对应 `uiSettings` 节点的 `enabled` 决定是否显示；配置界面外观支持跟随系统、浅色和深色主题，以及 8 套预设、自定义取色和跟随 Windows 强调色三种配色来源，用户选择会随主配置同步。
@@ -169,7 +169,7 @@ src\WuGesture.App\GestureEngine
 - `ProcessImageQuery.cs`：用 `OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION)` + `QueryFullProcessImageNameW` 读取进程名和可执行文件路径，不再枚举模块；安全软件的受保护进程上 `Process.MainModule` 实测可达 700ms，而该方式约 0.15ms。查询本身超过 50ms 时记录 `slow-image-query` 警告，读取失败时才回退到 `Process.GetProcessById`。
 - `ApplicationExclusionMatcher.cs`：按进程名或可执行文件路径匹配排除项；窗口到进程身份的解析与缓存由 `WindowProcessCache` 承担，避免在 hook 线程和 UI 轮询里做重量级跨进程查询。
 - `ConfiguredScopeContextProvider.cs`：用配置里的应用程序列表把窗口进程名映射到有序分类列表，供作用域匹配使用。
-- `ActionExecutor.cs`：按动作类型执行命令；快捷键通过 Win32 `SendInput` 执行，并按目标窗口线程的键盘布局用 `MapVirtualKeyEx` 补全扫描码和扩展键标志（Flutter 应用按扫描码区分物理键，扫描码为 0 会导致 Ctrl+C/V 等快捷键被丢弃）；前台激活失败时，单键降级投递会优先发给目标窗口线程的焦点窗口（`GetGUIThreadInfo`），焦点窗口不属于目标顶层窗口时退回目标窗口本身。窗口控制通过 `ShowWindow`、`SetWindowPos` 和窗口消息执行。快捷键注入失败（输入桌面切换、目标窗口完整性级别更高）时会先补发一次全量抬键避免 Win/Alt/Ctrl 卡住，再间隔 30ms 重试，最多 3 次；仍失败时抛出的异常带有按键名、成功注入的事件数和 Win32 错误码，便于从日志定位。运行程序使用 `ProcessStartInfo.ArgumentList` 启动指定 `.exe`，不使用 Shell、不等待退出且不主动提权。命中桌面、桌面托管窗口或其他 Shell UI 窗口（任务栏、任务视图、开始菜单、搜索）的窗口控制动作会直接忽略；音量/亮度会调用对应控制器并显示 OSD。
+- `ActionExecutor.cs`：按动作类型执行命令；快捷键通过 Win32 `SendInput` 执行，并按目标窗口线程的键盘布局用 `MapVirtualKeyEx` 补全扫描码和扩展键标志（Flutter 应用按扫描码区分物理键，扫描码为 0 会导致 Ctrl+C/V 等快捷键被丢弃）；前台激活失败时，单键降级投递会优先发给目标窗口线程的焦点窗口（`GetGUIThreadInfo`），焦点窗口不属于目标顶层窗口时退回目标窗口本身。窗口控制通过 `ShowWindow`、`SetWindowPos` 和窗口消息执行。快捷键注入失败（输入桌面切换、目标窗口完整性级别更高）时会先补发一次全量抬键避免 Win/Alt/Ctrl 卡住，再间隔 30ms 重试，最多 3 次；仍失败时抛出的异常带有按键名、成功注入的事件数和 Win32 错误码，便于从日志定位。程序动作对 `.exe`/`.com` 使用 `ProcessStartInfo.ArgumentList` 直接启动，保持字面量参数语义；其他路径改用 `UseShellExecute`，由默认关联程序打开文档、快捷方式、批处理或脚本，参数在这条路径上按 Shell 规则补引号。两种情况都不等待退出、不主动提权；Shell 打开文档时 `Process.Start` 可能返回空进程句柄，这视为成功而非失败。命中桌面、桌面托管窗口或其他 Shell UI 窗口（任务栏、任务视图、开始菜单、搜索）的窗口控制动作会直接忽略；音量/亮度会调用对应控制器并显示 OSD。
 - `DesktopWindowClassifier.cs`：通过桌面 Shell 窗口类以及父/拥有者链识别 `Progman`、`WorkerW` 和桌面视图，供窗口控制动作排除桌面目标；遍历逻辑在 `DesktopSurfaceWalker.cs` 中，Win32 句柄查询通过委托注入。
 - `WindowControlTargetPolicy.cs`：判断窗口能否接收窗口控制和手势前置激活。只放行真正的应用窗口：先取顶层窗口，拒绝隐藏或已被 DWM 遮蔽（其他虚拟桌面、挂起 UWP）的窗口，再沿属主链用桌面分类器和 Shell UI 规则排除任务栏、任务视图、Alt+Tab 切换器、开始菜单、搜索、Shell 弹层以及 Shell 宿主进程的窗口。
 - `ShellUiWindowHeuristics.cs`：Shell UI 窗口判定的纯函数部分——维护 Shell 窗口类清单（任务栏、任务视图、Alt+Tab 切换器、开始菜单、搜索、桌面外壳等）、Shell 宿主进程清单（explorer、ShellExperienceHost、StartMenuExperienceHost、SearchUI、TextInputHost、SiHost 等）、允许接收窗口控制的 explorer 文件夹窗口类清单，以及可见/未遮蔽窗口判定，便于单元测试。
@@ -268,7 +268,7 @@ src\WuGesture.App\Configuration
 - `action.operation`：窗口控制操作，仅在 `action.type` 为 `window` 时使用；当前支持 `toggle-topmost`、`toggle-maximize`、`minimize`、`close`。
 - `action.operation`：音量控制在 `action.type` 为 `volume` 时支持 `increase`、`decrease`、`mute`；亮度控制在 `action.type` 为 `brightness` 时支持 `increase`、`decrease`。
 - `action.amount`：音量/亮度的 `increase`、`decrease` 步进值，范围 1-100。
-- `action.path` 与 `action.arguments`：运行程序动作的 `.exe` 路径和有序参数列表；路径为空的规则会保留配置但不参与运行，参数仅去除空白和空值，不解析格式。
+- `action.path` 与 `action.arguments`：程序动作要打开的文件或程序路径和有序参数列表；`.exe`/`.com` 直接启动，其他文件交给 Shell 用默认关联程序打开；路径为空的规则会保留配置但不参与运行，参数仅去除空白和空值，不解析格式。
 - `edgeActions`：独立的全局边缘操作列表；每项包含 `enabled`、`triggerType`、`location`、`wheelDirection`、`frictionCount` 和 `action`。`triggerType` 支持 `corner`、`friction`、`wheel`；`corner` 的位置为四角，`friction/wheel` 的位置为四边，`wheel` 额外区分滚轮 `up/down`。边缘操作名称不再保存，由 UI 和运行时根据触发类型、位置与滚轮方向生成。
 - `categories`：独立的分类名称列表，用于保留尚未配置手势或关联程序的空分类。
 - `applications`：应用程序归属列表，每项包含 `name`、`displayName`、`path`、`categories`；`categories` 是有序分类列表，运行时通过前台进程名匹配 `name`，分类同手势时越靠前优先级越高；`displayName` 只用于 UI 展示和编辑。
@@ -357,7 +357,7 @@ tests\WuGesture.App.Tests
 - `ConfigWriteScheduler`：连续入队只落最后一次配置、`Flush` 等待写盘完成、`Dispose` 在退出前写出挂起的配置。
 - `ScheduledTaskLauncher`：计划任务 XML 的最高权限/交互令牌/空触发器/固定命令行/无执行时限，注册命令路径的大小写不敏感比较，以及空 XML、损坏 XML、缺少命令时的状态判定。
 - `ConfigurationCoordinator`：编辑器消息到 `GestureConfig` 的全字段映射、缺省分区按空列表处理、`uiSettings` 缺失时保留磁盘上的设置。
-- `ProgramActionTests`：运行程序动作的路径/参数归一化、空路径忽略和非 Shell 启动参数构造。
+- `ProgramActionTests`：程序动作的路径/参数归一化、空路径忽略、`.exe` 非 Shell 启动参数构造，以及文档/脚本走 Shell 打开时的参数补引号。
 - `UpdateService`：发行标签解析与版本比较、Windows x64 更新包筛选（排除 debug/预发行包）、从发行说明解析 ZIP 的 SHA256、ZIP 路径穿越防护和更新源归一化。
 - `ApplicationExclusionMatcher`：排除项路径优先/进程名回退匹配、忽略大小写、空规则、去目录去扩展名的身份归一化。
 - `EdgeActionConfigNormalizer`：缺 trigger/location 的项丢弃、`program` 降级为空快捷键、摩擦边/滚轮非法位置回退、四角操作保持原样。

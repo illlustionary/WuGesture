@@ -21,7 +21,7 @@ const selectedProgram = computed(() => {
     path
       .split(/[\\/]/)
       .at(-1)
-      ?.replace(/\.exe$/i, '') || '未选择程序'
+      ?.replace(/\.exe$/i, '') || '未选择文件或程序'
   return {
     name: fallbackName,
     displayName: String(props.draft.programName ?? '').trim() || fallbackName,
@@ -60,7 +60,7 @@ function removeArgument(index) {
       v-if="showProgram"
       class="gesture-rule-program-fields__section"
     >
-      <span class="gesture-rule-program-fields__title">程序</span>
+      <span class="gesture-rule-program-fields__title">文件/程序</span>
       <div class="gesture-rule-program-fields__row gesture-rule-program-fields__program-row">
         <div class="gesture-rule-program-fields__program">
           <ApplicationListItem
@@ -73,7 +73,7 @@ function removeArgument(index) {
             v-else
             class="gesture-rule-program-fields__empty"
           >
-            尚未添加程序
+            尚未选择文件或程序
           </div>
         </div>
       </div>
@@ -83,12 +83,12 @@ function removeArgument(index) {
       v-if="showPicker"
       class="gesture-rule-program-fields__section"
     >
-      <span class="gesture-rule-program-fields__title">添加程序</span>
+      <span class="gesture-rule-program-fields__title">添加文件/程序</span>
       <div class="gesture-rule-program-fields__row gesture-rule-program-fields__picker-row">
-        <span class="gesture-rule-program-fields__picker-hint">选择要运行的程序</span>
+        <span class="gesture-rule-program-fields__picker-hint">选择要打开的文件或程序</span>
         <IconActionButton
           icon="add"
-          label="添加程序"
+          label="选择文件或程序"
           class="secondary-button gesture-rule-program-fields__add-button"
           @click="emit('select-program')"
         />
@@ -105,7 +105,7 @@ function removeArgument(index) {
           <input
             v-model="argumentDraft"
             class="scope-input"
-            placeholder="运行程序时的额外参数，如无必要，留空即可"
+            placeholder="打开文件或程序时的额外参数，如无必要，留空即可"
             @keydown.enter.prevent="addArgument"
           />
           <IconActionButton

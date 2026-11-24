@@ -58,7 +58,7 @@ export function getActionLabel(rule) {
   }
 
   if (actionType === ACTION_TYPES.program) {
-    return rule?.programName || '运行程序'
+    return rule?.programName || '打开文件或程序'
   }
 
   return rule?.keysText || '点击设置'

@@ -282,8 +282,9 @@ public sealed class ActionExecutor
             return;
         }
 
-        var startInfo = CreateProgramStartInfo(action);
-        using var process = Process.Start(startInfo) ?? throw new InvalidOperationException("Failed to start program.");
+        // Shell-opened documents, shortcuts and folders may not hand back a process handle, so a
+        // null result means "the shell handled it", not "the launch failed".
+        using var process = Process.Start(CreateProgramStartInfo(action));
     }
 
     internal static ProcessStartInfo CreateProgramStartInfo(ProgramAction action)
@@ -292,15 +293,45 @@ public sealed class ActionExecutor
         var startInfo = new ProcessStartInfo
         {
             FileName = path,
-            UseShellExecute = false,
+            // Executables keep the direct launch path: ArgumentList gives literal, quote-free argv
+            // semantics that existing rules rely on. Everything else (documents, folders, .lnk,
+            // .bat, .ps1, URLs) is handed to the shell so the registered handler decides what runs.
+            UseShellExecute = !IsDirectlyExecutable(path),
             WorkingDirectory = Path.GetDirectoryName(path) ?? ""
         };
+
+        if (startInfo.UseShellExecute)
+        {
+            // ShellExecute receives one parameter string, so arguments have to be quoted here
+            // instead of going through ArgumentList.
+            if (action.Arguments.Count > 0)
+            {
+                startInfo.Arguments = string.Join(" ", action.Arguments.Select(QuoteShellArgument));
+            }
+
+            return startInfo;
+        }
+
         foreach (var argument in action.Arguments)
         {
             startInfo.ArgumentList.Add(argument);
         }
 
         return startInfo;
+    }
+
+    private static bool IsDirectlyExecutable(string path)
+    {
+        var extension = Path.GetExtension(path);
+        return extension.Equals(".exe", StringComparison.OrdinalIgnoreCase) ||
+            extension.Equals(".com", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string QuoteShellArgument(string argument)
+    {
+        return argument.Length > 0 && !argument.Any(char.IsWhiteSpace) && !argument.Contains('"')
+            ? argument
+            : "\"" + argument.Replace("\"", "\\\"", StringComparison.Ordinal) + "\"";
     }
 
     private static void ToggleTopMost(IntPtr targetWindow)
