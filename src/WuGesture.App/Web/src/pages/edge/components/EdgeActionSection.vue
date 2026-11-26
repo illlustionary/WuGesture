@@ -4,6 +4,7 @@ import EdgeActionCard from './EdgeActionCard.vue'
 
 defineProps({
   group: { type: Object, required: true },
+  title: { type: String, default: '' },
   actions: { type: Array, required: true },
   triggerLabels: { type: Object, required: true },
   locationLabel: { type: Function, required: true },
@@ -18,7 +19,7 @@ const emit = defineEmits(['open'])
 <template>
   <section class="edge-section section-card">
     <div class="edge-section__head">
-      <h3 class="section-title">{{ group.title }}</h3>
+      <h3 class="section-title">{{ title || group.title }}</h3>
     </div>
 
     <div class="edge-grid">

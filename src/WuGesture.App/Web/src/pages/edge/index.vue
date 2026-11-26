@@ -4,6 +4,7 @@ import AppShell from '@/components/layout/AppShell.vue'
 import { useGestureEdgeActionsStore } from '@/gestureEditor/stores/useGestureEdgeActionsStore'
 import EdgeActionDialog from '@/pages/edge/components/EdgeActionDialog.vue'
 import EdgeActionSection from '@/pages/edge/components/EdgeActionSection.vue'
+import EdgeScreenMap from '@/pages/edge/components/EdgeScreenMap.vue'
 import { useEdgeActionDraft } from '@/pages/edge/composables/useEdgeActionDraft'
 import { ACTION_TYPES, EDGE_TRIGGER_TYPES, OPERATIONS, WHEEL_DIRECTIONS } from '@/constants/gestureEditorOptions'
 
@@ -131,12 +132,22 @@ function recordHotkey() {
   <AppShell
     :title="activeGroup.title"
     description="鼠标移动到屏幕边缘时执行的动作"
-    layout-class="page-shell__grid--single"
+    layout-class="page-shell__grid--edge"
   >
+    <template #left>
+      <EdgeScreenMap
+        :trigger-type="activeGroup.type"
+        :actions="groupActions(activeGroup.type)"
+        :action-summary="actionSummary"
+        @open="openEditor"
+      />
+    </template>
+
     <template #right>
       <div class="page-stack">
         <EdgeActionSection
           :group="activeGroup"
+          title="动作列表"
           :actions="groupActions(activeGroup.type)"
           :trigger-labels="triggerLabels"
           :location-label="locationLabel"

@@ -14,7 +14,7 @@
 - 手势类型包含方向手势和滚轮修饰：按住右键/中键先绘制方向手势，再继续按住滚动滚轮，可把滚轮上/下作为修饰符匹配另一套规则；方向为空时也可直接按住滚动。滚轮规则可选择每格连续执行或松开按键时执行一次；使用过滚轮的会话不会再重放右键/中键点击；按住手势键期间滚轮一律由手势吞掉，不会滚动目标应用，只有配置了对应滚轮修饰规则时才进一步参与规则匹配。
 - 动作当前支持快捷键、窗口控制、音量控制、亮度控制和运行程序；快捷键通过 `SendInput` 执行，窗口控制通过 Win32 窗口 API 执行，音量通过 Core Audio API 执行并带按键回退，静音状态下执行音量增减会先取消静音，亮度通过 DDC/CI、WMI、Gamma 三段回退执行。程序动作在后台队列启动或打开所选文件：`.exe`/`.com` 直接启动，其他类型（文档、快捷方式、批处理、脚本）交给 Shell 用默认关联程序打开，参数按配置顺序传入。
 - 规则当前支持 `global`、`category` 和 `app` 作用域；程序可按关联顺序归属多个分类，分类同手势时越靠前的关联优先级越高，`app` 规则仍高于分类和全局规则。
-- 边缘操作是独立的全局配置，支持触发角、摩擦边和边缘滚动。
+- 边缘操作是独立的全局配置，支持触发角、摩擦边和边缘滚动；配置页用一张屏幕示意图把四角和四边的设置入口放到对应位置，右侧动作列表保留同样的入口。
 - UI 设置里的轨迹线、手势提示和音量/亮度 OSD 都支持单独关闭，运行时会按对应 `uiSettings` 节点的 `enabled` 决定是否显示；配置界面外观支持跟随系统、浅色和深色主题，以及 8 套预设、自定义取色和跟随 Windows 强调色三种配色来源，用户选择会随主配置同步。
 
 ## 根目录
@@ -130,9 +130,9 @@ src\WuGesture.App
 
 资源：
 
-- `Resources\volume.png`、`Resources\sun.png`：音量和亮度 OSD 使用的嵌入图标资源。
-- `Resources\wu.jpg`：应用图标来源图片。
-- `Resources\wu.ico`：从 `wu.jpg` 生成的 Windows 应用图标，用于可执行文件、任务栏、窗口左上角和托盘。
+- `Resources\wu.svg`：应用品牌图标的矢量母版，同时供 Web 侧栏品牌标识直接加载。
+- `Resources\wu.ico`：由 `wu.svg` 生成的多尺寸 Windows 应用图标（16–256px），用于可执行文件、任务栏、窗口左上角和托盘；修改母版后运行 `scripts\generate-app-icon.ps1` 重新生成。
+- 音量和亮度 OSD 图标不再使用嵌入 PNG，改由 `LevelOsdRenderer` 用 GDI+ 矢量绘制。
 
 ## 手势引擎
 
@@ -178,7 +178,6 @@ src\WuGesture.App\GestureEngine
 - `BrightnessController.cs`：通过 DDC/CI、WMI、Gamma 三段回退读取和设置显示亮度。
 - `BrightnessAdjustmentQueue.cs`：把亮度调节放到后台串行队列执行，并合并连续滚轮输入，避免 DDC/CI 等慢调用阻塞鼠标钩子或主 UI。
 - `LevelOsdOverlay.cs`：音量和亮度 OSD 的线程安全请求入口，把手势、边缘操作和后台亮度队列的显示请求投递到主 UI 线程。
-- `ResourceNames.cs`：后端嵌入资源 manifest 名常量。
 - `MouseInput.cs`：当移动距离太小，不足以构成手势时，重放一次普通右键或中键。
 - `GestureInputCapture.cs`：在钩子回调内同步决定捕获/吞键，维护暂停、录制和迟到抬键状态，并把路径事件无等待交给解析器；捕获门控优先读取 `GestureCaptureGate` 快照。滚轮捕获在按住手势键且未暂停/录制时启用（不要求该按键配置滚轮规则），因此绘制手势期间的滚动不会传给目标程序；会话消费过滚轮后还会在结束后短时吞掉残留滚轮，避免快捷键触发后的滚动泄漏到目标程序。
 - `GestureCaptureGate.cs`：在独立后台线程按 32ms 刷新"当前窗口是否禁止手势"的不可变快照（窗口句柄 + 是否拦截 + 时间戳，200ms 过期），内容包含排除项、桌面禁用和全屏判定；低级 hook 按下时只比较窗口句柄并读取布尔值，快照缺失、过期或窗口不匹配时才回退到一次同步判定，从而把 hook 线程与窗口/进程查询解耦。读取光标位置时会检查 `GetCursorPos` 的返回值，失败（锁屏、UAC、唤醒过渡）时保留上一份快照，避免把零坐标当成桌面窗口。刷新异常按每 10 秒最多一条记录 `refresh-failed`。
@@ -190,7 +189,7 @@ src\WuGesture.App\GestureEngine
 - `MouseTrailForm.cs`：全虚拟桌面的透明分层覆盖窗，负责窗口生命周期、鼠标穿透、DIB/HDC 缓冲和画面提交；启动后预热窗口句柄、DIB/HDC 缓冲和全透明分层位图，但空闲时保持隐藏，避免覆盖自动隐藏任务栏；重新显示时直接提交实际脏区域，不重新创建图形资源或清空整个虚拟桌面。新轨迹接管旧提示时会合并两者脏矩形后一次清除、重绘和提交，提示和 OSD 淡出帧也只重绘自身区域；命中手势结束时同样按旧轨迹与提示范围处理，避免重复更新整个虚拟桌面。首次 `UpdateLayeredWindow` 提交失败会记录 Win32 错误、窗口状态和缓存/当前虚拟屏幕信息，并通知主窗体异步重建整套覆盖层资源。即使轨迹线关闭，提示仍可单独使用此覆盖层显示。覆盖层只在创建时是 `TopMost`，又因为 `WS_EX_NOACTIVATE` 永不激活，所以在 topmost 层内不会自行上浮；因此每笔新手势开始绘制、提示或 OSD 首次显示时会用 `SetWindowPos(HWND_TOPMOST, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE)` 把它重新插到 topmost 层顶部，避免晚于覆盖层创建、随后变成 topmost 的窗口（例如更新完立刻启动的程序）长期压在覆盖层之上；每次手势最多调用一次，不移动、不缩放、不激活、不触发重绘。覆盖层在构造时缓存虚拟屏矩形和对应尺寸的 DIB，因此显示缩放变化时必须重建整套资源：`MainForm.OnDpiChanged` 直接调度覆盖层恢复，覆盖层自身收到 `WM_DPICHANGED` 时也通过 `ScreenGeometryChanged` 通知主窗体（覆盖层横跨整个虚拟屏，只有它所在的那块显示器会收到该消息）。
 - `MouseTrailRenderer.cs`：管理手势路径、轨迹画笔和增量轨迹绘制。
 - `GestureHintRenderer.cs`：管理规则命中提示的样式、尺寸定位、显示/淡出计时和同层绘制；手势松键时预览提示立即按配置开始自动关闭，最终提示无缝接续预览并按同一配置重新计时，避免最终识别回调延后时提示停留。
-- `LevelOsdRenderer.cs`：管理音量/亮度 OSD 的图标、轨道、数值、位置、显示/淡出计时和同层绘制。
+- `LevelOsdRenderer.cs`：管理音量/亮度 OSD 的图标、轨道、数值、位置、显示/淡出计时和同层绘制；喇叭和太阳图标按 24×24 逻辑网格用 GDI+ 矢量绘制，颜色跟随 OSD 文字色，不再依赖嵌入 PNG。
 - 运行时窗体会从配置里的 `uiSettings` 读取并应用轨迹颜色、线宽、未激活/激活透明度、提示泡泡外观和显示/淡出时长，以及音量/亮度 OSD 的显示时长、尺寸、圆角和位置。三个渲染器独立维护内容和淡出 alpha，任一层结束都不会清空其他层。
 
 手势流水线：
@@ -426,6 +425,7 @@ dotnet test WuGesture.slnx --collect:"XPlat Code Coverage" --results-directory a
 
 自动发行：
 
+- `scripts\generate-app-icon.ps1`：从 `Resources\wu.svg` 生成多尺寸 `wu.ico`。用 Windows 自带的 Microsoft Edge 无头模式渲染 1024px 母图（Chromium 无头窗口小于约 200px 时不会按窗口尺寸排版，所以先渲染大图再高质量缩小），16–64px 写成 32bpp DIB 帧、128/256px 写成 PNG 帧；只在修改品牌图标时手动运行，不参与 `dotnet build`。
 - `scripts\publish-app.ps1`：发布应用目录的通用步骤，负责关闭运行实例、执行 `dotnet publish`、校验直接构建到输出目录的 Web 前端产物，并复制 `WebView2Loader.dll`；它会将同一个应用目录同时传给 `dotnet publish -o` 和 MSBuild `OutputPath`，避免常规编译产物落到其他目录。
 - `scripts\verify-package.ps1`：校验发行 ZIP 的完整性——必需文件（`WuGesture.exe`、`Web\index.html`、`WebView2Loader.dll`、WebView2 程序集等）齐全、`Web\index.html` 引用的哈希资源都存在、没有混入 `node_modules` 或 `*.test.*` / `*.spec.*`，并核对 `WuGesture.exe` 文件版本与标签版本一致。`package-release.ps1` 打包后会自动调用它，校验失败时不会继续发布。
 - `scripts\check-coverage.ps1`：校验行/分支覆盖率不低于脚本内的下限（行 23%、分支 21%），只比较最新一批（10 分钟窗口）的 `coverage.cobertura.xml`，同批次每份报告都必须达标，供 CI 阻止覆盖率回退；可用 `-MinimumLineRate` / `-MinimumBranchRate` 临时覆盖。

@@ -12,6 +12,11 @@ declare module '*.svg' {
   export default src
 }
 
+declare module '*.svg?url' {
+  const src: string
+  export default src
+}
+
 /** 由 `vite.config.js` 的 `rawSourcePlugin` 提供，按源码文本返回仓库文件（测试使用）。 */
 declare module 'virtual:raw-source?*' {
   const source: string

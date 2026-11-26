@@ -115,9 +115,24 @@ defineProps<{
       grid-template-columns: minmax(0, 1fr);
     }
 
+    &--edge {
+      grid-template-columns: minmax(340px, 0.85fr) minmax(0, 1.15fr);
+      align-items: start;
+    }
+
     &--editor {
       align-items: stretch;
     }
+  }
+}
+
+@media (max-width: 1180px) {
+  .page-shell__grid--edge {
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    /* 单列时让页面按内容高度增长并交给内容区滚动；继续撑满视口会把两行压到
+       最小内容高度，示意图和动作列表会互相重叠。 */
+    flex: 0 0 auto;
   }
 }
 </style>

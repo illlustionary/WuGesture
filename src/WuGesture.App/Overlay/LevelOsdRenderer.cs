@@ -1,5 +1,4 @@
 using System.Drawing.Drawing2D;
-using System.Reflection;
 using WuGesture.App.GestureEngine;
 
 namespace WuGesture.App;
@@ -13,8 +12,6 @@ internal sealed class LevelOsdRenderer : IDisposable
     private readonly Action requestRedraw;
     private readonly Action requestHide;
     private readonly FadeOverlaySurface fadeSurface = new();
-    private readonly Bitmap? volumeIcon;
-    private readonly Bitmap? brightnessIcon;
     private LevelOsdUiSettings settings = new();
     private LevelOsdKind kind = LevelOsdKind.Volume;
     private Point anchor;
@@ -26,8 +23,6 @@ internal sealed class LevelOsdRenderer : IDisposable
     {
         this.requestRedraw = requestRedraw;
         this.requestHide = requestHide;
-        volumeIcon = LoadResourceBitmap(ResourceNames.VolumeIcon);
-        brightnessIcon = LoadResourceBitmap(ResourceNames.BrightnessIcon);
         displayTimer.Tick += OnDisplayTimerTick;
         fadeTimer.Tick += OnFadeTimerTick;
         ApplySettings(settings);
@@ -103,7 +98,7 @@ internal sealed class LevelOsdRenderer : IDisposable
             using var borderPen = new Pen(WithConfiguredOpacity(Color.FromArgb(50, 120, 120, 120), 100), 1);
             surfaceGraphics.FillPath(backgroundBrush, backgroundPath);
             surfaceGraphics.DrawPath(borderPen, backgroundPath);
-            DrawIcon(surfaceGraphics, kind == LevelOsdKind.Volume ? volumeIcon : brightnessIcon, layout.IconBounds);
+            DrawIcon(surfaceGraphics, layout.IconBounds);
             DrawTrack(surfaceGraphics, layout);
             DrawText(surfaceGraphics, layout);
         });
@@ -116,8 +111,6 @@ internal sealed class LevelOsdRenderer : IDisposable
         displayTimer.Dispose();
         fadeTimer.Tick -= OnFadeTimerTick;
         fadeTimer.Dispose();
-        volumeIcon?.Dispose();
-        brightnessIcon?.Dispose();
         fadeSurface.Dispose();
     }
 
@@ -237,14 +230,126 @@ internal sealed class LevelOsdRenderer : IDisposable
         graphics.DrawString(muted ? "静音" : $"{value}%", font, brush, layout.TextBounds, format);
     }
 
-    private void DrawIcon(Graphics graphics, Bitmap? icon, Rectangle bounds)
+    private void DrawIcon(Graphics graphics, Rectangle bounds)
     {
-        if (icon is null)
+        if (bounds.Width <= 0 || bounds.Height <= 0)
         {
             return;
         }
 
-        graphics.DrawImage(icon, bounds);
+        var color = WithConfiguredOpacity(
+            GestureColorParser.Parse(settings.TextColor, Color.FromArgb(220, 220, 220)),
+            100);
+        var scale = bounds.Width / 24f;
+        var previousSmoothingMode = graphics.SmoothingMode;
+        graphics.SmoothingMode = SmoothingMode.AntiAlias;
+        try
+        {
+            if (kind == LevelOsdKind.Volume)
+            {
+                DrawVolumeIcon(graphics, bounds, scale, color);
+            }
+            else
+            {
+                DrawBrightnessIcon(graphics, bounds, scale, color);
+            }
+        }
+        finally
+        {
+            graphics.SmoothingMode = previousSmoothingMode;
+        }
+    }
+
+    private static void DrawVolumeIcon(Graphics graphics, Rectangle bounds, float scale, Color color)
+    {
+        using var brush = new SolidBrush(color);
+        var speaker = new[]
+        {
+            Map(bounds, scale, 3f, 9f),
+            Map(bounds, scale, 7f, 9f),
+            Map(bounds, scale, 12f, 4f),
+            Map(bounds, scale, 12f, 20f),
+            Map(bounds, scale, 7f, 15f),
+            Map(bounds, scale, 3f, 15f)
+        };
+        graphics.FillPolygon(brush, speaker);
+
+        using var arcPen = new Pen(color, 1.8f * scale)
+        {
+            StartCap = LineCap.Round,
+            EndCap = LineCap.Round
+        };
+        DrawVolumeArc(graphics, arcPen, bounds, scale, 4.5f);
+        DrawVolumeArc(graphics, arcPen, bounds, scale, 7.5f);
+    }
+
+    private static void DrawVolumeArc(Graphics graphics, Pen pen, Rectangle bounds, float scale, float radius)
+    {
+        var centerX = 13f;
+        var centerY = 12f;
+        var arcBounds = new RectangleF(
+            bounds.Left + ((centerX - radius) * scale),
+            bounds.Top + ((centerY - radius) * scale),
+            radius * 2f * scale,
+            radius * 2f * scale);
+        graphics.DrawArc(pen, arcBounds, -50f, 100f);
+    }
+
+    private static void DrawBrightnessIcon(Graphics graphics, Rectangle bounds, float scale, Color color)
+    {
+        using var brush = new SolidBrush(color);
+        const float centerX = 12f;
+        const float centerY = 12f;
+        const float coreRadius = 4.4f;
+        graphics.FillEllipse(
+            brush,
+            bounds.Left + ((centerX - coreRadius) * scale),
+            bounds.Top + ((centerY - coreRadius) * scale),
+            coreRadius * 2f * scale,
+            coreRadius * 2f * scale);
+
+        const float innerRadius = 7.4f;
+        const float outerRadius = 10.4f;
+        const float halfWidth = 0.9f;
+        for (var i = 0; i < 8; i++)
+        {
+            var angle = i * Math.PI / 4d;
+            var directionX = (float)Math.Cos(angle);
+            var directionY = (float)Math.Sin(angle);
+            var normalX = -directionY;
+            var normalY = directionX;
+            var ray = new[]
+            {
+                Map(
+                    bounds,
+                    scale,
+                    centerX + (directionX * innerRadius) + (normalX * halfWidth),
+                    centerY + (directionY * innerRadius) + (normalY * halfWidth)),
+                Map(
+                    bounds,
+                    scale,
+                    centerX + (directionX * outerRadius) + (normalX * halfWidth),
+                    centerY + (directionY * outerRadius) + (normalY * halfWidth)),
+                Map(
+                    bounds,
+                    scale,
+                    centerX + (directionX * outerRadius) - (normalX * halfWidth),
+                    centerY + (directionY * outerRadius) - (normalY * halfWidth)),
+                Map(
+                    bounds,
+                    scale,
+                    centerX + (directionX * innerRadius) - (normalX * halfWidth),
+                    centerY + (directionY * innerRadius) - (normalY * halfWidth))
+            };
+            graphics.FillPolygon(brush, ray);
+        }
+    }
+
+    private static PointF Map(Rectangle bounds, float scale, float x, float y)
+    {
+        return new PointF(
+            bounds.Left + (x * scale),
+            bounds.Top + (y * scale));
     }
 
     private void OnDisplayTimerTick(object? sender, EventArgs e)
@@ -299,12 +404,6 @@ internal sealed class LevelOsdRenderer : IDisposable
             color.R + (255 - color.R) / 3,
             color.G + (255 - color.G) / 3,
             color.B + (255 - color.B) / 3);
-    }
-
-    private static Bitmap? LoadResourceBitmap(string name)
-    {
-        using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(name);
-        return stream is null ? null : new Bitmap(stream);
     }
 
     private static LevelOsdUiSettings NormalizeSettings(LevelOsdUiSettings? value)
