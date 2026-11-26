@@ -1,5 +1,5 @@
 using System.Drawing.Imaging;
-using System.Runtime.InteropServices;
+using System.Text;
 using WuGesture.App.GestureEngine;
 
 namespace WuGesture.App;
@@ -18,10 +18,10 @@ internal sealed class TrayMenuController : IDisposable
     private const int ItemVerticalPadding = 7;
 
     /// <summary>
-    /// Multiplies the grayscale luminance of the paused icon. Converting to gray alone barely changes the
-    /// white ring of the app icon, so the whole icon is darkened as well and reads as disabled at 16 px.
+    /// Matches the paused brand mark in the configuration sidebar (`filter: grayscale(1); opacity: .54`):
+    /// the icon is desaturated and made translucent instead of being darkened into a gray disc.
     /// </summary>
-    private const float PausedIconBrightness = 0.75f;
+    private const float PausedIconOpacity = 0.54f;
 
     private readonly NotifyIcon trayIcon = new();
     private readonly ContextMenuStrip trayMenu = new();
@@ -166,18 +166,18 @@ internal sealed class TrayMenuController : IDisposable
         using (var graphics = Graphics.FromImage(gray))
         using (var attributes = new ImageAttributes())
         {
-            // Desaturate and darken every pixel (including the white ring) so the paused icon is obvious at
-            // 16 px instead of only recolouring the logo while keeping the bright white circle. Each row is
-            // one output channel, so the luminance weights sit in the column of the source channel.
-            var red = 0.299f * PausedIconBrightness;
-            var green = 0.587f * PausedIconBrightness;
-            var blue = 0.114f * PausedIconBrightness;
+            // Desaturate every pixel and scale its alpha down, so the white ring turns translucent and the
+            // paused icon reads like the sidebar's grayed brand mark instead of a solid gray disc. Each row
+            // is one output channel, so the luminance weights sit in the column of the source channel.
+            const float red = 0.299f;
+            const float green = 0.587f;
+            const float blue = 0.114f;
             attributes.SetColorMatrix(new ColorMatrix(new[]
             {
                 new[] { red, red, red, 0f, 0f },
                 new[] { green, green, green, 0f, 0f },
                 new[] { blue, blue, blue, 0f, 0f },
-                new[] { 0f, 0f, 0f, 1f, 0f },
+                new[] { 0f, 0f, 0f, PausedIconOpacity, 0f },
                 new[] { 0f, 0f, 0f, 0f, 1f }
             }));
             graphics.DrawImage(
@@ -196,18 +196,31 @@ internal sealed class TrayMenuController : IDisposable
 
     private static Icon ToIcon(Bitmap bitmap)
     {
-        var handle = bitmap.GetHicon();
-        try
-        {
-            using var icon = Icon.FromHandle(handle);
-            return (Icon)icon.Clone();
-        }
-        finally
-        {
-            DestroyIcon(handle);
-        }
-    }
+        // 用单帧 PNG ICO 流加载，而不是 Bitmap.GetHicon：后者会把半透明像素预乘，
+        // 54% 不透明的托盘图标会被再乘一次，显示成接近全黑的灰块。
+        using var png = new MemoryStream();
+        bitmap.Save(png, ImageFormat.Png);
+        var pngBytes = png.ToArray();
 
-    [DllImport("user32.dll")]
-    private static extern bool DestroyIcon(IntPtr hIcon);
+        using var ico = new MemoryStream();
+        using (var writer = new BinaryWriter(ico, Encoding.UTF8, leaveOpen: true))
+        {
+            writer.Write((ushort)0);
+            writer.Write((ushort)1);
+            writer.Write((ushort)1);
+            writer.Write((byte)(bitmap.Width >= 256 ? 0 : bitmap.Width));
+            writer.Write((byte)(bitmap.Height >= 256 ? 0 : bitmap.Height));
+            writer.Write((byte)0);
+            writer.Write((byte)0);
+            writer.Write((ushort)1);
+            writer.Write((ushort)32);
+            writer.Write(pngBytes.Length);
+            writer.Write(22);
+            writer.Write(pngBytes);
+            writer.Flush();
+        }
+
+        ico.Position = 0;
+        return new Icon(ico);
+    }
 }

@@ -118,7 +118,7 @@ src\WuGesture.App
 - `ConfigStorageContract.cs` 集中本地配置文件名和窗口状态文件名；本地导入/导出只处理主配置文件，不包含窗口状态文件。
 - `WebViewHostContract.cs` 集中 WebView2 虚拟主机、入口 URL、宿主输出目录中的 Web 前端路径片段和 WebView2 profile 目录名，并负责把 profile 目录解析到 `%LocalAppData%\WuGesture\WebView2`。
 - 配置窗口默认/最小尺寸为 1280×720 **DIP**，构造时用 `GetDpiForSystem()`（已创建句柄时用 `DeviceDpi`）换算出物理像素，并在 `OnDpiChanged` 里按新 DPI 和当前显示器工作区刷新 `MinimumSize`；进程通过 csproj 的 `ApplicationHighDpiMode=PerMonitorV2` 声明 Per-Monitor V2，运行时修改显示缩放会产生真正的 `WM_DPICHANGED`，而不是让 DWM 位图拉伸整个窗口（SystemAware 下配置窗口与全屏覆盖层都会错位、残影）。首次启动以该尺寸（必要时夹到工作区）居中显示，关闭窗口时会保存窗口位置、大小和最大化状态，恢复时把小于当前最小尺寸（含 0×0）的历史尺寸提升到最小尺寸而不是拒绝。窗口按设置选择隐藏到托盘、最小化到任务栏或直接退出；标题栏关闭按钮、Alt+F4 和外部 `WM_CLOSE`（鼠标手势“关闭窗口”、自动化工具、任务管理器）走同一套判定，只有设置为“退出应用”或系统关机/`Application.Exit` 才结束进程。隐藏到托盘会在收到关闭信号时直接同步隐藏并释放 WebView2 配置界面、回收浏览器进程，不经过系统最小化，避免 Alt+Tab/任务视图在切换键释放时还原出 WebView2 已释放的空白窗口；托盘恢复时重建 WebView2（若窗口还在屏幕上、WebView2 未释放，则只置顶激活，不再重建）。释放与回收结果会写入 `hidden-to-tray`、`disposed` 和 `browser-process-exited` / `browser-process-reclaimed` 日志；隐藏后被 Shell 再次请求显示时会记录 `hidden-window-rehidden` 并拒绝该请求，因此不会留下空白的配置窗口。通过托盘菜单“退出”始终会真正释放后台手势服务并结束进程。
-- 托盘菜单提供“打开配置”、“暂停 WuGesture”和“退出”；菜单为自绘圆角样式并跟随配置界面主题（浅色/深色/跟随系统），不再使用系统默认灰色下拉框。暂停项会暂停手势识别和边缘操作，但保留后台进程和配置界面。暂停时仅系统托盘图标切换为灰阶图标，并在托盘提示文字中标记“已暂停”，任务栏窗口图标不变。
+- 托盘菜单提供“打开配置”、“暂停 WuGesture”和“退出”；菜单为自绘圆角样式并跟随配置界面主题（浅色/深色/跟随系统），不再使用系统默认灰色下拉框。暂停项会暂停手势识别和边缘操作，但保留后台进程和配置界面。暂停时仅系统托盘图标切换为灰度 + 54% 不透明度（与配置页侧栏暂停态的品牌图标一致），并在托盘提示文字中标记“已暂停”，任务栏窗口图标不变。
 
 职责目录：
 
